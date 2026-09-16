@@ -1,0 +1,53 @@
+const https = require('https');
+const fs = require('fs');
+
+console.log('Testando Gemini 2.5 Flash...\n');
+
+const envContent = fs.readFileSync('.env', 'utf8');
+const apiKeyMatch = envContent.match(/GEMINI_API_KEY=(.+)/);
+const apiKey = apiKeyMatch[1].trim();
+
+const model = 'gemini-2.5-flash';
+const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey;
+
+const prompt = 'Voce e um especialista em marketing de luxo.\n\nCrie um texto curto de WhatsApp para vender:\n- Produto: Perfume Chanel Nº 5\n- Segmento: Perfumes Importados\n- Publico: Mulheres sofisticadas de alta renda\n- Tom: Sofisticado, exclusivo, luxuoso\n\nRetorne APENAS o texto, sem explicacoes.';
+
+const postData = JSON.stringify({
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { temperature: 0.8, maxOutputTokens: 512 }
+});
+
+const options = {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData)
+    }
+};
+
+const req = https.request(url, options, (res) => {
+    let data = '';
+    res.on('data', (chunk) => { data += chunk; });
+    res.on('end', () => {
+        try {
+            const json = JSON.parse(data);
+            if (json.candidates && json.candidates[0] && json.candidates[0].content) {
+                console.log('✅ SUCESSO! IA funcionando com gemini-2.5-flash!\n');
+                console.log('Texto gerado:');
+                console.log('----------------------------------------');
+                console.log(json.candidates[0].content.parts[0].text);
+                console.log('----------------------------------------');
+            } else {
+                console.log('Resposta inesperada:');
+                console.log(data);
+            }
+        } catch (e) {
+            console.log('Erro:', e.message);
+            console.log('Resposta bruta:', data);
+        }
+    });
+});
+
+req.on('error', (e) => { console.log('Erro:', e.message); });
+req.write(postData);
+req.end();

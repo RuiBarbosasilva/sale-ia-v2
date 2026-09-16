@@ -1,0 +1,115 @@
+﻿// src/modules/mercadoLivre/controllers/healthController.ts
+import { Request, Response } from 'express';
+import axios from 'axios';
+import { prisma } from '../lib/prisma';
+import { tokenService } from '../auth/tokenService';
+
+export const healthCheck = async (req: Request, res: Response) => {
+  try {
+    console.log('[ML Health] 🟢 Iniciando health check...');
+    
+    // 1. Buscar conta ativa
+    const account = await prisma.mercadoLivreAccount.findFirst({
+      where: { isActive: true },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    if (!account) {
+      console.log('[ML Health] ⚠️ Nenhuma conta ativa');
+      return res.json({
+        apiReachable: false,
+        authenticationValid: false,
+        tokenExpiresAt: null,
+        lastSync: null,
+        rateLimitState: 'OK',
+        message: 'Nenhuma conta Mercado Livre conectada'
+      });
+    }
+
+    console.log('[ML Health] ✅ Conta encontrada:', account.nickname);
+
+    // 2. Buscar token válido
+    let accessToken: string | null = null;
+    let tokenExpiresAt: Date | null = null;
+    
+    try {
+      accessToken = await tokenService.getValidToken(account.id);
+      
+      // Buscar expiração do token
+      const tokenRecord = await prisma.mercadoLivreToken.findFirst({
+        where: { accountId: account.id },
+        orderBy: { updatedAt: 'desc' },
+        select: { expiresAt: true }
+      });
+      
+      tokenExpiresAt = tokenRecord?.expiresAt || null;
+    } catch (error: any) {
+      console.error('[ML Health] ❌ Erro ao obter token:', error.message);
+      return res.json({
+        apiReachable: false,
+        authenticationValid: false,
+        tokenExpiresAt: null,
+        lastSync: null,
+        rateLimitState: 'OK',
+        message: 'Falha ao obter token de autenticação'
+      });
+    }
+
+    // 3. Testar API do Mercado Livre com autenticação
+    let apiReachable = false;
+    let authenticationValid = false;
+    
+    try {
+      const userResponse = await axios.get('https://api.mercadolibre.com/users/me', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        timeout: 10000
+      });
+      
+      if (userResponse.status === 200 && userResponse.data?.id) {
+        apiReachable = true;
+        authenticationValid = true;
+        console.log('[ML Health] ✅ API acessível e token válido');
+      }
+    } catch (error: any) {
+      console.error('[ML Health] ❌ Erro ao chamar /users/me:', error.message);
+      
+      if (error.response?.status === 401) {
+        apiReachable = true;
+        authenticationValid = false;
+      } else if (error.response?.status === 429) {
+        apiReachable = true;
+        authenticationValid = true;
+      } else if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+        apiReachable = false;
+        authenticationValid = false;
+      }
+    }
+
+    // 4. Buscar última sincronização
+    const lastSync = await prisma.mercadoLivreOrder.findFirst({
+      orderBy: { lastSyncedAt: 'desc' },
+      select: { lastSyncedAt: true }
+    });
+
+    // 5. Retornar health check completo
+    res.json({
+      apiReachable,
+      authenticationValid,
+      tokenExpiresAt,
+      lastSync: lastSync?.lastSyncedAt || null,
+      rateLimitState: 'OK',
+      account: {
+        id: account.id,
+        nickname: account.nickname,
+        mlUserId: account.mlUserId,
+        isActive: account.isActive
+      }
+    });
+  } catch (error: any) {
+    console.error('[ML Health] ❌ Erro crítico:', error.message);
+    res.status(500).json({ 
+      error: 'MERCADO_LIVRE_HEALTH_CHECK_FAILED',
+      message: error.message 
+    });
+  }
+};

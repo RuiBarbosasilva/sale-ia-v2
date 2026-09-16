@@ -1,0 +1,101 @@
+﻿// src/services/website/websiteQualityService.ts
+import { QualityReview, QualityCriterion, PRD, DesignSystem } from '../../types/websiteV2';
+import { websiteAIEnhancerService } from './websiteAIEnhancerService';
+
+export class WebsiteQualityService {
+  private readonly MIN_SCORE = 7.5;
+
+  async review(html: string, prd: PRD, designSystem: DesignSystem): Promise<QualityReview> {
+    console.log('[Quality Review] Avaliando site');
+    if (websiteAIEnhancerService.isAvailable) {
+      try {
+        const prompt = this.buildPrompt(html, prd, designSystem);
+        const data = await websiteAIEnhancerService.generateJSON(prompt, 'quality');
+        if (data) return this.normalize(data);
+      } catch (e: any) {
+        console.error('[Quality] IA falhou:', e?.message);
+      }
+    }
+    return this.fallback(html, prd, designSystem);
+  }
+
+  private buildPrompt(html: string, prd: PRD, ds: DesignSystem): string {
+    const preview = html.substring(0, 2000);
+    return `Avalie qualidade de website (0-10 cada criterio).
+
+SEGMENTO: ${prd.business.category}
+ESTILO: ${ds.visualStyle}
+HTML_PREVIEW (2000 chars): ${preview}
+
+Retorne JSON:
+{
+  "criteria":[
+    {"name":"Qualidade Visual","score":8,"feedback":"..."},
+    {"name":"Modernidade","score":7,"feedback":"..."},
+    {"name":"Profissionalismo","score":9,"feedback":"..."},
+    {"name":"UX","score":8,"feedback":"..."},
+    {"name":"Mobile","score":7,"feedback":"..."},
+    {"name":"Responsividade","score":8,"feedback":"..."},
+    {"name":"Acessibilidade","score":6,"feedback":"..."},
+    {"name":"Conversao","score":8,"feedback":"..."},
+    {"name":"Conteudo","score":7,"feedback":"..."},
+    {"name":"Consistencia","score":8,"feedback":"..."},
+    {"name":"SEO","score":7,"feedback":"..."},
+    {"name":"Tecnico","score":9,"feedback":"..."}
+  ],
+  "strengths":["...","..."],
+  "weaknesses":["..."],
+  "improvements":["...","..."]
+}
+
+Regras: seja especifico, max 3 strengths/weaknesses/improvements.`;
+  }
+
+  private normalize(data: any): QualityReview {
+    const criteria: QualityCriterion[] = Array.isArray(data.criteria)
+      ? data.criteria.map((c: any) => ({ name: c.name || 'Critério', score: Math.max(0, Math.min(10, Number(c.score) || 5)), feedback: c.feedback || '' }))
+      : [];
+    const overall = criteria.length > 0 ? criteria.reduce((s, c) => s + c.score, 0) / criteria.length : 5;
+    return {
+      overallScore: Math.round(overall * 10) / 10,
+      criteria,
+      strengths: Array.isArray(data.strengths) ? data.strengths : [],
+      weaknesses: Array.isArray(data.weaknesses) ? data.weaknesses : [],
+      improvements: Array.isArray(data.improvements) ? data.improvements : [],
+      recommendation: overall >= this.MIN_SCORE ? 'approve' : overall >= 6 ? 'improve' : 'regenerate'
+    };
+  }
+
+  private fallback(html: string, prd: PRD, designSystem: DesignSystem): QualityReview {
+    const hasCTA = html.includes('btn-primary') || html.includes('cta');
+    const hasMeta = html.includes('meta name');
+    const hasResponsive = html.includes('@media') || html.includes('viewport');
+    const criteria: QualityCriterion[] = [
+      { name: 'Qualidade Visual', score: 7, feedback: 'Design system aplicado' },
+      { name: 'Modernidade', score: 7, feedback: 'HTML5 moderno' },
+      { name: 'Profissionalismo', score: 8, feedback: 'Código estruturado' },
+      { name: 'UX', score: 7, feedback: 'Estrutura de seções' },
+      { name: 'Mobile', score: 7, feedback: 'Viewport configurado' },
+      { name: 'Responsividade', score: hasResponsive ? 8 : 5, feedback: hasResponsive ? 'Media queries presentes' : 'Adicionar media queries' },
+      { name: 'Acessibilidade', score: 6, feedback: 'Semântica básica' },
+      { name: 'Conversão', score: hasCTA ? 8 : 5, feedback: hasCTA ? 'CTAs presentes' : 'Adicionar CTAs' },
+      { name: 'Conteúdo', score: 7, feedback: 'Baseado no briefing' },
+      { name: 'Consistência', score: 8, feedback: 'Design system aplicado' },
+      { name: 'SEO', score: hasMeta ? 8 : 5, feedback: hasMeta ? 'Meta tags OK' : 'Adicionar meta' },
+      { name: 'Técnico', score: 9, feedback: `${html.length} bytes válidos` }
+    ];
+    const overall = criteria.reduce((s, c) => s + c.score, 0) / criteria.length;
+    return {
+      overallScore: Math.round(overall * 10) / 10,
+      criteria,
+      strengths: ['Estrutura HTML5 válida', 'Design system aplicado', hasCTA ? 'CTAs presentes' : 'Código limpo'],
+      weaknesses: [!hasResponsive ? 'Responsividade' : null, !hasMeta ? 'Meta SEO' : null].filter(Boolean) as string[],
+      improvements: ['Micro-interações', 'Core Web Vitals', 'Prova social'],
+      recommendation: overall >= this.MIN_SCORE ? 'approve' : overall >= 6 ? 'improve' : 'regenerate'
+    };
+  }
+
+  getMinScore(): number { return this.MIN_SCORE; }
+}
+
+export const websiteQualityService = new WebsiteQualityService();

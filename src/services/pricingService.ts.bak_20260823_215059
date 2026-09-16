@@ -1,0 +1,356 @@
+﻿import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+/**
+ * Regra comercial central:
+ *
+ * O preço mínimo não é simplesmente o custo.
+ * O sistema trabalha com um piso comercial equivalente
+ * a aproximadamente 71,4286% do preço de venda.
+ *
+ * Exemplo:
+ * venda = R$ 28
+ * mínimo = R$ 20
+ */
+function calculateMinimumUnitPrice(
+  salePrice: number,
+  costPrice: number
+): number {
+  const minimum = costPrice * 2;
+
+  return Number(
+    Math.min(salePrice, minimum).toFixed(2)
+  );
+}
+
+export async function ensureDefaultCommercialProduct() {
+  const existing = await prisma.product.findFirst({
+    where: { active: true }
+  });
+
+  if (existing) {
+    return existing;
+  }
+
+  return await prisma.product.create({
+    data: {
+      id: "default-product",
+      name: "Caneca Personalizada",
+      description: "Caneca de porcelana personalizada 325ml",
+      costPrice: 10.0,
+      salePrice: 25.0,
+      niche: "Brindes",
+      active: true
+    }
+  });
+}
+
+export async function calculateQuote(
+  leadIdOrOptions:
+    | string
+    | {
+        productName?: string;
+        quantity?: number;
+        leadId?: string;
+      },
+  productIdParam?: string,
+  quantityParam?: number,
+  targetDiscountPercent = 0
+) {
+  let leadId = "default-lead-id";
+  let productId = productIdParam;
+  let quantity = quantityParam ?? 1;
+  let productName: string | undefined;
+
+  if (typeof leadIdOrOptions === "object") {
+    leadId = leadIdOrOptions.leadId || leadId;
+    quantity = leadIdOrOptions.quantity || 1;
+    productName = leadIdOrOptions.productName;
+  } else {
+    leadId = leadIdOrOptions;
+  }
+
+  if (!Number.isFinite(quantity) || quantity <= 0) {
+    throw new Error("Quantidade deve ser maior que zero.");
+  }
+
+  let product = null;
+
+  if (productId) {
+    product = await prisma.product.findUnique({
+      where: { id: productId }
+    });
+  }
+
+  /*
+   * Quando productName foi informado, procurar pelo nome.
+   * Isso é necessário para o fluxo comercial externo.
+   */
+  if (!product && productName) {
+    product = await prisma.product.findFirst({
+      where: {
+        name: productName,
+        active: true
+      }
+    });
+
+    /*
+     * "Caneca Personalizada" é o produto comercial padrão.
+     * Se ainda não existir no banco, criá-lo automaticamente.
+     *
+     * Produtos arbitrários inexistentes continuam gerando erro,
+     * preservando a validação comercial.
+     */
+    if (!product) {
+      if (
+        productName.trim().toLowerCase() ===
+        "caneca personalizada"
+      ) {
+        product = await ensureDefaultCommercialProduct();
+      } else {
+        throw new Error(
+          `Produto não encontrado: ${productName}`
+        );
+      }
+    }
+
+    productId = product.id;
+  }
+
+  /*
+   * Sem produto informado, utilizar o produto comercial padrão.
+   */
+  if (!product) {
+    product = await ensureDefaultCommercialProduct();
+    productId = product.id;
+  }
+
+  const unitPrice = Number(product.salePrice);
+  const minimumUnitPrice = calculateMinimumUnitPrice(
+    Number(product.salePrice),
+    Number(product.costPrice)
+  );
+
+  const grossTotal = Number(
+    (unitPrice * quantity).toFixed(2)
+  );
+
+  const discountAmount = Number(
+    (grossTotal * (targetDiscountPercent / 100)).toFixed(2)
+  );
+
+  const finalTotal = Number(
+    (grossTotal - discountAmount).toFixed(2)
+  );
+
+  /*
+   * PROTECAO FINANCEIRA:
+   * uma cotacao nunca pode ser criada abaixo
+   * do piso comercial permitido.
+   */
+  const minimumTotal = Number(
+    (minimumUnitPrice * quantity).toFixed(2)
+  );
+
+  if (finalTotal < minimumTotal) {
+    throw new Error(
+      `O desconto solicitado ultrapassa o preço mínimo permitido de R$ ${minimumUnitPrice.toFixed(2)} por unidade.`
+    );
+  }
+
+  let lead = await prisma.lead.findUnique({
+    where: { id: leadId }
+  });
+
+  if (!lead) {
+    lead = await prisma.lead.create({
+      data: {
+        id: leadId,
+        name: "Lead Cotação",
+        phone: `551199999${Math.floor(
+          1000 + Math.random() * 9000
+        )}`
+      }
+    });
+  }
+
+  const quote = await prisma.quote.create({
+    data: {
+      leadId: lead.id,
+      productId: product.id,
+      quantity,
+      unitPrice,
+      totalValue: finalTotal,
+      discount: discountAmount,
+      status: "PENDING"
+    }
+  });
+
+  return {
+    quote,
+    quoteId: quote.id,
+    unitPrice,
+    minimumUnitPrice,
+    grossTotal,
+    discountAmount,
+    finalTotal,
+
+    /*
+     * Compatibilidade com os contratos existentes.
+     */
+    total: finalTotal
+  };
+}
+
+export async function getQuoteById(quoteId: string) {
+  const quote = await prisma.quote.findUnique({
+    where: { id: quoteId },
+    include: {
+      product: true,
+      lead: true
+    }
+  });
+
+  if (!quote) {
+    throw new Error("Cotação não encontrada");
+  }
+
+  return quote;
+}
+
+export async function negotiateQuote(params: {
+  quoteId: string;
+  targetDiscountPercent?: number;
+  requestedDiscountPct?: number;
+  proposedTotal?: number;
+  requestedPrice?: number;
+}) {
+  const quote = await prisma.quote.findUnique({
+    where: { id: params.quoteId },
+    include: {
+      product: true
+    }
+  });
+
+  if (!quote) {
+    throw new Error("Cotação não encontrada");
+  }
+
+  const grossTotal = Number(
+    (quote.unitPrice * quote.quantity).toFixed(2)
+  );
+
+  const minimumUnitPrice = calculateMinimumUnitPrice(
+    Number(quote.product.salePrice),
+    Number(quote.product.costPrice)
+  );
+
+  let requestedDiscountPercent =
+    params.targetDiscountPercent ??
+    params.requestedDiscountPct;
+
+  /*
+   * requestedPrice também é aceito pelo contrato legado.
+   */
+  if (
+    requestedDiscountPercent === undefined &&
+    params.requestedPrice !== undefined
+  ) {
+    requestedDiscountPercent =
+      ((quote.unitPrice - params.requestedPrice) /
+        quote.unitPrice) *
+      100;
+  }
+
+  if (requestedDiscountPercent === undefined) {
+    requestedDiscountPercent = 0;
+  }
+
+  if (
+    !Number.isFinite(requestedDiscountPercent) ||
+    requestedDiscountPercent < 0
+  ) {
+    throw new Error("Percentual de desconto inválido.");
+  }
+
+  const requestedUnitPrice = Number(
+    (
+      quote.unitPrice *
+      (1 - requestedDiscountPercent / 100)
+    ).toFixed(2)
+  );
+
+  const requestedTotal = Number(
+    (requestedUnitPrice * quote.quantity).toFixed(2)
+  );
+
+  /*
+   * REGRA CENTRAL:
+   *
+   * Se o preço solicitado ficar abaixo do piso comercial,
+   * a negociação NÃO é aprovada.
+   */
+  if (requestedUnitPrice < minimumUnitPrice) {
+    return {
+      approved: false,
+      accepted: false,
+      requiresHumanEscalation: true,
+      reason:
+        "A negociação foi recusada porque o valor solicitado ficou abaixo do mínimo permitido.",
+      counterOfferUnitPrice: minimumUnitPrice,
+      newUnitPrice: minimumUnitPrice,
+      newTotal: Number(
+        (minimumUnitPrice * quote.quantity).toFixed(2)
+      ),
+      discountAppliedPct: Number(
+        (
+          ((quote.unitPrice - minimumUnitPrice) /
+            quote.unitPrice) *
+          100
+        ).toFixed(2)
+      )
+    };
+  }
+
+  /*
+   * Negociação aprovada.
+   */
+  const updatedQuote = await prisma.quote.update({
+    where: {
+      id: params.quoteId
+    },
+    data: {
+      unitPrice: requestedUnitPrice,
+      totalValue: requestedTotal,
+      discount: Number(
+        (grossTotal - requestedTotal).toFixed(2)
+      ),
+      status: "NEGOTIATING"
+    }
+  });
+
+  return {
+    approved: true,
+    accepted: true,
+    requiresHumanEscalation: false,
+    reason: "Negociação aprovada dentro da margem comercial.",
+    counterOfferUnitPrice: requestedUnitPrice,
+    newUnitPrice: requestedUnitPrice,
+    newTotal: requestedTotal,
+    discountAppliedPct: Number(
+      requestedDiscountPercent.toFixed(2)
+    ),
+    quote: updatedQuote
+  };
+}
+
+export default {
+  calculateQuote,
+  ensureDefaultCommercialProduct,
+  getQuoteById,
+  negotiateQuote
+};
+
+
+

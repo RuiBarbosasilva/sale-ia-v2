@@ -1,0 +1,516 @@
+﻿
+// Helper function for image extension guessing (forbidden as 'private' inside object literal)
+function guessExtHelper(url: string, mime?: string): string {
+  const u = url.toLowerCase();
+  if (mime) {
+    if (/jpeg|jpg/.test(mime)) return '.jpg';
+    if (/png/.test(mime)) return '.png';
+    if (/webp/.test(mime)) return '.webp';
+    if (/gif/.test(mime)) return '.gif';
+    if (/svg/.test(mime)) return '.svg';
+  }
+  if (/\.png(\?|$)/.test(u)) return '.png';
+  if (/\.webp(\?|$)/.test(u)) return '.webp';
+  if (/\.gif(\?|$)/.test(u)) return '.gif';
+  if (/\.svg(\?|$)/.test(u)) return '.svg';
+  return '.jpg';
+}
+// src/controllers/websiteStudioController.ts
+import { Request, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+import { websiteService } from '../services/website/websiteService';
+import { buildZip } from '../utils/zipUtils';
+
+const prisma = new PrismaClient();
+
+const slugify = (s: string) =>
+  (s || 'site').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').substring(0, 40) || 'site';
+
+export const websiteStudioController = {
+  // ---------- PROSPECTS ----------
+  async listProspects(req: Request, res: Response) {
+    try {
+      const prospects = await prisma.websiteProspect.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 200
+      });
+      res.json({
+        success: true,
+        prospects: prospects.map((p) => ({
+          id: p.id,
+          companyName: p.companyName,
+          segment: p.segment,
+          city: p.city,
+          phone: p.phone,
+          email: p.email,
+          status: p.status
+        }))
+      });
+    } catch (e: any) {
+      console.error('[Studio] listProspects:', e.message);
+      res.status(500).json({ success: false, error: 'Erro ao listar prospects' });
+    }
+  },
+
+  async createProspect(req: Request, res: Response) {
+    try {
+      const { companyName, segment, city, phone, email } = req.body || {};
+      if (!companyName || String(companyName).trim().length === 0) {
+        return res.status(400).json({ success: false, error: 'companyName é obrigatório' });
+      }
+      const prospect = await prisma.websiteProspect.create({
+        data: {
+          companyName: String(companyName).trim(),
+          segment: segment || null,
+          city: city || null,
+          phone: phone || null,
+          email: email || null,
+          status: 'DISCOVERED'
+        }
+      });
+      res.status(201).json({ success: true, prospect });
+    } catch (e: any) {
+      console.error('[Studio] createProspect:', e.message);
+      res.status(500).json({ success: false, error: 'Erro ao criar prospect' });
+    }
+  },
+
+  // ---------- TEMPLATES ----------
+  async listTemplates(req: Request, res: Response) {
+    try {
+      const templates = await prisma.websiteTemplate.findMany({
+        where: { active: true },
+        include: { category: { select: { name: true, slug: true } } },
+        orderBy: { featured: 'desc' }
+      });
+      res.json({ success: true, templates });
+    } catch (e: any) {
+      console.error('[Studio] listTemplates:', e.message);
+      res.status(500).json({ success: false, error: 'Erro ao listar templates' });
+    }
+  },
+
+  // ---------- BRIEFING ----------
+  async getBriefing(req: Request, res: Response) {
+    try {
+      const { prospectId } = req.params;
+      const prospect = await prisma.websiteProspect.findUnique({ where: { id: prospectId } });
+      if (!prospect) return res.status(404).json({ success: false, error: 'Prospect não encontrado' });
+
+      const lastDemo = await prisma.websiteDemo.findFirst({
+        where: { prospectId },
+        orderBy: { generatedAt: 'desc' }
+      });
+
+      let briefing: any = null;
+      if (lastDemo?.previewData) {
+        try {
+          const pd = JSON.parse(lastDemo.previewData);
+          briefing = pd.briefing || pd;
+        } catch {
+          briefing = null;
+        }
+      }
+
+      res.json({
+        success: true,
+        briefing: briefing || {
+          businessName: prospect.companyName || '',
+          category: prospect.segment || '',
+          city: prospect.city || '',
+          phone: prospect.phone || '',
+          whatsapp: prospect.phone || '',
+          email: prospect.email || '',
+          website: prospect.currentWebsite || ''
+        },
+        fromDemo: !!briefing
+      });
+    } catch (e: any) {
+      console.error('[Studio] getBriefing:', e.message);
+      res.status(500).json({ success: false, error: 'Erro ao carregar briefing' });
+    }
+  },
+
+  // ---------- GERACAO ----------
+  async generateFromBriefing(req: Request, res: Response) {
+    try {
+      const { prospectId, templateId, customData, useAI } = req.body || {};
+      if (!prospectId) return res.status(400).json({ success: false, error: 'prospectId é obrigatório' });
+      if (!customData || !customData.businessName) {
+        return res.status(400).json({ success: false, error: 'customData.businessName é obrigatório' });
+      }
+
+      const result = await websiteService.generateFromBriefing(
+        prospectId,
+        templateId || null,
+        customData,
+        useAI !== false
+      );
+
+      res.json({
+        success: true,
+        demoId: result.demo.id,
+        version: result.demo.version,
+        aiUsed: result.aiUsed,
+        creatorType: result.creatorType,
+        previewUrl: `/api/websites/studio/demos/${result.demo.id}/html`,
+        exportUrl: `/api/websites/studio/demos/${result.demo.id}/export`
+      });
+    } catch (e: any) {
+      console.error('[Studio] generateFromBriefing:', e.message);
+      const known = ['Prospect não encontrado', 'Template não encontrado'];
+      res.status(known.includes(e.message) ? 400 : 500).json({ success: false, error: e.message });
+    }
+  },
+
+  async listVersions(req: Request, res: Response) {
+    try {
+      const { prospectId } = req.params;
+      const versions = await websiteService.listVersionsByProspect(prospectId);
+      res.json({ success: true, versions });
+    } catch (e: any) {
+      console.error('[Studio] listVersions:', e.message);
+      res.status(500).json({ success: false, error: 'Erro ao listar versões' });
+    }
+  },
+
+  // ---------- REGENERACAO ----------
+  async regenerate(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const mode = ['content', 'design', 'full'].includes(req.body?.mode) ? req.body.mode : 'full';
+      const newDemo = await websiteService.regenerateDemo(id, mode);
+      res.json({
+        success: true,
+        demoId: newDemo.id,
+        version: newDemo.version,
+        mode,
+        previewUrl: `/api/websites/studio/demos/${newDemo.id}/html`,
+        exportUrl: `/api/websites/studio/demos/${newDemo.id}/export`
+      });
+    } catch (e: any) {
+      console.error('[Studio] regenerate:', e.message);
+      res.status(e.message.includes('não encontrada') ? 404 : 500).json({ success: false, error: e.message });
+    }
+  },
+
+  // ---------- PREVIEW (HTML isolado para iframe) ----------
+  async getHtml(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const demo = await prisma.websiteDemo.findUnique({ where: { id } });
+      if (!demo || !demo.sourceCode) {
+        return res.status(404).send('Demo não encontrada');
+      }
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-store');
+      res.send(demo.sourceCode);
+    } catch (e: any) {
+      console.error('[Studio] getHtml:', e.message);
+      res.status(500).send('Erro ao carregar preview');
+    }
+  },
+
+  // ---------- EXPORTACAO ZIP ----------
+  async exportZip(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const demo = await prisma.websiteDemo.findUnique({
+        where: { id },
+        include: { prospect: true }
+      });
+      if (!demo || !demo.sourceCode) {
+        return res.status(404).json({ success: false, error: 'Demo não encontrada' });
+      }
+
+      const businessName = demo.prospect?.companyName || 'site';
+      const slug = (businessName || 'site').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').substring(0, 40) || 'site';
+
+      // Extrair metadados do previewData
+      let assetsMeta: any[] = [];
+      let assetsSummary: any = null;
+      try {
+        const pd = JSON.parse(demo.previewData || '{}');
+        assetsMeta = Array.isArray(pd.assets) ? pd.assets : [];
+        assetsSummary = pd.assetsSummary || null;
+      } catch {}
+
+      // --- DOWNLOAD DE ASSETS (P0.2) ---
+      const downloadedFiles: Array<{ name: string; content: Buffer; meta: any }> = [];
+      const urlToLocal: Record<string, string> = {};
+      const downloadFailures: Array<{ url: string; reason: string }> = [];
+
+      const axios = (await import('axios')).default;
+      const path = await import('path');
+
+      for (let i = 0; i < assetsMeta.length; i++) {
+        const meta = assetsMeta[i];
+        if (!meta.sourceUrl || meta.sourceUrl.startsWith('data:')) continue;
+        if (!/^https?:\/\//i.test(meta.sourceUrl)) continue;
+
+        const ext = this.guessExt(meta.sourceUrl, meta.mime);
+        const usageSlug = String(meta.usage || 'img').toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 24);
+        const localName = `${usageSlug}-${i + 1}${ext}`;
+        const localPath = `assets/images/${localName}`;
+
+        try {
+          const r = await axios.get(meta.sourceUrl, {
+            responseType: 'arraybuffer', timeout: 15000,
+            headers: { 'User-Agent': 'SaleIA-SiteFactory/3.0' }, maxRedirects: 3
+          });
+          const buf = Buffer.isBuffer(r.data) ? r.data : Buffer.from(r.data);
+          const ct = String(r.headers['content-type'] || '').toLowerCase();
+          if (buf.length < 100) { downloadFailures.push({ url: meta.sourceUrl, reason: 'arquivo muito pequeno' }); continue; }
+          if (ct && !/image\/(jpeg|jpg|png|webp|gif|svg\+xml)/.test(ct)) {
+            downloadFailures.push({ url: meta.sourceUrl, reason: 'MIME ' + ct });
+            continue;
+          }
+          downloadedFiles.push({ name: localPath, content: buf, meta });
+          urlToLocal[meta.sourceUrl] = localPath;
+        } catch (e: any) {
+          downloadFailures.push({ url: meta.sourceUrl, reason: (e?.message || '').substring(0, 80) });
+        }
+      }
+
+      // --- SUBSTITUIR URLs no HTML por caminhos locais ---
+      let html = demo.sourceCode || '';
+      for (const [remote, local] of Object.entries(urlToLocal)) {
+        html = html.split(remote).join(local);
+      }
+
+      // --- README com creditos ---
+      const readmeLines = [
+        `SITE GERADO - SALE-IA-V2 SITE FACTORY`,
+        ``,
+        `Cliente: ${businessName}`,
+        `Versao: ${demo.version}`,
+        `Gerado em: ${demo.generatedAt}`,
+        `Score de qualidade: ${assetsSummary?.imageCount !== undefined ? 'disponivel no site.json' : 'n/d'}`,
+        ``,
+        `COMO PUBLICAR:`,
+        `1. Vercel: arraste a pasta em https://vercel.com/new`,
+        `2. Netlify: arraste a pasta em https://app.netlify.com/drop`,
+        `3. Host proprio: envie via FTP`,
+        ``,
+        `O ZIP e offline-friendly: imagens foram baixadas para assets/images/.`,
+        ``
+      ];
+      if (assetsMeta.length > 0) {
+        readmeLines.push(`IMAGENS E CREDITOS (${assetsMeta.length} total):`);
+        readmeLines.push('='.repeat(60));
+        for (const m of assetsMeta) {
+          const local = urlToLocal[m.sourceUrl] || '(mantida URL externa - ver falhas abaixo)';
+          readmeLines.push(`\n[${m.usage}]`);
+          readmeLines.push(`  provider:  ${m.provider}`);
+          readmeLines.push(`  autor:     ${m.author || '(n/d)'}`);
+          readmeLines.push(`  licenca:   ${m.license || '(n/d)'}`);
+          readmeLines.push(`  alt:       ${m.alt || '(n/d)'}`);
+          readmeLines.push(`  dimensoes: ${m.width}x${m.height}`);
+          readmeLines.push(`  sourceUrl: ${m.sourceUrl}`);
+          readmeLines.push(`  local:     ${local}`);
+          if (m.pageUrl) readmeLines.push(`  pageUrl:   ${m.pageUrl}`);
+        }
+      }
+      if (downloadFailures.length > 0) {
+        readmeLines.push(`\n\nFALHAS NO DOWNLOAD (${downloadFailures.length}):`);
+        readmeLines.push('='.repeat(60));
+        for (const f of downloadFailures) {
+          readmeLines.push(`  ${f.url}`);
+          readmeLines.push(`    -> ${f.reason}`);
+        }
+      }
+      const readme = readmeLines.join('\n');
+
+      // --- site.json (P12) ---
+      const siteJson = {
+        projectId: demo.prospectId,
+        prospectId: demo.prospectId,
+        demoId: demo.id,
+        version: demo.version,
+        generatedAt: demo.generatedAt,
+        businessName,
+        assets: {
+          total: assetsMeta.length,
+          realImages: assetsMeta.filter(m => m.provider !== 'local-placeholder' && m.provider !== 'client-provided').length,
+          placeholders: assetsMeta.filter(m => m.provider === 'local-placeholder').length,
+          clientProvided: assetsMeta.filter(m => m.provider === 'client-provided').length,
+          downloaded: downloadedFiles.length,
+          keptRemote: downloadFailures.length,
+          items: assetsMeta.map(m => ({
+            usage: m.usage,
+            provider: m.provider,
+            author: m.author || null,
+            license: m.license || null,
+            dimensions: `${m.width}x${m.height}`,
+            alt: m.alt || null,
+            sourceUrl: m.sourceUrl,
+            localPath: urlToLocal[m.sourceUrl] || null,
+            downloaded: !!urlToLocal[m.sourceUrl]
+          }))
+        },
+        providers: [...new Set(assetsMeta.map(m => m.provider))],
+        qualityScore: null,
+        licenses: [...new Set(assetsMeta.filter(m => m.license).map(m => m.license))],
+        // SEGURANCA: nenhum secret incluido
+        securityNote: 'This archive contains no API keys, tokens, or secrets.'
+      };
+
+      // --- Montar ZIP ---
+      const { buildZip } = await import('../utils/zipUtils');
+      const files = [
+        { name: 'index.html', content: html },
+        { name: 'README.txt', content: readme },
+        { name: 'metadata/site.json', content: JSON.stringify(siteJson, null, 2) },
+        ...downloadedFiles.map(f => ({ name: f.name, content: f.content }))
+      ];
+      const zip = buildZip(files);
+
+      const filename = `site-${slug}-v${demo.version}.zip`;
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(zip);
+    } catch (e: any) {
+      console.error('[Studio] exportZip:', e.message);
+      res.status(500).json({ success: false, error: 'Erro ao exportar ZIP' });
+    }
+  },
+
+  guessExt(url: string, mime?: string): string {
+    return guessExtHelper(url, mime);
+  },
+
+  async approve(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const demo = await prisma.websiteDemo.update({
+        where: { id },
+        data: { status: 'APPROVED' }
+      });
+      res.json({ success: true, demoId: demo.id, status: demo.status });
+    } catch (e: any) {
+      console.error('[Studio] approve:', e.message);
+      res.status(404).json({ success: false, error: 'Demo não encontrada' });
+    }
+  },
+
+  // ---------- PREPARACAO DE PUBLICACAO (real, sem falso deploy) ----------
+  async preparePublication(req: Request, res: Response) {
+    try {
+      const { demoId, domainName } = req.body || {};
+      if (!demoId) return res.status(400).json({ success: false, error: 'demoId é obrigatório' });
+
+      const project = await websiteService.preparePublication(demoId, domainName);
+
+      res.json({
+        success: true,
+        project,
+        publicationStatus: 'READY_TO_PUBLISH',
+        note: 'Publicação automática requer integração com provedor (Vercel/Netlify). Use o ZIP para publicar manualmente.',
+        instructions: {
+          vercel: [
+            'Exporte o ZIP (botão Exportar ZIP)',
+            'Acesse https://vercel.com/new',
+            'Arraste a pasta extraída com index.html',
+            'Configure o domínio se necessário'
+          ],
+          netlify: [
+            'Exporte o ZIP',
+            'Acesse https://app.netlify.com/drop',
+            'Arraste a pasta extraída',
+            'Site publicado instantaneamente'
+          ],
+          hosting: [
+            'Exporte o ZIP',
+            'Envie index.html via FTP para public_html'
+          ]
+        }
+      });
+    } catch (e: any) {
+      console.error('[Studio] preparePublication:', e.message);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  },
+
+  // === PIPELINE PROFISSIONAL ===
+  async generateProfessional(req: Request, res: Response) {
+    try {
+      const { prospectId, customData, useAI } = req.body || {};
+      if (!prospectId) return res.status(400).json({ success: false, error: 'prospectId é obrigatório' });
+      if (!customData?.businessName) return res.status(400).json({ success: false, error: 'businessName é obrigatório' });
+
+      const result = await websiteService.generateProfessional(prospectId, customData, useAI !== false);
+
+      res.json({
+        success: true,
+        demoId: result.demo.id,
+        version: result.demo.version,
+        aiUsed: result.improvementCycles > 0,
+        improvementCycles: result.improvementCycles,
+        qualityScore: result.qualityReview.overallScore,
+        qualityRecommendation: result.qualityReview.recommendation,
+        research: {
+          summary: result.research.summary,
+          marketInsights: result.research.marketInsights,
+          competitorInsights: result.research.competitorInsights,
+          recommendedStructure: result.research.recommendedStructure,
+          recommendedVisualDirection: result.research.recommendedVisualDirection
+        },
+        prd: {
+          business: result.prd.business,
+          strategy: result.prd.strategy,
+          content: { heroHeadline: result.prd.content.heroHeadline, primaryCTA: result.prd.content.primaryCTA }
+        },
+        designSystem: {
+          visualStyle: result.designSystem.visualStyle,
+          layoutStyle: result.designSystem.layoutStyle,
+          colors: result.designSystem.colors,
+          typography: result.designSystem.typography
+        },
+        qualityReview: result.qualityReview,
+        assets: result.assets || [],
+        previewUrl: `/api/websites/studio/demos/${result.demo.id}/html`
+      });
+    } catch (e: any) {
+      console.error('[Studio] generateProfessional:', e.message);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  },
+
+
+  // === DIAGNOSTICO DA IA ===
+  async aiStatus(req: Request, res: Response) {
+    try {
+      const { websiteAIEnhancerService } = await import('../services/website/websiteAIEnhancerService');
+      res.json({ success: true, ...websiteAIEnhancerService.getModelInfo() });
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: e.message });
+    }
+  },
+
+
+  // === ASSETS DE IMAGEM ===
+  async getAssets(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const demo = await prisma.websiteDemo.findUnique({ where: { id } });
+      if (!demo) return res.status(404).json({ success: false, error: 'Demo não encontrada' });
+      let assets: any[] = [];
+      try {
+        const pd = JSON.parse(demo.previewData || '{}');
+        assets = Array.isArray(pd.assets) ? pd.assets : [];
+      } catch {}
+      res.json({ success: true, assets });
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: e.message });
+    }
+  }
+};
+
+
+
+
+
+
+
+
+

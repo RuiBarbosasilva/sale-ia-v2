@@ -1,0 +1,110 @@
+﻿import { PrismaClient } from "@prisma/client";
+import { generatePixPayload } from "./pixService";
+
+const prisma = new PrismaClient();
+
+export interface CreateOrderFromQuoteInput {
+  quoteId: string;
+  leadId: string;
+}
+
+export class OrderService {
+  /**
+   * Converte uma cotação aceita em pedido.
+   */
+  async convertQuoteToOrder(
+    input: CreateOrderFromQuoteInput
+  ) {
+    const quote =
+      await prisma.quote.findUnique({
+        where: {
+          id: input.quoteId
+        }
+      });
+
+    if (!quote) {
+      throw new Error(
+        `Cotação com ID ${input.quoteId} nã£Â£o encontrada.`
+      );
+    }
+
+    if (quote.leadId !== input.leadId) {
+      throw new Error(
+        "A cotação nã£Â£o pertence ao lead informado."
+      );
+    }
+
+        // IDEMPOTã£Å NCIA: Verifica se jã£Â¡ existe pedido para esta cotação
+    const existingOrder = await prisma.order.findFirst({
+      where: { quoteId: input.quoteId }
+    });
+
+    if (existingOrder) {
+      return { ...existingOrder, pixCode: require('./pixService').generatePixPayload({ key: process.env.PIX_KEY || 'seu-email@dominio.com', name: process.env.PIX_NAME || 'SALE IA', city: process.env.PIX_CITY || 'POCOS DE CALDAS', amount: Number(quote.totalValue), txId: quote.id.substring(0, 25) }) };
+    }
+
+    await prisma.quote.update({
+      where: {
+        id: input.quoteId
+      },
+      data: {
+        status: "CONVERTED"
+      }
+    });
+
+    const pixCode = generatePixPayload({
+      key: process.env.PIX_KEY || "seu-email@dominio.com",
+      name: process.env.PIX_NAME || "SALE IA",
+      city: process.env.PIX_CITY || "POCOS DE CALDAS",
+      amount: Number(quote.totalValue),
+      txId: quote.id.substring(0, 25)
+    });
+
+    const order =
+      await prisma.order.create({
+        data: {
+          leadId: input.leadId,
+          quoteId: input.quoteId,
+          totalValue: quote.totalValue,
+          status: "AGUARDANDO_PAGAMENTO",
+          items: quote.productId
+            ? {
+                create: [
+                  {
+                    productId: quote.productId,
+                    quantity: quote.quantity,
+                    unitPrice: Number(quote.unitPrice),
+                    total: Number(
+                      (quote.unitPrice * quote.quantity).toFixed(2)
+                    )
+                  }
+                ]
+              }
+            : undefined
+        },
+        include: {
+          items: true,
+          lead: true
+        }
+      });
+
+    await prisma.lead.update({
+      where: {
+        id: input.leadId
+      },
+      data: {
+        stage: "PAGAMENTO"
+      }
+    });
+
+    return {
+      ...order,
+      pixCode
+    };
+  }
+
+}
+
+export const orderService =
+  new OrderService();
+

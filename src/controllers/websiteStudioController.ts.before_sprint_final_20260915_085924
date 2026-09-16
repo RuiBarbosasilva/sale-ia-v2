@@ -1,0 +1,387 @@
+﻿// src/controllers/websiteStudioController.ts
+import { Request, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+import { websiteService } from '../services/website/websiteService';
+import { buildZip } from '../utils/zipUtils';
+
+const prisma = new PrismaClient();
+
+const slugify = (s: string) =>
+  (s || 'site').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').substring(0, 40) || 'site';
+
+export const websiteStudioController = {
+  // ---------- PROSPECTS ----------
+  async listProspects(req: Request, res: Response) {
+    try {
+      const prospects = await prisma.websiteProspect.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 200
+      });
+      res.json({
+        success: true,
+        prospects: prospects.map((p) => ({
+          id: p.id,
+          companyName: p.companyName,
+          segment: p.segment,
+          city: p.city,
+          phone: p.phone,
+          email: p.email,
+          status: p.status
+        }))
+      });
+    } catch (e: any) {
+      console.error('[Studio] listProspects:', e.message);
+      res.status(500).json({ success: false, error: 'Erro ao listar prospects' });
+    }
+  },
+
+  async createProspect(req: Request, res: Response) {
+    try {
+      const { companyName, segment, city, phone, email } = req.body || {};
+      if (!companyName || String(companyName).trim().length === 0) {
+        return res.status(400).json({ success: false, error: 'companyName é obrigatório' });
+      }
+      const prospect = await prisma.websiteProspect.create({
+        data: {
+          companyName: String(companyName).trim(),
+          segment: segment || null,
+          city: city || null,
+          phone: phone || null,
+          email: email || null,
+          status: 'DISCOVERED'
+        }
+      });
+      res.status(201).json({ success: true, prospect });
+    } catch (e: any) {
+      console.error('[Studio] createProspect:', e.message);
+      res.status(500).json({ success: false, error: 'Erro ao criar prospect' });
+    }
+  },
+
+  // ---------- TEMPLATES ----------
+  async listTemplates(req: Request, res: Response) {
+    try {
+      const templates = await prisma.websiteTemplate.findMany({
+        where: { active: true },
+        include: { category: { select: { name: true, slug: true } } },
+        orderBy: { featured: 'desc' }
+      });
+      res.json({ success: true, templates });
+    } catch (e: any) {
+      console.error('[Studio] listTemplates:', e.message);
+      res.status(500).json({ success: false, error: 'Erro ao listar templates' });
+    }
+  },
+
+  // ---------- BRIEFING ----------
+  async getBriefing(req: Request, res: Response) {
+    try {
+      const { prospectId } = req.params;
+      const prospect = await prisma.websiteProspect.findUnique({ where: { id: prospectId } });
+      if (!prospect) return res.status(404).json({ success: false, error: 'Prospect não encontrado' });
+
+      const lastDemo = await prisma.websiteDemo.findFirst({
+        where: { prospectId },
+        orderBy: { generatedAt: 'desc' }
+      });
+
+      let briefing: any = null;
+      if (lastDemo?.previewData) {
+        try {
+          const pd = JSON.parse(lastDemo.previewData);
+          briefing = pd.briefing || pd;
+        } catch {
+          briefing = null;
+        }
+      }
+
+      res.json({
+        success: true,
+        briefing: briefing || {
+          businessName: prospect.companyName || '',
+          category: prospect.segment || '',
+          city: prospect.city || '',
+          phone: prospect.phone || '',
+          whatsapp: prospect.phone || '',
+          email: prospect.email || '',
+          website: prospect.currentWebsite || ''
+        },
+        fromDemo: !!briefing
+      });
+    } catch (e: any) {
+      console.error('[Studio] getBriefing:', e.message);
+      res.status(500).json({ success: false, error: 'Erro ao carregar briefing' });
+    }
+  },
+
+  // ---------- GERACAO ----------
+  async generateFromBriefing(req: Request, res: Response) {
+    try {
+      const { prospectId, templateId, customData, useAI } = req.body || {};
+      if (!prospectId) return res.status(400).json({ success: false, error: 'prospectId é obrigatório' });
+      if (!customData || !customData.businessName) {
+        return res.status(400).json({ success: false, error: 'customData.businessName é obrigatório' });
+      }
+
+      const result = await websiteService.generateFromBriefing(
+        prospectId,
+        templateId || null,
+        customData,
+        useAI !== false
+      );
+
+      res.json({
+        success: true,
+        demoId: result.demo.id,
+        version: result.demo.version,
+        aiUsed: result.aiUsed,
+        creatorType: result.creatorType,
+        previewUrl: `/api/websites/studio/demos/${result.demo.id}/html`,
+        exportUrl: `/api/websites/studio/demos/${result.demo.id}/export`
+      });
+    } catch (e: any) {
+      console.error('[Studio] generateFromBriefing:', e.message);
+      const known = ['Prospect não encontrado', 'Template não encontrado'];
+      res.status(known.includes(e.message) ? 400 : 500).json({ success: false, error: e.message });
+    }
+  },
+
+  async listVersions(req: Request, res: Response) {
+    try {
+      const { prospectId } = req.params;
+      const versions = await websiteService.listVersionsByProspect(prospectId);
+      res.json({ success: true, versions });
+    } catch (e: any) {
+      console.error('[Studio] listVersions:', e.message);
+      res.status(500).json({ success: false, error: 'Erro ao listar versões' });
+    }
+  },
+
+  // ---------- REGENERACAO ----------
+  async regenerate(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const mode = ['content', 'design', 'full'].includes(req.body?.mode) ? req.body.mode : 'full';
+      const newDemo = await websiteService.regenerateDemo(id, mode);
+      res.json({
+        success: true,
+        demoId: newDemo.id,
+        version: newDemo.version,
+        mode,
+        previewUrl: `/api/websites/studio/demos/${newDemo.id}/html`,
+        exportUrl: `/api/websites/studio/demos/${newDemo.id}/export`
+      });
+    } catch (e: any) {
+      console.error('[Studio] regenerate:', e.message);
+      res.status(e.message.includes('não encontrada') ? 404 : 500).json({ success: false, error: e.message });
+    }
+  },
+
+  // ---------- PREVIEW (HTML isolado para iframe) ----------
+  async getHtml(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const demo = await prisma.websiteDemo.findUnique({ where: { id } });
+      if (!demo || !demo.sourceCode) {
+        return res.status(404).send('Demo não encontrada');
+      }
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-store');
+      res.send(demo.sourceCode);
+    } catch (e: any) {
+      console.error('[Studio] getHtml:', e.message);
+      res.status(500).send('Erro ao carregar preview');
+    }
+  },
+
+  // ---------- EXPORTACAO ZIP ----------
+  async exportZip(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const demo = await prisma.websiteDemo.findUnique({
+        where: { id },
+        include: { prospect: true }
+      });
+      if (!demo || !demo.sourceCode) {
+        return res.status(404).json({ success: false, error: 'Demo não encontrada' });
+      }
+
+      const businessName = demo.prospect?.companyName || 'site';
+      const readme = [
+        `SITE GERADO - SALE-IA-V2 SITE FACTORY`,
+        ``,
+        `Cliente: ${businessName}`,
+        `Versao: ${demo.version}`,
+        `Gerado em: ${demo.generatedAt}`,
+        ``,
+        `COMO PUBLICAR:`,
+        `1. Vercel: arraste este arquivo index.html em https://vercel.com/new`,
+        `2. Netlify: arraste a pasta em https://app.netlify.com/drop`,
+        `3. Hospedagem propria: envie index.html via FTP para a pasta public_html`,
+        ``,
+        `O site e self-contained (HTML + CSS inline), sem dependencias externas.`
+      ].join('\n');
+
+      let readmeFinal = readme;
+      try {
+        const pd = JSON.parse(demo.previewData || '{}');
+        const metas = Array.isArray(pd.assets) ? pd.assets : [];
+        if (metas.length > 0) {
+          readmeFinal = readme + '\n\nIMAGENS E CREDITOS:\n' + metas.map((m: any, i: number) =>
+            (i + 1) + '. [' + m.usage + '] provider=' + m.provider +
+            (m.author ? ' | autor=' + m.author : '') +
+            (m.license ? ' | licenca=' + m.license : '') +
+            (m.sourceUrl && m.sourceUrl.indexOf('data:') !== 0 ? ' | url=' + m.sourceUrl : ' | (asset local embutido no HTML)')
+          ).join('\n');
+        }
+      } catch {}
+
+      const zip = buildZip([
+        { name: 'index.html', content: demo.sourceCode },
+        { name: 'README.txt', content: readmeFinal }
+      ]);
+
+      const filename = `site-${slugify(businessName)}-v${demo.version}.zip`;
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(zip);
+    } catch (e: any) {
+      console.error('[Studio] exportZip:', e.message);
+      res.status(500).json({ success: false, error: 'Erro ao exportar ZIP' });
+    }
+  },
+
+  // ---------- APROVACAO ----------
+  async approve(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const demo = await prisma.websiteDemo.update({
+        where: { id },
+        data: { status: 'APPROVED' }
+      });
+      res.json({ success: true, demoId: demo.id, status: demo.status });
+    } catch (e: any) {
+      console.error('[Studio] approve:', e.message);
+      res.status(404).json({ success: false, error: 'Demo não encontrada' });
+    }
+  },
+
+  // ---------- PREPARACAO DE PUBLICACAO (real, sem falso deploy) ----------
+  async preparePublication(req: Request, res: Response) {
+    try {
+      const { demoId, domainName } = req.body || {};
+      if (!demoId) return res.status(400).json({ success: false, error: 'demoId é obrigatório' });
+
+      const project = await websiteService.preparePublication(demoId, domainName);
+
+      res.json({
+        success: true,
+        project,
+        publicationStatus: 'READY_TO_PUBLISH',
+        note: 'Publicação automática requer integração com provedor (Vercel/Netlify). Use o ZIP para publicar manualmente.',
+        instructions: {
+          vercel: [
+            'Exporte o ZIP (botão Exportar ZIP)',
+            'Acesse https://vercel.com/new',
+            'Arraste a pasta extraída com index.html',
+            'Configure o domínio se necessário'
+          ],
+          netlify: [
+            'Exporte o ZIP',
+            'Acesse https://app.netlify.com/drop',
+            'Arraste a pasta extraída',
+            'Site publicado instantaneamente'
+          ],
+          hosting: [
+            'Exporte o ZIP',
+            'Envie index.html via FTP para public_html'
+          ]
+        }
+      });
+    } catch (e: any) {
+      console.error('[Studio] preparePublication:', e.message);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  },
+
+  // === PIPELINE PROFISSIONAL ===
+  async generateProfessional(req: Request, res: Response) {
+    try {
+      const { prospectId, customData, useAI } = req.body || {};
+      if (!prospectId) return res.status(400).json({ success: false, error: 'prospectId é obrigatório' });
+      if (!customData?.businessName) return res.status(400).json({ success: false, error: 'businessName é obrigatório' });
+
+      const result = await websiteService.generateProfessional(prospectId, customData, useAI !== false);
+
+      res.json({
+        success: true,
+        demoId: result.demo.id,
+        version: result.demo.version,
+        aiUsed: result.improvementCycles > 0,
+        improvementCycles: result.improvementCycles,
+        qualityScore: result.qualityReview.overallScore,
+        qualityRecommendation: result.qualityReview.recommendation,
+        research: {
+          summary: result.research.summary,
+          marketInsights: result.research.marketInsights,
+          competitorInsights: result.research.competitorInsights,
+          recommendedStructure: result.research.recommendedStructure,
+          recommendedVisualDirection: result.research.recommendedVisualDirection
+        },
+        prd: {
+          business: result.prd.business,
+          strategy: result.prd.strategy,
+          content: { heroHeadline: result.prd.content.heroHeadline, primaryCTA: result.prd.content.primaryCTA }
+        },
+        designSystem: {
+          visualStyle: result.designSystem.visualStyle,
+          layoutStyle: result.designSystem.layoutStyle,
+          colors: result.designSystem.colors,
+          typography: result.designSystem.typography
+        },
+        qualityReview: result.qualityReview,
+        assets: result.assets || [],
+        previewUrl: `/api/websites/studio/demos/${result.demo.id}/html`
+      });
+    } catch (e: any) {
+      console.error('[Studio] generateProfessional:', e.message);
+      res.status(500).json({ success: false, error: e.message });
+    }
+  },
+
+
+  // === DIAGNOSTICO DA IA ===
+  async aiStatus(req: Request, res: Response) {
+    try {
+      const { websiteAIEnhancerService } = await import('../services/website/websiteAIEnhancerService');
+      res.json({ success: true, ...websiteAIEnhancerService.getModelInfo() });
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: e.message });
+    }
+  },
+
+
+  // === ASSETS DE IMAGEM ===
+  async getAssets(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const demo = await prisma.websiteDemo.findUnique({ where: { id } });
+      if (!demo) return res.status(404).json({ success: false, error: 'Demo não encontrada' });
+      let assets: any[] = [];
+      try {
+        const pd = JSON.parse(demo.previewData || '{}');
+        assets = Array.isArray(pd.assets) ? pd.assets : [];
+      } catch {}
+      res.json({ success: true, assets });
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: e.message });
+    }
+  }
+};
+
+
+
+
+
+
+

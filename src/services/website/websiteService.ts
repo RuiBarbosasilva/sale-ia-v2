@@ -1,0 +1,614 @@
+﻿import { PrismaClient } from '@prisma/client';
+import { websiteDesignService } from './websiteDesignService';
+import { websiteContentService } from './websiteContentService';
+import { websiteCompiler } from './websiteCompiler';
+import { creatorSelector } from './creatorSelector';
+
+const prisma = new PrismaClient();
+
+export class WebsiteService {
+  async analyzeProspect(prospectId: string) {
+    const prospect = await prisma.websiteProspect.findUnique({ where: { id: prospectId } });
+    if (!prospect) throw new Error('Prospect não encontrado');
+    
+    const creatorType = creatorSelector.selectCreator(prospect.segment || '');
+    const design = websiteDesignService.getDesignTokens(creatorType);
+    
+    return {
+      prospectId,
+      creatorType,
+      design,
+      recommendation: 'Gerar demo com creator ' + creatorType
+    };
+  }
+
+  async generateWebsite(prospectId: string) {
+    const prospect = await prisma.websiteProspect.findUnique({ where: { id: prospectId } });
+    if (!prospect) throw new Error('Prospect não encontrado');
+    
+    const creatorType = creatorSelector.selectCreator(prospect.segment || '');
+    const design = websiteDesignService.getDesignTokens(creatorType);
+    const content = websiteContentService.generateContent(
+      prospect.companyName || 'Sua Empresa',
+      prospect.segment || 'negócio',
+      prospect.city || 'sua cidade',
+      creatorType,
+      prospect.phone
+    );
+    
+    const html = websiteCompiler.compile(
+      prospect.companyName || 'Sua Empresa',
+      prospect.city || 'sua cidade',
+      prospect.phone || '',
+      design,
+      content
+    );
+    
+    const slug = (prospect.companyName || 'empresa').toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 50);
+    
+    let demo = await prisma.websiteDemo.findFirst({ where: { prospectId } });
+    
+    if (demo) {
+      demo = await prisma.websiteDemo.update({
+        where: { id: demo.id },
+        data: {
+          sourceCode: html,
+          status: 'READY',
+          version: demo.version + 1,
+          previewData: JSON.stringify({ businessName: prospect.companyName, segment: prospect.segment, city: prospect.city, generatedAt: new Date().toISOString() })
+        }
+      });
+    } else {
+      demo = await prisma.websiteDemo.create({
+        data: {
+          prospectId,
+          sourceCode: html,
+          status: 'READY',
+          version: 1,
+          previewData: JSON.stringify({ businessName: prospect.companyName, segment: prospect.segment, city: prospect.city, generatedAt: new Date().toISOString() })
+        }
+      });
+    }
+    
+    await prisma.websiteProspect.update({
+      where: { id: prospectId },
+      data: { status: 'DEMO_READY' }
+    });
+    
+    return {
+      success: true,
+      demoId: demo.id,
+      previewUrl: '/api/websites/demo/' + demo.id,
+      version: demo.version
+    };
+  }
+
+  async getDemo(demoId: string) {
+    const demo = await prisma.websiteDemo.findUnique({ where: { id: demoId } });
+    return demo?.sourceCode || null;
+  }
+
+  async getDemoBySlug(slug: string) {
+    const demo = await prisma.websiteDemo.findFirst({ 
+      where: { prospect: { companyName: { contains: slug } } }
+    });
+    return demo?.sourceCode || null;
+  }
+
+  /**
+   * MIGRADO da raiz: cria site a partir de template com dados customizados
+   * (businessName, category, city, whatsapp personalizados pelo usuario)
+   */
+  async createSiteFromTemplate(templateId: string, prospectId: string, customData: any) {
+    const template = await prisma.websiteTemplate.findUnique({ where: { id: templateId } });
+    if (!template) throw new Error('Template não encontrado');
+
+    const prospect = await prisma.websiteProspect.findUnique({ where: { id: prospectId } });
+    if (!prospect) throw new Error('Prospect não encontrado');
+
+    const creatorType = creatorSelector.selectCreator(prospect.segment || '');
+    const design = websiteDesignService.getDesignTokens(creatorType);
+    const content = websiteContentService.generateContent(
+      customData.businessName || prospect.companyName || 'Sua Empresa',
+      customData.category || prospect.segment || 'negócio',
+      customData.city || prospect.city || 'sua cidade',
+      creatorType,
+      customData.whatsapp || prospect.phone
+    );
+
+    const html = websiteCompiler.compile(
+      customData.businessName || prospect.companyName || 'Sua Empresa',
+      customData.city || prospect.city || 'sua cidade',
+      customData.whatsapp || prospect.phone || '',
+      design,
+      content
+    );
+
+    const demo = await prisma.websiteDemo.create({
+      data: {
+        prospectId,
+        templateId,
+        sourceCode: html,
+        status: 'READY',
+        version: 1,
+        previewData: JSON.stringify({ ...customData, generatedAt: new Date().toISOString() })
+      }
+    });
+
+    await prisma.websiteProspect.update({
+      where: { id: prospectId },
+      data: { status: 'DEMO_GERADA' }
+    });
+
+    return { success: true, demoId: demo.id };
+  }
+
+  /**
+   * MIGRADO da raiz: gera proposta comercial com base em template.
+   * Nota: para o fluxo de vendas via siteSalesRoutes, o service dedicado
+   * proposalGeneratorService tambem possui generateProposal.
+   */
+  async generateProposal(prospectId: string, templateId: string) {
+    const prospect = await prisma.websiteProspect.findUnique({ where: { id: prospectId } });
+    const template = await prisma.websiteTemplate.findUnique({ where: { id: templateId } });
+
+    const proposalContent = JSON.stringify({
+      title: 'Proposta de Website - ' + (prospect?.companyName || ''),
+      description: 'Criação de website profissional baseado no modelo ' + (template?.name || ''),
+      templateId,
+      templateName: template?.name || '',
+      price: template?.price || 0,
+      generatedAt: new Date().toISOString()
+    });
+
+    const proposal = await prisma.websiteProposal.create({
+      data: {
+        prospectId,
+        content: proposalContent,
+        status: 'DRAFT'
+      }
+    });
+
+    await prisma.websiteProspect.update({
+      where: { id: prospectId },
+      data: { status: 'PROPOSTA_ENVIADA' }
+    });
+
+    return { success: true, proposalId: proposal.id };
+  }
+
+
+  private readonly CREATOR_ORDER = ['local','clinic','restaurant','professional','service','ecommerce','conversion','premium'];
+
+  private nextCreatorType(current: string): string {
+    const idx = this.CREATOR_ORDER.indexOf(current);
+    return this.CREATOR_ORDER[(idx + 1) % this.CREATOR_ORDER.length];
+  }
+
+  async generateFromBriefing(prospectId: string, templateId: string | null, customData: any, useAI: boolean) {
+    const prospect = await prisma.websiteProspect.findUnique({ where: { id: prospectId } });
+    if (!prospect) throw new Error('Prospect não encontrado');
+    if (templateId) {
+      const tpl = await prisma.websiteTemplate.findUnique({ where: { id: templateId } });
+      if (!tpl) throw new Error('Template não encontrado');
+    }
+    const businessName = customData.businessName || prospect.companyName || 'Sua Empresa';
+    const category = customData.category || prospect.segment || 'negócio';
+    const city = customData.city || prospect.city || 'sua cidade';
+    const phone = customData.whatsapp || customData.phone || prospect.phone || '';
+    const creatorType = customData.visualStyle && String(customData.visualStyle).length > 0
+      ? String(customData.visualStyle)
+      : creatorSelector.selectCreator(prospect.segment || '');
+    const design = websiteDesignService.getDesignTokens(creatorType);
+    let content = websiteContentService.generateContent(businessName, category, city, creatorType, phone, {
+      headline: customData.headline,
+      slogan: customData.slogan,
+      description: customData.description,
+      services: customData.services,
+      differentials: customData.differentials,
+      benefits: customData.benefits,
+      faq: customData.faq,
+      ctaText: customData.ctaText,
+      tone: customData.tone,
+      targetAudience: customData.targetAudience
+    });
+    let aiUsed = false;
+    if (useAI) {
+      try {
+        const { websiteAIEnhancerService } = await import('./websiteAIEnhancerService');
+        const aiContent = await websiteAIEnhancerService.enhance({ businessName, category, city, ...customData }, content, 0);
+        if (aiContent) { content = { ...content, ...aiContent }; aiUsed = true; }
+      } catch (e: any) { console.error('[generateFromBriefing] IA falhou, usando fallback:', e?.message); }
+    }
+    const html = websiteCompiler.compile(businessName, city, phone, design, content);
+    const version = (await prisma.websiteDemo.count({ where: { prospectId } })) + 1;
+    const demo = await prisma.websiteDemo.create({
+      data: {
+        prospectId,
+        templateId: templateId || undefined,
+        sourceCode: html,
+        status: 'READY',
+        version,
+        previewData: JSON.stringify({ briefing: customData, creatorType, useAI: aiUsed, generatedAt: new Date().toISOString() })
+      }
+    });
+    await prisma.websiteProspect.update({ where: { id: prospectId }, data: { status: 'DEMO_GERADA' } });
+    return { demo, aiUsed, creatorType };
+  }
+
+  async regenerateDemo(demoId: string, mode: 'content' | 'design' | 'full') {
+    const demo = await prisma.websiteDemo.findUnique({ where: { id: demoId } });
+    if (!demo) throw new Error('Demo não encontrada');
+    let briefing: any = {}; let prevCreator: string | null = null; let useAI = false; let prevAssetsMeta: any[] = []; let prevPd: any = {};
+    try {
+      const pd = JSON.parse(demo.previewData || '{}');
+      briefing = pd.briefing || pd || {}; prevCreator = pd.creatorType || null; useAI = !!pd.useAI; prevAssetsMeta = pd.assets || []; prevPd = pd;
+    } catch {}
+    const prospect = await prisma.websiteProspect.findUnique({ where: { id: demo.prospectId } });
+    if (!prospect) throw new Error('Prospect não encontrado');
+    const businessName = briefing.businessName || prospect.companyName || 'Sua Empresa';
+    const category = briefing.category || prospect.segment || 'negócio';
+    const city = briefing.city || prospect.city || 'sua cidade';
+    const phone = briefing.whatsapp || briefing.phone || prospect.phone || '';
+    let creatorType = prevCreator || creatorSelector.selectCreator(prospect.segment || '');
+    if (mode === 'design' || mode === 'full') creatorType = this.nextCreatorType(creatorType);
+    const design = websiteDesignService.getDesignTokens(creatorType);
+    let content = websiteContentService.generateContent(businessName, category, city, creatorType, phone, {
+      headline: briefing.headline, slogan: briefing.slogan, description: briefing.description,
+      services: briefing.services, differentials: briefing.differentials, benefits: briefing.benefits,
+      faq: briefing.faq, ctaText: briefing.ctaText, tone: briefing.tone, targetAudience: briefing.targetAudience
+    });
+    let aiUsed = false;
+    if (mode === 'content' || mode === 'full') {
+      try {
+        const { websiteAIEnhancerService } = await import('./websiteAIEnhancerService');
+        const aiContent = await websiteAIEnhancerService.enhance({ businessName, category, city, ...briefing }, content, demo.version);
+        if (aiContent) { content = { ...content, ...aiContent }; aiUsed = true; }
+      } catch (e: any) { console.error('[regenerateDemo] IA falhou:', e?.message); }
+    }
+    const { websiteImageService } = await import('./websiteImageService');
+    const { websiteQualityService } = await import('./websiteQualityService');
+    const assets = websiteImageService.rebuildAssets(prevAssetsMeta);
+    content = { ...content, services: (content.services || []).map((s: any) => ({ ...s, image: (assets.services || {})[s.title] || null })) };
+    const html = websiteCompiler.compileProfessional(businessName, city, phone, design, content, assets);
+    const assetsSummary = websiteImageService.analyzeAssetsMetadata(prevAssetsMeta);
+    const prdForReview = prevPd.prd || { business: { businessName, category, city, objective: '' }, content: { services: content.services, benefits: content.benefits, faq: content.faq, heroHeadline: content.heroHeadline }, design: { visualDirection: design.visualStyle || '' } };
+    const qualityReview = await websiteQualityService.review(html, prdForReview, design, assetsSummary);
+    const version = (await prisma.websiteDemo.count({ where: { prospectId: demo.prospectId } })) + 1;
+    const newDemo = await prisma.websiteDemo.create({
+      data: {
+        prospectId: demo.prospectId,
+        templateId: demo.templateId || undefined,
+        sourceCode: html,
+        status: 'READY',
+        version,
+        previewData: JSON.stringify({ briefing, creatorType, useAI: aiUsed, regeneratedFrom: demoId, mode, assets: prevAssetsMeta, assetsSummary, qualityReview, prd: prevPd.prd, designSystem: prevPd.designSystem, generatedAt: new Date().toISOString() })
+      }
+    });
+    return newDemo;
+  }
+
+  async listVersionsByProspect(prospectId: string) {
+    const demos = await prisma.websiteDemo.findMany({ where: { prospectId }, orderBy: { version: 'desc' } });
+    return demos.map(d => ({
+      id: d.id, version: d.version, status: d.status, generatedAt: d.generatedAt,
+      previewUrl: `/api/websites/studio/demos/${d.id}/html`,
+      exportUrl: `/api/websites/studio/demos/${d.id}/export`
+    }));
+  }
+
+  async preparePublication(demoId: string, domainName?: string) {
+    const demo = await prisma.websiteDemo.findUnique({ where: { id: demoId } });
+    if (!demo) throw new Error('Demo não encontrada');
+    const existing = await prisma.websiteProject.findFirst({ where: { prospectId: demo.prospectId } });
+    if (existing) {
+      return prisma.websiteProject.update({
+        where: { id: existing.id },
+        data: { domainName: domainName || existing.domainName, status: 'PLANNING', currentVersion: demo.version }
+      });
+    }
+    return prisma.websiteProject.create({
+      data: { prospectId: demo.prospectId, status: 'PLANNING', domainName: domainName || null, currentVersion: demo.version }
+    });
+  }
+
+
+  /**
+   * Pipeline completo: Research -> PRD -> Creative -> Generate -> Review -> Improve
+   */
+  async generateProfessional(prospectId: string, briefing: any, useAI: boolean = true): Promise<{
+    demo: any; research: any; prd: any; designSystem: any;
+    qualityReview: any; improvementCycles: number; assets: any[];
+    assetsSummary: any; criticalIssues: string[];
+  }> {
+    const prospect = await prisma.websiteProspect.findUnique({ where: { id: prospectId } });
+    if (!prospect) throw new Error('Prospect não encontrado');
+    console.log(`[Pipeline] Iniciando pipeline profissional para ${prospect.companyName}`);
+
+    const { websiteResearchService } = await import('./websiteResearchService');
+    const { websitePRDService } = await import('./websitePRDService');
+    const { websiteCreativeDirectorService } = await import('./websiteCreativeDirectorService');
+    const { websiteQualityService } = await import('./websiteQualityService');
+
+    const research = await websiteResearchService.analyze(briefing, prospect);
+    const prd = await websitePRDService.generate(briefing, research, prospect);
+    const designSystem = await websiteCreativeDirectorService.direct(prd, research, briefing);
+
+    const businessName = briefing.businessName || prospect.companyName || 'Sua Empresa';
+    const category = briefing.category || prospect.segment || 'negócio';
+    const city = briefing.city || prospect.city || 'sua cidade';
+    const phone = briefing.whatsapp || briefing.phone || prospect.phone || '';
+    const creatorType = designSystem.visualStyle.toLowerCase().split(' ')[0] || creatorSelector.selectCreator(prospect.segment || '');
+
+    let content = websiteContentService.generateContent(businessName, category, city, creatorType, phone, {
+      headline: prd.content.heroHeadline,
+      slogan: briefing.slogan,
+      description: prd.content.services.map((s: any) => s.description).join(' '),
+      services: prd.content.services.map((s: any) => s.title),
+      differentials: prd.content.benefits.map((b: any) => b.title),
+      benefits: prd.content.benefits,
+      faq: prd.content.faq,
+      ctaText: prd.content.primaryCTA,
+      tone: briefing.tone,
+      targetAudience: prd.business.targetAudience
+    });
+
+    const { websiteImageService } = await import('./websiteImageService');
+    const imageResult = await websiteImageService.acquireAssets(briefing, prd, designSystem);
+    const assets = imageResult.assets;
+    content = { ...content, services: (content.services || []).map((s: any) => ({ ...s, image: (assets.services || {})[s.title] || null })) };
+    console.log('[Pipeline] Imagens: ' + imageResult.metadata.length + ' assets | providers: ' + [...new Set(imageResult.metadata.map((m: any) => m.provider))].join(', '));
+
+    let html = websiteCompiler.compileProfessional(businessName, city, phone, designSystem, content, assets);
+    const assetsSummary = websiteImageService.analyzeAssetsMetadata(imageResult.metadata);
+    let qualityReview = await websiteQualityService.review(html, prd, designSystem, assetsSummary);
+    let improvementCycles = 0;
+    const MAX_CYCLES = 2;
+
+    while (qualityReview.recommendation === 'improve' && improvementCycles < MAX_CYCLES && useAI) {
+      improvementCycles++;
+      console.log(`[Pipeline] Ciclo de melhoria ${improvementCycles}/${MAX_CYCLES}`);
+      try {
+        const { websiteAIEnhancerService } = await import('./websiteAIEnhancerService');
+        const aiContent = await websiteAIEnhancerService.enhance(
+          { ...briefing, businessName, category, city, improvements: qualityReview.improvements },
+          content,
+          improvementCycles
+        );
+        if (aiContent) {
+          content = { ...content, ...aiContent };
+          html = websiteCompiler.compileProfessional(businessName, city, phone, designSystem, content, assets);
+          qualityReview = await websiteQualityService.review(html, prd, designSystem, assetsSummary);
+        } else { break; }
+      } catch (e: any) {
+        console.error('[Pipeline] Melhoria falhou:', e?.message);
+        break;
+      }
+    }
+
+    const version = (await prisma.websiteDemo.count({ where: { prospectId } })) + 1;
+    const demo = await prisma.websiteDemo.create({
+      data: {
+        prospectId,
+        sourceCode: html,
+        status: 'READY',
+        version,
+        previewData: JSON.stringify({
+          briefing, research, prd, designSystem, qualityReview, assets: imageResult.metadata, assetsSummary: assetsSummary,
+          improvementCycles, creatorType, useAI, pipeline: 'professional',
+          generatedAt: new Date().toISOString()
+        })
+      }
+    });
+
+    await prisma.websiteProspect.update({ where: { id: prospectId }, data: { status: 'DEMO_GERADA' } });
+    console.log(`[Pipeline] Concluído! Score: ${qualityReview.overallScore}, Ciclos: ${improvementCycles}`);
+    return { demo, research, prd, designSystem, qualityReview, improvementCycles, assets: imageResult.metadata, assetsSummary: assetsSummary, criticalIssues: qualityReview.criticalIssues || [] };
+  }
+
+
+  /**
+   * Auto Improvement Loop (P9): ate 3 ciclos tentando resolver critical issues.
+   * Threshold: score < 7.0 OU criticalIssues.length > 0
+   * Nao loop infinito: retorna apos 3 ciclos mesmo se nao atingir threshold.
+   */
+  async improveDemo(demoId: string, maxCycles: number = 3): Promise<{
+    success: boolean; demoId: string; cycles: number;
+    scoreBefore: number; scoreAfter: number; improvements: string[];
+  }> {
+    const demo = await prisma.websiteDemo.findUnique({ where: { id: demoId } });
+    if (!demo) throw new Error('Demo nao encontrada');
+
+    let pd: any = {};
+    try { pd = JSON.parse(demo.previewData || '{}'); } catch {}
+    const briefing = pd.briefing || {};
+    const prd = pd.prd;
+    const designSystem = pd.designSystem;
+
+    if (!prd || !designSystem) {
+      return { success: false, demoId, cycles: 0, scoreBefore: 0, scoreAfter: 0, improvements: [] };
+    }
+
+    const prospect = await prisma.websiteProspect.findUnique({ where: { id: demo.prospectId } });
+    if (!prospect) throw new Error('Prospect nao encontrado');
+
+    const businessName = briefing.businessName || prospect.companyName || 'Sua Empresa';
+    const category = briefing.category || prospect.segment || 'negocio';
+    const city = briefing.city || prospect.city || 'sua cidade';
+    const phone = briefing.whatsapp || briefing.phone || prospect.phone || '';
+
+    let currentHtml = demo.sourceCode || '';
+    let currentReview = await (async () => {
+      const { websiteImageService } = await import('./websiteImageService');
+      const { websiteQualityService } = await import('./websiteQualityService');
+      const assetsSummary = websiteImageService.analyzeAssetsMetadata(pd.assets || []);
+      return websiteQualityService.review(currentHtml, prd, designSystem, assetsSummary);
+    })();
+
+    const scoreBefore = currentReview.overallScore;
+    const improvements: string[] = [];
+    let cycles = 0;
+
+    for (let i = 1; i <= maxCycles; i++) {
+      const needsImprovement = currentReview.overallScore < 7.0 || (currentReview.criticalIssues && currentReview.criticalIssues.length > 0);
+      if (!needsImprovement) break;
+
+      cycles++;
+      console.log(`[Improve] Ciclo ${cycles}/${maxCycles} | score=${currentReview.overallScore} | issues=${(currentReview.criticalIssues || []).length}`);
+      const focus = (currentReview.criticalIssues || []).slice(0, 3).join(' | ') || (currentReview.improvements || []).slice(0, 2).join(' | ') || 'melhorar qualidade geral';
+      improvements.push(`Ciclo ${cycles}: foco em [${focus}]`);
+
+      // Gerar nova versao usando regenerateDemo existente (herda briefing + design)
+      try {
+        const newDemo = await this.regenerateDemo(demoId, 'full');
+        currentHtml = newDemo.sourceCode;
+        const { websiteImageService } = await import('./websiteImageService');
+        const { websiteQualityService } = await import('./websiteQualityService');
+        let newPd: any = {};
+        try { newPd = JSON.parse(newDemo.previewData || '{}'); } catch {}
+        const assetsSummary = websiteImageService.analyzeAssetsMetadata(newPd.assets || []);
+        const newReview = await websiteQualityService.review(currentHtml, prd, designSystem, assetsSummary);
+        if (newReview.overallScore >= currentReview.overallScore) {
+          currentReview = newReview;
+          demoId = newDemo.id;
+        } else {
+          console.log(`[Improve] nova versao piorou (${newReview.overallScore} < ${currentReview.overallScore}), mantendo anterior`);
+          await prisma.websiteDemo.update({ where: { id: newDemo.id }, data: { status: 'SUPERSEDED' } });
+          break;
+        }
+      } catch (e: any) {
+        console.error('[Improve] ciclo falhou:', e?.message);
+        break;
+      }
+    }
+
+    return {
+      success: true,
+      demoId,
+      cycles,
+      scoreBefore: Math.round(scoreBefore * 10) / 10,
+      scoreAfter: Math.round(currentReview.overallScore * 10) / 10,
+      improvements
+    };
+  }
+
+  /**
+   * History rico (P10): retorna todas as versoes de um prospect com metadata.
+   */
+  async getHistoryByProspect(prospectId: string): Promise<any[]> {
+    const demos = await prisma.websiteDemo.findMany({
+      where: { prospectId },
+      orderBy: { version: 'desc' }
+    });
+    return demos.map(d => {
+      let pd: any = {};
+      try { pd = JSON.parse(d.previewData || '{}'); } catch {}
+      const qualityReview = pd.qualityReview || null;
+      const assetsMeta = Array.isArray(pd.assets) ? pd.assets : [];
+      const realImages = assetsMeta.filter((m: any) => m.provider !== 'local-placeholder' && m.provider !== 'client-provided').length;
+      const placeholders = assetsMeta.filter((m: any) => m.provider === 'local-placeholder').length;
+      return {
+        id: d.id,
+        version: d.version,
+        status: d.status,
+        generatedAt: d.generatedAt,
+        score: qualityReview?.overallScore || null,
+        recommendation: qualityReview?.recommendation || null,
+        criticalIssues: (qualityReview?.criticalIssues || []).length,
+        assetsTotal: assetsMeta.length,
+        assetsReal: realImages,
+        assetsPlaceholders: placeholders,
+        improvementCycles: pd.improvementCycles || 0,
+        regeneratedFrom: pd.regeneratedFrom || null,
+        mode: pd.mode || 'initial',
+        previewUrl: `/api/websites/studio/demos/${d.id}/html`,
+        exportUrl: `/api/websites/studio/demos/${d.id}/export`,
+        detailsUrl: `/api/websites/studio/demos/${d.id}/details`
+      };
+    });
+  }
+
+  /**
+   * Preview indicators (P11): metadata rica da demo para exibir no Studio.
+   */
+  async getDemoDetails(demoId: string): Promise<any> {
+    const demo = await prisma.websiteDemo.findUnique({
+      where: { id: demoId },
+      include: { prospect: true }
+    });
+    if (!demo) throw new Error('Demo nao encontrada');
+    let pd: any = {};
+    try { pd = JSON.parse(demo.previewData || '{}'); } catch {}
+    const qualityReview = pd.qualityReview || null;
+    const assetsMeta = Array.isArray(pd.assets) ? pd.assets : [];
+    return {
+      id: demo.id,
+      version: demo.version,
+      status: demo.status,
+      generatedAt: demo.generatedAt,
+      prospectName: demo.prospect?.companyName || '',
+      score: qualityReview?.overallScore || null,
+      recommendation: qualityReview?.recommendation || null,
+      strengths: qualityReview?.strengths || [],
+      weaknesses: qualityReview?.weaknesses || [],
+      criticalIssues: qualityReview?.criticalIssues || [],
+      improvements: qualityReview?.improvements || [],
+      assets: {
+        total: assetsMeta.length,
+        real: assetsMeta.filter((m: any) => m.provider !== 'local-placeholder' && m.provider !== 'client-provided').length,
+        placeholders: assetsMeta.filter((m: any) => m.provider === 'local-placeholder').length,
+        providers: [...new Set(assetsMeta.map((m: any) => m.provider))]
+      },
+      designSystem: pd.designSystem ? {
+        visualStyle: pd.designSystem.visualStyle,
+        primaryColor: pd.designSystem.colors?.primary,
+        secondaryColor: pd.designSystem.colors?.secondary,
+        typography: pd.designSystem.typography?.fontFamily
+      } : null,
+      improvementCycles: pd.improvementCycles || 0,
+      mode: pd.mode || 'initial'
+    };
+  }
+
+  /**
+   * Rollback seguro: criar NOVA versao a partir de uma versao anterior (nao apaga nada).
+   */
+  async rollbackTo(demoId: string): Promise<{ success: boolean; newDemoId: string; newVersion: number }> {
+    const sourceDemo = await prisma.websiteDemo.findUnique({ where: { id: demoId } });
+    if (!sourceDemo) throw new Error('Demo origem nao encontrada');
+    const newVersion = (await prisma.websiteDemo.count({ where: { prospectId: sourceDemo.prospectId } })) + 1;
+    let pd: any = {};
+    try { pd = JSON.parse(sourceDemo.previewData || '{}'); } catch {}
+    pd.rolledBackFrom = demoId;
+    pd.mode = 'rollback';
+    pd.rolledBackAt = new Date().toISOString();
+    const newDemo = await prisma.websiteDemo.create({
+      data: {
+        prospectId: sourceDemo.prospectId,
+        templateId: sourceDemo.templateId || undefined,
+        sourceCode: sourceDemo.sourceCode,
+        status: sourceDemo.status,
+        version: newVersion,
+        previewData: JSON.stringify(pd)
+      }
+    });
+    return { success: true, newDemoId: newDemo.id, newVersion };
+  }
+}
+
+export const websiteService = new WebsiteService();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

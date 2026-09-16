@@ -1,0 +1,39 @@
+﻿import { websiteStudioController } from '../controllers/websiteStudioController';
+import { Router } from 'express';
+import { websiteController } from '../controllers/websiteController';
+
+const router = Router();
+
+router.post('/analyze', (req, res) => websiteController.analyze(req, res));
+router.post('/generate', (req, res) => websiteController.generate(req, res));
+router.get('/demos', (req, res) => websiteController.listDemos(req, res));
+router.get('/demo/:id', (req, res) => websiteController.getDemo(req, res));
+
+
+// ==========================================
+// SITE FACTORY STUDIO (Briefing -> Geracao -> Preview -> Export)
+// ==========================================
+router.get('/studio/prospects', websiteStudioController.listProspects);
+router.post('/studio/prospects', websiteStudioController.createProspect);
+router.get('/studio/templates', websiteStudioController.listTemplates);
+router.get('/studio/briefing/:prospectId', websiteStudioController.getBriefing);
+router.get('/studio/versions/:prospectId', websiteStudioController.listVersions);
+router.post('/studio/generate', websiteStudioController.generateFromBriefing);
+router.post('/studio/demos/:id/regenerate', websiteStudioController.regenerate);
+router.post('/studio/demos/:id/approve', websiteStudioController.approve);
+router.get('/studio/demos/:id/html', websiteStudioController.getHtml);
+router.get('/studio/demos/:id/export', websiteStudioController.exportZip);
+router.post('/studio/generate-professional', websiteStudioController.generateProfessional);
+router.get('/studio/ai-status', websiteStudioController.aiStatus);
+router.get('/studio/demos/:id/assets', websiteStudioController.getAssets);
+router.post('/studio/demos/:id/improve', websiteStudioController.improveDemo);
+router.get('/studio/history/:prospectId', websiteStudioController.getHistory);
+router.get('/studio/demos/:id/details', websiteStudioController.getDemoDetails);
+router.post('/studio/demos/:id/rollback', websiteStudioController.rollbackTo);
+router.post('/studio/projects/prepare', websiteStudioController.preparePublication);
+export default router;
+
+
+
+
+

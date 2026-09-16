@@ -1,0 +1,108 @@
+﻿import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+export interface ConfirmPaymentInput {
+  orderId: string;
+  transactionId: string;
+  amount: number;
+  provider?: string;
+}
+
+export class PaymentService {
+
+  /**
+   * Confirma um pagamento de forma idempotente.
+   *
+   * A mesma transactionId nunca pode gerar dois pagamentos.
+   */
+  async confirmPayment(input: ConfirmPaymentInput) {
+
+    if (!input.orderId) {
+      throw new Error("orderId é obrigatório.");
+    }
+
+    if (!input.transactionId) {
+      throw new Error("transactionId é obrigatório.");
+    }
+
+    if (!Number.isFinite(input.amount) || input.amount <= 0) {
+      throw new Error("Valor do pagamento inválido.");
+    }
+
+    const existingPayment = await prisma.payment.findUnique({
+      where: {
+        transactionId: input.transactionId
+      }
+    });
+
+    /*
+     * IDEMPOTÊNCIA:
+     * se o mesmo evento chegar novamente,
+     * não cria outro pagamento.
+     */
+    if (existingPayment) {
+      return existingPayment;
+    }
+
+    const order = await prisma.order.findUnique({
+      where: {
+        id: input.orderId
+      },
+      include: {
+        lead: true
+      }
+    });
+
+    if (!order) {
+      throw new Error(`Pedido ${input.orderId} não encontrado.`);
+    }
+
+    if (Math.abs(Number(order.totalValue) - Number(input.amount)) > 0.01) {
+      throw new Error(
+        `Valor do pagamento (R$ ${Number(input.amount).toFixed(2)}) ` +
+        `não corresponde ao valor do pedido (R$ ${Number(order.totalValue).toFixed(2)}).`
+      );
+    }
+
+    const payment = await prisma.$transaction(async (tx) => {
+
+      const createdPayment = await tx.payment.create({
+        data: {
+          leadId: order.leadId,
+          orderId: order.id,
+          quoteId: order.quoteId,
+          amount: Number(input.amount),
+          status: "COMPLETED",
+          provider: input.provider || "MANUAL",
+          transactionId: input.transactionId,
+          paidAt: new Date()
+        }
+      });
+
+      await tx.order.update({
+        where: {
+          id: order.id
+        },
+        data: {
+          status: "EM_PRODUCAO"
+        }
+      });
+
+      await tx.lead.update({
+        where: {
+          id: order.leadId
+        },
+        data: {
+          stage: "PEDIDO_CONFIRMADO"
+        }
+      });
+
+      return createdPayment;
+    });
+
+    return payment;
+  }
+}
+
+export const paymentService = new PaymentService();

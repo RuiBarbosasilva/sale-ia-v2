@@ -1,0 +1,236 @@
+const fs = require('fs');
+const path = require('path');
+
+const htmlContent = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Site Sales Factory - SALE-IA-V2</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; color: #333; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+    header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem 0; margin-bottom: 2rem; border-radius: 10px; text-align: center; }
+    header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .card { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 2rem; }
+    .card h2 { color: #667eea; margin-bottom: 1.5rem; font-size: 1.8rem; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .form-group { display: flex; flex-direction: column; }
+    .form-group label { font-weight: 600; margin-bottom: 0.5rem; color: #555; }
+    .form-group input, .form-group select { padding: 0.8rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; }
+    .form-group input:focus, .form-group select:focus { outline: none; border-color: #667eea; }
+    .btn { padding: 1rem 2rem; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s; color: white; }
+    .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
+    .btn-success { background: #10b981; } .btn-warning { background: #f59e0b; } .btn-info { background: #3b82f6; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #e0e0e0; }
+    th { background: #f8f9fa; font-weight: 600; color: #555; }
+    .badge { padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+    .badge-danger { background: #fee2e2; color: #991b1b; }
+    .badge-warning { background: #fef3c7; color: #92400e; }
+    .badge-success { background: #d1fae5; color: #065f46; }
+    .score { font-weight: bold; font-size: 1.2rem; }
+    .score-high { color: #10b981; } .score-medium { color: #f59e0b; } .score-low { color: #ef4444; }
+    .loading { text-align: center; padding: 2rem; color: #667eea; }
+    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
+    .modal-content { background: white; margin: 5% auto; padding: 2rem; border-radius: 10px; width: 90%; max-width: 800px; max-height: 80vh; overflow-y: auto; }
+    .close { float: right; font-size: 2rem; cursor: pointer; color: #999; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🌐 Site Sales Factory</h1>
+      <p>Prospeccao Automatica e Geracao de Sites Profissionais</p>
+    </header>
+
+    <div class="card">
+      <h2>🔎 Prospecção Automática</h2>
+      <div class="form-grid">
+        <div class="form-group"><label>Cidade</label><input type="text" id="city" value="Sao Paulo"></div>
+        <div class="form-group"><label>Estado</label><input type="text" id="state" value="SP"></div>
+        <div class="form-group"><label>Segmento</label>
+          <select id="segment">
+            <option value="restaurante">Restaurante</option>
+            <option value="clinica">Clinica</option>
+            <option value="advocacia">Advocacia</option>
+            <option value="academia">Academia</option>
+            <option value="salao">Salao de Beleza</option>
+            <option value="imobiliaria">Imobiliaria</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Quantidade</label><input type="number" id="quantity" value="10" min="1" max="50"></div>
+      </div>
+      <button class="btn btn-primary" onclick="prospect()" id="btnProspect">🔎 PESQUISAR EMPRESAS</button>
+    </div>
+
+    <div class="card">
+      <h2>📊 Empresas Prospectadas</h2>
+      <button class="btn btn-info" onclick="loadProspects()" style="margin-bottom: 1rem; padding: 0.5rem 1rem;">🔄 Atualizar Lista</button>
+      <div id="prospectsList" class="loading"><div class="spinner"></div>Carregando...</div>
+    </div>
+  </div>
+
+  <div id="previewModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <h2>Preview do Site Demo</h2>
+      <iframe id="previewFrame" style="width: 100%; height: 600px; border: 2px solid #e0e0e0; border-radius: 8px; margin-top: 1rem;"></iframe>
+    </div>
+  </div>
+
+  <script>
+    const API = '/api/site-sales';
+    
+    async function prospect() {
+      const btn = document.getElementById('btnProspect');
+      btn.disabled = true; 
+      btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;display:inline-block;vertical-align:middle;"></div> Pesquisando...';
+      try {
+        const res = await fetch(API + '/prospect', {
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            city: document.getElementById('city').value, 
+            state: document.getElementById('state').value, 
+            segment: document.getElementById('segment').value, 
+            quantity: parseInt(document.getElementById('quantity').value) 
+          })
+        });
+        const data = await res.json();
+        if (data.success) { 
+          alert('✅ ' + data.total + ' empresas encontradas!'); 
+          loadProspects(); 
+        } else { 
+          alert('Erro: ' + data.error); 
+        }
+      } catch (e) { 
+        alert('Erro: ' + e.message); 
+      } finally { 
+        btn.disabled = false; 
+        btn.innerHTML = '🔎 PESQUISAR EMPRESAS'; 
+      }
+    }
+
+    async function loadProspects() {
+      const list = document.getElementById('prospectsList');
+      list.innerHTML = '<div class="loading"><div class="spinner"></div>Carregando...</div>';
+      try {
+        const res = await fetch(API + '/prospects');
+        const data = await res.json();
+        if (!data.prospects || data.prospects.length === 0) { 
+          list.innerHTML = '<p>Nenhuma empresa prospectada ainda.</p>'; 
+          return; 
+        }
+        let html = '<table><thead><tr><th>Empresa</th><th>Cidade</th><th>Site</th><th>Score</th><th>Status</th><th>Acoes</th></tr></thead><tbody>';
+        data.prospects.forEach(p => {
+          const sc = p.score >= 60 ? 'score-high' : p.score >= 40 ? 'score-medium' : 'score-low';
+          const st = p.websiteStatus === 'NO_WEBSITE' ? '<span class="badge badge-danger">Sem Site</span>' : p.websiteStatus === 'WEBSITE_POOR' ? '<span class="badge badge-warning">Site Ruim</span>' : '<span class="badge badge-success">Tem Site</span>';
+          
+          html += '<tr>';
+          html += '<td><strong>' + p.companyName + '</strong><br><small>' + p.segment + '</small></td>';
+          html += '<td>' + p.city + '/' + p.state + '</td>';
+          html += '<td>' + st + '</td>';
+          html += '<td><span class="score ' + sc + '">' + p.score + '/100</span></td>';
+          html += '<td>' + p.status + '</td>';
+          html += '<td>';
+          
+          if (p.websiteStatus === 'UNKNOWN') {
+            html += '<button class="btn btn-info" onclick="audit(\\\'' + p.id + '\\\')" style="padding:0.5rem 1rem;font-size:0.9rem;margin-right:0.5rem;">Analisar</button>';
+          }
+          if (p.websiteStatus === 'NO_WEBSITE' || p.websiteStatus === 'WEBSITE_POOR') {
+            html += '<button class="btn btn-success" onclick="demo(\\\'' + p.id + '\\\')" style="padding:0.5rem 1rem;font-size:0.9rem;margin-right:0.5rem;">Gerar Demo</button>';
+          }
+          if (p.status === 'DEMO_READY') {
+            html += '<button class="btn btn-warning" onclick="proposal(\\\'' + p.id + '\\\')" style="padding:0.5rem 1rem;font-size:0.9rem;margin-right:0.5rem;">Proposta</button>';
+          }
+          if (p.status === 'PROPOSAL_SENT' || p.status === 'DEMO_READY') {
+            html += '<button class="btn btn-primary" onclick="convert(\\\'' + p.id + '\\\')" style="padding:0.5rem 1rem;font-size:0.9rem;">Virar Lead</button>';
+          }
+          
+          html += '</td></tr>';
+        });
+        list.innerHTML = html + '</tbody></table>';
+      } catch (e) { 
+        list.innerHTML = '<p>Erro ao carregar.</p>'; 
+      }
+    }
+
+    async function audit(id) {
+      try {
+        const res = await fetch(API + '/prospects/' + id + '/audit', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) { 
+          alert('✅ Analise concluida!\\nScore: ' + data.audit.score + '/100\\nOportunidade: ' + data.opportunityScore + '/100'); 
+          loadProspects(); 
+        } else {
+          alert('Erro: ' + data.error);
+        }
+      } catch (e) { 
+        alert('Erro: ' + e.message); 
+      }
+    }
+
+    async function demo(id) {
+      try {
+        const res = await fetch(API + '/prospects/' + id + '/demo', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) { 
+          document.getElementById('previewFrame').src = data.previewUrl; 
+          document.getElementById('previewModal').style.display = 'block'; 
+          loadProspects(); 
+        } else {
+          alert('Erro: ' + data.error);
+        }
+      } catch (e) { 
+        alert('Erro: ' + e.message); 
+      }
+    }
+
+    async function proposal(id) {
+      try {
+        const res = await fetch(API + '/prospects/' + id + '/proposal', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) { 
+          alert('✅ Proposta gerada!'); 
+          loadProspects(); 
+        } else {
+          alert('Erro: ' + data.error);
+        }
+      } catch (e) { 
+        alert('Erro: ' + e.message); 
+      }
+    }
+
+    async function convert(id) {
+      if (!confirm('Converter este prospect em Lead no CRM?')) return;
+      try {
+        const res = await fetch(API + '/prospects/' + id + '/convert-lead', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) { 
+          alert('✅ Convertido em Lead!\\nID: ' + data.lead.id); 
+          loadProspects(); 
+        } else {
+          alert('Erro: ' + data.error);
+        }
+      } catch (e) { 
+        alert('Erro: ' + e.message); 
+      }
+    }
+
+    function closeModal() { 
+      document.getElementById('previewModal').style.display = 'none'; 
+    }
+    
+    loadProspects();
+  </script>
+</body>
+</html>`;
+
+fs.writeFileSync(path.join(process.cwd(), 'public', 'site-sales.html'), htmlContent, 'utf8');
+console.log('✅ site-sales.html corrigido e salvo com sucesso!');

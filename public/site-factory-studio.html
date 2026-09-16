@@ -1,0 +1,533 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Site Factory Studio — SALE-IA-V2</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+  :root { --sf-bg:#f1f5f9; --sf-card:#ffffff; --sf-primary:#2563eb; --sf-border:#e2e8f0; --sf-text:#0f172a; --sf-muted:#64748b; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: 'Segoe UI', Arial, sans-serif; background: var(--sf-bg); color: var(--sf-text); }
+  .sf-header { background:#0f172a; color:#fff; padding:14px 24px; display:flex; align-items:center; justify-content:space-between; }
+  .sf-header h1 { font-size:18px; margin:0; }
+  .sf-header a { color:#93c5fd; text-decoration:none; font-size:14px; }
+  .sf-layout { display:grid; grid-template-columns: 420px 1fr; gap:16px; padding:16px; max-width:1600px; margin:0 auto; }
+  @media(max-width:1100px){ .sf-layout { grid-template-columns: 1fr; } }
+  .sf-card { background:var(--sf-card); border:1px solid var(--sf-border); border-radius:10px; padding:16px; margin-bottom:16px; }
+  .sf-card h2 { font-size:15px; margin:0 0 12px; color:var(--sf-primary); }
+  .sf-row { margin-bottom:10px; }
+  .sf-row label { display:block; font-size:12px; font-weight:600; color:var(--sf-muted); margin-bottom:4px; }
+  .sf-row input, .sf-row select, .sf-row textarea { width:100%; padding:8px 10px; border:1px solid var(--sf-border); border-radius:6px; font-size:13px; }
+  .sf-row textarea { min-height:60px; resize:vertical; }
+  .sf-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .badge { font-size:9px; padding:2px 6px; border-radius:4px; margin-left:4px; vertical-align:middle; }
+  .badge.req { background:#fee2e2; color:#b91c1c; }
+  .badge.opt { background:#e2e8f0; color:#475569; }
+  .badge.ai { background:#ede9fe; color:#6d28d9; }
+  fieldset { border:1px solid var(--sf-border); border-radius:8px; margin-bottom:12px; padding:10px 12px; }
+  legend { font-size:12px; font-weight:700; color:var(--sf-primary); padding:0 6px; }
+  .checks { display:flex; flex-wrap:wrap; gap:8px; }
+  .checks label { font-size:12px; font-weight:400; color:var(--sf-text); display:flex; align-items:center; gap:4px; }
+  .btn { padding:9px 16px; border:none; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; }
+  .btn-primary { background:var(--sf-primary); color:#fff; }
+  .btn-primary:hover { background:#1d4ed8; }
+  .btn-sec { background:#e2e8f0; color:#0f172a; }
+  .btn-sec:hover { background:#cbd5e1; }
+  .btn-success { background:#16a34a; color:#fff; }
+  .btn-warn { background:#f59e0b; color:#fff; }
+  .btn:disabled { opacity:.55; cursor:not-allowed; }
+  .sf-toolbar { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; align-items:center; }
+  .device-toggle { display:flex; border:1px solid var(--sf-border); border-radius:6px; overflow:hidden; }
+  .device-toggle button { border:none; background:#fff; padding:7px 14px; font-size:12px; cursor:pointer; font-weight:600; color:var(--sf-muted); }
+  .device-toggle button.active { background:var(--sf-primary); color:#fff; }
+  #previewWrap { background:#e2e8f0; border-radius:8px; padding:10px; display:flex; justify-content:center; min-height:500px; }
+  #previewFrame { width:100%; max-width:100%; height:640px; border:1px solid var(--sf-border); border-radius:6px; background:#fff; transition:max-width .25s; }
+  #previewFrame.mobile { max-width:390px; }
+  .empty-preview { color:var(--sf-muted); align-self:center; font-size:14px; }
+  .version-chip { display:inline-block; padding:5px 12px; margin:3px; border-radius:16px; background:#e2e8f0; font-size:12px; cursor:pointer; font-weight:600; }
+  .version-chip.active { background:var(--sf-primary); color:#fff; }
+  .version-chip.approved { outline:2px solid #16a34a; }
+  #toast { position:fixed; bottom:20px; right:20px; z-index:999; display:flex; flex-direction:column; gap:8px; }
+  .toast-item { padding:12px 18px; border-radius:8px; color:#fff; font-size:13px; box-shadow:0 6px 20px rgba(0,0,0,.2); animation:fadein .2s; }
+  .toast-item.ok { background:#16a34a; } .toast-item.err { background:#dc2626; } .toast-item.info { background:#2563eb; }
+  @keyframes fadein { from{opacity:0; transform:translateY(8px)} to{opacity:1} }
+  .spinner { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; vertical-align:-2px; margin-right:6px; }
+  @keyframes spin { to { transform:rotate(360deg) } }
+  .hidden { display:none !important; }
+  #pubPanel { background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:12px; margin-top:10px; font-size:13px; }
+</style>
+</head>
+<body>
+
+<div class="sf-header">
+  <h1>🏭 Site Factory Studio</h1>
+  <a href="/">← Voltar ao Dashboard</a>
+</div>
+
+<div class="sf-layout">
+  <!-- COLUNA ESQUERDA: BRIEFING -->
+  <div>
+    <div class="sf-card">
+      <h2>1. Cliente</h2>
+      <div class="sf-row">
+        <label>Prospect</label>
+        <select id="prospectSelect"></select>
+      </div>
+      <div class="sf-row">
+        <button class="btn btn-sec" onclick="toggleNewProspect()">+ Novo Prospect</button>
+      </div>
+      <div id="newProspectPanel" class="hidden">
+        <div class="sf-grid2">
+          <div class="sf-row"><label>Empresa *</label><input id="npName"></div>
+          <div class="sf-row"><label>Segmento</label><input id="npSegment" placeholder="ex: restaurant"></div>
+          <div class="sf-row"><label>Cidade</label><input id="npCity"></div>
+          <div class="sf-row"><label>Telefone</label><input id="npPhone"></div>
+        </div>
+        <button class="btn btn-primary" onclick="createProspect()">Salvar Prospect</button>
+      </div>
+      <div class="sf-row" style="margin-top:8px">
+        <label>Template (opcional)</label>
+        <select id="templateSelect"><option value="">— Sem template (design automático) —</option></select>
+      </div>
+    </div>
+
+    <div class="sf-card">
+      <h2>2. Briefing</h2>
+
+      <fieldset>
+        <legend>Identificação</legend>
+        <div class="sf-grid2">
+          <div class="sf-row"><label>Nome da empresa <span class="badge req">OBRIGATÓRIO</span></label><input id="bfBusinessName"></div>
+          <div class="sf-row"><label>Segmento <span class="badge req">OBRIGATÓRIO</span></label><input id="bfCategory" placeholder="ex: restaurante, clínica"></div>
+          <div class="sf-row"><label>Cidade <span class="badge req">OBRIGATÓRIO</span></label><input id="bfCity"></div>
+          <div class="sf-row"><label>Telefone/WhatsApp</label><input id="bfWhatsapp" placeholder="11999998888"></div>
+          <div class="sf-row"><label>E-mail</label><input id="bfEmail"></div>
+          <div class="sf-row"><label>Instagram</label><input id="bfInstagram" placeholder="@empresa"></div>
+          <div class="sf-row"><label>Site atual</label><input id="bfWebsite"></div>
+          <div class="sf-row"><label>Responsável</label><input id="bfResponsible"></div>
+        </div>
+        <div class="sf-row"><label>Endereço</label><input id="bfAddress"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Negócio</legend>
+        <div class="sf-row"><label>Descrição da empresa <span class="badge ai">IA</span></label><textarea id="bfDescription"></textarea></div>
+        <div class="sf-row"><label>Serviços (um por linha) <span class="badge ai">IA</span></label><textarea id="bfServices" placeholder="Instalação&#10;Manutenção&#10;Consultoria"></textarea></div>
+        <div class="sf-row"><label>Diferenciais (um por linha) <span class="badge ai">IA</span></label><textarea id="bfDifferentials"></textarea></div>
+        <div class="sf-grid2">
+          <div class="sf-row"><label>Público-alvo</label><input id="bfAudience"></div>
+          <div class="sf-row"><label>Tempo de mercado</label><input id="bfYears" placeholder="ex: 10 anos"></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Objetivo</legend>
+        <div class="checks" id="bfObjectives">
+          <label><input type="checkbox" value="institucional"> Institucional</label>
+          <label><input type="checkbox" value="leads" checked> Geração de leads</label>
+          <label><input type="checkbox" value="vendas"> Vendas</label>
+          <label><input type="checkbox" value="orcamento"> Orçamento</label>
+          <label><input type="checkbox" value="agendamento"> Agendamento</label>
+          <label><input type="checkbox" value="presenca"> Presença digital</label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Estrutura e Conversão</legend>
+        <div class="checks" id="bfSections">
+          <label><input type="checkbox" value="home" checked disabled> Home</label>
+          <label><input type="checkbox" value="sobre" checked> Sobre</label>
+          <label><input type="checkbox" value="servicos" checked> Serviços</label>
+          <label><input type="checkbox" value="beneficios" checked> Benefícios</label>
+          <label><input type="checkbox" value="faq" checked> FAQ</label>
+          <label><input type="checkbox" value="contato" checked> Contato</label>
+          <label><input type="checkbox" value="cta" checked> CTA</label>
+        </div>
+        <div class="sf-row" style="margin-top:8px"><label>Texto do CTA <span class="badge ai">IA</span></label><input id="bfCta" placeholder="ex: Peça seu orçamento"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Design</legend>
+        <div class="sf-grid2">
+          <div class="sf-row">
+            <label>Estilo visual</label>
+            <select id="bfVisualStyle">
+              <option value="">Automático (por segmento)</option>
+              <option value="local">Local</option>
+              <option value="clinic">Clínica</option>
+              <option value="restaurant">Restaurante</option>
+              <option value="professional">Profissional</option>
+              <option value="service">Serviços</option>
+              <option value="ecommerce">E-commerce</option>
+              <option value="conversion">Conversão</option>
+              <option value="premium">Premium</option>
+            </select>
+          </div>
+          <div class="sf-row">
+            <label>Tom da comunicação</label>
+            <select id="bfTone">
+              <option value="profissional">Profissional</option>
+              <option value="amigavel">Amigável</option>
+              <option value="premium">Premium</option>
+              <option value="popular">Popular</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Conteúdo</legend>
+        <div class="sf-row"><label>Headline (frase principal) <span class="badge opt">OPCIONAL</span> <span class="badge ai">IA</span></label><input id="bfHeadline" placeholder="Deixe vazio para a IA criar"></div>
+        <div class="sf-row"><label>Slogan <span class="badge opt">OPCIONAL</span></label><input id="bfSlogan"></div>
+        <div class="sf-row"><label>Informações adicionais <span class="badge opt">OPCIONAL</span></label><textarea id="bfAdditional"></textarea></div>
+      </fieldset>
+
+      <div class="sf-row">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--sf-text)">
+          <input type="checkbox" id="useAI" checked style="width:auto"> Usar IA (Gemini) para melhorar textos — com fallback automático
+        </label>
+      </div>
+
+      <button class="btn btn-primary" id="btnGenerate" onclick="generateSite()" style="width:100%">⚡ GERAR SITE</button>
+    </div>
+  </div>
+
+  <!-- COLUNA DIREITA: PREVIEW -->
+  <div>
+    <div class="sf-card">
+      <h2>3. Preview</h2>
+      <div class="sf-toolbar">
+        <div class="device-toggle">
+          <button id="devDesktop" class="active" onclick="setDevice('desktop')">🖥 Desktop</button>
+          <button id="devMobile" onclick="setDevice('mobile')">📱 Mobile</button>
+        </div>
+        <button class="btn btn-sec" onclick="regenerate('content')" id="btnRegenContent" disabled>🔄 Regenerar Conteúdo</button>
+        <button class="btn btn-sec" onclick="regenerate('design')" id="btnRegenDesign" disabled>🎨 Regenerar Design</button>
+        <button class="btn btn-warn" onclick="regenerate('full')" id="btnRegenFull" disabled>⚡ Nova Versão</button>
+        <button class="btn btn-success" onclick="exportZip()" id="btnExport" disabled>📦 Exportar ZIP</button>
+        <button class="btn btn-success" onclick="approveDemo()" id="btnApprove" disabled>✅ Aprovar</button>
+        <button class="btn btn-primary" onclick="preparePublish()" id="btnPublish" disabled>🚀 Publicar</button>
+      </div>
+
+      <div id="previewWrap">
+        <div class="empty-preview" id="emptyMsg">Preencha o briefing e clique em GERAR SITE</div>
+        <iframe id="previewFrame" class="hidden" sandbox="allow-scripts allow-popups" title="Preview do site gerado"></iframe>
+      </div>
+
+      <div style="margin-top:12px">
+        <label style="font-size:12px;font-weight:600;color:var(--sf-muted)">VERSÕES</label>
+        <div id="versionsList"><span style="font-size:12px;color:var(--sf-muted)">Nenhuma versão gerada</span></div>
+      </div>
+
+      <div id="assetsPanel" class="hidden" style="margin-top:12px">
+        <label style="font-size:12px;font-weight:600;color:var(--sf-muted)">🖼 ASSETS DE IMAGEM</label>
+        <div id="assetsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:6px"></div>
+      </div>
+      <div id="pubPanel" class="hidden"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = '/api/websites/studio';
+let state = { prospects: [], templates: [], versions: [], selectedDemoId: null, prospectId: null };
+
+// ---------- UTIL ----------
+function toast(msg, type) {
+  const el = document.createElement('div');
+  el.className = 'toast-item ' + (type || 'info');
+  el.textContent = msg;
+  document.getElementById('toast').appendChild(el);
+  setTimeout(() => el.remove(), 4500);
+}
+function btnLoading(id, loading, label) {
+  const b = document.getElementById(id);
+  if (!b) return;
+  if (loading) { b.disabled = true; b.dataset.label = b.innerHTML; b.innerHTML = '<span class="spinner"></span>' + (label || 'Aguarde...'); }
+  else { b.disabled = false; b.innerHTML = b.dataset.label || b.innerHTML; }
+}
+function lines(id) {
+  return document.getElementById(id).value.split('\n').map(s => s.trim()).filter(Boolean);
+}
+function checkedValues(id) {
+  return Array.from(document.querySelectorAll('#' + id + ' input:checked')).map(i => i.value);
+}
+
+// ---------- LOAD INICIAL ----------
+async function init() {
+  try {
+    const [p, t] = await Promise.all([
+      fetch(API + '/prospects').then(r => r.json()),
+      fetch(API + '/templates').then(r => r.json())
+    ]);
+    state.prospects = p.prospects || [];
+    state.templates = t.templates || [];
+    const sel = document.getElementById('prospectSelect');
+    sel.innerHTML = state.prospects.length
+      ? state.prospects.map(x => `<option value="${x.id}">${x.companyName}${x.city ? ' — ' + x.city : ''}</option>`).join('')
+      : '<option value="">Nenhum prospect — crie um novo</option>';
+    const tpl = document.getElementById('templateSelect');
+    state.templates.forEach(t => {
+      const o = document.createElement('option');
+      o.value = t.id; o.textContent = t.name + (t.category ? ' (' + t.category.name + ')' : '');
+      tpl.appendChild(o);
+    });
+    if (state.prospects.length) onProspectChange();
+  } catch (e) { toast('Erro ao carregar dados iniciais', 'err'); }
+}
+function toggleNewProspect() { document.getElementById('newProspectPanel').classList.toggle('hidden'); }
+
+async function createProspect() {
+  const companyName = document.getElementById('npName').value.trim();
+  if (!companyName) return toast('Informe o nome da empresa', 'err');
+  try {
+    const res = await fetch(API + '/prospects', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        companyName,
+        segment: document.getElementById('npSegment').value.trim(),
+        city: document.getElementById('npCity').value.trim(),
+        phone: document.getElementById('npPhone').value.trim()
+      })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    toast('Prospect criado!', 'ok');
+    toggleNewProspect();
+    await async function loadAssets(demoId) {
+  const panel = document.getElementById('assetsPanel');
+  const grid = document.getElementById('assetsGrid');
+  if (!panel || !grid) return;
+  try {
+    const r = await fetch(API + '/demos/' + demoId + '/assets').then(x => x.json());
+    const assets = r.assets || [];
+    if (!assets.length) { panel.classList.add('hidden'); grid.innerHTML = ''; return; }
+    panel.classList.remove('hidden');
+    grid.innerHTML = assets.map(a =>
+      '<div style="border:1px solid var(--sf-border);border-radius:8px;overflow:hidden;background:#fff">' +
+        '<img src="' + a.sourceUrl + '" alt="' + (a.alt || '') + '" style="width:100%;height:90px;object-fit:cover;display:block" loading="lazy">' +
+        '<div style="padding:6px;font-size:10px;color:var(--sf-muted);line-height:1.5">' +
+          '<b>' + a.usage + '</b><br>' +
+          'provider: ' + a.provider + '<br>' +
+          'licenca: ' + (a.license || 'n/d') + '<br>' +
+          (a.author ? 'autor: ' + a.author + '<br>' : '') +
+          'alt: ' + (a.alt || '').substring(0, 46) +
+        '</div>' +
+      '</div>'
+    ).join('');
+  } catch (e) { panel.classList.add('hidden'); }
+}
+
+init();
+    document.getElementById('prospectSelect').value = data.prospect.id;
+    onProspectChange();
+  } catch (e) { toast('Erro: ' + e.message, 'err'); }
+}
+
+async function onProspectChange() {
+  const pid = document.getElementById('prospectSelect').value;
+  if (!pid) return;
+  state.prospectId = pid;
+  try {
+    const [b, v] = await Promise.all([
+      fetch(API + '/briefing/' + pid).then(r => r.json()),
+      fetch(API + '/versions/' + pid).then(r => r.json())
+    ]);
+    const bf = b.briefing || {};
+    document.getElementById('bfBusinessName').value = bf.businessName || '';
+    document.getElementById('bfCategory').value = bf.category || '';
+    document.getElementById('bfCity').value = bf.city || '';
+    document.getElementById('bfWhatsapp').value = bf.whatsapp || bf.phone || '';
+    document.getElementById('bfEmail').value = bf.email || '';
+    document.getElementById('bfInstagram').value = bf.instagram || '';
+    document.getElementById('bfWebsite').value = bf.website || '';
+    document.getElementById('bfResponsible').value = bf.responsibleName || '';
+    document.getElementById('bfAddress').value = bf.address || '';
+    document.getElementById('bfDescription').value = bf.description || '';
+    document.getElementById('bfServices').value = Array.isArray(bf.services) ? bf.services.join('\n') : '';
+    document.getElementById('bfDifferentials').value = Array.isArray(bf.differentials) ? bf.differentials.join('\n') : '';
+    document.getElementById('bfAudience').value = bf.targetAudience || '';
+    document.getElementById('bfHeadline').value = bf.headline || '';
+    document.getElementById('bfSlogan').value = bf.slogan || '';
+    document.getElementById('bfAdditional').value = bf.additionalInfo || '';
+    document.getElementById('bfCta').value = bf.ctaText || '';
+    if (bf.visualStyle) document.getElementById('bfVisualStyle').value = bf.visualStyle;
+    if (bf.tone) document.getElementById('bfTone').value = bf.tone;
+    state.versions = v.versions || [];
+    renderVersions();
+    if (state.versions.length) selectVersion(state.versions[0].id);
+  } catch (e) { toast('Erro ao carregar briefing', 'err'); }
+}
+document.getElementById('prospectSelect').addEventListener('change', onProspectChange);
+
+// ---------- GERACAO ----------
+function buildCustomData() {
+  return {
+    businessName: document.getElementById('bfBusinessName').value.trim(),
+    category: document.getElementById('bfCategory').value.trim(),
+    city: document.getElementById('bfCity').value.trim(),
+    whatsapp: document.getElementById('bfWhatsapp').value.trim(),
+    phone: document.getElementById('bfWhatsapp').value.trim(),
+    email: document.getElementById('bfEmail').value.trim(),
+    instagram: document.getElementById('bfInstagram').value.trim(),
+    website: document.getElementById('bfWebsite').value.trim(),
+    responsibleName: document.getElementById('bfResponsible').value.trim(),
+    address: document.getElementById('bfAddress').value.trim(),
+    description: document.getElementById('bfDescription').value.trim(),
+    services: lines('bfServices'),
+    differentials: lines('bfDifferentials'),
+    targetAudience: document.getElementById('bfAudience').value.trim(),
+    yearsInMarket: document.getElementById('bfYears').value.trim(),
+    objectives: checkedValues('bfObjectives'),
+    sections: checkedValues('bfSections'),
+    ctaText: document.getElementById('bfCta').value.trim(),
+    visualStyle: document.getElementById('bfVisualStyle').value,
+    tone: document.getElementById('bfTone').value,
+    headline: document.getElementById('bfHeadline').value.trim(),
+    slogan: document.getElementById('bfSlogan').value.trim(),
+    additionalInfo: document.getElementById('bfAdditional').value.trim()
+  };
+}
+
+async function generateSite() {
+  const cd = buildCustomData();
+  if (!state.prospectId) return toast('Selecione ou crie um prospect', 'err');
+  if (!cd.businessName || !cd.category || !cd.city) return toast('Preencha os campos obrigatórios (nome, segmento, cidade)', 'err');
+  btnLoading('btnGenerate', true, 'Gerando site...');
+  try {
+    const res = await fetch(API + '/generate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prospectId: state.prospectId,
+        templateId: document.getElementById('templateSelect').value || null,
+        customData: cd,
+        useAI: document.getElementById('useAI').checked
+      })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Falha na geração');
+    toast('Site gerado! Versão ' + data.version + (data.aiUsed ? ' (com IA)' : ' (fallback determinístico)'), 'ok');
+    await refreshVersions();
+    selectVersion(data.demoId);
+  } catch (e) { toast('Erro: ' + e.message, 'err'); }
+  finally { btnLoading('btnGenerate', false); }
+}
+
+// ---------- VERSOES / PREVIEW ----------
+async function refreshVersions() {
+  const v = await fetch(API + '/versions/' + state.prospectId).then(r => r.json());
+  state.versions = v.versions || [];
+  renderVersions();
+}
+function renderVersions() {
+  const div = document.getElementById('versionsList');
+  if (!state.versions.length) { div.innerHTML = '<span style="font-size:12px;color:var(--sf-muted)">Nenhuma versão gerada</span>'; return; }
+  div.innerHTML = state.versions.map(v =>
+    `<span class="version-chip ${v.id === state.selectedDemoId ? 'active' : ''} ${v.status === 'APPROVED' ? 'approved' : ''}" onclick="selectVersion('${v.id}')">v${v.version}${v.status === 'APPROVED' ? ' ✅' : ''}</span>`
+  ).join('');
+}
+function selectVersion(demoId) {
+  state.selectedDemoId = demoId;
+  const v = state.versions.find(x => x.id === demoId);
+  const frame = document.getElementById('previewFrame');
+  frame.src = API + '/demos/' + demoId + '/html?t=' + Date.now();
+  frame.classList.remove('hidden');
+  document.getElementById('emptyMsg').classList.add('hidden');
+  ['btnRegenContent','btnRegenDesign','btnRegenFull','btnExport','btnApprove','btnPublish'].forEach(id => document.getElementById(id).disabled = false);
+  renderVersions();
+  loadAssets(demoId);
+}
+function setDevice(mode) {
+  document.getElementById('previewFrame').classList.toggle('mobile', mode === 'mobile');
+  document.getElementById('devDesktop').classList.toggle('active', mode === 'desktop');
+  document.getElementById('devMobile').classList.toggle('active', mode === 'mobile');
+}
+
+// ---------- REGENERACAO ----------
+async function regenerate(mode) {
+  if (!state.selectedDemoId) return;
+  const btnId = mode === 'content' ? 'btnRegenContent' : mode === 'design' ? 'btnRegenDesign' : 'btnRegenFull';
+  btnLoading(btnId, true, 'Regenerando...');
+  try {
+    const res = await fetch(API + '/demos/' + state.selectedDemoId + '/regenerate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    toast('Nova versão gerada: v' + data.version, 'ok');
+    await refreshVersions();
+    selectVersion(data.demoId);
+  } catch (e) { toast('Erro: ' + e.message, 'err'); }
+  finally { btnLoading(btnId, false); }
+}
+
+// ---------- EXPORT / APROVACAO / PUBLICACAO ----------
+function exportZip() {
+  if (!state.selectedDemoId) return;
+  window.open(API + '/demos/' + state.selectedDemoId + '/export', '_blank');
+}
+async function approveDemo() {
+  try {
+    const res = await fetch(API + '/demos/' + state.selectedDemoId + '/approve', { method: 'POST' });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    toast('Demo aprovada!', 'ok');
+    await refreshVersions();
+  } catch (e) { toast('Erro: ' + e.message, 'err'); }
+}
+async function preparePublish() {
+  const domain = prompt('Domínio desejado (opcional):', '') || undefined;
+  try {
+    const res = await fetch(API + '/projects/prepare', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ demoId: state.selectedDemoId, domainName: domain })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    const panel = document.getElementById('pubPanel');
+    panel.classList.remove('hidden');
+    panel.innerHTML = `<b>🚀 Projeto pronto para publicação</b> (status real: READY_TO_PUBLISH — o deploy automático requer integração futura com Vercel/Netlify).<br><br>
+      <b>Publicação manual via ZIP:</b><br>
+      • <b>Vercel:</b> ${data.instructions.vercel.join(' → ')}<br>
+      • <b>Netlify:</b> ${data.instructions.netlify.join(' → ')}<br>
+      • <b>Host próprio:</b> ${data.instructions.hosting.join(' → ')}<br><br>
+      Use o botão <b>Exportar ZIP</b> e arraste para o provedor escolhido.`;
+    toast('Projeto de publicação criado', 'ok');
+  } catch (e) { toast('Erro: ' + e.message, 'err'); }
+}
+
+async function loadAssets(demoId) {
+  const panel = document.getElementById('assetsPanel');
+  const grid = document.getElementById('assetsGrid');
+  if (!panel || !grid) return;
+  try {
+    const r = await fetch(API + '/demos/' + demoId + '/assets').then(x => x.json());
+    const assets = r.assets || [];
+    if (!assets.length) { panel.classList.add('hidden'); grid.innerHTML = ''; return; }
+    panel.classList.remove('hidden');
+    grid.innerHTML = assets.map(a =>
+      '<div style="border:1px solid var(--sf-border);border-radius:8px;overflow:hidden;background:#fff">' +
+        '<img src="' + a.sourceUrl + '" alt="' + (a.alt || '') + '" style="width:100%;height:90px;object-fit:cover;display:block" loading="lazy">' +
+        '<div style="padding:6px;font-size:10px;color:var(--sf-muted);line-height:1.5">' +
+          '<b>' + a.usage + '</b><br>' +
+          'provider: ' + a.provider + '<br>' +
+          'licenca: ' + (a.license || 'n/d') + '<br>' +
+          (a.author ? 'autor: ' + a.author + '<br>' : '') +
+          'alt: ' + (a.alt || '').substring(0, 46) +
+        '</div>' +
+      '</div>'
+    ).join('');
+  } catch (e) { panel.classList.add('hidden'); }
+}
+
+init();
+</script>
+</body>
+</html>
+
+
+

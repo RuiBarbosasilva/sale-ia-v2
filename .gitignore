@@ -1,0 +1,59 @@
+﻿node_modules/
+.env
+.env.*
+!.env.example
+
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+BACKUP_FINAL_*/
+SALE-IA-V2-AUDIT-*/
+_audit_backups/
+_finalization_backups/
+guardian/backups/
+
+dist/
+build/
+.next/
+coverage/
+
+*.log
+.DS_Store
+Thumbs.db
+
+# Backups e arquivos temporarios do projeto
+**/backup*/
+**/backups/
+**/*.backup*
+**/*.BACKUP*
+**/*.bak
+**/*BACKUP*
+**/*AUDIT*
+**/*audit*
+**/migrations.BACKUP*
+**/migrations.BACKUP_*
+**/_audit_reports/
+**/_audit_backups/
+**/_finalization_backups/
+
+
+# Chaves e arquivos de credenciais locais
+CHAVE API DO GOOGLE - SALE-IA-V2.txt
+
+# Arquivos compactados locais
+*.rar
+*.zip
+
+# Backups antigos
+*.bak
+*.backup
+*.BACKUP
+*.broken
+*.disabled
+
+# Relatórios e diagnósticos antigos
+_finalization_reports/
+prisma/migrations_DIAGNOSTICO_9/
+
