@@ -396,6 +396,28 @@ const providers = this.imageProviders
   }
 }
 
+// RB FACTORY - SEMANTIC IMAGE RANKING
+interface ScoredCandidate extends Candidate { semanticScore: number; qualityScore: number; totalScore: number; }
+
+function scoreCandidate(candidate: Candidate, query: string, usedUrls: Set<string>): ScoredCandidate {
+  let semanticScore = 0; let qualityScore = 0;
+  const queryTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+  const altText = (candidate.alt || '').toLowerCase();
+  const urlText = candidate.url.toLowerCase();
+  for (const term of queryTerms) { if (altText.includes(term)) semanticScore += 10; if (urlText.includes(term)) semanticScore += 5; }
+  const w = candidate.width || 0; const h = candidate.height || 0;
+  if (w >= 1200 && h >= 800) qualityScore += 15; else if (w >= 800 && h >= 600) qualityScore += 10; else if (w >= 600 && h >= 400) qualityScore += 5;
+  if (w > 0 && h > 0) { const ratio = w / h; if (ratio >= 1.3 && ratio <= 1.8) qualityScore += 10; else if (ratio >= 1.0 && ratio <= 2.0) qualityScore += 5; }
+  if (usedUrls.has(candidate.url)) semanticScore -= 50;
+  const totalScore = (semanticScore * 0.6) + (qualityScore * 0.3) + (semanticScore > 0 ? 10 : 0);
+  return { ...candidate, semanticScore, qualityScore, totalScore };
+}
+
+function rankCandidates(candidates: Candidate[], query: string, usedUrls: Set<string> = new Set()): ScoredCandidate[] {
+  const scored = candidates.map(c => scoreCandidate(c, query, usedUrls));
+  return scored.sort((a, b) => b.totalScore - a.totalScore);
+}
+
 export const websiteImageService = new WebsiteImageService();
 
 

@@ -243,12 +243,30 @@ export const websiteStudioController = {
       const axios = (await import('axios')).default;
       const path = await import('path');
 
+      // RB FACTORY: funcao local pura para extensoes (nao depende de this)
+      const guessExtLocal = (url: string, mime?: string): string => {
+        if (mime) {
+          const m = mime.toLowerCase();
+          if (m.includes('jpeg') || m.includes('jpg')) return '.jpg';
+          if (m.includes('png')) return '.png';
+          if (m.includes('webp')) return '.webp';
+          if (m.includes('gif')) return '.gif';
+          if (m.includes('svg')) return '.svg';
+        }
+        const u = (url || '').toLowerCase();
+        if (u.includes('.png')) return '.png';
+        if (u.includes('.webp')) return '.webp';
+        if (u.includes('.gif')) return '.gif';
+        if (u.includes('.svg')) return '.svg';
+        return '.jpg';
+      };
+
       for (let i = 0; i < assetsMeta.length; i++) {
         const meta = assetsMeta[i];
         if (!meta.sourceUrl || meta.sourceUrl.startsWith('data:')) continue;
         if (!/^https?:\/\//i.test(meta.sourceUrl)) continue;
 
-        const ext = this.guessExt(meta.sourceUrl, meta.mime);
+        const ext = guessExtLocal(meta.sourceUrl, meta.mime);
         const usageSlug = String(meta.usage || 'img').toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 24);
         const localName = `${usageSlug}-${i + 1}${ext}`;
         const localPath = `assets/images/${localName}`;
