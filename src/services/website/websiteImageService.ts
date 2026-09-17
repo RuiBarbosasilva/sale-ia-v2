@@ -1,6 +1,12 @@
 ﻿// src/services/website/websiteImageService.ts
+import { GeneratedImageProvider } from './imageProviders/generatedImageProvider';
 import axios from 'axios';
 import { DesignSystem, PRD } from '../../types/websiteV2';
+import { ImageProvider } from './imageProviders/imageProvider';
+import { pexelsImageProvider } from './imageProviders/pexelsImageProvider';
+import { unsplashImageProvider } from './imageProviders/unsplashImageProvider';
+import { wikimediaImageProvider } from './imageProviders/wikimediaImageProvider';
+import { openAIImageProvider } from './imageProviders/openAIImageProvider';
 
 export interface ImageAsset {
   url: string;
@@ -76,73 +82,73 @@ function detectSegment(category: string): string {
 
 const stripHtml = (s: string) => (s || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 
+interface ScoredImageCandidate extends Candidate {
+  semanticScore: number;
+}
+
+function scoreImageCandidate(candidate: Candidate, query: string, usage: string, slot: string): number {
+  const haystack = normalizeImageText([candidate.alt || '', candidate.author || '', candidate.pageUrl || ''].join(' '));
+
+  const terms = [
+    ...query.toLowerCase().split(/\s+/),
+    ...usage.toLowerCase().split(/\s+/)
+  ]
+    .map(term => term.replace(/[^a-z0-9Ã¡Ã Ã¢Ã£Ã©ÃªÃ­Ã³Ã´ÃµÃºÃ§Ã¼-]/gi, '').trim())
+    .filter(term => term.length >= 4);
+
+  const uniqueTerms = [...new Set(terms)];
+  const blockedTerms = ['sculpture','statue','bronze','naked','woman','man','painting','artwork','museum','monument','garden','portrait'];
+  if (blockedTerms.some(term => haystack.includes(term))) return -1000;
+
+  let score = 0;
+
+  for (const term of uniqueTerms) {
+    if (haystack.includes(term)) score += 10;
+  }
+
+  const ratio = candidate.width / Math.max(1, candidate.height);
+
+  if (slot === 'hero') {
+    if (ratio >= 1.5 && ratio <= 2.2) score += 12;
+    if (candidate.width >= 1400) score += 8;
+  } else {
+    if (ratio >= 1.0 && ratio <= 2.0) score += 6;
+    if (candidate.width >= 1000) score += 4;
+  }
+
+  if (candidate.alt && candidate.alt.length > 12) score += 3;
+  if (candidate.pageUrl) score += 2;
+
+  return score;
+}
+
+function rankImageCandidates(
+  candidates: Candidate[],
+  query: string,
+  usage: string,
+  slot: string
+): ScoredImageCandidate[] {
+  return candidates
+    .map(candidate => ({
+      ...candidate,
+      semanticScore: scoreImageCandidate(candidate, query, usage, slot)
+    }))
+    .sort((a, b) => b.semanticScore - a.semanticScore);
+}
 export class WebsiteImageService {
+  private readonly imageProviders: ImageProvider[] = [
+    pexelsImageProvider,
+    unsplashImageProvider,
+    wikimediaImageProvider
+  ];
+
+  private readonly generatedImageProviders: GeneratedImageProvider[] = [
+    openAIImageProvider
+  ];
+
   // ---------- PROVIDERS ----------
-  private async searchPexels(query: string): Promise<Candidate[]> {
-    const key = process.env.PEXELS_API_KEY || '';
-    if (!key) return [];
-    try {
-      const res = await axios.get('https://api.pexels.com/v1/search', {
-        params: { query, per_page: 8, orientation: 'landscape' },
-        headers: { Authorization: key, 'User-Agent': UA },
-        timeout: 20000
-      });
-      return (res.data.photos || []).map((p: any) => ({
-        url: p.src?.large2x || p.src?.large || '', width: p.width || 0, height: p.height || 0,
-        author: p.photographer || '', license: 'Pexels License (uso comercial gratuito)',
-        pageUrl: p.url || '', alt: p.alt || '', mime: 'image/jpeg'
-      })).filter((c: Candidate) => c.url);
-    } catch (e: any) { console.warn('[ImageEngine] Pexels falhou:', e?.response?.status || e?.message); return []; }
-  }
 
-  private async searchUnsplash(query: string): Promise<Candidate[]> {
-    const key = process.env.UNSPLASH_ACCESS_KEY || '';
-    if (!key) return [];
-    try {
-      const res = await axios.get('https://api.unsplash.com/search/photos', {
-        params: { query, per_page: 8, orientation: 'landscape' },
-        headers: { Authorization: 'Client-ID ' + key, 'User-Agent': UA },
-        timeout: 20000
-      });
-      return (res.data.results || []).map((p: any) => ({
-        url: p.urls?.regular || p.urls?.raw || '', width: p.width || 0, height: p.height || 0,
-        author: p.user?.name || '', license: 'Unsplash License (uso comercial gratuito)',
-        pageUrl: p.links?.html || '', alt: p.alt_description || '', mime: 'image/jpeg'
-      })).filter((c: Candidate) => c.url);
-    } catch (e: any) { console.warn('[ImageEngine] Unsplash falhou:', e?.response?.status || e?.message); return []; }
-  }
 
-  private async searchWikimedia(query: string): Promise<Candidate[]> {
-    try {
-      const res = await axios.get('https://commons.wikimedia.org/w/api.php', {
-        params: {
-          action: 'query', format: 'json', generator: 'search',
-          gsrsearch: 'filetype:bitmap ' + query, gsrnamespace: 6, gsrlimit: 8,
-          prop: 'imageinfo', iiprop: 'url|size|mime|extmetadata', iiurlwidth: 1600
-        },
-        headers: { 'User-Agent': UA, 'Api-User-Agent': UA },
-        timeout: 20000
-      });
-      const pages = res.data?.query?.pages || {};
-      const out: Candidate[] = [];
-      for (const k of Object.keys(pages)) {
-        const page = pages[k];
-        const ii = page.imageinfo && page.imageinfo[0];
-        if (!ii) continue;
-        out.push({
-          url: ii.thumburl || ii.url || '',
-          width: ii.thumbwidth || ii.width || 0,
-          height: ii.thumbheight || ii.height || 0,
-          author: stripHtml(ii.extmetadata?.Artist?.value || ''),
-          license: stripHtml(ii.extmetadata?.License?.value || 'CC (ver Commons)'),
-          pageUrl: ii.descriptionurl || '',
-          alt: stripHtml(ii.extmetadata?.ImageDescription?.value || '') || String(page.title || '').replace(/^File:/, '').replace(/\.[a-z]+$/i, '').replace(/[_-]+/g, ' '),
-          mime: ii.mime || ''
-        });
-      }
-      return out.filter(c => c.url);
-    } catch (e: any) { console.warn('[ImageEngine] Wikimedia falhou:', e?.response?.status || e?.message); return []; }
-  }
 
   // ---------- PLACEHOLDER LOCAL (fallback honesto, rotulado) ----------
   private placeholder(slot: string, usage: string, ds: any): { asset: ImageAsset; meta: ImageMetadata } {
@@ -193,35 +199,56 @@ export class WebsiteImageService {
   }
 
   private async acquire(query: string, slot: string, usage: string, ds: any, usedUrls: Set<string>, index: number): Promise<{ asset: ImageAsset; meta: ImageMetadata }> {
-    const providers: Array<[string, (q: string) => Promise<Candidate[]>]> = [
-      ['pexels', (q) => this.searchPexels(q)],
-      ['unsplash', (q) => this.searchUnsplash(q)],
-      ['wikimedia-commons', (q) => this.searchWikimedia(q)]
-    ];
+const providers = this.imageProviders
+      .filter(provider => provider.name !== 'openai-image' || process.env.OPENAI_IMAGE_ENABLED === 'true')
+      .map(provider => [provider.name, (q: string) => provider.search(q)] as [string, (q: string) => Promise<Candidate[]>]);
     // Variantes de query: completa -> 3 palavras -> 2 palavras (melhora recall no Commons)
     const words = query.split(' ').filter(w => w.length > 0);
     const variants = [...new Set([query, words.slice(0, 3).join(' '), words.slice(0, 2).join(' ')])].filter(v => v.length > 0);
     for (const variant of variants) {
       for (const [name, fn] of providers) {
         try {
-          const candidates = await fn(variant);
-          for (const cand of candidates) {
-            if (this.passesQC(cand, slot, usedUrls)) {
-              usedUrls.add(cand.url);
-              const alt = (cand.alt && cand.alt.length > 8) ? cand.alt.substring(0, 120) : (usage + ' - foto via ' + name);
-              const meta: ImageMetadata = {
-                provider: name, sourceUrl: cand.url, pageUrl: cand.pageUrl, author: cand.author,
-                license: cand.license, downloadedAt: new Date().toISOString(), query: variant, usage,
-                width: cand.width, height: cand.height, alt, mime: cand.mime
-              };
-              console.log('[ImageEngine] ' + slot + ' [' + usage + '] -> ' + name + ' (' + cand.width + 'x' + cand.height + ') query="' + variant + '"');
-              return { asset: { url: cand.url, width: cand.width, height: cand.height, alt }, meta };
-            }
-          }
+           const candidates = await fn(variant);
+           const validCandidates = candidates.filter(cand => this.passesQC(cand, slot, usedUrls));
+           const rankedCandidates = rankImageCandidates(validCandidates, variant, usage, slot);
+
+           for (const cand of rankedCandidates) {
+             usedUrls.add(cand.url);
+             const alt = (cand.alt && cand.alt.length > 8) ? cand.alt.substring(0, 120) : (usage + ' - foto via ' + name);
+             const meta: ImageMetadata = {
+               provider: name, sourceUrl: cand.url, pageUrl: cand.pageUrl, author: cand.author,
+               license: cand.license, downloadedAt: new Date().toISOString(), query: variant, usage,
+               width: cand.width, height: cand.height, alt, mime: cand.mime
+             };
+             console.log('[ImageEngine] ' + slot + ' [' + usage + '] -> ' + name + ' (' + cand.width + 'x' + cand.height + ') score=' + cand.semanticScore + ' query="' + variant + '"');
+             return { asset: { url: cand.url, width: cand.width, height: cand.height, alt }, meta };
+           }
         } catch (e: any) { /* tenta proximo provider */ }
         await new Promise(r => setTimeout(r, 200));
       }
     }
+    // Fallback de geracao por IA - somente quando explicitamente habilitado.
+    if (process.env.OPENAI_IMAGE_ENABLED === 'true' && this.generatedImageProviders.length > 0) {
+      const generatedPrompt = 'Create a professional original website photograph. Business context: ' + usage + '. Visual subject: ' + query + '. Realistic commercial photography, premium, natural lighting, authentic composition. No text, logos or watermarks.';
+
+      for (const provider of this.generatedImageProviders) {
+        try {
+          const generated = await provider.generate(generatedPrompt, { width: 1536, height: 1024, quality: 'high', format: 'webp' });
+          if (generated?.url) {
+            const alt = (generated.alt && generated.alt.length > 8) ? generated.alt.substring(0, 120) : usage + ' - imagem gerada por IA';
+            const meta: ImageMetadata = {
+              provider: generated.provider, sourceUrl: generated.url, pageUrl: undefined, author: undefined, license: 'gerada por IA',
+              downloadedAt: new Date().toISOString(), query: generatedPrompt, usage, width: generated.width, height: generated.height, alt, mime: generated.mime
+            };
+            console.log('[ImageEngine] ' + slot + ' [' + usage + '] -> ' + generated.provider + ' (imagem gerada por IA)');
+            return { asset: { url: generated.url, width: generated.width, height: generated.height, alt }, meta };
+          }
+        } catch (e: any) {
+          console.warn('[ImageEngine] geracao IA falhou: ' + (e?.message || e));
+        }
+      }
+    }
+
     console.warn('[ImageEngine] ' + slot + ' [' + usage + ']: nenhum provider retornou imagem valida -> placeholder local rotulado');
     const ph = this.placeholder(slot, usage, ds);
     usedUrls.add(ph.asset.url);
@@ -286,6 +313,7 @@ export class WebsiteImageService {
     if (!asset || !asset.url) return { valid: false, issues: ['missing url'], reason: 'asset vazio' };
     if (asset.url.startsWith('data:')) return { valid: true, issues: [], reason: 'placeholder local (valido)' };
     if (!/^https?:\/\//i.test(asset.url)) {
+    if (/^\/generated-images\//i.test(asset.url)) { return { valid: true, issues: [], reason: 'imagem gerada localmente' }; }
       issues.push('URL invalida (nao http)');
       return { valid: false, issues, reason: 'URL invalida' };
     }
@@ -346,8 +374,8 @@ export class WebsiteImageService {
   }
 
   /**
-   * Reconstrói o objeto assets (hero/gallery/services/logo) a partir do metadata salvo.
-   * Usado pelo regenerateDemo para PRESERVAR imagens entre versões.
+   * ReconstrÃ³i o objeto assets (hero/gallery/services/logo) a partir do metadata salvo.
+   * Usado pelo regenerateDemo para PRESERVAR imagens entre versÃµes.
    */
   rebuildAssets(metadata: any[]): any {
     const assets: any = { hero: null, gallery: [], services: {}, logo: null, galleryTitle: 'Galeria', galleryLabel: 'galeria' };
@@ -372,6 +400,15 @@ export const websiteImageService = new WebsiteImageService();
 
 
 
+
+
+
+
+
+
+function normalizeImageText(value: string): string {
+  return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s-]/g, ' ').replace(/\s+/g, ' ').trim();
+}
 
 
 

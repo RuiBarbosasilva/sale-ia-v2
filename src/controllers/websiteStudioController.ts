@@ -444,7 +444,7 @@ export const websiteStudioController = {
         success: true,
         demoId: result.demo.id,
         version: result.demo.version,
-        aiUsed: result.improvementCycles > 0,
+        aiUsed: Boolean(result.demo?.previewData?.useAI ?? useAI),
         improvementCycles: result.improvementCycles,
         qualityScore: result.qualityReview.overallScore,
         qualityRecommendation: result.qualityReview.recommendation,
@@ -551,6 +551,7 @@ export const websiteStudioController = {
     }
   }
 };
+
 
 
 

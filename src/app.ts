@@ -22,6 +22,7 @@ app.use((req, res, next) => {
 });
 
 app.use(express.static('public'));
+app.use('/generated-images', express.static('storage/generated-images'));
 
 // Registra as rotas principais da API
 app.use('/api', apiRoutes);
@@ -33,5 +34,6 @@ export default app;
 
 app.use('/api/mercadolivre', mlRoutes);
 app.use('/dashboard', dashboardRoutes);
+
 
 

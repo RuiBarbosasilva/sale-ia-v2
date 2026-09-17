@@ -19,27 +19,106 @@ export class WebsiteCreativeDirectorService {
   }
 
   private buildPrompt(prd: PRD, research: ResearchResult): string {
-    return `Voce e Diretor de Arte especializado em design de websites comerciais brasileiros.
+    return `
+Voce e Diretor de Arte especializado em design de websites comerciais brasileiros.
 
-SEGMENTO: ${prd.business.category}
-DIRECAO: ${prd.design.visualDirection}
-MOOD: ${prd.design.mood}
+NEGOCIO:
+${prd.business.businessName}
 
-Crie Design System em JSON com:
+SEGMENTO:
+${prd.business.category}
+
+CIDADE:
+${prd.business.city}
+
+POSICIONAMENTO:
+${prd.business.positioning}
+
+PROPOSTA DE VALOR:
+${prd.business.valueProposition}
+
+PUBLICO-ALVO:
+${prd.business.targetAudience}
+
+OBJETIVO:
+${prd.business.objective}
+
+DIRECAO VISUAL:
+${prd.design.visualDirection}
+
+MOOD:
+${prd.design.mood}
+
+PESQUISA:
+${JSON.stringify(research.marketInsights)}
+
+INSIGHTS DE CONVERSAO:
+${JSON.stringify(research.conversionInsights)}
+
+REFERENCIAS DE DESIGN:
+${JSON.stringify(research.designReferences)}
+
+Crie um Design System e uma arquitetura de pagina em JSON.
+
+IMPORTANTE:
+- NAO use templates prontos.
+- NAO repita automaticamente estruturas de outros sites.
+- Crie a arquitetura especificamente para este negocio.
+- Considere segmento, publico, objetivo, posicionamento e pesquisa.
+- Escolha somente secoes realmente relevantes.
+- Varie estrutura e composicao entre negocios.
+- Uma mesma categoria pode ter arquiteturas diferentes.
+- Evite automaticamente a sequencia Hero -> Servicos -> Beneficios -> Galeria -> Sobre -> FAQ -> CTA.
+- Use variantes diferentes quando fizer sentido.
+- Entre 5 e 10 secoes principais.
+- NAO invente informacoes especificas que nao estejam no briefing ou pesquisa.
+- Priorize clareza, confianca, experiencia mobile e conversao.
+- O resultado deve parecer criado especificamente para este negocio por uma agencia digital profissional.
+
+FORMATO JSON:
 {
   "visualStyle":"...",
   "layoutStyle":"...",
-  "colors":{"primary":"#hex","secondary":"#hex","accent":"#hex","background":"#hex","surface":"#hex","text":"#hex","textMuted":"#hex","border":"#hex"},
-  "typography":{"fontFamily":"...","headingFont":"...","baseSize":"16px","headingSizes":{"h1":"...","h2":"...","h3":"...","h4":"..."},"lineHeight":"1.6","letterSpacing":"normal"},
+  "pageArchitecture":{
+    "type":"conversion|institutional|catalog|portfolio|local-business|lead-generation|booking|other",
+    "objective":"...",
+    "sections":[
+      {
+        "type":"hero|services|products|features|benefits|about|team|process|gallery|portfolio|testimonials|social-proof|stats|faq|location|contact|booking|menu|pricing|cases|cta|other",
+        "variant":"...",
+        "title":"...",
+        "priority":1,
+        "enabled":true,
+        "conversionRole":"attention|trust|education|proof|consideration|conversion|navigation"
+      }
+    ]
+  },
+  "colors":{
+    "primary":"#hex",
+    "secondary":"#hex",
+    "accent":"#hex",
+    "background":"#hex",
+    "surface":"#hex",
+    "text":"#hex",
+    "textMuted":"#hex",
+    "border":"#hex"
+  },
+  "typography":{
+    "fontFamily":"...",
+    "headingFont":"...",
+    "baseSize":"16px",
+    "headingSizes":{"h1":"...","h2":"...","h3":"...","h4":"..."},
+    "lineHeight":"1.6",
+    "letterSpacing":"normal"
+  },
   "spacing":{"xs":"0.5rem","sm":"1rem","md":"1.5rem","lg":"2rem","xl":"3rem","xxl":"4rem"},
   "borderRadius":{"sm":"4px","md":"8px","lg":"12px","xl":"16px","full":"9999px"},
   "shadows":{"sm":"...","md":"...","lg":"...","xl":"..."}
 }
 
-Regras: cores apropriadas para segmento (hamburgueria=vibrante, clinica=suave, advocacia=sóbrio), hex válidos, tipografia legível.`;
-  }
-
-  private normalize(data: any, prd: PRD): DesignSystem {
+Retorne SOMENTE JSON valido, sem markdown e sem explicacoes.
+`;
+  }  private normalize(data: any, prd: PRD): DesignSystem {
     const base = this.baseForCategory(prd.business.category.toLowerCase());
     return {
       visualStyle: data.visualStyle || base.visualStyle,
@@ -66,11 +145,128 @@ Regras: cores apropriadas para segmento (hamburgueria=vibrante, clinica=suave, a
       borderRadius: data.borderRadius || base.borderRadius,
       shadows: data.shadows || base.shadows,
       buttons: base.buttons, cards: base.cards, hero: base.hero,
-      sections: base.sections, navigation: base.navigation, footer: base.footer
+      sections: data.sections || base.sections, navigation: base.navigation, footer: base.footer,
+      pageArchitecture: data.pageArchitecture || this.buildFallbackArchitecture(prd)
+    };
+  }
+  private buildFallbackArchitecture(prd: PRD): any {
+    const category = String(prd.business.category || "").toLowerCase();
+
+    if (category.includes("hamburg") || category.includes("restaurante")) {
+      return {
+        type: "local-business",
+        objective: "gerar pedidos e visitas",
+        sections: [
+          { type: "hero", variant: "conversion", priority: 1, enabled: true, conversionRole: "attention" },
+          { type: "highlights", variant: "products", priority: 2, enabled: true, conversionRole: "value" },
+          { type: "gallery", variant: "visual", priority: 3, enabled: true, conversionRole: "desire" },
+          { type: "location", variant: "local", priority: 4, enabled: true, conversionRole: "visit" },
+          { type: "cta", variant: "primary", priority: 5, enabled: true, conversionRole: "conversion" }
+        ]
+      };
+    }
+
+    if (category.includes("clinica") || category.includes("medic")) {
+      return {
+        type: "booking",
+        objective: "gerar agendamentos com confiança",
+        sections: [
+          { type: "hero", variant: "trust", priority: 1, enabled: true, conversionRole: "attention" },
+          { type: "benefits", variant: "trust", priority: 2, enabled: true, conversionRole: "trust" },
+          { type: "services", variant: "clinical", priority: 3, enabled: true, conversionRole: "value" },
+          { type: "faq", variant: "answers", priority: 4, enabled: true, conversionRole: "objection" },
+          { type: "cta", variant: "primary", priority: 5, enabled: true, conversionRole: "conversion" }
+        ]
+      };
+    }
+
+    if (category.includes("advocacia") || category.includes("advogado")) {
+      return {
+        type: "lead-generation",
+        objective: "gerar contatos qualificados",
+        sections: [
+          { type: "hero", variant: "authority", priority: 1, enabled: true, conversionRole: "attention" },
+          { type: "expertise", variant: "authority", priority: 2, enabled: true, conversionRole: "authority" },
+          { type: "services", variant: "practice-areas", priority: 3, enabled: true, conversionRole: "value" },
+          { type: "faq", variant: "answers", priority: 4, enabled: true, conversionRole: "objection" },
+          { type: "cta", variant: "primary", priority: 5, enabled: true, conversionRole: "conversion" }
+        ]
+      };
+    }
+
+    return {
+      type: "conversion",
+      objective: "gerar contatos e apresentar o negócio",
+      sections: [
+        { type: "hero", variant: "conversion", priority: 1, enabled: true, conversionRole: "attention" },
+        { type: "services", variant: "cards", priority: 2, enabled: true, conversionRole: "value" },
+        { type: "about", variant: "trust", priority: 3, enabled: true, conversionRole: "trust" },
+        { type: "cta", variant: "primary", priority: 4, enabled: true, conversionRole: "conversion" }
+      ]
     };
   }
 
-  private fallback(category: string): DesignSystem { return this.baseForCategory(category); }
+  private fallback(category: string): DesignSystem {
+    const base = this.baseForCategory(category);
+
+    const prdFallback: PRD = {
+      business: {
+        businessName: '',
+        category,
+        city: '',
+        positioning: '',
+        valueProposition: '',
+        targetAudience: '',
+        objective: ''
+      },
+      strategy: {
+        primaryGoal: '',
+        secondaryGoals: [],
+        primaryCTA: '',
+        conversionStrategy: ''
+      },
+      ux: {
+        informationArchitecture: [],
+        navigation: [],
+        userJourney: [],
+        sectionOrder: []
+      },
+      content: {
+        heroHeadline: '',
+        heroSubheadline: '',
+        primaryCTA: '',
+        services: [],
+        benefits: [],
+        faq: [],
+        contactContent: ''
+      },
+      design: {
+        visualDirection: '',
+        mood: '',
+        colorStrategy: '',
+        typographyStrategy: '',
+        spacingStrategy: '',
+        componentStrategy: '',
+        imageStrategy: ''
+      },
+      responsive: {
+        desktop: '',
+        tablet: '',
+        mobile: ''
+      },
+      seo: {
+        title: '',
+        metaDescription: '',
+        keywords: [],
+        headingStrategy: ''
+      }
+    };
+
+    return {
+      ...base,
+      pageArchitecture: this.buildFallbackArchitecture(prdFallback)
+    };
+  }
 
   private baseForCategory(category: string): DesignSystem {
     const base: Record<string, any> = {
@@ -124,3 +320,14 @@ Regras: cores apropriadas para segmento (hamburgueria=vibrante, clinica=suave, a
 }
 
 export const websiteCreativeDirectorService = new WebsiteCreativeDirectorService();
+
+
+
+
+
+
+
+
+
+
+

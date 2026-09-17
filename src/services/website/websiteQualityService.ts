@@ -132,6 +132,9 @@ Regras criticas:
       if (!html.includes('<title>')) seoCrit.score = Math.min(seoCrit.score, 3);
       if (!html.includes('meta name="description"')) seoCrit.score = Math.min(seoCrit.score, 4);
     }
+    if ((r.criticalIssues || []).length > 0) {
+      r.recommendation = 'improve';
+    }
     return r;
   }
 

@@ -91,3 +91,20 @@ export class WebsiteContentService {
   }
 }
 export const websiteContentService = new WebsiteContentService();
+
+// RB FACTORY - CONTENT TRUTHFULNESS GUARD
+// Nunca inventar: avaliacoes, numeros, certificados, premios,
+// medicos, advogados, credenciais, precos, horarios, enderecos,
+// estatisticas, depoimentos reais.
+const CONTENT_TRUTHFULNESS_RULES = {
+  neverInvent: ['reviews','ratings','clientCount','yearsOfExperience','certifications','awards','doctorNames','lawyerNames','credentials','prices','schedules','addresses','statistics','realTestimonials'],
+  placeholderPolicy: 'generic-non-factual',
+  socialProofPolicy: 'only-if-provided'
+};
+
+function applyTruthfulnessGuard(content: any, providedFacts: any): any {
+  if (!content) return content;
+  if (content.testimonials && (!providedFacts || !providedFacts.testimonials)) { content.testimonials = []; content.testimonialsOmitted = true; }
+  if (content.stats && (!providedFacts || !providedFacts.stats)) { content.stats = []; content.statsOmitted = true; }
+  return content;
+}

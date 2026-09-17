@@ -125,6 +125,23 @@ export interface DesignSystem {
   sections: { padding: string; maxWidth: string; gap: string };
   navigation: { background: string; padding: string; position: string; boxShadow: string };
   footer: { background: string; color: string; padding: string };
+  /**
+   * Arquitetura din?mica da p?gina.
+   * Define como o site deve ser composto para este neg?cio.
+   * N?o representa templates fixos.
+   */
+  pageArchitecture?: {
+    type: string;
+    objective: string;
+    sections: Array<{
+      type: string;
+      variant?: string;
+      title?: string;
+      priority?: number;
+      enabled?: boolean;
+      conversionRole?: string;
+    }>;
+  };
 }
 
 export interface QualityCriterion {
@@ -141,3 +158,4 @@ export interface QualityReview {
   improvements: string[];
   recommendation: 'approve' | 'improve' | 'regenerate';
 }
+

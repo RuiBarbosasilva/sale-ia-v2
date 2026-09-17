@@ -1,4 +1,6 @@
-﻿export class WebsiteCompiler {
+﻿import { websiteSectionRenderer, WebsiteSectionDefinition } from './websiteSectionRenderer';
+
+export class WebsiteCompiler {
   compile(businessName: string, city: string, phone: string, design: any, content: any): string {
     const cleanPhone = phone.replace(/\D/g, '');
     const whatsappLink = cleanPhone.length >= 10 ? 'https://wa.me/55' + cleanPhone : '#';
@@ -86,7 +88,7 @@ const testimonials = Array.isArray(content.testimonials) ? content.testimonials 
     // WhatsApp SVG icon
     const whatsappIcon = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16.004 0h-.008C7.174 0 0 7.176 0 16c0 3.5 1.128 6.744 3.046 9.378L1.054 31.29l6.118-1.958C9.722 31.016 12.742 32 16.004 32 24.826 32 32 24.822 32 16S24.826 0 16.004 0zm9.35 22.614c-.39 1.1-1.932 2.014-3.164 2.282-.846.18-1.95.324-5.67-1.218-4.762-1.972-7.826-6.79-8.064-7.108-.228-.318-1.932-2.572-1.932-4.904s1.222-3.472 1.658-3.95c.436-.478.952-.596 1.27-.596.318 0 .636.002.914.016.294.014.688-.112 1.078.824.39.936 1.332 3.254 1.448 3.49.118.236.196.512.04.83-.158.318-.236.514-.472.79-.236.276-.496.616-.708.828-.236.236-.482.492-.208.968.276.476 1.222 2.022 2.624 3.268 1.806 1.606 3.332 2.106 3.808 2.342.476.236.752.198 1.028-.118.276-.318 1.186-1.384 1.502-1.86.318-.476.634-.396 1.068-.236.436.158 2.754 1.298 3.228 1.534.476.236.792.354.91.552.118.198.118 1.14-.272 2.24z"/></svg>';
 
-    const html = [
+    let html = [
       '<!DOCTYPE html>',
       '<html lang="pt-BR">',
       '<head>',
@@ -326,6 +328,61 @@ const testimonials = Array.isArray(content.testimonials) ? content.testimonials 
         '}',
         '.logo-img { height: 40px; width: auto; max-width: 180px; object-fit: contain; }',
         '@media (max-width: 768px) { .hero-bg { object-position: center 50%; } .feature-media { margin: -1.5rem -1.5rem 1rem; } }',
+        '/* RB FACTORY SITES - Dynamic Website Renderer */',
+        '.wf-section { position: relative; width: 100%; padding: clamp(3.5rem, 7vw, 6rem) 1.5rem; background: var(--bg); color: var(--text); }',
+        '.wf-container { width: min(1200px, 100%); margin: 0 auto; }',
+        '.wf-section-heading { max-width: 760px; margin: 0 auto 2.5rem; text-align: center; }',
+        '.wf-kicker { display: inline-block; margin-bottom: .75rem; color: var(--accent); font-size: .78rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }',
+        '.wf-section-heading h2 { margin-bottom: .75rem; }',
+        '.wf-section-heading p { max-width: 680px; margin: 0 auto; }',
+        '.wf-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .85rem; margin-top: 1.5rem; }',
+        '.wf-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: .8rem 1.25rem; border-radius: var(--radius-md); font-weight: 700; border: 1px solid transparent; transition: transform .2s ease, box-shadow .2s ease, background .2s ease; }',
+        '.wf-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }',
+        '.wf-btn-primary { background: var(--accent); color: #fff; }',
+        '.wf-btn-secondary { background: var(--surface); color: var(--primary); border-color: var(--border); }',
+        '.wf-hero { overflow: hidden; background: var(--bg); }',
+        '.wf-hero-content { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr); align-items: center; gap: clamp(2rem, 6vw, 5rem); }',
+        '.wf-hero-copy { position: relative; z-index: 2; }',
+        '.wf-hero-copy h1 { max-width: 760px; margin-bottom: 1rem; }',
+        '.wf-hero-copy p { max-width: 680px; font-size: clamp(1.05rem, 2vw, 1.25rem); }',
+        '.wf-hero-media { overflow: hidden; min-height: 360px; border-radius: var(--radius-xl); background: var(--surface); box-shadow: var(--shadow-lg); }',
+        '.wf-hero-media img { width: 100%; height: 100%; min-height: 360px; object-fit: cover; }',
+        '.wf-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.25rem; }',
+        '.wf-card { overflow: hidden; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease; }',
+        '.wf-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); border-color: rgba(0,0,0,.08); }',
+        '.wf-card-media { aspect-ratio: 16 / 10; overflow: hidden; background: var(--surface); }',
+        '.wf-card-media img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s ease; }',
+        '.wf-card:hover .wf-card-media img { transform: scale(1.035); }',
+        '.wf-card-body { padding: 1.35rem; }',
+        '.wf-card-body h3 { margin-bottom: .5rem; }',
+        '.wf-card-body p { margin-bottom: 0; }',
+        '.wf-card-price { display: block; margin-top: .85rem; color: var(--primary); font-size: 1.1rem; }',
+        '.wf-two-column { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(2rem, 6vw, 5rem); align-items: center; }',
+        '.wf-about, .wf-location, .wf-contact, .wf-booking, .wf-generic { background: var(--surface); }',
+        '.wf-gallery-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 1rem; }',
+        '.wf-gallery-item { grid-column: span 4; margin: 0; overflow: hidden; aspect-ratio: 4 / 3; border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow-sm); }',
+        '.wf-gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s ease; }',
+        '.wf-gallery-item:hover img { transform: scale(1.04); }',
+        '.wf-faq-list { max-width: 850px; margin: 0 auto; display: grid; gap: .85rem; }',
+        '.wf-faq-item { padding: 1.2rem 1.35rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }',
+        '.wf-faq-item summary { cursor: pointer; font-weight: 750; color: var(--text); }',
+        '.wf-faq-item p { margin: .85rem 0 0; }',
+        '.wf-location-map { min-height: 260px; display: flex; align-items: center; justify-content: center; padding: 2rem; border: 1px solid var(--border); border-radius: var(--radius-xl); background: var(--bg); box-shadow: var(--shadow-sm); }',
+        '.wf-contact .wf-container, .wf-booking .wf-container { max-width: 900px; text-align: center; }',
+        '.wf-contact .wf-actions, .wf-booking .wf-actions { justify-content: center; }',
+        '.wf-cta { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; text-align: center; }',
+        '.wf-cta h2, .wf-cta p { color: #fff; }',
+        '.wf-cta-inner { max-width: 850px; margin: 0 auto; }',
+        '.wf-cta .wf-kicker { color: rgba(255,255,255,.78); }',
+        '.wf-generic .wf-section-heading { text-align: left; margin-left: 0; }',
+        '.wf-stats .wf-card, .wf-social-proof .wf-card { text-align: center; }',
+        '.wf-stats .wf-card h3, .wf-social-proof .wf-card h3 { color: var(--primary); font-size: clamp(1.5rem, 3vw, 2.2rem); }',
+        '.wf-testimonials .wf-card-body::before { content: "“"; display: block; color: var(--accent); font-family: Georgia, serif; font-size: 3rem; line-height: .7; margin-bottom: .5rem; }',
+        '.wf-process .wf-card { border-top: 3px solid var(--accent); }',
+        '.wf-section + .wf-section { border-top: 1px solid rgba(0,0,0,.025); }',
+        '@media (max-width: 900px) { .wf-hero-content, .wf-two-column { grid-template-columns: 1fr; } .wf-hero-media { order: -1; min-height: 300px; } .wf-hero-media img { min-height: 300px; } .wf-gallery-item { grid-column: span 6; } }',
+        '@media (max-width: 640px) { .wf-section { padding: 3.25rem 1rem; } .wf-hero-copy h1 { font-size: clamp(2rem, 10vw, 3rem); } .wf-actions { flex-direction: column; align-items: stretch; } .wf-btn { width: 100%; } .wf-card-grid { grid-template-columns: 1fr; } .wf-gallery-grid { grid-template-columns: 1fr; } .wf-gallery-item { grid-column: auto; } .wf-hero-media, .wf-hero-media img { min-height: 240px; } }',
+        '@media (prefers-reduced-motion: reduce) { .wf-card, .wf-btn, .wf-card-media img, .wf-gallery-item img { transition: none; } }',
       '</style>',
       // Schema.org JSON-LD dinamico por segmento (P4)
       (function() {
@@ -544,6 +601,100 @@ const testimonials = Array.isArray(content.testimonials) ? content.testimonials 
       '</html>'
     ].join('\n');
 
+    // Arquitetura dinamica: quando o Creative Director fornece pageArchitecture,
+    // o renderer passa a controlar a ordem e a composicao das secoes.
+    // O HTML legado permanece como fallback para preservar compatibilidade.
+    const architecture = ds?.pageArchitecture;
+    const architectureSections = Array.isArray(architecture?.sections)
+      ? architecture.sections
+          .filter((section: any) => section && section.enabled !== false && section.type)
+          .sort((a: any, b: any) => (Number(a.priority) || 999) - (Number(b.priority) || 999))
+      : [];
+
+    if (architectureSections.length > 0) {
+      const dynamicContext = {
+        businessName,
+        city,
+        phone,
+        designSystem: ds,
+        content: { ...content, whatsappLink },
+        assets
+      };
+
+      const dynamicSections = architectureSections
+        .map((section: WebsiteSectionDefinition) => websiteSectionRenderer.render(section, dynamicContext))
+        .filter(Boolean)
+        .join('\n');
+
+      if (dynamicSections.trim()) {
+        const navEnd = html.indexOf('</nav>');
+        const footerStart = html.indexOf('<footer');
+
+        if (navEnd >= 0 && footerStart > navEnd) {
+          const beforeSections = html.substring(0, navEnd + '</nav>'.length);
+          const afterSections = html.substring(footerStart);
+          const dynamicMain = '<main id="main-content">' + dynamicSections + '</main>';
+
+          const dynamicNavItems = architectureSections
+            .filter((section: any) => String(section.type).toLowerCase() !== 'hero')
+            .map((section: any) => {
+              const type = String(section.type).toLowerCase().trim();
+
+              const labels: Record<string, string> = {
+                services: 'Serviços',
+                products: 'Produtos',
+                features: 'Destaques',
+                benefits: 'Benefícios',
+                about: 'Sobre',
+                team: 'Equipe',
+                process: 'Como funciona',
+                gallery: 'Galeria',
+                portfolio: 'Projetos',
+                testimonials: 'Depoimentos',
+                'social-proof': 'Confiança',
+                stats: 'Resultados',
+                faq: 'FAQ',
+                location: 'Localização',
+                contact: 'Contato',
+                booking: 'Agendamento',
+                menu: 'Cardápio',
+                pricing: 'Planos',
+                cases: 'Cases',
+                cta: 'Contato',
+                highlights: 'Destaques',
+                expertise: 'Especialidades'
+              };
+
+              const id = type
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+
+              return '<li><a href="#' + id + '">' +
+                this.esc(section.title || labels[type] || type) +
+                '</a></li>';
+            })
+            .join('');
+
+          const dynamicNav =
+            '<ul class="nav-links" id="mobile-menu" role="menu">' +
+            dynamicNavItems +
+            '</ul>';
+
+          const navStart = beforeSections.indexOf('<ul class="nav-links"');
+          const navClose = beforeSections.indexOf('</ul>', navStart);
+
+          const finalNav =
+            (navStart >= 0 && navClose >= 0)
+              ? beforeSections.substring(0, navStart) +
+                dynamicNav +
+                beforeSections.substring(navClose + 5)
+              : beforeSections;
+
+          html = finalNav + dynamicMain + afterSections;
+        }
+      }
+    }
+
     return html;
   }
 
@@ -567,6 +718,10 @@ const testimonials = Array.isArray(content.testimonials) ? content.testimonials 
   }
 }
 export const websiteCompiler = new WebsiteCompiler();
+
+
+
+
 
 
 

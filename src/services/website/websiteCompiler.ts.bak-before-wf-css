@@ -1,0 +1,673 @@
+﻿import { websiteSectionRenderer, WebsiteSectionDefinition } from './websiteSectionRenderer';
+
+export class WebsiteCompiler {
+  compile(businessName: string, city: string, phone: string, design: any, content: any): string {
+    const cleanPhone = phone.replace(/\D/g, '');
+    const whatsappLink = cleanPhone.length >= 10 ? 'https://wa.me/55' + cleanPhone : '#';
+    const year = new Date().getFullYear();
+    
+    return '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>' + content.metaTitle + '</title><meta name="description" content="' + content.metaDescription + '"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:' + design.fontFamily + ',sans-serif;line-height:1.6;color:#333}header{background:' + design.primaryColor + ';color:white;padding:1rem 0;position:sticky;top:0;z-index:100}nav{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;padding:0 20px;align-items:center}.logo{font-family:' + design.headingFont + ';font-size:1.5rem;font-weight:bold}.nav-links{display:flex;gap:2rem;list-style:none}.nav-links a{color:white;text-decoration:none}.hero{background:linear-gradient(135deg,' + design.primaryColor + ',' + design.secondaryColor + ');color:white;padding:6rem 20px;text-align:center}.hero h1{font-size:3rem;margin-bottom:1rem;font-family:' + design.headingFont + '}.hero p{font-size:1.3rem;margin-bottom:2rem;opacity:0.95}.btn-primary{display:inline-block;background:' + design.accentColor + ';color:white;padding:1rem 2.5rem;border-radius:' + design.borderRadius + ';font-weight:bold;font-size:1.1rem;text-decoration:none;transition:all 0.3s;box-shadow:' + design.shadow + '}.btn-primary:hover{transform:translateY(-3px)}section{padding:4rem 20px;max-width:1200px;margin:0 auto}.section-title{text-align:center;font-size:2.5rem;margin-bottom:3rem;color:' + design.primaryColor + ';font-family:' + design.headingFont + '}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:2rem}.card{background:white;padding:2rem;border-radius:' + design.borderRadius + ';box-shadow:' + design.shadow + ';transition:transform 0.3s;border-top:4px solid ' + design.accentColor + '}.card:hover{transform:translateY(-8px)}.card h3{color:' + design.primaryColor + ';margin-bottom:1rem;font-size:1.4rem}.benefits{background:#f8fafc}.benefit-card{background:white;padding:2rem;border-radius:' + design.borderRadius + ';box-shadow:0 4px 20px rgba(0,0,0,0.06);text-align:center}.benefit-icon{width:60px;height:60px;background:linear-gradient(135deg,' + design.primaryColor + ',' + design.accentColor + ');border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;color:white;font-size:1.5rem;font-weight:bold}.faq-item{background:white;padding:1.5rem;border-radius:' + design.borderRadius + ';margin-bottom:1rem;box-shadow:0 2px 10px rgba(0,0,0,0.05)}.faq-item h3{color:' + design.primaryColor + ';margin-bottom:0.5rem}.cta-section{background:linear-gradient(135deg,' + design.primaryColor + ',' + design.secondaryColor + ');color:white;text-align:center;padding:4rem 20px}.cta-section h2{font-size:2.5rem;margin-bottom:1rem;font-family:' + design.headingFont + '}footer{background:' + design.primaryColor + ';color:white;text-align:center;padding:2rem 0}.whatsapp-float{position:fixed;bottom:30px;right:30px;width:60px;height:60px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 25px rgba(37,211,102,0.4);z-index:999;animation:pulse 2s infinite;text-decoration:none}.whatsapp-float svg{width:32px;height:32px;fill:white}@keyframes pulse{0%,100%{box-shadow:0 8px 25px rgba(37,211,102,0.4)}50%{box-shadow:0 8px 35px rgba(37,211,102,0.6)}}@media(max-width:768px){.hero h1{font-size:2rem}.nav-links{display:none}}</style></head><body><header><nav><div class="logo">' + businessName + '</div><ul class="nav-links"><li><a href="#servicos">Serviços</a></li><li><a href="#beneficios">Benefícios</a></li><li><a href="#sobre">Sobre</a></li><li><a href="#contato">Contato</a></li></ul></nav></header><section class="hero"><h1>' + content.heroHeadline + '</h1><p>' + content.heroSubtitle + '</p><a href="' + whatsappLink + '" class="btn-primary" target="_blank">' + content.ctaText + '</a></section><section id="servicos"><h2 class="section-title">Nossos Serviços</h2><div class="grid">' + content.services.map(s => '<div class="card"><h3>' + s.title + '</h3><p>' + s.description + '</p></div>').join('') + '</div></section><section id="beneficios" class="benefits"><h2 class="section-title">Por Que Nos Escolher</h2><div class="grid">' + content.benefits.map((b, i) => '<div class="benefit-card"><div class="benefit-icon">' + ['✓', '★', '◆'][i % 3] + '</div><h3>' + b.title + '</h3><p>' + b.description + '</p></div>').join('') + '</div></section><section id="sobre"><h2 class="section-title">Sobre a ' + businessName + '</h2><p style="text-align:center;max-width:800px;margin:0 auto;font-size:1.1rem;line-height:1.8;color:#555">' + content.aboutText + '</p></section><section class="faq"><h2 class="section-title">Perguntas Frequentes</h2>' + content.faq.map(f => '<div class="faq-item"><h3>' + f.question + '</h3><p>' + f.answer + '</p></div>').join('') + '</section><section class="cta-section"><h2>Pronto para começar?</h2><p style="font-size:1.2rem;margin-bottom:2rem">Entre em contato agora</p><a href="' + whatsappLink + '" class="btn-primary" style="background:white;color:' + design.primaryColor + '" target="_blank">' + content.ctaText + '</a></section><footer><p>&copy; ' + year + ' ' + businessName + '. Todos os direitos reservados.</p></footer><a href="' + whatsappLink + '" class="whatsapp-float" target="_blank" aria-label="WhatsApp"><svg viewBox="0 0 32 32"><path d="M16.004 0h-.008C7.174 0 0 7.176 0 16c0 3.5 1.128 6.744 3.046 9.378L1.054 31.29l6.118-1.958C9.722 31.016 12.742 32 16.004 32 24.826 32 32 24.822 32 16S24.826 0 16.004 0zm9.35 22.614c-.39 1.1-1.932 2.014-3.164 2.282-.846.18-1.95.324-5.67-1.218-4.762-1.972-7.826-6.79-8.064-7.108-.228-.318-1.932-2.572-1.932-4.904s1.222-3.472 1.658-3.95c.436-.478.952-.596 1.27-.596.318 0 .636.002.914.016.294.014.688-.112 1.078.824.39.936 1.332 3.254 1.448 3.49.118.236.196.512.04.83-.158.318-.236.514-.472.79-.236.276-.496.616-.708.828-.236.236-.482.492-.208.968.276.476 1.222 2.022 2.624 3.268 1.806 1.606 3.332 2.106 3.808 2.342.476.236.752.198 1.028-.118.276-.318 1.186-1.384 1.502-1.86.318-.476.634-.396 1.068-.236.436.158 2.754 1.298 3.228 1.534.476.236.792.354.91.552.118.198.118 1.14-.272 2.24z"/></svg></a></body></html>';
+  }
+
+  /**
+   * NOVO: Compila um site profissional consumindo o DesignSystem V2 rico.
+   * Usado pelo pipeline Research -> PRD -> Creative -> Generate.
+   * Preserva o compile() original para retrocompatibilidade.
+   */
+  compileProfessional(
+    businessName: string,
+    city: string,
+    phone: string,
+    ds: any,
+    content: any,
+    assets: any = null
+  ): string {
+    const cleanPhone = (phone || '').replace(/\D/g, '');
+    const whatsappLink = cleanPhone.length >= 10 ? 'https://wa.me/55' + cleanPhone : '#';
+    const year = new Date().getFullYear();
+
+    // Extrair primeira fonte de strings como "Inter, sans-serif"
+    const firstFont = (s: string | undefined): string => {
+      if (!s) return 'Inter';
+      const first = s.split(',')[0].trim().replace(/^["']|["']$/g, '');
+      return first || 'Inter';
+    };
+
+    const font = firstFont(ds?.typography?.fontFamily);
+    const headingFont = firstFont(ds?.typography?.headingFont);
+
+    const colors = ds?.colors || {};
+    const primary = colors.primary || '#2563eb';
+    const secondary = colors.secondary || '#1e40af';
+    const accent = colors.accent || '#10b981';
+    const bg = colors.background || '#ffffff';
+    const surface = colors.surface || '#f8fafc';
+    const text = colors.text || '#0f172a';
+    const textMuted = colors.textMuted || '#64748b';
+    const border = colors.border || '#e2e8f0';
+
+    const spacing = ds?.spacing || {};
+    const radii = ds?.borderRadius || {};
+    const shadows = ds?.shadows || {};
+
+    const rSm = radii.sm || '4px';
+    const rMd = radii.md || '8px';
+    const rLg = radii.lg || '12px';
+    const rXl = radii.xl || '16px';
+
+    const shSm = shadows.sm || '0 1px 3px rgba(0,0,0,0.08)';
+    const shMd = shadows.md || '0 4px 12px rgba(0,0,0,0.1)';
+    const shLg = shadows.lg || '0 10px 25px rgba(0,0,0,0.15)';
+
+    // Google Fonts URL (escape de espacos e virgulas)
+    const fontsList = Array.from(new Set([font, headingFont].filter(f => f && f !== 'sans-serif' && f !== 'serif')));
+    const googleFontsUrl = 'https://fonts.googleapis.com/css2?family=' +
+      fontsList.map(f => f.replace(/\s+/g, '+') + ':wght@400;500;600;700;800;900&display=swap').join('&family=');
+
+    const title = content.metaTitle || (businessName + ' - ' + city);
+    const description = content.metaDescription || (businessName + ' em ' + city + '. Entre em contato.');
+
+    const heroHeadline = content.heroHeadline || ('Excelência em ' + businessName);
+    const heroSubtitle = content.heroSubheadline || ('Soluções profissionais em ' + city);
+    const ctaText = content.ctaText || 'Entre em contato';
+    const aboutText = content.aboutText || (businessName + ' é referência em qualidade e atendimento.');
+
+    const services = Array.isArray(content.services) ? content.services : [];
+    const benefits = Array.isArray(content.benefits) ? content.benefits : [];
+    const faqs = Array.isArray(content.faq) ? content.faq : [];
+const stats = Array.isArray(content.stats) ? content.stats : [];
+const testimonials = Array.isArray(content.testimonials) ? content.testimonials : [];
+
+    // SVG icons para benefícios (check, star, lightning)
+    const icons = [
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+      '<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>',
+      '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>'
+    ];
+
+    // WhatsApp SVG icon
+    const whatsappIcon = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16.004 0h-.008C7.174 0 0 7.176 0 16c0 3.5 1.128 6.744 3.046 9.378L1.054 31.29l6.118-1.958C9.722 31.016 12.742 32 16.004 32 24.826 32 32 24.822 32 16S24.826 0 16.004 0zm9.35 22.614c-.39 1.1-1.932 2.014-3.164 2.282-.846.18-1.95.324-5.67-1.218-4.762-1.972-7.826-6.79-8.064-7.108-.228-.318-1.932-2.572-1.932-4.904s1.222-3.472 1.658-3.95c.436-.478.952-.596 1.27-.596.318 0 .636.002.914.016.294.014.688-.112 1.078.824.39.936 1.332 3.254 1.448 3.49.118.236.196.512.04.83-.158.318-.236.514-.472.79-.236.276-.496.616-.708.828-.236.236-.482.492-.208.968.276.476 1.222 2.022 2.624 3.268 1.806 1.606 3.332 2.106 3.808 2.342.476.236.752.198 1.028-.118.276-.318 1.186-1.384 1.502-1.86.318-.476.634-.396 1.068-.236.436.158 2.754 1.298 3.228 1.534.476.236.792.354.91.552.118.198.118 1.14-.272 2.24z"/></svg>';
+
+    let html = [
+      '<!DOCTYPE html>',
+      '<html lang="pt-BR">',
+      '<head>',
+      '<meta charset="UTF-8">',
+      '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
+      '<title>' + this.esc(title) + '</title>',
+      '<meta name="description" content="' + this.esc(description) + '">',
+      '<meta name="keywords" content="' + this.esc((content.keywords || [businessName, city]).join(', ')) + '">',
+      '<meta name="author" content="' + this.esc(businessName) + '">',
+      '<meta property="og:title" content="' + this.esc(title) + '">',
+      '<meta property="og:description" content="' + this.esc(description) + '">',
+      '<meta property="og:type" content="website">',
+      '<link rel="preconnect" href="https://fonts.googleapis.com">',
+      '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
+      '<link href="' + googleFontsUrl + '" rel="stylesheet">',
+      '<style>',
+        ':root {',
+          '--primary: ' + primary + ';',
+          '--secondary: ' + secondary + ';',
+          '--accent: ' + accent + ';',
+          '--bg: ' + bg + ';',
+          '--surface: ' + surface + ';',
+          '--text: ' + text + ';',
+          '--text-muted: ' + textMuted + ';',
+          '--border: ' + border + ';',
+          '--radius-sm: ' + rSm + ';',
+          '--radius-md: ' + rMd + ';',
+          '--radius-lg: ' + rLg + ';',
+          '--radius-xl: ' + rXl + ';',
+          '--shadow-sm: ' + shSm + ';',
+          '--shadow-md: ' + shMd + ';',
+          '--shadow-lg: ' + shLg + ';',
+          '--font-base: \'' + font + '\', sans-serif;',
+          '--font-heading: \'' + headingFont + '\', sans-serif;',
+        '}',
+        '*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }',
+        'html { scroll-behavior: smooth; }',
+        'body {',
+          'font-family: var(--font-base);',
+          'line-height: 1.6;',
+          'color: var(--text);',
+          'background: var(--bg);',
+          '-webkit-font-smoothing: antialiased;',
+          '-moz-osx-font-smoothing: grayscale;',
+        '}',
+        'img { max-width: 100%; height: auto; display: block; }',
+        'a { color: inherit; text-decoration: none; }',
+        'h1, h2, h3, h4 { font-family: var(--font-heading); line-height: 1.2; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }',
+        'h1 { font-size: clamp(2rem, 5vw, 3.75rem); }',
+        'h2 { font-size: clamp(1.75rem, 4vw, 2.75rem); margin-bottom: 1rem; }',
+        'h3 { font-size: clamp(1.25rem, 2.5vw, 1.5rem); margin-bottom: 0.5rem; }',
+        'p { margin-bottom: 1rem; color: var(--text-muted); }',
+        '.container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }',
+
+        /* Navigation */
+        'nav.nav {',
+          'position: sticky; top: 0; z-index: 100;',
+          'background: var(--bg);',
+          'border-bottom: 1px solid var(--border);',
+          'box-shadow: var(--shadow-sm);',
+          'backdrop-filter: blur(10px);',
+        '}',
+        'nav.nav .nav-inner {',
+          'max-width: 1200px; margin: 0 auto; padding: 1rem 1.5rem;',
+          'display: flex; justify-content: space-between; align-items: center;',
+        '}',
+        'nav.nav .logo { font-family: var(--font-heading); font-weight: 800; font-size: 1.25rem; color: var(--primary); }',
+        'nav.nav .nav-links { display: flex; gap: 2rem; list-style: none; }',
+        'nav.nav .nav-links a {',
+          'color: var(--text); font-weight: 500; font-size: 0.95rem;',
+          'transition: color 0.2s;',
+        '}',
+        'nav.nav .nav-links a:hover { color: var(--primary); }',
+
+        /* Hero */
+        '.hero {',
+          'background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);',
+          'color: #ffffff;',
+          'padding: 6rem 1.5rem 5rem;',
+          'text-align: center;',
+          'position: relative;',
+          'overflow: hidden;',
+        '}',
+        '.hero::before {',
+          'content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;',
+          'background: radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%);',
+          'pointer-events: none;',
+        '}',
+        '.hero .container { position: relative; z-index: 1; }',
+        '.hero h1 { color: #ffffff; font-weight: 900; margin-bottom: 1.25rem; }',
+        '.hero .subtitle {',
+          'font-size: clamp(1.1rem, 2vw, 1.35rem);',
+          'color: rgba(255,255,255,0.92);',
+          'max-width: 700px; margin: 0 auto 2.5rem;',
+        '}',
+
+        /* Buttons */
+        '.btn {',
+          'display: inline-flex; align-items: center; gap: 0.5rem;',
+          'padding: 1rem 2.25rem;',
+          'border-radius: var(--radius-md);',
+          'font-weight: 600; font-size: 1rem;',
+          'cursor: pointer; border: none;',
+          'transition: transform 0.2s, box-shadow 0.2s;',
+          'text-decoration: none;',
+        '}',
+        '.btn-primary { background: var(--accent); color: #ffffff; box-shadow: var(--shadow-md); }',
+        '.btn-primary:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }',
+        '.btn-outline { background: transparent; color: #ffffff; border: 2px solid #ffffff; }',
+        '.btn-outline:hover { background: #ffffff; color: var(--primary); }',
+        '.btn-dark { background: var(--primary); color: #ffffff; }',
+        '.btn-dark:hover { background: var(--secondary); transform: translateY(-2px); box-shadow: var(--shadow-lg); }',
+
+        /* Sections */
+        'section { padding: 5rem 1.5rem; }',
+        'section.alt { background: var(--surface); }',
+        '.section-header { text-align: center; max-width: 700px; margin: 0 auto 3rem; }',
+        '.section-header .eyebrow {',
+          'display: inline-block; padding: 0.35rem 1rem;',
+          'background: rgba(' + this.hexToRgb(accent) + ', 0.1);',
+          'color: var(--accent); border-radius: 999px;',
+          'font-size: 0.85rem; font-weight: 600; margin-bottom: 1rem; letter-spacing: 0.05em;',
+          'text-transform: uppercase;',
+        '}',
+
+        /* Features grid (diferenciais) */
+        '.features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; }',
+        '.feature-card {',
+          'background: var(--bg); padding: 2rem;',
+          'border-radius: var(--radius-lg);',
+          'box-shadow: var(--shadow-sm);',
+          'border: 1px solid var(--border);',
+          'transition: transform 0.2s, box-shadow 0.2s;',
+        '}',
+        '.feature-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }',
+        '.feature-icon {',
+          'width: 56px; height: 56px; border-radius: var(--radius-md);',
+          'background: linear-gradient(135deg, var(--primary), var(--secondary));',
+          'color: #ffffff; display: flex; align-items: center; justify-content: center;',
+          'margin-bottom: 1.25rem;',
+        '}',
+        '.feature-icon svg { width: 28px; height: 28px; }',
+        '.feature-card h3 { color: var(--text); }',
+        '.feature-card p { color: var(--text-muted); margin-bottom: 0; }',
+
+        /* Benefits */
+        '.benefits-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }',
+        '.benefit-item {',
+          'display: flex; gap: 1rem; padding: 1.5rem;',
+          'background: var(--bg); border-radius: var(--radius-lg);',
+          'border: 1px solid var(--border);',
+        '}',
+        '.benefit-check {',
+          'flex-shrink: 0; width: 40px; height: 40px;',
+          'background: var(--accent); color: #ffffff;',
+          'border-radius: 50%; display: flex; align-items: center; justify-content: center;',
+        '}',
+        '.benefit-check svg { width: 20px; height: 20px; }',
+        '.benefit-item h3 { font-size: 1.1rem; margin-bottom: 0.25rem; }',
+        '.benefit-item p { color: var(--text-muted); margin: 0; font-size: 0.95rem; }',
+
+        /* About */
+        '.about-content { max-width: 800px; margin: 0 auto; text-align: center; }',
+        '.about-content p { font-size: 1.125rem; line-height: 1.8; color: var(--text); }',
+
+        /* FAQ */
+        '.faq-list { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 1rem; }',
+        '.faq-item {',
+          'background: var(--bg); padding: 1.5rem;',
+          'border-radius: var(--radius-lg); border: 1px solid var(--border);',
+        '}',
+        '.faq-item h3 { color: var(--text); font-size: 1.05rem; margin-bottom: 0.5rem; }',
+        '.faq-item p { color: var(--text-muted); margin-bottom: 0; }',
+
+        /* CTA section */
+        '.cta-section {',
+          'background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);',
+          'color: #ffffff; text-align: center;',
+          'padding: 5rem 1.5rem;',
+        '}',
+        '.cta-section h2 { color: #ffffff; margin-bottom: 1rem; }',
+        '.cta-section p { color: rgba(255,255,255,0.92); font-size: 1.15rem; margin-bottom: 2rem; }',
+
+        /* Footer */
+        'footer { background: var(--text); color: rgba(255,255,255,0.7); padding: 3rem 1.5rem 2rem; text-align: center; }',
+        'footer .footer-brand { color: #ffffff; font-family: var(--font-heading); font-weight: 800; font-size: 1.25rem; margin-bottom: 0.75rem; }',
+        'footer p { font-size: 0.9rem; }',
+
+        /* WhatsApp float */
+        '.whatsapp-float {',
+          'position: fixed; bottom: 24px; right: 24px;',
+          'width: 60px; height: 60px; border-radius: 50%;',
+          'background: #25D366; color: #ffffff;',
+          'display: flex; align-items: center; justify-content: center;',
+          'box-shadow: 0 8px 25px rgba(37,211,102,0.4);',
+          'z-index: 999; animation: pulse 2s infinite;',
+        '}',
+        '.whatsapp-float svg { width: 32px; height: 32px; fill: #ffffff; }',
+        '@keyframes pulse {',
+          '0%, 100% { box-shadow: 0 8px 25px rgba(37,211,102,0.4); }',
+          '50% { box-shadow: 0 8px 35px rgba(37,211,102,0.6); }',
+        '}',
+
+        /* Mobile */
+        '@media (max-width: 768px) {',
+          'nav.nav .nav-links { display: none; }',
+          '.hero { padding: 4rem 1.5rem 3rem; }',
+          'section { padding: 3.5rem 1.5rem; }',
+          '.feature-card, .benefit-item { padding: 1.5rem; }',
+          '.cta-section { padding: 3.5rem 1.5rem; }',
+        '}',
+        '.hero { position: relative; overflow: hidden; }',
+        '.hero-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 35%; }',
+        '.hero-overlay { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(' + this.hexToRgb(primary) + ', 0.86) 0%, rgba(' + this.hexToRgb(secondary) + ', 0.78) 100%); }',
+        '.hero-image .container { position: relative; z-index: 2; }',
+        '.gallery-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }',
+        '.gallery-item { margin: 0; border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm); aspect-ratio: 4 / 3; background: var(--surface); }',
+        '.gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s; }',
+        '.gallery-item:hover img { transform: scale(1.04); }',
+        '.feature-media { margin: -2rem -2rem 1.25rem; aspect-ratio: 16 / 10; overflow: hidden; background: var(--surface); }',
+        '.feature-media img { width: 100%; height: 100%; object-fit: cover; }',
+        '.skip-link { position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden; background: var(--primary); color: #fff; padding: 0.75rem 1.25rem; font-weight: 600; border-radius: var(--radius-md); z-index: 10000; }',
+        '.skip-link:focus { position: fixed; left: 1rem; top: 1rem; width: auto; height: auto; overflow: visible; outline: 3px solid var(--accent); }',
+        '*:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }',
+        '.mobile-toggle { display: none; background: transparent; border: none; cursor: pointer; padding: 0.5rem; width: 44px; height: 44px; flex-direction: column; justify-content: center; gap: 5px; }',
+        '.hamburger-bar { display: block; width: 26px; height: 3px; background: var(--text); border-radius: 2px; transition: all 0.3s; }',
+        '.mobile-toggle[aria-expanded="true"] .hamburger-bar:nth-child(1) { transform: translateY(8px) rotate(45deg); }',
+        '.mobile-toggle[aria-expanded="true"] .hamburger-bar:nth-child(2) { opacity: 0; }',
+        '.mobile-toggle[aria-expanded="true"] .hamburger-bar:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }',
+        '@media (max-width: 768px) {',
+          'nav.nav .mobile-toggle { display: flex; }',
+          'nav.nav .nav-links { display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg); flex-direction: column; gap: 0; padding: 1rem; box-shadow: var(--shadow-md); border-top: 1px solid var(--border); }',
+          'nav.nav .nav-links.open { display: flex; }',
+          'nav.nav .nav-links li { width: 100%; }',
+          'nav.nav .nav-links a { display: block; padding: 0.85rem 1rem; border-radius: var(--radius-md); }',
+          'nav.nav .nav-links a:hover, nav.nav .nav-links a:focus { background: var(--surface); color: var(--primary); }',
+        '}',
+        '.logo-img { height: 40px; width: auto; max-width: 180px; object-fit: contain; }',
+        '@media (max-width: 768px) { .hero-bg { object-position: center 50%; } .feature-media { margin: -1.5rem -1.5rem 1rem; } }',
+      '</style>',
+      // Schema.org JSON-LD dinamico por segmento (P4)
+      (function() {
+        const seg = ((businessName || '') + ' ' + (ds?.visualStyle || '') + ' ' + (city || '')).toLowerCase();
+        let schemaType = 'LocalBusiness';
+        let schemaExtra: any = {};
+        if (/hamburguer|burger|restaur|pizzar|cafe|lanchon/.test(seg)) {
+          schemaType = 'Restaurant';
+          schemaExtra = { servesCuisine: ds?.visualStyle || '', acceptsReservations: 'True' };
+        } else if (/clinic|odonto|medic|saude|dent/.test(seg)) {
+          schemaType = 'MedicalBusiness';
+          schemaExtra = { medicalSpecialty: ds?.visualStyle || '' };
+        } else if (/imob|corret|real estate/.test(seg)) {
+          schemaType = 'RealEstateAgent';
+        } else if (/advoc|jurid|advog|law/.test(seg)) {
+          schemaType = 'LegalService';
+        }
+        const schema = {
+          '@context': 'https://schema.org',
+          '@type': schemaType,
+          name: businessName,
+          description: content?.aboutText || content?.metaDescription || businessName || '',
+          address: { '@type': 'PostalAddress', addressLocality: city, addressCountry: 'BR' },
+          url: '', telephone: cleanPhone ? '+55' + cleanPhone : '',
+          ...schemaExtra
+        };
+        return '<script type="application/ld+json">' + JSON.stringify(schema) + '</script>';
+      })(),
+
+      '</head>',
+      '<body>',
+      '<a href="#main-content" class="skip-link">Ir para o conteudo principal</a>',
+
+      // Navigation
+      '<nav class="nav" role="navigation" aria-label="Principal">',
+        '<div class="nav-inner">',
+          (assets && assets.logo && assets.logo.url) ? ('<div class="logo"><img class="logo-img" src="' + this.esc(assets.logo.url) + '" alt="Logotipo de ' + this.esc(businessName) + '"></div>') : ('<div class="logo">' + this.esc(businessName) + '</div>'),
+          '<button class="mobile-toggle" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobile-menu">',
+            '<span class="hamburger-bar"></span>',
+            '<span class="hamburger-bar"></span>',
+            '<span class="hamburger-bar"></span>',
+          '</button>',
+          '<ul class="nav-links" id="mobile-menu" role="menu">',
+            services.length > 0 ? '<li><a href="#servicos">Serviços</a></li>' : '',
+            benefits.length > 0 ? '<li><a href="#beneficios">Benefícios</a></li>' : '',
+            '<li><a href="#sobre">Sobre</a></li>',
+            faqs.length > 0 ? '<li><a href="#faq">FAQ</a></li>' : '',
+            '<li><a href="#contato">Contato</a></li>',
+          '</ul>',
+        '</div>',
+      '</nav>',
+
+      // Hero (com imagem real quando disponivel)
+      (assets && assets.hero && assets.hero.url) ? '<header class="hero hero-image" role="banner">' : '<header class="hero" role="banner">',
+      (assets && assets.hero && assets.hero.url) ? ('<img class="hero-bg" src="' + this.esc(assets.hero.url) + '" alt="' + this.esc(assets.hero.alt || '') + '" width="' + (assets.hero.width || 1600) + '" height="' + (assets.hero.height || 900) + '" fetchpriority="high">') : '',
+      (assets && assets.hero && assets.hero.url) ? '<div class="hero-overlay" aria-hidden="true"></div>' : '',
+      '<div class="container">',
+          '<h1>' + this.esc(heroHeadline) + '</h1>',
+          '<p class="subtitle">' + this.esc(heroSubtitle) + '</p>',
+          '<a href="' + this.esc(whatsappLink) + '" class="btn btn-outline" target="_blank" rel="noopener">' + this.esc(ctaText) + '</a>',
+        '</div>',
+      '</header>',
+
+      // Features (services as feature cards with icons)
+      services.length > 0 ? [
+        '<section id="servicos" aria-labelledby="services-title">',
+          '<div class="container">',
+            '<div class="section-header">',
+              '<span class="eyebrow">O que fazemos</span>',
+              '<h2 id="services-title">Nossos Serviços</h2>',
+            '</div>',
+            '<div class="features-grid">',
+              services.map((s: any, i: number) => [
+                '<div class="feature-card">',
+                  (s.image && s.image.url) ? ('<div class="feature-media"><img src="' + this.esc(s.image.url) + '" alt="' + this.esc(s.image.alt || s.title) + '" width="' + (s.image.width || 640) + '" height="' + (s.image.height || 420) + '" loading="lazy"></div>') : '',
+                  '<div class="feature-icon">' + icons[i % icons.length] + '</div>',
+                  '<h3>' + this.esc(s.title) + '</h3>',
+                  '<p>' + this.esc(s.description) + '</p>',
+                '</div>'
+              ].join('')).join(''),
+            '</div>',
+          '</div>',
+        '</section>'
+      ].join('') : '',
+
+      // Benefits
+      benefits.length > 0 ? [
+        '<section id="beneficios" class="alt" aria-labelledby="benefits-title">',
+          '<div class="container">',
+            '<div class="section-header">',
+              '<span class="eyebrow">Por que nos escolher</span>',
+              '<h2 id="benefits-title">Nossos Diferenciais</h2>',
+            '</div>',
+            '<div class="benefits-grid">',
+              benefits.map((b: any) => [
+                '<div class="benefit-item">',
+                  '<div class="benefit-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>',
+                  '<div>',
+                    '<h3>' + this.esc(b.title) + '</h3>',
+                    '<p>' + this.esc(b.description) + '</p>',
+                  '</div>',
+                '</div>'
+              ].join('')).join(''),
+            '</div>',
+          '</div>',
+        '</section>'
+      ].join('') : '',
+
+      // Gallery (imagens licitadas via providers)
+      (assets && Array.isArray(assets.gallery) && assets.gallery.length > 0) ? [
+        '<section id="galeria" class="alt" aria-labelledby="gallery-title">',
+          '<div class="container">',
+            '<div class="section-header">',
+              '<span class="eyebrow">' + this.esc(assets.galleryLabel || 'galeria') + '</span>',
+              '<h2 id="gallery-title">' + this.esc(assets.galleryTitle || 'Nossa Galeria') + '</h2>',
+            '</div>',
+            '<div class="gallery-grid">',
+              assets.gallery.map((g: any) => [
+                '<figure class="gallery-item">',
+                  '<img src="' + this.esc(g.url) + '" alt="' + this.esc(g.alt || '') + '" width="' + (g.width || 800) + '" height="' + (g.height || 600) + '" loading="lazy">',
+                '</figure>'
+              ].join('')).join(''),
+            '</div>',
+          '</div>',
+        '</section>'
+      ].join('') : '',
+
+      // Prova Social (apenas se houver dados reais fornecidos, NUNCA inventados)
+      (stats.length > 0 || testimonials.length > 0) ? [
+        '<section id="prova-social" class="alt" aria-labelledby="social-title">',
+          '<div class="container">',
+            '<div class="section-header">',
+              '<span class="eyebrow">Confiança</span>',
+              '<h2 id="social-title">Por que clientes nos escolhem</h2>',
+            '</div>',
+            (stats.length > 0 ? [
+              '<div class="stats-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:2rem;text-align:center;margin-bottom:3rem">',
+                stats.map((s: any) => [
+                  '<div class="stat-item">',
+                    '<div style="font-size:2.5rem;font-weight:800;color:var(--primary);font-family:var(--font-heading)">' + this.esc(s.number) + '</div>',
+                    '<div style="color:var(--text-muted);font-size:0.95rem">' + this.esc(s.label) + '</div>',
+                  '</div>'
+                ].join('')).join(''),
+              '</div>'
+            ].join('') : ''),
+            (testimonials.length > 0 ? [
+              '<div class="testimonials-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem">',
+                testimonials.map((t: any) => [
+                  '<div class="testimonial-card" style="background:var(--bg);padding:1.5rem;border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow-sm)">',
+                    '<p style="font-style:italic;color:var(--text);margin-bottom:1rem">"' + this.esc(t.text) + '"</p>',
+                    '<div style="font-weight:600;color:var(--primary)">' + this.esc(t.author) + '</div>',
+                    (t.role ? '<div style="font-size:0.85rem;color:var(--text-muted)">' + this.esc(t.role) + '</div>' : ''),
+                  '</div>'
+                ].join('')).join(''),
+              '</div>'
+            ].join('') : ''),
+          '</div>',
+        '</section>'
+      ].join('') : '',
+
+      // About
+      '<section id="sobre" aria-labelledby="about-title">',
+        '<div class="container">',
+          '<div class="section-header">',
+            '<span class="eyebrow">Sobre nós</span>',
+            '<h2 id="about-title">Conheça a ' + this.esc(businessName) + '</h2>',
+          '</div>',
+          '<div class="about-content">',
+            '<p>' + this.esc(aboutText) + '</p>',
+          '</div>',
+        '</div>',
+      '</section>',
+
+      // FAQ
+      faqs.length > 0 ? [
+        '<section id="faq" class="alt" aria-labelledby="faq-title">',
+          '<div class="container">',
+            '<div class="section-header">',
+              '<span class="eyebrow">Dúvidas frequentes</span>',
+              '<h2 id="faq-title">Perguntas Frequentes</h2>',
+            '</div>',
+            '<div class="faq-list">',
+              faqs.map((f: any) => [
+                '<div class="faq-item">',
+                  '<h3>' + this.esc(f.question) + '</h3>',
+                  '<p>' + this.esc(f.answer) + '</p>',
+                '</div>'
+              ].join('')).join(''),
+            '</div>',
+          '</div>',
+        '</section>'
+      ].join('') : '',
+
+      // CTA
+      '<section id="contato" class="cta-section" aria-labelledby="cta-title">',
+        '<div class="container">',
+          '<h2 id="cta-title">Pronto para começar?</h2>',
+          '<p>Entre em contato agora e descubra como podemos ajudar você.</p>',
+          '<a href="' + this.esc(whatsappLink) + '" class="btn btn-outline" target="_blank" rel="noopener">' + this.esc(ctaText) + '</a>',
+        '</div>',
+      '</section>',
+
+      // Footer
+      '<footer role="contentinfo">',
+        '<div class="container">',
+          '<div class="footer-brand">' + this.esc(businessName) + '</div>',
+          '<p>&copy; ' + year + ' ' + this.esc(businessName) + '. Todos os direitos reservados.</p>',
+        '</div>',
+      '</footer>',
+
+      // WhatsApp float
+      '<a href="' + this.esc(whatsappLink) + '" class="whatsapp-float" target="_blank" rel="noopener" aria-label="Fale conosco no WhatsApp">' + whatsappIcon + '</a>',
+
+      '<script>(function(){var b=document.querySelector(".mobile-toggle");var m=document.getElementById("mobile-menu");if(!b||!m)return;b.addEventListener("click",function(){var open=m.classList.toggle("open");b.setAttribute("aria-expanded",open?"true":"false");});m.addEventListener("click",function(e){if(e.target.tagName==="A"){m.classList.remove("open");b.setAttribute("aria-expanded","false");}});document.addEventListener("keydown",function(e){if(e.key==="Escape"&&m.classList.contains("open")){m.classList.remove("open");b.setAttribute("aria-expanded","false");b.focus();}});})();</script>',
+      '</body>',
+      '</html>'
+    ].join('\n');
+
+    // Arquitetura dinamica: quando o Creative Director fornece pageArchitecture,
+    // o renderer passa a controlar a ordem e a composicao das secoes.
+    // O HTML legado permanece como fallback para preservar compatibilidade.
+    const architecture = ds?.pageArchitecture;
+    const architectureSections = Array.isArray(architecture?.sections)
+      ? architecture.sections
+          .filter((section: any) => section && section.enabled !== false && section.type)
+          .sort((a: any, b: any) => (Number(a.priority) || 999) - (Number(b.priority) || 999))
+      : [];
+
+    if (architectureSections.length > 0) {
+      const dynamicContext = {
+        businessName,
+        city,
+        phone,
+        designSystem: ds,
+        content: { ...content, whatsappLink },
+        assets
+      };
+
+      const dynamicSections = architectureSections
+        .map((section: WebsiteSectionDefinition) => websiteSectionRenderer.render(section, dynamicContext))
+        .filter(Boolean)
+        .join('\n');
+
+      if (dynamicSections.trim()) {
+        const navEnd = html.indexOf('</nav>');
+        const footerStart = html.indexOf('<footer');
+
+        if (navEnd >= 0 && footerStart > navEnd) {
+          const beforeSections = html.substring(0, navEnd + '</nav>'.length);
+          const afterSections = html.substring(footerStart);
+          const dynamicMain = '<main id="main-content">' + dynamicSections + '</main>';
+
+          const dynamicNavItems = architectureSections
+            .filter((section: any) => String(section.type).toLowerCase() !== 'hero')
+            .map((section: any) => {
+              const type = String(section.type).toLowerCase().trim();
+
+              const labels: Record<string, string> = {
+                services: 'Serviços',
+                products: 'Produtos',
+                features: 'Destaques',
+                benefits: 'Benefícios',
+                about: 'Sobre',
+                team: 'Equipe',
+                process: 'Como funciona',
+                gallery: 'Galeria',
+                portfolio: 'Projetos',
+                testimonials: 'Depoimentos',
+                'social-proof': 'Confiança',
+                stats: 'Resultados',
+                faq: 'FAQ',
+                location: 'Localização',
+                contact: 'Contato',
+                booking: 'Agendamento',
+                menu: 'Cardápio',
+                pricing: 'Planos',
+                cases: 'Cases',
+                cta: 'Contato',
+                highlights: 'Destaques',
+                expertise: 'Especialidades'
+              };
+
+              const id = type
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+
+              return '<li><a href="#' + id + '">' +
+                this.esc(section.title || labels[type] || type) +
+                '</a></li>';
+            })
+            .join('');
+
+          const dynamicNav =
+            '<ul class="nav-links" id="mobile-menu" role="menu">' +
+            dynamicNavItems +
+            '</ul>';
+
+          const navStart = beforeSections.indexOf('<ul class="nav-links"');
+          const navClose = beforeSections.indexOf('</ul>', navStart);
+
+          const finalNav =
+            (navStart >= 0 && navClose >= 0)
+              ? beforeSections.substring(0, navStart) +
+                dynamicNav +
+                beforeSections.substring(navClose + 5)
+              : beforeSections;
+
+          html = finalNav + dynamicMain + afterSections;
+        }
+      }
+    }
+
+    return html;
+  }
+
+  private esc(s: any): string {
+    if (s === undefined || s === null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  private hexToRgb(hex: string): string {
+    const h = (hex || '#000000').replace('#', '');
+    const bigint = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return r + ',' + g + ',' + b;
+  }
+}
+export const websiteCompiler = new WebsiteCompiler();
+
+
+
+
+
+
+
+

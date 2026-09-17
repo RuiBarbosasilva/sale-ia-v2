@@ -1,53 +1,13 @@
--- ==========================================
--- RB FACTORY SITES - SPRINT 1
--- Commercial Foundation Migration
--- Criado manualmente (nao via prisma migrate dev)
--- ==========================================
+﻿-- RB FACTORY SITES - SPRINT 1
+-- Reconciliacao do estado parcial do SQLite
+-- IMPORTANTE: esta migration assume que WebsitePlan e os campos
+-- iniciais de WebsiteProspect ja existem no banco.
 
--- ==========================================
--- PASSO 1: Criar tabela WebsitePlan (nova)
--- (WebsiteProspect ira referenciar esta tabela)
--- ==========================================
-CREATE TABLE "WebsitePlan" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "code" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "description" TEXT,
-    "projectPrice" REAL,
-    "monthlyPrice" REAL,
-    "features" TEXT,
-    "active" BOOLEAN NOT NULL DEFAULT 1,
-    "position" INTEGER NOT NULL DEFAULT 0,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
-);
+-- ============================================================
+-- 1. WebsiteProspect - campos que ainda nao existem
+-- ============================================================
 
--- Unique constraint em code
-CREATE UNIQUE INDEX "WebsitePlan_code_key" ON "WebsitePlan"("code");
-
--- Indice adicional em code (conforme @@index([code]) do schema)
-CREATE INDEX "WebsitePlan_code_idx" ON "WebsitePlan"("code");
-
-
--- ==========================================
--- PASSO 2: Adicionar campos comerciais em WebsiteProspect
--- SQLite permite ALTER TABLE ADD COLUMN para campos nullable
--- Todos os novos campos sao nullable ou tem default
--- ==========================================
-
-ALTER TABLE "WebsiteProspect" ADD COLUMN "address" TEXT;
-ALTER TABLE "WebsiteProspect" ADD COLUMN "whatsapp" TEXT;
-ALTER TABLE "WebsiteProspect" ADD COLUMN "instagram" TEXT;
-ALTER TABLE "WebsiteProspect" ADD COLUMN "facebook" TEXT;
-ALTER TABLE "WebsiteProspect" ADD COLUMN "googleMapsUrl" TEXT;
-ALTER TABLE "WebsiteProspect" ADD COLUMN "description" TEXT;
-ALTER TABLE "WebsiteProspect" ADD COLUMN "businessHours" TEXT;
-ALTER TABLE "WebsiteProspect" ADD COLUMN "reviewCount" INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE "WebsiteProspect" ADD COLUMN "rating" REAL DEFAULT 0;
-ALTER TABLE "WebsiteProspect" ADD COLUMN "photoCount" INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE "WebsiteProspect" ADD COLUMN "source" TEXT;
-ALTER TABLE "WebsiteProspect" ADD COLUMN "sourceUrl" TEXT;
-ALTER TABLE "WebsiteProspect" ADD COLUMN "prospectingDate" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE "WebsiteProspect" ADD COLUMN "prospectingDate" DATETIME;
 ALTER TABLE "WebsiteProspect" ADD COLUMN "priority" TEXT NOT NULL DEFAULT 'NORMAL';
 ALTER TABLE "WebsiteProspect" ADD COLUMN "notes" TEXT;
 ALTER TABLE "WebsiteProspect" ADD COLUMN "contactPerson" TEXT;
@@ -58,18 +18,20 @@ ALTER TABLE "WebsiteProspect" ADD COLUMN "lostReason" TEXT;
 ALTER TABLE "WebsiteProspect" ADD COLUMN "estimatedValue" REAL;
 ALTER TABLE "WebsiteProspect" ADD COLUMN "auditData" TEXT;
 ALTER TABLE "WebsiteProspect" ADD COLUMN "auditPerformedAt" DATETIME;
+ALTER TABLE "WebsiteProspect" ADD COLUMN "selectedPlanId" TEXT;
 
--- selectedPlanId com FK para WebsitePlan
--- SQLite permite ADD COLUMN com REFERENCES inline
-ALTER TABLE "WebsiteProspect" ADD COLUMN "selectedPlanId" TEXT REFERENCES "WebsitePlan"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+-- Preenche a data dos prospects existentes.
+UPDATE "WebsiteProspect"
+SET "prospectingDate" = CURRENT_TIMESTAMP
+WHERE "prospectingDate" IS NULL;
 
--- Indice em selectedPlanId (FK geralmente indexada)
-CREATE INDEX "WebsiteProspect_selectedPlanId_idx" ON "WebsiteProspect"("selectedPlanId");
+CREATE INDEX "WebsiteProspect_selectedPlanId_idx"
+ON "WebsiteProspect"("selectedPlanId");
 
+-- ============================================================
+-- 2. WebsiteProspectEvent
+-- ============================================================
 
--- ==========================================
--- PASSO 3: Criar tabela WebsiteProspectEvent (nova)
--- ==========================================
 CREATE TABLE "WebsiteProspectEvent" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "prospectId" TEXT NOT NULL,
@@ -85,14 +47,19 @@ CREATE TABLE "WebsiteProspectEvent" (
         ON UPDATE CASCADE
 );
 
-CREATE INDEX "WebsiteProspectEvent_prospectId_idx" ON "WebsiteProspectEvent"("prospectId");
-CREATE INDEX "WebsiteProspectEvent_type_idx" ON "WebsiteProspectEvent"("type");
-CREATE INDEX "WebsiteProspectEvent_createdAt_idx" ON "WebsiteProspectEvent"("createdAt");
+CREATE INDEX "WebsiteProspectEvent_prospectId_idx"
+ON "WebsiteProspectEvent"("prospectId");
 
+CREATE INDEX "WebsiteProspectEvent_type_idx"
+ON "WebsiteProspectEvent"("type");
 
--- ==========================================
--- PASSO 4: Criar tabela WebsiteSubscription (nova)
--- ==========================================
+CREATE INDEX "WebsiteProspectEvent_createdAt_idx"
+ON "WebsiteProspectEvent"("createdAt");
+
+-- ============================================================
+-- 3. WebsiteSubscription
+-- ============================================================
+
 CREATE TABLE "WebsiteSubscription" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "prospectId" TEXT NOT NULL,
@@ -113,16 +80,17 @@ CREATE TABLE "WebsiteSubscription" (
         ON UPDATE CASCADE
 );
 
-CREATE INDEX "WebsiteSubscription_prospectId_idx" ON "WebsiteSubscription"("prospectId");
-CREATE INDEX "WebsiteSubscription_status_idx" ON "WebsiteSubscription"("status");
-CREATE INDEX "WebsiteSubscription_nextBillingDate_idx" ON "WebsiteSubscription"("nextBillingDate");
+CREATE INDEX "WebsiteSubscription_prospectId_idx"
+ON "WebsiteSubscription"("prospectId");
 
+CREATE INDEX "WebsiteSubscription_status_idx"
+ON "WebsiteSubscription"("status");
 
--- ==========================================
--- PASSO 5: Validacao de integridade referencial
--- ==========================================
+CREATE INDEX "WebsiteSubscription_nextBillingDate_idx"
+ON "WebsiteSubscription"("nextBillingDate");
+
+-- ============================================================
+-- 4. Validacao
+-- ============================================================
+
 PRAGMA foreign_key_check;
-
--- ==========================================
--- FIM DA MIGRATION
--- ==========================================
