@@ -786,6 +786,8 @@ model Affiliate {
   slug           String            @unique
   status         String            @default("PENDING") // PENDING, ACTIVE, BLOCKED
   commissionRate Float             @default(10)
+  accessTokenHash String?          @unique
+  lastLoginAt    DateTime?
   notes          String?
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
