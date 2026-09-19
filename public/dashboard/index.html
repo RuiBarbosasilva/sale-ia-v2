@@ -42,7 +42,7 @@ main{margin-left:252px;width:calc(100% - 252px);padding:28px 34px 60px}.top{disp
   <div class="side-bottom"><div class="status"><b><span class="dot"></span>Sistema operacional</b><p>Módulos trabalham de forma independente e supervisionada.</p></div></div>
 </aside>
 <main>
-  <div class="top"><div class="crumb">SALE-IA / <b>Central</b></div><div class="top-actions"><button class="btn" onclick="refresh()">↻ Atualizar</button><a class="btn dark" href="/rb-factory-benchmark">Abrir RB Factory</a></div></div>
+  <div class="top"><div class="crumb">SALE-IA / <b>Central</b></div><div class="top-actions"><button class="btn" onclick="setAdminKey()">🔐 Chave</button><button class="btn" onclick="refresh()">↻ Atualizar</button><a class="btn dark" href="/rb-factory-benchmark">Abrir RB Factory</a></div></div>
   <section class="hero"><div><h1>Bom dia. Vamos vender.</h1><p>Uma central limpa para acompanhar oportunidades, vendas, afiliados, sites e inteligência comercial em um só lugar.</p></div><div class="date" id="date"></div></section>
   <section class="grid">
     <div class="card"><div class="metric-label">Receita Mercado Livre</div><div class="metric" id="revenue">—</div><div class="metric-note">dados da conta conectada</div></div>
@@ -97,16 +97,19 @@ main{margin-left:252px;width:calc(100% - 252px);padding:28px 34px 60px}.top{disp
 </div>
 <script>
 const $=id=>document.getElementById(id);
+function adminKey(){return sessionStorage.getItem('saleIaAdminKey')||''}
+function setAdminKey(){const current=adminKey();const key=prompt('Chave administrativa do SALE-IA:',current);if(key!==null){if(key.trim())sessionStorage.setItem('saleIaAdminKey',key.trim());else sessionStorage.removeItem('saleIaAdminKey');refresh()}}
+async function adminFetch(url,options={}){const headers=new Headers(options.headers||{});const key=adminKey();if(key)headers.set('x-sale-ia-admin-key',key);const r=await fetch(url,{...options,headers});if(r.status===401)throw new Error('ADMIN_UNAUTHORIZED');return r}
 function money(v){return typeof v==='number'?v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}):'—'}
 async function refresh(){
   $('date').textContent=new Date().toLocaleString('pt-BR',{dateStyle:'full',timeStyle:'short'});
   try{
-    const r=await fetch('/dashboard/overview');const d=await r.json();
+    const r=await adminFetch('/dashboard/overview');const d=await r.json();
     if(d.success&&d.data){$('revenue').textContent=money(d.data.totalRevenue);$('orders').textContent=d.data.totalOrders??'0';$('items').textContent=d.data.totalItems??'0';$('sync').textContent=d.data.lastSync?'última sincronização: '+new Date(d.data.lastSync).toLocaleString('pt-BR'):'conta conectada';}
     else $('sync').textContent='Mercado Livre ainda sem métricas';
   }catch(e){$('system').textContent='ONLINE';$('sync').textContent='API de métricas indisponível no momento'}
   try{
-    const r=await fetch('/api/rb-factory-sales/pipeline');const d=await r.json();
+    const r=await adminFetch('/api/rb-factory-sales/pipeline');const d=await r.json();
     const rows=d.pipelines||[];const stages=['DISCOVERED','AUDITED','DEMO_READY','PROPOSAL_READY','CONTACTED','NEGOTIATION','WON'];
     $('pipeline').innerHTML=stages.map(s=>{const n=rows.filter(x=>x.stage===s).length;const pct=rows.length?Math.max(5,Math.round(n/rows.length*100)):5;return '<div class="stage"><span class="stage-name">'+s.replaceAll('_',' ')+'</span><div class="bar"><div class="fill" style="width:'+pct+'%"></div></div><span class="count">'+n+'</span></div>'}).join('');
   }catch(e){$('pipeline').innerHTML='<div style="font-size:11px;color:#9299a3">Pipeline aguardando dados da operação.</div>'}
