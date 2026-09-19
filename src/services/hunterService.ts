@@ -1,5 +1,6 @@
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
 import { salesPlatformService } from './salesPlatformService';
+import { GoogleGenAI } from '@google/genai';
 
 let initialized = false;
 
@@ -143,6 +144,61 @@ export const hunterService = {
     const checks={acceptsDropshipping:Boolean(s.acceptsDropshipping),issuesInvoice:Boolean(s.issuesInvoice),neutralPackaging:Boolean(s.neutralPackaging),hasTracking:Boolean(s.hasTracking),returnPolicy:Boolean(s.returnPolicy),shippingSla:Boolean(s.shippingSlaDays)};
     const passed=Object.values(checks).filter(Boolean).length;
     return {supplier:s,checks,score:Math.round((passed/Object.keys(checks).length)*100),decision:passed>=5?'READY_FOR_HUMAN_PARTNERSHIP_REVIEW':'NEEDS_VERIFICATION'};
+  },
+  async researchMarket(input:any) {
+    await init();
+    const apiKey = process.env.GEMINI_API_KEY || '';
+    if (!apiKey) throw new Error('GEMINI_API_KEY_NOT_CONFIGURED');
+    const ai = new GoogleGenAI({ apiKey });
+    const market = String(input.market || input.niche || 'oportunidades digitais e serviços B2B no Brasil');
+    const region = String(input.region || 'Brasil');
+    const objective = String(input.objective || 'encontrar oportunidades reais que possam ser testadas com baixo capital');
+    const prompt = [
+      'Pesquise a web em tempo real e aja como analista de oportunidades do SALE-IA-V2.',
+      'Não invente dados. Diferencie evidência de interpretação.',
+      'Procure sinais concretos de demanda, crescimento, monetização, margem, aquisição, concorrência e velocidade de teste.',
+      'Priorize fontes primárias, marketplaces, dados de empresas, páginas de preços, pesquisas, notícias e documentação oficial.',
+      'Não recomende atividades ilegais, enganosas ou que dependam de burlar políticas de plataformas.',
+      'Retorne JSON puro com: title, category, market, description, demandScore, growthScore, monetizationScore, marginScore, competitionScore, acquisitionScore, capitalScore, speedScore, recommendedTest, evidence [{sourceName,sourceUrl,claim,strength,evidenceType}].',
+      'Scores são hipóteses analíticas de 0 a 100 e devem ser conservadores.',
+      'Mercado: '+market,
+      'Região: '+region,
+      'Objetivo: '+objective
+    ].join('\n');
+    const interaction = await (ai as any).interactions.create({
+      model: process.env.HUNTER_AI_MODEL || process.env.GEMINI_MODEL || 'gemini-3.6-flash',
+      input: prompt,
+      tools: [{ type: 'google_search' }],
+      system_instruction: 'Você é um pesquisador de mercado evidence-first. Nunca trate uma hipótese como fato. Inclua somente URLs que realmente apareceram nos resultados de pesquisa.'
+    });
+    const raw = String(interaction?.output_text || '').trim();
+    const cleaned = raw.replace(/^\`\`\`json/i,'').replace(/\`\`\`$/,'').trim();
+    let result:any;
+    try { result = JSON.parse(cleaned); } catch { throw new Error('HUNTER_AI_INVALID_JSON'); }
+    const opportunity = await this.createOpportunity(result);
+    const opportunityId = opportunity[0]?.id || opportunity.id;
+    const evidence = Array.isArray(result.evidence) ? result.evidence.slice(0,20) : [];
+    for (const ev of evidence) {
+      if (!ev?.claim) continue;
+      await this.addEvidence(opportunityId, {
+        sourceName: ev.sourceName || 'Web',
+        sourceUrl: ev.sourceUrl || null,
+        claim: String(ev.claim),
+        strength: n(ev.strength || 50),
+        evidenceType: ev.evidenceType || 'WEB_SEARCH'
+      });
+    }
+    const sources:any[] = [];
+    for (const step of (interaction?.steps || [])) {
+      if (step?.type === 'model_output') {
+        for (const block of (step?.content || [])) {
+          for (const annotation of (block?.annotations || [])) {
+            if (annotation?.type === 'url_citation') sources.push({title:annotation.title || '',url:annotation.url || ''});
+          }
+        }
+      }
+    }
+    return { opportunityId, opportunity, evidenceCount: evidence.length, citations: sources };
   },
   async platformBootstrap(){ return salesPlatformService.bootstrap(); }
 };
