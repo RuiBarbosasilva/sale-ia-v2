@@ -905,6 +905,7 @@ model AffiliatePayoutItem {
   createdAt DateTime        @default(now())
 
   @@unique([payoutId, saleId])
+  @@unique([saleId])
   @@index([saleId])
   @@index([payoutId])
 }
