@@ -970,8 +970,9 @@ model AffiliateProduct {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
-  scores     AffiliateProductScore[]
-  campaigns  AffiliateCampaign[]
+  scores         AffiliateProductScore[]
+  opportunities  AffiliateOpportunity[]
+  campaigns      AffiliateCampaign[]
 
   @@unique([networkId, externalId])
   @@index([networkId])
