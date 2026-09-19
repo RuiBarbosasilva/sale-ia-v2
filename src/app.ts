@@ -16,6 +16,7 @@ import apiRoutes from './routes/apiRoutes';
 import { errorHandler } from './middlewares/errorHandler';
 import editorialFactoryRoutes from './routes/editorialFactoryRoutes';
 import seniorSalesRoutes from './routes/seniorSalesRoutes';
+import salesOrchestrationRoutes from './routes/salesOrchestrationRoutes';
 
 const app = express();
 app.use(express.json());
@@ -49,6 +50,7 @@ app.use('/api/braip', braipRoutes);
 app.use('/api/hunter', hunterRoutes);
 app.use('/api/editorial', editorialFactoryRoutes);
 app.use('/api/sales', seniorSalesRoutes);
+app.use('/api/sales-orchestration', salesOrchestrationRoutes);
 app.use('/go', affiliatePublicRoutes);
 app.use('/api/mercadolivre', mlRoutes);
 app.use('/dashboard', dashboardRoutes);
