@@ -871,6 +871,7 @@ model AffiliateSale {
   createdAt        DateTime       @default(now())
   approvedAt       DateTime?
   paidAt           DateTime?
+  payoutItems      AffiliatePayoutItem[]
 
   @@index([affiliateId, status])
   @@index([createdAt])
@@ -887,7 +888,23 @@ model AffiliatePayout {
   notes       String?
   requestedAt DateTime  @default(now())
   paidAt      DateTime?
+  items       AffiliatePayoutItem[]
 
   @@index([affiliateId, status])
   @@index([requestedAt])
+}
+
+
+model AffiliatePayoutItem {
+  id        String          @id @default(uuid())
+  payoutId  String
+  payout    AffiliatePayout @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+  saleId    String
+  sale      AffiliateSale   @relation(fields: [saleId], references: [id], onDelete: Restrict)
+  amount    Float
+  createdAt DateTime        @default(now())
+
+  @@unique([payoutId, saleId])
+  @@index([saleId])
+  @@index([payoutId])
 }
