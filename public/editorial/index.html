@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SALE-IA • Editorial Factory</title>
+<style>body{font-family:Inter,Arial;background:#0b1020;color:#eef2ff;margin:0}main{max-width:1100px;margin:auto;padding:32px}.card{background:#151d32;border:1px solid #2b3652;border-radius:16px;padding:20px;margin:16px 0}input,select,button{padding:12px;border-radius:9px;border:1px solid #3a4766;background:#0e1527;color:#fff}input{width:60%}button{cursor:pointer}table{width:100%;border-collapse:collapse}td,th{padding:10px;border-bottom:1px solid #29334b;text-align:left}.muted{color:#9aa7c2}.ok{color:#67e8a5}</style></head>
+<body><main><h1>Editorial Factory</h1><p class="muted">Pesquisa → oportunidade → produção → Quality Gate → PDF/EPUB → landing → publicação.</p>
+<div class="card"><h2>1. Pesquisar oportunidade</h2><input id="topic" placeholder="Ex.: organização financeira para famílias"><button onclick="research()">Pesquisar</button><pre id="researchOut"></pre></div>
+<div class="card"><h2>2. Oportunidades</h2><button onclick="loadOpp()">Atualizar</button><table><thead><tr><th>Tema</th><th>Score</th><th>Status</th><th>Ação</th></tr></thead><tbody id="opp"></tbody></table></div>
+<div class="card"><h2>3. Projeto</h2><p id="project" class="muted">Nenhum projeto selecionado.</p><button onclick="generate()">Gerar conteúdo</button><button onclick="gate()">Quality Gate</button><button onclick="renderBook()">Renderizar PDF/EPUB</button><button onclick="landing()">Criar landing</button></div>
+<script>
+let selected=null;
+async function api(u,o){let r=await fetch('/api/editorial'+u,{headers:{'Content-Type':'application/json'},...o});return r.json()}
+async function research(){let topic=document.getElementById('topic').value;let x=await api('/research',{method:'POST',body:JSON.stringify({topic})});document.getElementById('researchOut').textContent=JSON.stringify(x,null,2);loadOpp()}
+async function loadOpp(){let x=await api('/opportunities');document.getElementById('opp').innerHTML=(x.data||[]).map(o=>'<tr><td>'+o.topic+'</td><td>'+o.opportunityScore+'</td><td>'+o.status+'</td><td><button onclick="selectOpp(\''+o.id+'\')">Selecionar</button></td></tr>').join('')}
+async function selectOpp(id){let x=await api('/projects',{method:'POST',body:JSON.stringify({opportunityId:id,productType:'EBOOK'})});selected=x.data;document.getElementById('project').textContent='Projeto: '+selected.id+' • '+selected.title}
+async function generate(){if(!selected)return alert('Selecione uma oportunidade');let x=await api('/projects/'+selected.id+'/generate',{method:'POST'});document.getElementById('project').textContent='Conteúdo gerado: '+x.data.id}
+async function gate(){if(!selected)return;let x=await api('/projects/'+selected.id+'/quality-gate',{method:'POST'});document.getElementById('project').textContent=JSON.stringify(x.data)}
+async function renderBook(){if(!selected)return;let x=await api('/projects/'+selected.id+'/render',{method:'POST'});document.getElementById('project').textContent=JSON.stringify(x.data)}
+async function landing(){if(!selected)return;let x=await api('/projects/'+selected.id+'/landing',{method:'POST',body:JSON.stringify({})});document.getElementById('project').textContent=JSON.stringify(x.data)}
+loadOpp();
+</script></main></body></html>
