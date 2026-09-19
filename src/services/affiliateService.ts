@@ -280,7 +280,10 @@ export const affiliateService = {
         sales: sales._count,
         salesValue: Number(sales._sum.amount || 0),
         commissions: Number(sales._sum.commissionAmount || 0),
-        approvedBalance: Number(approved._sum.commissionAmount || 0),
+        approvedBalance: Math.max(
+          0,
+          Number(approved._sum.commissionAmount || 0) - Number(payouts._sum.amount || 0),
+        ),
         pendingCommission: Number(pending._sum.commissionAmount || 0),
         paidCommission: Number(paid._sum.commissionAmount || 0),
         payoutInProgress: Number(payouts._sum.amount || 0),
