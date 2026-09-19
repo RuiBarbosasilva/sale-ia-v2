@@ -1084,3 +1084,186 @@ model AffiliateAction {
   @@index([status])
   @@index([type])
 }
+
+
+// ==========================================================
+// EDITORIAL FACTORY / KDP - PIPELINE COMERCIAL
+// ==========================================================
+
+model EditorialResearch {
+  id          String   @id @default(uuid())
+  topic       String
+  market      String   @default("BR")
+  language    String   @default("pt-BR")
+  sourceType  String
+  sourceUrl   String?
+  sourceTitle String?
+  snippet     String?
+  data        String?
+  capturedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  opportunities EditorialOpportunity[]
+  @@index([topic])
+  @@index([market, capturedAt])
+}
+
+model EditorialOpportunity {
+  id              String   @id @default(uuid())
+  topic           String
+  productType     String   @default("EBOOK")
+  market          String   @default("BR")
+  language        String   @default("pt-BR")
+  audience        String?
+  demandScore     Float     @default(0)
+  trendScore      Float     @default(0)
+  competitionScore Float    @default(0)
+  saturationScore Float      @default(0)
+  commercialScore Float      @default(0)
+  opportunityScore Float    @default(0)
+  reasoning       String?
+  status          String    @default("NEW")
+  researchIds     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  projects EditorialProject[]
+  @@index([opportunityScore])
+  @@index([status])
+  @@index([topic])
+}
+
+model EditorialProject {
+  id                 String   @id @default(uuid())
+  opportunityId      String?
+  opportunity        EditorialOpportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  productType        String   @default("EBOOK")
+  status             String   @default("RESEARCHED")
+  language           String   @default("pt-BR")
+  market             String   @default("BR")
+  title              String?
+  subtitle           String?
+  author             String?
+  series             String?
+  volume             Int?
+  audience           String?
+  description        String?
+  manuscript         String?
+  metadata           String?
+  manuscriptPath     String?
+  coverPath          String?
+  interiorPath       String?
+  epubPath           String?
+  pdfPath            String?
+  printPdfPath       String?
+  qualityScore       Float    @default(0)
+  aiDisclosure       String   @default("AI_ASSISTED")
+  rightsNotes        String?
+  generationProvider String?
+  generationModel    String?
+  errorMessage       String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  chapters EditorialChapter[]
+  assets EditorialAsset[]
+  checks EditorialQualityCheck[]
+  publications EditorialPublication[]
+  landingPages EditorialLandingPage[]
+  metrics EditorialMetric[]
+
+  @@index([status])
+  @@index([productType])
+  @@index([qualityScore])
+}
+
+model EditorialChapter {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     EditorialProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  position    Int
+  title       String
+  content     String
+  wordCount   Int      @default(0)
+  status      String   @default("DRAFT")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([projectId, position])
+  @@index([projectId])
+}
+
+model EditorialAsset {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     EditorialProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type        String
+  path        String?
+  url         String?
+  prompt      String?
+  altText     String?
+  width       Int?
+  height      Int?
+  checksum    String?
+  status      String   @default("GENERATED")
+  createdAt   DateTime @default(now())
+  @@index([projectId, type])
+}
+
+model EditorialQualityCheck {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     EditorialProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  checkType   String
+  status      String
+  score       Float   @default(0)
+  details     String?
+  createdAt   DateTime @default(now())
+  @@index([projectId, status])
+}
+
+model EditorialPublication {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     EditorialProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  platform    String
+  status      String   @default("MANUAL_REQUIRED")
+  externalId  String?
+  url         String?
+  payload     String?
+  error       String?
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@unique([projectId, platform])
+  @@index([platform, status])
+}
+
+model EditorialLandingPage {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     EditorialProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  slug        String   @unique
+  title       String
+  headline    String
+  body        String
+  ctaText     String
+  checkoutUrl String?
+  status      String   @default("DRAFT")
+  htmlPath    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model EditorialMetric {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     EditorialProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  event       String
+  platform    String?
+  value       Float   @default(0)
+  metadata    String?
+  occurredAt  DateTime @default(now())
+  @@index([projectId, event])
+  @@index([occurredAt])
+}

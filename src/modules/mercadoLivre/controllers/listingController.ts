@@ -23,8 +23,10 @@ export const getListings = async (req: Request, res: Response) => {
 export const getItem = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const accountId = req.query.accountId as string;
-    const data = await listingService.getItem(accountId, id);
+    const accountId = (req.query.accountId as string) || (req as any).user?.accountId;
+    const account = accountId ? await prisma.mercadoLivreAccount.findUnique({ where: { id: accountId, isActive: true } }) : await prisma.mercadoLivreAccount.findFirst({ where: { isActive: true }, orderBy: { createdAt: 'desc' } });
+    if (!account) return res.status(404).json({ error: 'MERCADO_LIVRE_ACCOUNT_NOT_FOUND' });
+    const data = await listingService.getItem(account.id, id);
     res.json(data);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -33,8 +35,10 @@ export const getItem = async (req: Request, res: Response) => {
 
 export const createListing = async (req: Request, res: Response) => {
   try {
-    const accountId = req.body.accountId || (req as any).user?.accountId;
-    const data = await listingService.createListing(accountId, req.body);
+    const accountId = req.body.accountId || (req as any).user?.accountId || (await prisma.mercadoLivreAccount.findFirst({ where: { isActive: true }, orderBy: { createdAt: 'desc' } }))?.id;
+    if (!accountId) return res.status(404).json({ error: 'MERCADO_LIVRE_ACCOUNT_NOT_FOUND' });
+    const { accountId: _accountId, ...listingData } = req.body;
+    const data = await listingService.createListing(accountId, listingData);
     res.status(201).json(data);
   } catch (error: any) {
     res.status(400).json({ error: error.message });
@@ -44,8 +48,10 @@ export const createListing = async (req: Request, res: Response) => {
 export const updateListing = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const accountId = req.body.accountId || (req as any).user?.accountId;
-    const data = await listingService.updateListing(accountId, id, req.body);
+    const accountId = req.body.accountId || (req as any).user?.accountId || (await prisma.mercadoLivreAccount.findFirst({ where: { isActive: true }, orderBy: { createdAt: 'desc' } }))?.id;
+    if (!accountId) return res.status(404).json({ error: 'MERCADO_LIVRE_ACCOUNT_NOT_FOUND' });
+    const { accountId: _accountId, ...updateData } = req.body;
+    const data = await listingService.updateListing(accountId, id, updateData);
     res.json(data);
   } catch (error: any) {
     res.status(400).json({ error: error.message });
@@ -55,7 +61,8 @@ export const updateListing = async (req: Request, res: Response) => {
 export const pauseListing = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const accountId = req.body.accountId || (req as any).user?.accountId;
+    const accountId = req.body.accountId || (req as any).user?.accountId || (await prisma.mercadoLivreAccount.findFirst({ where: { isActive: true }, orderBy: { createdAt: 'desc' } }))?.id;
+    if (!accountId) return res.status(404).json({ error: 'MERCADO_LIVRE_ACCOUNT_NOT_FOUND' });
     const data = await listingService.changeStatus(accountId, id, 'paused');
     res.json(data);
   } catch (error: any) {
@@ -66,7 +73,8 @@ export const pauseListing = async (req: Request, res: Response) => {
 export const activateListing = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const accountId = req.body.accountId || (req as any).user?.accountId;
+    const accountId = req.body.accountId || (req as any).user?.accountId || (await prisma.mercadoLivreAccount.findFirst({ where: { isActive: true }, orderBy: { createdAt: 'desc' } }))?.id;
+    if (!accountId) return res.status(404).json({ error: 'MERCADO_LIVRE_ACCOUNT_NOT_FOUND' });
     const data = await listingService.changeStatus(accountId, id, 'active');
     res.json(data);
   } catch (error: any) {
