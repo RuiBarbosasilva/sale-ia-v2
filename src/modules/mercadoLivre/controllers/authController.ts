@@ -9,13 +9,13 @@ export const connect = (req: Request, res: Response) => {
   try {
     console.log('[ML OAuth] 🟢 Iniciando fluxo de conexão...');
     const state = oauthStateService.generateState();
-    console.log('[ML OAuth] 🔑 State gerado:', state.substring(0, 8) + '...');
+    console.log('[ML OAuth] 🔑 State gerado');
     
     const appId = process.env.MERCADO_LIVRE_APP_ID;
     const redirectUri = process.env.MERCADO_LIVRE_REDIRECT_URI;
     
     console.log('[ML OAuth] ⚙️ APP_ID:', appId ? 'CONFIGURADO' : '❌ AUSENTE');
-    console.log('[ML OAuth] ⚙️ REDIRECT_URI:', redirectUri);
+    console.log('[ML OAuth] ⚙️ REDIRECT_URI:', redirectUri ? 'CONFIGURADO' : 'AUSENTE');
     
     if (!appId || !redirectUri) {
       throw new Error('Variáveis de ambiente do ML não configuradas no .env');
@@ -27,7 +27,7 @@ export const connect = (req: Request, res: Response) => {
     res.redirect(authUrl);
   } catch (error: any) {
     console.error('[ML OAuth] ❌ Erro ao iniciar conexão:', error.message);
-    res.status(500).json({ error: 'MERCADO_LIVRE_INTERNAL_ERROR', message: error.message });
+    res.status(500).json({ error: 'MERCADO_LIVRE_INTERNAL_ERROR', requestId: (req as any).requestId });
   }
 };
 
@@ -85,15 +85,12 @@ export const callback = async (req: Request, res: Response) => {
     if (tokenResponse.status >= 400) {
       console.error('\n[ML OAuth] 🚨🚨🚨 O MERCADO LIVRE RETORNOU UM ERRO! 🚨🚨🚨');
       console.error('[ML OAuth] Status HTTP:', tokenResponse.status);
-      console.error('[ML OAuth] Corpo da Resposta (Data):', JSON.stringify(tokenResponse.data, null, 2));
-      console.error('[ML OAuth] Corpo da Resposta (Text):', tokenResponse.data);
-      
-      const mlErrorMessage = tokenResponse.data?.message || tokenResponse.data?.error_description || tokenResponse.data?.error || `HTTP ${tokenResponse.status}`;
-      throw new Error(mlErrorMessage);
+      console.error('[ML OAuth] Resposta de erro recebida do provedor', { status: tokenResponse.status });
+      throw new Error('MERCADO_LIVRE_TOKEN_EXCHANGE_FAILED');
     }
 
     console.log('[ML OAuth] ✅ Token recebido com sucesso!');
-    console.log('[ML OAuth] Access Token:', tokenResponse.data.access_token?.substring(0, 10) + '...');
+    console.log('[ML OAuth] Access Token recebido');
 
     // Buscando dados do usuário
     console.log('[ML OAuth] 👤 Buscando dados em /users/me...');
@@ -134,11 +131,10 @@ export const callback = async (req: Request, res: Response) => {
     console.error('\n========================================');
     console.error('[ML OAuth] ❌ ERRO CRÍTICO NO CALLBACK');
     console.error('========================================');
-    console.error('[ML OAuth] Mensagem Final:', error.message);
+    console.error('[ML OAuth] Falha no fluxo OAuth');
     console.error('========================================\n');
     
-    const encodedError = encodeURIComponent(error.message || 'Erro desconhecido');
-    res.redirect(`/dashboard/mercadolivre?status=error&message=${encodedError}`);
+    res.redirect('/dashboard/mercadolivre?status=error&message=MERCADO_LIVRE_OAUTH_FAILED');
   }
 };
 

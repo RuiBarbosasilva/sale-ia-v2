@@ -43,6 +43,11 @@ export const handleWebhook = async (req: Request, res: Response) => {
     topic = normalizeTopic(req.body?.topic);
     resourceId = normalizeResource(req.body?.resource);
     userId = normalizeUserId(req.body?.user_id);
+    const configuredAppId = (process.env.MERCADO_LIVRE_APP_ID || '').trim();
+    const notificationAppId = String(req.body?.application_id ?? '').trim();
+    if (configuredAppId && notificationAppId && notificationAppId !== configuredAppId) {
+      throw new Error('INVALID_WEBHOOK_APPLICATION');
+    }
   } catch {
     return res.status(400).send('INVALID_WEBHOOK');
   }
@@ -64,7 +69,7 @@ export const handleWebhook = async (req: Request, res: Response) => {
       topic,
       resource: resourceId,
       user_id: userId,
-      application_id: req.body?.application_id,
+      application_id: String(req.body?.application_id ?? '').slice(0, 40),
       sent: req.body?.sent,
       attempts: req.body?.attempts,
     });

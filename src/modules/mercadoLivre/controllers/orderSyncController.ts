@@ -1,104 +1,50 @@
+
 ﻿// src/modules/mercadoLivre/controllers/orderSyncController.ts
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
 import { mercadoLivreOrderSyncService } from '../services/mercadoLivreOrderSyncService';
 
+function boundedInt(value: unknown, fallback: number, min: number, max: number) {
+  if (value === undefined) return fallback;
+  const n = Number(value);
+  if (!Number.isInteger(n) || n < min || n > max) throw new Error('INVALID_PAGINATION');
+  return n;
+}
+
 export const syncOrders = async (req: Request, res: Response) => {
   try {
-    console.log('[ML Orders API] 🟢 Iniciando sincronização de pedidos via endpoint...');
+    const account = await prisma.mercadoLivreAccount.findFirst({ where: { isActive: true }, orderBy: { createdAt: 'desc' } });
+    if (!account) return res.status(404).json({ success: false, error: 'MERCADO_LIVRE_ACCOUNT_NOT_FOUND' });
 
-    // Buscar conta ativa
-    const account = await prisma.mercadoLivreAccount.findFirst({
-      where: { isActive: true },
-      orderBy: { createdAt: 'desc' }
-    });
-
-    if (!account) {
-      return res.status(404).json({
-        success: false,
-        message: 'Nenhuma conta Mercado Livre ativa encontrada'
-      });
-    }
-
-    console.log(`[ML Orders API] ✅ Conta encontrada: ${account.nickname}`);
-
-    // Extrair opções da query
-    const daysBack = req.query.daysBack ? parseInt(req.query.daysBack as string) : 90;
-
-    // Executar sincronização
+    const daysBack = boundedInt(req.query.daysBack, 90, 1, 365);
     const stats = await mercadoLivreOrderSyncService.syncOrders(account.id, { daysBack });
 
-    // Retornar resultado
-    res.json({
+    return res.json({
       success: stats.success,
       message: stats.success ? 'Pedidos sincronizados com sucesso' : 'Sincronização concluída com erros',
-      stats: {
-        totalFound: stats.totalFound,
-        created: stats.created,
-        updated: stats.updated,
-        failed: stats.failed,
-        syncedAt: stats.syncedAt
-      },
-      account: {
-        id: account.id,
-        nickname: account.nickname,
-        mlUserId: account.mlUserId
-      }
+      stats: { totalFound: stats.totalFound, created: stats.created, updated: stats.updated, failed: stats.failed, syncedAt: stats.syncedAt },
+      account: { id: account.id, nickname: account.nickname, mlUserId: account.mlUserId }
     });
-
-  } catch (error: any) {
-    console.error('[ML Orders API] ❌ Erro:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Erro ao sincronizar pedidos',
-      error: error.message
-    });
+  } catch (error) {
+    const code = error instanceof Error && error.message === 'INVALID_PAGINATION' ? 'INVALID_PAGINATION' : 'MERCADO_LIVRE_ORDERS_SYNC_ERROR';
+    return res.status(code === 'INVALID_PAGINATION' ? 400 : 500).json({ success: false, error: code, requestId: (req as any).requestId });
   }
 };
 
 export const listOrders = async (req: Request, res: Response) => {
   try {
-    // Buscar conta ativa
-    const account = await prisma.mercadoLivreAccount.findFirst({
-      where: { isActive: true },
-      orderBy: { createdAt: 'desc' }
-    });
+    const account = await prisma.mercadoLivreAccount.findFirst({ where: { isActive: true }, orderBy: { createdAt: 'desc' } });
+    if (!account) return res.status(404).json({ success: false, error: 'MERCADO_LIVRE_ACCOUNT_NOT_FOUND' });
 
-    if (!account) {
-      return res.status(404).json({
-        success: false,
-        message: 'Nenhuma conta Mercado Livre ativa encontrada'
-      });
-    }
+    const page = boundedInt(req.query.page, 1, 1, 100000);
+    const limit = boundedInt(req.query.limit, 50, 1, 100);
+    const status = typeof req.query.status === 'string' && /^[a-z_]{1,40}$/i.test(req.query.status)
+      ? req.query.status : undefined;
 
-    // Extrair filtros da query
-    const status = req.query.status as string | undefined;
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 50;
-
-    // Listar pedidos
-    const result = await mercadoLivreOrderSyncService.listOrders(account.id, {
-      status,
-      page,
-      limit
-    });
-
-    res.json({
-      success: true,
-      account: {
-        id: account.id,
-        nickname: account.nickname,
-        mlUserId: account.mlUserId
-      },
-      ...result
-    });
-
-  } catch (error: any) {
-    console.error('[ML Orders API] ❌ Erro ao listar pedidos:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Erro ao listar pedidos',
-      error: error.message
-    });
+    const result = await mercadoLivreOrderSyncService.listOrders(account.id, { status, page, limit });
+    return res.json({ success: true, account: { id: account.id, nickname: account.nickname, mlUserId: account.mlUserId }, ...result });
+  } catch (error) {
+    const code = error instanceof Error && error.message === 'INVALID_PAGINATION' ? 'INVALID_PAGINATION' : 'MERCADO_LIVRE_ORDERS_ERROR';
+    return res.status(code === 'INVALID_PAGINATION' ? 400 : 500).json({ success: false, error: code, requestId: (req as any).requestId });
   }
 };

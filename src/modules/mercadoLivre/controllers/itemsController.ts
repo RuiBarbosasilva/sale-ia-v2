@@ -1,46 +1,36 @@
+
 ﻿// src/modules/mercadoLivre/controllers/itemsController.ts
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
 import { mercadoLivreSyncService } from '../services/mercadoLivreSyncService';
 
+function boundedInt(value: unknown, fallback: number, min: number, max: number) {
+  if (value === undefined) return fallback;
+  const n = Number(value);
+  if (!Number.isInteger(n) || n < min || n > max) throw new Error('INVALID_PAGINATION');
+  return n;
+}
+
 export const listItems = async (req: Request, res: Response) => {
   try {
-    // Buscar conta ativa
     const account = await prisma.mercadoLivreAccount.findFirst({
       where: { isActive: true },
       orderBy: { createdAt: 'desc' }
     });
+    if (!account) return res.status(404).json({ success: false, error: 'MERCADO_LIVRE_ACCOUNT_NOT_FOUND' });
 
-    if (!account) {
-      return res.status(404).json({
-        success: false,
-        message: 'Nenhuma conta Mercado Livre ativa encontrada'
-      });
-    }
-
-    // Extrair parâmetros de paginação
-    const limit = parseInt(req.query.limit as string) || 50;
-    const offset = parseInt(req.query.offset as string) || 0;
-
-    // Listar itens sincronizados
+    const limit = boundedInt(req.query.limit, 50, 1, 100);
+    const offset = boundedInt(req.query.offset, 0, 0, 100000);
     const result = await mercadoLivreSyncService.listItems(account.id, limit, offset);
 
-    res.json({
+    return res.json({
       success: true,
-      account: {
-        id: account.id,
-        nickname: account.nickname,
-        mlUserId: account.mlUserId
-      },
+      account: { id: account.id, nickname: account.nickname, mlUserId: account.mlUserId },
       ...result
     });
-
-  } catch (error: any) {
-    console.error('[ML Items] ❌ Erro:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Erro ao listar anúncios',
-      error: error.message
-    });
+  } catch (error) {
+    const code = error instanceof Error && error.message === 'INVALID_PAGINATION'
+      ? 'INVALID_PAGINATION' : 'MERCADO_LIVRE_ITEMS_ERROR';
+    return res.status(code === 'INVALID_PAGINATION' ? 400 : 500).json({ success: false, error: code });
   }
 };
