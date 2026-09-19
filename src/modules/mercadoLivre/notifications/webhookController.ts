@@ -2,53 +2,101 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
 
-export const handleWebhook = async (req: Request, res: Response) => {
-  const { topic, resource, user_id } = req.body;
+const MAX_TOPIC_LENGTH = 80;
+const MAX_RESOURCE_LENGTH = 500;
 
-  // 1. Responder IMEDIATAMENTE ao Mercado Livre para evitar retentativas agressivas (429)
+function normalizeResource(resource: unknown) {
+  if (typeof resource !== 'string') throw new Error('INVALID_WEBHOOK_RESOURCE');
+  if (resource.length < 1 || resource.length > MAX_RESOURCE_LENGTH) throw new Error('INVALID_WEBHOOK_RESOURCE');
+
+  try {
+    const url = new URL(resource);
+    if (url.protocol !== 'https:' || url.hostname !== 'api.mercadolibre.com') {
+      throw new Error('INVALID_WEBHOOK_RESOURCE');
+    }
+    return url.toString();
+  } catch {
+    throw new Error('INVALID_WEBHOOK_RESOURCE');
+  }
+}
+
+function normalizeTopic(topic: unknown) {
+  if (typeof topic !== 'string' || !/^[a-z0-9_.-]{1,80}$/i.test(topic)) {
+    throw new Error('INVALID_WEBHOOK_TOPIC');
+  }
+  return topic.slice(0, MAX_TOPIC_LENGTH);
+}
+
+function normalizeUserId(userId: unknown) {
+  const value = String(userId ?? '');
+  if (!/^\d{1,30}$/.test(value)) throw new Error('INVALID_WEBHOOK_USER');
+  return value;
+}
+
+export const handleWebhook = async (req: Request, res: Response) => {
+  // Mercado Livre exige resposta rápida; validação e persistência são mantidas leves.
+  let topic: string;
+  let resourceId: string;
+  let userId: string;
+
+  try {
+    topic = normalizeTopic(req.body?.topic);
+    resourceId = normalizeResource(req.body?.resource);
+    userId = normalizeUserId(req.body?.user_id);
+  } catch {
+    return res.status(400).send('INVALID_WEBHOOK');
+  }
+
   res.status(200).send('OK');
 
   try {
-    // Extrair resourceId de forma segura (pode vir como string ou objeto dependendo do tópico)
-    const resourceId = typeof resource === 'string' ? resource : JSON.stringify(resource);
+    const account = await prisma.mercadoLivreAccount.findFirst({
+      where: { mlUserId: userId, isActive: true },
+      select: { id: true }
+    });
 
-    // 2. Verificar Idempotência (usando findFirst, já que 'id' é a única chave única no schema atual)
+    if (!account) {
+      console.warn('[ML Webhook] Conta não encontrada para usuário do evento', { userId });
+      return;
+    }
+
+    const payload = JSON.stringify({
+      topic,
+      resource: resourceId,
+      user_id: userId,
+      application_id: req.body?.application_id,
+      sent: req.body?.sent,
+      attempts: req.body?.attempts,
+    });
+
     const existingEvent = await prisma.mercadoLivreWebhookEvent.findFirst({
       where: { topic, resourceId },
       orderBy: { createdAt: 'desc' }
     });
 
     if (existingEvent?.processed) {
-      console.log(`[ML Webhook] Evento ignorado (já processado): ${topic} - ${resourceId}`);
       return;
     }
 
     if (existingEvent) {
-      // Se existe mas não foi processado (ex: falha anterior), atualiza o payload e marca para reprocessamento
       await prisma.mercadoLivreWebhookEvent.update({
         where: { id: existingEvent.id },
-        data: { 
-          processed: false,
-          payload: JSON.stringify(req.body) 
-        }
+        data: { processed: false, payload }
       });
     } else {
-      // Se não existe, cria um novo registro
       await prisma.mercadoLivreWebhookEvent.create({
         data: {
           topic,
           resourceId,
-          payload: JSON.stringify(req.body),
+          payload,
           processed: false,
         }
       });
     }
-
-    // 3. Disparar para fila de processamento em background (Exemplo)
-    // eventBus.emit('ML_WEBHOOK_RECEIVED', { topic, resourceId, userId: user_id });
-    // O worker irá buscar os eventos com processed=false, consultar a API do ML e marcar como processed=true
-
   } catch (error) {
-    console.error('[ML Webhook] Erro ao registrar evento:', error);
+    console.error('[ML Webhook] Falha ao registrar evento', {
+      requestId: (req as any).requestId,
+      code: error instanceof Error ? error.message : 'WEBHOOK_PERSISTENCE_FAILED'
+    });
   }
 };
