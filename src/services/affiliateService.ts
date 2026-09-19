@@ -251,7 +251,7 @@ export const affiliateService = {
       _sum: { commissionAmount: true },
     });
     const alreadyRequested = await prisma.affiliatePayout.aggregate({
-      where: { affiliateId, status: { in: ['REQUESTED', 'PROCESSING', 'PAID'] } },
+      where: { affiliateId, status: { in: ['REQUESTED', 'PROCESSING'] } },
       _sum: { amount: true },
     });
     const available = Number(agg._sum.commissionAmount || 0) - Number(alreadyRequested._sum.amount || 0);
