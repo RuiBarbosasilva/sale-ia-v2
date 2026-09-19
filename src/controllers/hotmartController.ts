@@ -37,7 +37,7 @@ export const hotmartController={
         format:req.query.format?String(req.query.format):undefined
       });
       const ingest=await affiliateIntelligenceService.ingestProducts(network.id,result.products);
-      res.json({success:true,source:'hotmart',ingest,items:result.products,pageInfo:result.pageInfo});
+      res.json({success:true,source:'hotmart',scope:'PRODUCER_PRODUCTS',note:'Este endpoint da Hotmart lista produtos do produtor, não o Marketplace de afiliados.',ingest,items:result.products,pageInfo:result.pageInfo});
     }catch(e){err(res,e);}
   },
   async sales(req:Request,res:Response){
@@ -45,8 +45,8 @@ export const hotmartController={
     try{
       const network=await prisma.affiliateNetwork.findUnique({where:{slug:'hotmart'}});
       if(!network) return res.status(404).json({success:false,error:'HOTMART_NETWORK_NOT_BOOTSTRAPPED'});
-      const result=await hotmartAdapter.salesHistory(network.id,{maxResults:Number(req.query.maxResults||50),pageToken:req.query.pageToken?String(req.query.pageToken):undefined});
-      res.json({success:true,source:'hotmart',...result});
+      const result=await hotmartAdapter.salesHistory(network.id,{maxResults:Number(req.query.maxResults||50),pageToken:req.query.pageToken?String(req.query.pageToken):undefined,commissionAs:req.query.commissionAs?String(req.query.commissionAs):'AFFILIATE'});
+      res.json({success:true,source:'hotmart',scope:'SALES_HISTORY',commissionAs:result.commissionAs||'AFFILIATE',...result});
     }catch(e){err(res,e);}
   }
 };
