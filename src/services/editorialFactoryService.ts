@@ -121,9 +121,33 @@ export const editorialFactoryService = {
   }
  },
  async qualityGate(projectId:string){
-  const p=await prisma.editorialProject.findUnique({where:{id:projectId},include:{chapters:true}}); if(!p) throw new Error('PROJECT_NOT_FOUND'); const checks:any[]=[]; const count=p.chapters.length,total=p.chapters.reduce((a,c)=>a+c.wordCount,0);
-  checks.push({checkType:'MANUSCRIPT_PRESENT',status:p.manuscript&&p.manuscript.length>100?'PASS':'FAIL',score:p.manuscript&&p.manuscript.length>100?100:0,details:total+' palavras estimadas'}); checks.push({checkType:'CHAPTER_STRUCTURE',status:count>=5?'PASS':'FAIL',score:count>=5?100:40,details:count+' capítulos'}); const bad=/(TODO|TBD|LOREM IPSUM|\[INSIRA)/i.test(p.manuscript||''); checks.push({checkType:'PLACEHOLDER_SCAN',status:bad?'FAIL':'PASS',score:bad?0:100,details:'varredura de placeholders'}); checks.push({checkType:'METADATA',status:p.title&&p.author?'PASS':'FAIL',score:p.title&&p.author?100:40,details:'título e autor'});
-  await prisma.editorialQualityCheck.deleteMany({where:{projectId}}); await prisma.editorialQualityCheck.createMany({data:checks.map(c=>({...c,projectId}))}); const score=checks.reduce((a,c)=>a+c.score,0)/checks.length; const status=checks.every(c=>c.status==='PASS')&&score>=85?'READY':'REVIEW'; await prisma.editorialProject.update({where:{id:projectId},data:{qualityScore:score,status}}); return {projectId,score,status,checks};
+  const p=await prisma.editorialProject.findUnique({where:{id:projectId},include:{chapters:true,checks:true}});
+  if(!p) throw new Error('PROJECT_NOT_FOUND');
+  const checks:any[]=[];
+  const count=p.chapters.length;
+  const total=p.chapters.reduce((a,c)=>a+c.wordCount,0);
+  const minWords=p.productType==='COLORING_BOOK'?0:Math.max(1800,Number(process.env.EDITORIAL_MIN_WORDS||6000));
+
+  checks.push({checkType:'MANUSCRIPT_PRESENT',status:p.manuscript&&p.manuscript.length>100?'PASS':'FAIL',score:p.manuscript&&p.manuscript.length>100?100:0,details:total+' palavras estimadas'});
+  checks.push({checkType:'CHAPTER_STRUCTURE',status:count>=5?'PASS':'FAIL',score:count>=5?100:40,details:count+' capítulos'});
+  checks.push({checkType:'MINIMUM_WORD_COUNT',status:total>=minWords?'PASS':'FAIL',score:total>=minWords?100:40,details:total+' / '+minWords+' palavras'});
+  const bad=/(TODO|TBD|LOREM IPSUM|\[INSIRA|TEXTO-BASE|EDITORIAL_BASE)/i.test(p.manuscript||'');
+  checks.push({checkType:'PLACEHOLDER_SCAN',status:bad?'FAIL':'PASS',score:bad?0:100,details:'varredura de placeholders'});
+  checks.push({checkType:'METADATA',status:p.title&&p.author?'PASS':'FAIL',score:p.title&&p.author?100:40,details:'título e autor'});
+
+  const aiReview=p.checks.find((c:any)=>c.checkType==='AI_EDITORIAL_REVIEW');
+  if(aiReview){
+    checks.push({checkType:'AI_EDITORIAL_REVIEW',status:aiReview.status==='PASS'?'PASS':'FAIL',score:Number(aiReview.score)||0,details:aiReview.details||''});
+  } else {
+    checks.push({checkType:'AI_EDITORIAL_REVIEW',status:'FAIL',score:0,details:'Revisão editorial por IA não encontrada.'});
+  }
+
+  await prisma.editorialQualityCheck.deleteMany({where:{projectId}});
+  await prisma.editorialQualityCheck.createMany({data:checks.map(c=>({...c,projectId}))});
+  const score=checks.reduce((a,c)=>a+c.score,0)/checks.length;
+  const status=checks.every(c=>c.status==='PASS')&&score>=85?'READY':'REVIEW';
+  await prisma.editorialProject.update({where:{id:projectId},data:{qualityScore:score,status}});
+  return {projectId,score,status,checks,totalWords:total};
  },
  async render(projectId:string){
   const p=await prisma.editorialProject.findUnique({where:{id:projectId},include:{chapters:true}}); if(!p) throw new Error('PROJECT_NOT_FOUND'); if(p.status!=='READY') throw new Error('QUALITY_GATE_REQUIRED'); const dir=path.join(ROOT,projectId); await ensureDir(dir);
