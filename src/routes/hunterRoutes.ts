@@ -1,0 +1,14 @@
+import { Router } from 'express';
+import { hunterController } from '../controllers/hunterController';
+const router=Router();
+router.get('/dashboard',hunterController.dashboard);
+router.get('/opportunities',hunterController.opportunities);
+router.post('/opportunities',hunterController.createOpportunity);
+router.post('/opportunities/:id/evidence',hunterController.evidence);
+router.get('/suppliers',hunterController.suppliers);
+router.post('/suppliers',hunterController.createSupplier);
+router.get('/products',hunterController.products);
+router.post('/products',hunterController.createProduct);
+router.get('/suppliers/:id/checklist',hunterController.supplierChecklist);
+router.post('/platforms/bootstrap',hunterController.platforms);
+export default router;
