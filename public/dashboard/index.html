@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SALE-IA · Central</title>
+<style>
+:root{--ink:#111827;--muted:#6b7280;--line:#e5e7eb;--paper:#f7f8fa;--card:#fff;--accent:#111827;--soft:#f1f3f5;--green:#16845b;--orange:#c66b18;--blue:#3563d8}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+a{text-decoration:none;color:inherit}.shell{display:flex;min-height:100vh}.sidebar{width:252px;background:#fff;border-right:1px solid var(--line);padding:24px 16px;position:fixed;inset:0 auto 0 0;z-index:10}.brand{display:flex;align-items:center;gap:11px;padding:8px 10px 30px;font-weight:900;letter-spacing:-.04em;font-size:20px}.mark{width:34px;height:34px;border-radius:11px;background:#111827;color:#fff;display:grid;place-items:center;font-size:14px}.brand small{display:block;color:#9ca3af;font-size:9px;letter-spacing:.14em;text-transform:uppercase;margin-top:2px}
+.nav-title{padding:14px 10px 7px;color:#9ca3af;text-transform:uppercase;font-size:10px;letter-spacing:.13em;font-weight:800}.nav a{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:12px;color:#667085;font-size:13px;font-weight:650;margin:3px 0}.nav a.active,.nav a:hover{background:#f0f1f3;color:#111827}.ico{width:20px;text-align:center;font-size:15px}.side-bottom{position:absolute;left:16px;right:16px;bottom:18px}.status{padding:14px;border:1px solid var(--line);border-radius:16px;background:#fafafa}.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#27a66f;margin-right:7px}.status b{font-size:12px}.status p{font-size:11px;color:#8a919d;margin:7px 0 0;line-height:1.5}
+main{margin-left:252px;width:calc(100% - 252px);padding:28px 34px 60px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}.crumb{font-size:12px;color:#8a919d}.crumb b{color:#111827}.top-actions{display:flex;gap:9px}.btn{border:1px solid var(--line);background:#fff;padding:10px 14px;border-radius:11px;font-size:12px;font-weight:750;cursor:pointer}.btn.dark{background:#111827;color:#fff;border-color:#111827}
+.hero{display:flex;justify-content:space-between;gap:30px;align-items:flex-end;margin-bottom:28px}.hero h1{font-size:36px;letter-spacing:-.055em;margin:0 0 8px}.hero p{color:var(--muted);font-size:14px;margin:0;max-width:650px}.date{font-size:11px;color:#8b929c}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:19px;box-shadow:0 2px 8px #11182706}.metric-label{font-size:11px;color:#7a828d;text-transform:uppercase;letter-spacing:.08em;font-weight:800}.metric{font-size:28px;font-weight:850;letter-spacing:-.045em;margin:12px 0 5px}.metric-note{font-size:11px;color:#9097a1}.up{color:var(--green)}
+.content{display:grid;grid-template-columns:1.5fr 1fr;gap:18px}.panel{background:#fff;border:1px solid var(--line);border-radius:20px;padding:21px}.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.panel h2{font-size:16px;letter-spacing:-.025em;margin:0}.panel-head span{font-size:11px;color:#8c939e}
+.modules{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}.module{border:1px solid var(--line);border-radius:15px;padding:16px;display:flex;gap:13px;align-items:flex-start;transition:.18s}.module:hover{transform:translateY(-1px);border-color:#cbd0d7;box-shadow:0 7px 20px #11182708}.module-icon{width:39px;height:39px;border-radius:12px;background:#f1f3f5;display:grid;place-items:center;font-size:17px;flex:none}.module h3{font-size:13px;margin:1px 0 4px}.module p{font-size:11px;color:#858c96;line-height:1.45;margin:0}.tag{display:inline-block;margin-top:8px;font-size:9px;padding:4px 7px;border-radius:999px;background:#f4f5f6;color:#747b85;font-weight:800;text-transform:uppercase;letter-spacing:.05em}.tag.live{background:#eaf8f1;color:#16724f}.tag.ai{background:#eef2ff;color:#3c55a5}
+.pipeline{display:grid;gap:10px}.stage{display:flex;align-items:center;gap:10px}.stage-name{font-size:11px;width:96px;color:#68707b}.bar{height:9px;background:#eef0f2;border-radius:99px;flex:1;overflow:hidden}.fill{height:100%;background:#111827;border-radius:99px}.count{font-size:11px;font-weight:800;width:28px;text-align:right}
+.quick{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}.quick a{background:#111827;color:#fff;border-radius:15px;padding:16px}.quick strong{font-size:12px;display:block}.quick span{font-size:10px;color:#b9bec7;display:block;margin-top:5px}
+.activity{display:grid;gap:0}.activity-row{display:flex;gap:11px;padding:13px 0;border-bottom:1px solid #f0f1f3}.activity-row:last-child{border:0}.bullet{width:8px;height:8px;border-radius:50%;background:#111827;margin-top:5px;flex:none}.activity-row b{font-size:11px}.activity-row p{font-size:10px;color:#8b929c;margin:3px 0 0}
+.footer-note{margin-top:24px;color:#a0a6af;font-size:10px;text-align:center}
+@media(max-width:1100px){.grid{grid-template-columns:repeat(2,1fr)}.content{grid-template-columns:1fr}}@media(max-width:760px){.sidebar{position:static;width:100%;height:auto;border-right:0;border-bottom:1px solid var(--line)}.side-bottom{display:none}.shell{display:block}main{margin:0;width:100%;padding:20px}.nav{display:flex;overflow:auto}.nav-title{display:none}.nav a{white-space:nowrap}.brand{padding-bottom:14px}.hero{display:block}.date{margin-top:12px}.modules,.quick{grid-template-columns:1fr}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="sidebar">
+  <div class="brand"><span class="mark">S</span><span>SALE-IA<small>central inteligente</small></span></div>
+  <div class="nav-title">Central</div>
+  <nav class="nav">
+    <a class="active" href="/dashboard"><span class="ico">⌂</span>Visão geral</a>
+    <a href="/rb-factory-benchmark"><span class="ico">✦</span>RB Factory Sites</a>
+    <a href="/sales"><span class="ico">↗</span>Sales Agent</a>
+    <a href="/editorial"><span class="ico">◫</span>Editorial Factory</a>
+    <a href="/affiliates/intelligence"><span class="ico">◎</span>Afiliados & IA</a>
+    <a href="/dashboard/mercadolivre"><span class="ico">▣</span>Mercado Livre</a>
+  </nav>
+  <div class="nav-title">Inteligência</div>
+  <nav class="nav">
+    <a href="/api/hunter/opportunities" target="_blank"><span class="ico">⌁</span>Hunter</a>
+    <a href="/api/opportunity-sales/plans" target="_blank"><span class="ico">◇</span>Planos de oportunidade</a>
+  </nav>
+  <div class="side-bottom"><div class="status"><b><span class="dot"></span>Sistema operacional</b><p>Módulos trabalham de forma independente e supervisionada.</p></div></div>
+</aside>
+<main>
+  <div class="top"><div class="crumb">SALE-IA / <b>Central</b></div><div class="top-actions"><button class="btn" onclick="refresh()">↻ Atualizar</button><a class="btn dark" href="/rb-factory-benchmark">Abrir RB Factory</a></div></div>
+  <section class="hero"><div><h1>Bom dia. Vamos vender.</h1><p>Uma central limpa para acompanhar oportunidades, vendas, afiliados, sites e inteligência comercial em um só lugar.</p></div><div class="date" id="date"></div></section>
+  <section class="grid">
+    <div class="card"><div class="metric-label">Receita Mercado Livre</div><div class="metric" id="revenue">—</div><div class="metric-note">dados da conta conectada</div></div>
+    <div class="card"><div class="metric-label">Pedidos</div><div class="metric" id="orders">—</div><div class="metric-note">total sincronizado</div></div>
+    <div class="card"><div class="metric-label">Produtos</div><div class="metric" id="items">—</div><div class="metric-note">itens na operação</div></div>
+    <div class="card"><div class="metric-label">Estado</div><div class="metric up" id="system">ONLINE</div><div class="metric-note" id="sync">carregando módulos</div></div>
+  </section>
+  <section class="content">
+    <div>
+      <div class="panel">
+        <div class="panel-head"><h2>Ecossistema SALE-IA</h2><span>módulos ativos</span></div>
+        <div class="modules">
+          <a class="module" href="/rb-factory-benchmark"><div class="module-icon">✦</div><div><h3>RB Factory Sites</h3><p>Prospecção, auditoria, modelos e geração de demos comerciais.</p><span class="tag live">ativo</span></div></a>
+          <a class="module" href="/affiliates/intelligence"><div class="module-icon">◎</div><div><h3>Affiliate Intelligence</h3><p>Pesquisa, análise e preparação de oportunidades de afiliados.</p><span class="tag ai">IA</span></div></a>
+          <a class="module" href="/editorial"><div class="module-icon">◫</div><div><h3>Editorial Factory</h3><p>Pesquisa, projetos editoriais, qualidade e planos de publicação.</p><span class="tag ai">IA</span></div></a>
+          <a class="module" href="/sales"><div class="module-icon">↗</div><div><h3>Senior Sales Agent</h3><p>Conversas, intenção, objeções, follow-ups e próxima ação.</p><span class="tag ai">IA</span></div></a>
+          <a class="module" href="/dashboard/mercadolivre"><div class="module-icon">▣</div><div><h3>Mercado Livre</h3><p>Pedidos, produtos, métricas e operação do marketplace.</p><span class="tag live">ativo</span></div></a>
+          <a class="module" href="/api/hunter/opportunities" target="_blank"><div class="module-icon">⌁</div><div><h3>Hunter</h3><p>Sinais, evidências e oportunidades para validação supervisionada.</p><span class="tag">pesquisa</span></div></a>
+        </div>
+        <div class="quick">
+          <a href="/rb-factory-benchmark"><strong>Ver 100 demos</strong><span>Biblioteca RB Factory</span></a>
+          <a href="/affiliates/intelligence"><strong>Pesquisar afiliados</strong><span>Inteligência comercial</span></a>
+          <a href="/sales"><strong>Abrir Sales Agent</strong><span>Operação de vendas</span></a>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:18px">
+        <div class="panel-head"><h2>Pipeline comercial</h2><span>RB Factory</span></div>
+        <div class="pipeline" id="pipeline"><div class="stage"><span class="stage-name">Carregando</span><div class="bar"><div class="fill" style="width:35%"></div></div><span class="count">—</span></div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Atividade</h2><span>agora</span></div>
+      <div class="activity">
+        <div class="activity-row"><span class="bullet"></span><div><b>Benchmark Library</b><p>100 modelos originais disponíveis para estudo.</p></div></div>
+        <div class="activity-row"><span class="bullet"></span><div><b>RB Factory</b><p>Seleção de nicho e modelo conectada à geração de demos.</p></div></div>
+        <div class="activity-row"><span class="bullet"></span><div><b>Hunter</b><p>Oportunidades passam por evidência e validação supervisionada.</p></div></div>
+        <div class="activity-row"><span class="bullet"></span><div><b>Affiliate Engine</b><p>Base de afiliados e inteligência comercial em evolução.</p></div></div>
+        <div class="activity-row"><span class="bullet"></span><div><b>Sales Engine</b><p>Objeções, intenção e follow-up estruturados.</p></div></div>
+      </div>
+    </div>
+  </section>
+  <div class="footer-note">SALE-IA-V2 · Central de operações · construção contínua</div>
+</main>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+function money(v){return typeof v==='number'?v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}):'—'}
+async function refresh(){
+  $('date').textContent=new Date().toLocaleString('pt-BR',{dateStyle:'full',timeStyle:'short'});
+  try{
+    const r=await fetch('/dashboard/overview');const d=await r.json();
+    if(d.success&&d.data){$('revenue').textContent=money(d.data.totalRevenue);$('orders').textContent=d.data.totalOrders??'0';$('items').textContent=d.data.totalItems??'0';$('sync').textContent=d.data.lastSync?'última sincronização: '+new Date(d.data.lastSync).toLocaleString('pt-BR'):'conta conectada';}
+    else $('sync').textContent='Mercado Livre ainda sem métricas';
+  }catch(e){$('system').textContent='ONLINE';$('sync').textContent='API de métricas indisponível no momento'}
+  try{
+    const r=await fetch('/api/rb-factory-sales/pipeline');const d=await r.json();
+    const rows=d.pipelines||[];const stages=['DISCOVERED','AUDITED','DEMO_READY','PROPOSAL_READY','CONTACTED','NEGOTIATION','WON'];
+    $('pipeline').innerHTML=stages.map(s=>{const n=rows.filter(x=>x.stage===s).length;const pct=rows.length?Math.max(5,Math.round(n/rows.length*100)):5;return '<div class="stage"><span class="stage-name">'+s.replaceAll('_',' ')+'</span><div class="bar"><div class="fill" style="width:'+pct+'%"></div></div><span class="count">'+n+'</span></div>'}).join('');
+  }catch(e){$('pipeline').innerHTML='<div style="font-size:11px;color:#9299a3">Pipeline aguardando dados da operação.</div>'}
+}
+refresh();
+setInterval(refresh,60000);
+</script>
+</body></html>

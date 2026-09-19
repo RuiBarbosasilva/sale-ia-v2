@@ -18,6 +18,7 @@ import editorialFactoryRoutes from './routes/editorialFactoryRoutes';
 import seniorSalesRoutes from './routes/seniorSalesRoutes';
 import salesOrchestrationRoutes from './routes/salesOrchestrationRoutes';
 import opportunitySalesBridgeRoutes from './routes/opportunitySalesBridgeRoutes';
+import rbFactorySalesRoutes from './routes/rbFactorySalesRoutes';
 
 const app = express();
 app.use(express.json());
@@ -54,6 +55,7 @@ app.use('/api/editorial', editorialFactoryRoutes);
 app.use('/api/sales', seniorSalesRoutes);
 app.use('/api/sales-orchestration', salesOrchestrationRoutes);
 app.use('/api/opportunity-sales', opportunitySalesBridgeRoutes);
+app.use('/api/rb-factory-sales', rbFactorySalesRoutes);
 app.use('/go', affiliatePublicRoutes);
 app.use('/api/mercadolivre', mlRoutes);
 app.use('/dashboard', dashboardRoutes);
