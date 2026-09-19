@@ -29,6 +29,7 @@ app.use((req, res, next) => {
 app.use(express.static('public'));
 app.get('/affiliates', (_req, res) => res.sendFile('affiliates/index.html', { root: 'public' }));
 app.get('/affiliates/admin', (_req, res) => res.sendFile('affiliates/admin.html', { root: 'public' }));
+app.get('/affiliates/intelligence', (_req, res) => res.sendFile('affiliates/intelligence.html', { root: 'public' }));
 app.use('/generated-images', express.static('storage/generated-images'));
 
 // Registra as rotas principais da API
