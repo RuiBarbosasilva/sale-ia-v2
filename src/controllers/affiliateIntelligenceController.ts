@@ -7,7 +7,7 @@ function guard(req:Request,res:Response){
   return true;
 }
 function err(res:Response,e:any){
-  const map:any={NETWORK_NAME_REQUIRED:400,NETWORK_NOT_FOUND:404,PRODUCT_NOT_FOUND:404,CAMPAIGN_NOT_FOUND:404};
+  const map:any={NETWORK_NAME_REQUIRED:400,NETWORK_NOT_FOUND:404,PRODUCT_NOT_FOUND:404,CAMPAIGN_NOT_FOUND:404,AFFILIATE_PRODUCT_NAME_REQUIRED:400,AFFILIATE_URL_REQUIRED:400};
   const code=e?.message||'AFFILIATE_INTELLIGENCE_ERROR';
   return res.status(map[code]||500).json({success:false,error:code});
 }
@@ -18,6 +18,7 @@ export const affiliateIntelligenceController={
   async createNetwork(req:Request,res:Response){if(!guard(req,res))return;try{res.status(201).json({success:true,network:await s.createNetwork(req.body||{})});}catch(e){err(res,e);}},
   async updateNetwork(req:Request,res:Response){if(!guard(req,res))return;try{res.json({success:true,network:await s.updateNetwork(req.params.id,req.body||{})});}catch(e){err(res,e);}},
   async ingestProducts(req:Request,res:Response){if(!guard(req,res))return;try{res.json({success:true,result:await s.ingestProducts(req.params.id,req.body?.products||[])});}catch(e){err(res,e);}},
+  async importAffiliateOffer(req:Request,res:Response){if(!guard(req,res))return;try{res.status(201).json({success:true,product:await s.importAffiliateOffer(req.params.id,req.body||{})});}catch(e){err(res,e);}},
   async products(req:Request,res:Response){if(!guard(req,res))return;try{res.json({success:true,products:await s.topProducts(Number(req.query.take||50))});}catch(e){err(res,e);}},
   async opportunities(req:Request,res:Response){if(!guard(req,res))return;try{res.json({success:true,opportunities:await s.opportunities(req.query.status as string|undefined)});}catch(e){err(res,e);}},
   async autonomyPlan(req:Request,res:Response){if(!guard(req,res))return;try{res.json({success:true,plan:await s.createAutonomyPlan()});}catch(e){err(res,e);}},
