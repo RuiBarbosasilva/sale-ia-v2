@@ -1,0 +1,2 @@
+import {Router} from 'express';import {affiliateNetworkSecurityController as c} from '../controllers/affiliateNetworkSecurityController';
+const r=Router();r.put('/:id/credentials',c.set);r.delete('/:id/credentials',c.clear);r.post('/:id/credentials/test',c.test);export default r;
