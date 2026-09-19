@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { rbFactorySalesController } from '../controllers/rbFactorySalesController';
+import { adminAuthorization } from '../middlewares/security';
 const router=Router();
+router.use(adminAuthorization);
 router.get('/pipeline',rbFactorySalesController.list);
 router.post('/pipeline/prospect/:prospectId',rbFactorySalesController.create);
 router.get('/pipeline/prospect/:prospectId/models',rbFactorySalesController.models);
