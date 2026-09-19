@@ -57,3 +57,49 @@ POST `/api/quote`:
 ## Observação
 
 O WhatsApp real depende das credenciais da Meta. Sem essas credenciais, o sistema continua plenamente testável pelo endpoint `/api/chat`.
+
+
+## Modulo de Afiliados
+
+O modulo de afiliados esta integrado ao SALE-IA-V2 e inclui:
+- cadastro/onboarding de afiliados com token de acesso;
+- portal do afiliado em /affiliates/;
+- links rastreaveis em /go/:code;
+- registro de cliques e metricas;
+- ofertas e URLs de redes de afiliados;
+- calculo automatico de comissao;
+- registro de vendas manual ou por webhook;
+- aprovacao/rejeicao/pagamento de vendas;
+- solicitacao e liquidacao de saques;
+- painel administrativo em /affiliates/admin.html;
+- API protegida por AFFILIATE_ADMIN_KEY;
+- webhook protegido por AFFILIATE_WEBHOOK_KEY;
+- migration Prisma e CI automatico.
+
+### Rotas principais
+
+POST /api/affiliates/register
+GET  /api/affiliates/portal
+GET  /api/affiliates/portal/links
+POST /api/affiliates/portal/links
+POST /api/affiliates/portal/payouts
+
+GET  /api/affiliates/admin
+GET  /api/affiliates/admin/stats
+GET  /api/affiliates/admin/offers
+POST /api/affiliates/admin/offers
+GET  /api/affiliates/admin/links
+POST /api/affiliates/admin/links
+POST /api/affiliates/admin/sales
+PATCH /api/affiliates/admin/sales/:id/status
+GET  /api/affiliates/admin/payouts
+PATCH /api/affiliates/admin/payouts/:id/status
+
+POST /api/affiliates/webhook/sale
+GET  /go/:code
+
+Depois de configurar o .env, aplique a migration com:
+
+npx prisma migrate deploy
+npx prisma generate
+npm run typecheck
