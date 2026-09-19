@@ -771,3 +771,121 @@ model WebsiteOutreachEvent {
 
   @@index([outreachId])
 }
+
+
+// ============================================================
+// SALE-IA-V2 - MODULO DE AFILIADOS
+// Rastreamento de links, cliques, vendas, comissoes e saques.
+// ============================================================
+
+model Affiliate {
+  id             String            @id @default(uuid())
+  name           String
+  email          String            @unique
+  phone          String?
+  slug           String            @unique
+  status         String            @default("PENDING") // PENDING, ACTIVE, BLOCKED
+  commissionRate Float             @default(10)
+  notes          String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  links          AffiliateLink[]
+  clicks         AffiliateClick[]
+  sales          AffiliateSale[]
+  payouts        AffiliatePayout[]
+}
+
+model AffiliateOffer {
+  id             String          @id @default(uuid())
+  name           String
+  network        String?
+  externalId     String?
+  destinationUrl String
+  category       String?
+  commissionRate Float           @default(10)
+  active         Boolean         @default(true)
+  metadata       String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  links          AffiliateLink[]
+
+  @@index([network])
+  @@index([active])
+}
+
+model AffiliateLink {
+  id            String          @id @default(uuid())
+  affiliateId   String
+  affiliate     Affiliate        @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  offerId       String?
+  offer         AffiliateOffer?  @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  code          String            @unique
+  destinationUrl String
+  campaign      String?
+  active        Boolean           @default(true)
+  clickCount    Int               @default(0)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  clicks        AffiliateClick[]
+  sales         AffiliateSale[]
+
+  @@index([affiliateId])
+  @@index([offerId])
+  @@index([active])
+}
+
+model AffiliateClick {
+  id          String         @id @default(uuid())
+  affiliateId String
+  affiliate   Affiliate      @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  linkId      String
+  link        AffiliateLink  @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  ipHash      String?
+  userAgent   String?
+  referer     String?
+  createdAt   DateTime       @default(now())
+
+  @@index([affiliateId, createdAt])
+  @@index([linkId, createdAt])
+}
+
+model AffiliateSale {
+  id               String         @id @default(uuid())
+  affiliateId      String
+  affiliate        Affiliate      @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  linkId           String?
+  link             AffiliateLink? @relation(fields: [linkId], references: [id], onDelete: SetNull)
+  externalOrderId  String?        @unique
+  source           String         @default("MANUAL")
+  customerRef      String?
+  amount           Float
+  commissionRate   Float
+  commissionAmount Float
+  status           String         @default("PENDING") // PENDING, APPROVED, REJECTED, PAID
+  metadata         String?
+  createdAt        DateTime       @default(now())
+  approvedAt       DateTime?
+  paidAt           DateTime?
+
+  @@index([affiliateId, status])
+  @@index([createdAt])
+}
+
+model AffiliatePayout {
+  id          String    @id @default(uuid())
+  affiliateId String
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  amount      Float
+  status      String    @default("REQUESTED") // REQUESTED, PROCESSING, PAID, REJECTED
+  method      String?
+  reference   String?
+  notes       String?
+  requestedAt DateTime  @default(now())
+  paidAt      DateTime?
+
+  @@index([affiliateId, status])
+  @@index([requestedAt])
+}
