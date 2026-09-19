@@ -22,6 +22,9 @@ router.get('/auth/connect', authController.connect);
 router.get('/auth/callback', authController.callback);
 router.post('/auth/disconnect/:accountId', mercadoLivreAdminGuard, authController.disconnect);
 
+// O webhook é público por definição: a validação do evento ocorre no controller.
+router.post('/webhooks', handleWebhook);
+
 // Tudo abaixo do OAuth/webhook exige autorização administrativa do SALE-IA.
 // O accountId continua sendo resolvido no backend; o cliente nunca é considerado
 // uma fonte de autorização por si só.
@@ -58,8 +61,5 @@ router.post('/listings/:id/activate', listingController.activateListing);
 router.get('/shipments', shipmentController.listShipments);
 router.get('/shipments/:id', shipmentController.getShipment);
 router.get('/shipments/:id/label', shipmentController.getShipmentLabel);
-
-// --- WEBHOOKS (Público) ---
-router.post('/webhooks', handleWebhook);
 
 export default router;
