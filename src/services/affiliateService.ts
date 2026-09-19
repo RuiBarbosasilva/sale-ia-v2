@@ -204,9 +204,36 @@ export const affiliateService = {
   async setPayoutStatus(id: string, status: 'PROCESSING' | 'PAID' | 'REJECTED', reference?: string) {
     const payout = await prisma.affiliatePayout.findUnique({ where: { id } });
     if (!payout) throw new Error('PAYOUT_NOT_FOUND');
+
     const data: any = { status, reference: reference || payout.reference };
     if (status === 'PAID') data.paidAt = new Date();
-    return prisma.affiliatePayout.update({ where: { id }, data });
+
+    if (status !== 'PAID') {
+      return prisma.affiliatePayout.update({ where: { id }, data });
+    }
+
+    // A payout requested by the current flow consumes the affiliate's
+    // available APPROVED commissions. When the payout is confirmed as PAID,
+    // those commissions must move to PAID as well; otherwise the portal would
+    // continue showing the same money as available.
+    return prisma.$transaction(async (tx) => {
+      const result = await tx.affiliatePayout.update({ where: { id }, data });
+
+      const approved = await tx.affiliateSale.aggregate({
+        where: { affiliateId: payout.affiliateId, status: 'APPROVED' },
+        _sum: { commissionAmount: true },
+      });
+      const approvedAmount = Number(approved._sum.commissionAmount || 0);
+
+      if (approvedAmount > 0 && Math.abs(approvedAmount - payout.amount) < 0.01) {
+        await tx.affiliateSale.updateMany({
+          where: { affiliateId: payout.affiliateId, status: 'APPROVED' },
+          data: { status: 'PAID', paidAt: new Date() },
+        });
+      }
+
+      return result;
+    });
   },
 
   async setSaleStatus(id: string, status: 'APPROVED' | 'REJECTED' | 'PAID') {
