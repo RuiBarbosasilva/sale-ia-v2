@@ -21,6 +21,19 @@ export function securityHeaders(_req: Request, res: Response, next: NextFunction
   next();
 }
 
+export function adminAuthorization(req: Request, res: Response, next: NextFunction) {
+  const expected = process.env.SALE_IA_ADMIN_KEY || process.env.AFFILIATE_ADMIN_KEY;
+  const provided = req.header('x-sale-ia-admin-key') || req.header('x-affiliate-admin-key');
+  if (!timingSafeSecret(expected, provided)) {
+    return res.status(401).json({
+      success: false,
+      error: 'ADMIN_UNAUTHORIZED',
+      requestId: (req as any).requestId,
+    });
+  }
+  next();
+}
+
 export function requestId(req: Request, res: Response, next: NextFunction) {
   const incoming = String(req.header('x-request-id') || '');
   const id = /^[A-Za-z0-9._:-]{1,100}$/.test(incoming) ? incoming : crypto.randomUUID();
