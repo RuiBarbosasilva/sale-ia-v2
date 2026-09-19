@@ -1,6 +1,26 @@
 import crypto from 'crypto';
 import { Request, Response, NextFunction } from 'express';
 
+const ADMIN_FAILURE_WINDOW_MS = 5 * 60 * 1000;
+const ADMIN_FAILURE_LIMIT = 20;
+const adminFailures = new Map<string, { count: number; resetAt: number }>();
+
+function adminFailureAllowed(ip: string) {
+  const now = Date.now();
+  const current = adminFailures.get(ip);
+  if (!current || current.resetAt <= now) {
+    adminFailures.set(ip, { count: 1, resetAt: now + ADMIN_FAILURE_WINDOW_MS });
+    return true;
+  }
+  if (current.count >= ADMIN_FAILURE_LIMIT) return false;
+  current.count += 1;
+  return true;
+}
+
+function adminFailureClear(ip: string) {
+  adminFailures.delete(ip);
+}
+
 export function timingSafeSecret(expected: string | undefined, provided: string | undefined): boolean {
   if (!expected || !provided) return false;
   const a = Buffer.from(expected, 'utf8');
@@ -24,6 +44,13 @@ export function securityHeaders(_req: Request, res: Response, next: NextFunction
 export function adminAuthorization(req: Request, res: Response, next: NextFunction) {
   const expected = process.env.SALE_IA_ADMIN_KEY || process.env.AFFILIATE_ADMIN_KEY;
   const provided = req.header('x-sale-ia-admin-key') || req.header('x-affiliate-admin-key');
+  if (!adminFailureAllowed(req.ip)) {
+    return res.status(429).json({
+      success: false,
+      error: 'ADMIN_RATE_LIMITED',
+      requestId: (req as any).requestId,
+    });
+  }
   if (!timingSafeSecret(expected, provided)) {
     return res.status(401).json({
       success: false,
@@ -31,6 +58,7 @@ export function adminAuthorization(req: Request, res: Response, next: NextFuncti
       requestId: (req as any).requestId,
     });
   }
+  adminFailureClear(req.ip);
   next();
 }
 
