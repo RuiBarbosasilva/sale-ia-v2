@@ -1103,7 +1103,6 @@ model EditorialResearch {
   capturedAt  DateTime @default(now())
   createdAt   DateTime @default(now())
 
-  opportunities EditorialOpportunity[]
   @@index([topic])
   @@index([market, capturedAt])
 }
