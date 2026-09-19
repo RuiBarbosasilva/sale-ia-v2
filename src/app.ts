@@ -12,6 +12,7 @@ import cookieParser from 'cookie-parser';
 import express from 'express';
 import apiRoutes from './routes/apiRoutes';
 import { errorHandler } from './middlewares/errorHandler';
+import editorialFactoryRoutes from './routes/editorialFactoryRoutes';
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.use('/api/affiliate-intelligence', affiliateIntelligenceRoutes);
 app.use('/api/affiliate-actions', affiliateActionRoutes);
 app.use('/api/affiliate-networks', affiliateNetworkSecurityRoutes);
 app.use('/api/affiliate-hotmart', hotmartRoutes);
+app.use('/api/editorial', editorialFactoryRoutes);
 app.use('/go', affiliatePublicRoutes);
 
 // Middleware global de tratamento de erros
