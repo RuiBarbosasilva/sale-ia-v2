@@ -83,7 +83,17 @@ export const affiliateIntelligenceService = {
   },
   async createAutonomyPlan(){
     const products=await this.topProducts(20);
-    return {generatedAt:new Date().toISOString(),mode:'SUPERVISED',items:products.map(p=>({productId:p.id,product:p.name,network:p.network.name,score:p.opportunityScore,action:p.affiliationStatus==='AFFILIATED'?'CREATE_CAMPAIGN':'REQUEST_AFFILIATION',status:'PENDING_APPROVAL'}))};
+    const items=[];
+    for(const p of products){
+      const type=p.affiliationStatus==='AFFILIATED'?'CREATE_CAMPAIGN':'REQUEST_AFFILIATION';
+      const title=type==='CREATE_CAMPAIGN'?'Criar campanha para '+p.name:'Solicitar afiliação: '+p.name;
+      const existing=await prisma.affiliateAction.findFirst({where:{type,title,status:{in:['PENDING_APPROVAL','READY','APPROVED']}}});
+      if(!existing){
+        await prisma.affiliateAction.create({data:{networkId:p.networkId,type,title,status:'PENDING_APPROVAL',description:type==='CREATE_CAMPAIGN'?'Produto já afiliado; preparar campanha.':'Produto selecionado; requer afiliação na plataforma.',payload:JSON.stringify({productId:p.id,score:p.opportunityScore}),requiresApproval:true}});
+      }
+      items.push({productId:p.id,product:p.name,network:p.network.name,score:p.opportunityScore,action:type,status:'PENDING_APPROVAL'});
+    }
+    return {generatedAt:new Date().toISOString(),mode:'SUPERVISED',items};
   },
   async dashboard(){
     const [networks,products,opportunities,campaigns,content,actions]=await Promise.all([prisma.affiliateNetwork.count({where:{active:true}}),prisma.affiliateProduct.count(),prisma.affiliateOpportunity.count({where:{status:'NEW'}}),prisma.affiliateCampaign.count({where:{status:{in:['DRAFT','ACTIVE']}}}),prisma.affiliateContent.count({where:{status:'DRAFT'}}),prisma.affiliateAction.count({where:{status:{in:['PENDING_APPROVAL','READY']}}})]);
