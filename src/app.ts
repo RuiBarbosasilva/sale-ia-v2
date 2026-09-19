@@ -14,6 +14,7 @@ import cookieParser from 'cookie-parser';
 import express from 'express';
 import apiRoutes from './routes/apiRoutes';
 import { errorHandler } from './middlewares/errorHandler';
+import { requestId, securityHeaders } from './middlewares/security';
 import editorialFactoryRoutes from './routes/editorialFactoryRoutes';
 import seniorSalesRoutes from './routes/seniorSalesRoutes';
 import salesOrchestrationRoutes from './routes/salesOrchestrationRoutes';
@@ -21,7 +22,16 @@ import opportunitySalesBridgeRoutes from './routes/opportunitySalesBridgeRoutes'
 import rbFactorySalesRoutes from './routes/rbFactorySalesRoutes';
 
 const app = express();
-app.use(express.json());
+
+app.disable('x-powered-by');
+app.set('query parser', 'simple');
+
+app.use(requestId);
+app.use(securityHeaders);
+app.use(express.json({
+  limit: process.env.JSON_BODY_LIMIT || '1mb',
+  strict: true,
+}));
 app.use(cookieParser());
 
 app.use((req, res, next) => {
