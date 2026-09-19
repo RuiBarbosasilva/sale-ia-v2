@@ -5,6 +5,9 @@ const ADMIN_FAILURE_WINDOW_MS = 5 * 60 * 1000;
 const ADMIN_FAILURE_LIMIT = 20;
 const adminFailures = new Map<string, { count: number; resetAt: number }>();
 
+const RATE_LIMIT_MAX_KEYS = 10000;
+const rateLimitBuckets = new Map<string, { count: number; resetAt: number }>();
+
 function adminFailureAllowed(ip: string) {
   const now = Date.now();
   const current = adminFailures.get(ip);
@@ -19,6 +22,51 @@ function adminFailureAllowed(ip: string) {
 
 function adminFailureClear(ip: string) {
   adminFailures.delete(ip);
+}
+
+function pruneRateLimitBuckets(now: number) {
+  if (rateLimitBuckets.size < RATE_LIMIT_MAX_KEYS) return;
+  for (const [key, bucket] of rateLimitBuckets) {
+    if (bucket.resetAt <= now) rateLimitBuckets.delete(key);
+  }
+  if (rateLimitBuckets.size >= RATE_LIMIT_MAX_KEYS) {
+    const oldest = rateLimitBuckets.keys().next().value;
+    if (oldest) rateLimitBuckets.delete(oldest);
+  }
+}
+
+export function rateLimit(options: {
+  name: string;
+  windowMs: number;
+  limit: number;
+  key?: (req: Request) => string;
+}) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const now = Date.now();
+    const identity = options.key ? options.key(req) : req.ip;
+    const key = options.name + ':' + identity;
+    let bucket = rateLimitBuckets.get(key);
+
+    if (!bucket || bucket.resetAt <= now) {
+      pruneRateLimitBuckets(now);
+      bucket = { count: 1, resetAt: now + options.windowMs };
+      rateLimitBuckets.set(key, bucket);
+      return next();
+    }
+
+    bucket.count += 1;
+    if (bucket.count > options.limit) {
+      const retryAfter = Math.max(1, Math.ceil((bucket.resetAt - now) / 1000));
+      res.setHeader('Retry-After', String(retryAfter));
+      return res.status(429).json({
+        success: false,
+        error: 'RATE_LIMITED',
+        requestId: (req as any).requestId,
+      });
+    }
+
+    next();
+  };
 }
 
 export function timingSafeSecret(expected: string | undefined, provided: string | undefined): boolean {
