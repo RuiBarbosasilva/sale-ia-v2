@@ -10,6 +10,7 @@ import { syncItems } from '../controllers/syncController';
 import { listItems } from '../controllers/itemsController';
 import { syncOrders, listOrders } from '../controllers/orderSyncController';
 import { getMetrics } from '../controllers/metricsController';
+import { mercadoLivreAdminGuard } from '../middleware/adminGuard';
 
 const router = Router();
 
@@ -19,7 +20,12 @@ router.get('/health', healthCheck);
 // --- AUTENTICAÇÃO ---
 router.get('/auth/connect', authController.connect);
 router.get('/auth/callback', authController.callback);
-router.post('/auth/disconnect/:accountId', authController.disconnect);
+router.post('/auth/disconnect/:accountId', mercadoLivreAdminGuard, authController.disconnect);
+
+// Tudo abaixo do OAuth/webhook exige autorização administrativa do SALE-IA.
+// O accountId continua sendo resolvido no backend; o cliente nunca é considerado
+// uma fonte de autorização por si só.
+router.use(mercadoLivreAdminGuard);
 
 // --- CONTA ---
 router.get('/account', getAccount);
@@ -57,6 +63,3 @@ router.get('/shipments/:id/label', shipmentController.getShipmentLabel);
 router.post('/webhooks', handleWebhook);
 
 export default router;
-
-
-
