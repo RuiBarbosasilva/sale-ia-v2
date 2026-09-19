@@ -586,6 +586,98 @@ model MercadoLivreAudit {
   @@map("mercado_livre_audits")
 }
 
+
+// =========================================
+// MODULO AFILIADOS
+// =========================================
+model Affiliate {
+  id             String   @id @default(uuid())
+  name           String
+  email          String?  @unique
+  phone          String?
+  status         String   @default("ACTIVE") // ACTIVE, PAUSED, BLOCKED
+  commissionRate Float    @default(10)
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  links    AffiliateLink[]
+  clicks   AffiliateClick[]
+  sales    AffiliateSale[]
+  payouts  AffiliatePayout[]
+
+  @@index([status])
+}
+
+model AffiliateLink {
+  id          String   @id @default(uuid())
+  affiliateId String
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  code        String   @unique
+  destination String
+  campaign    String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  clicks AffiliateClick[]
+  sales  AffiliateSale[]
+
+  @@index([affiliateId])
+  @@index([active])
+}
+
+model AffiliateClick {
+  id        String   @id @default(uuid())
+  affiliateId String
+  affiliateLinkId String
+  affiliate Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  affiliateLink AffiliateLink @relation(fields: [affiliateLinkId], references: [id], onDelete: Cascade)
+  ipHash    String?
+  userAgent String?
+  referrer  String?
+  converted Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([affiliateId, createdAt])
+  @@index([affiliateLinkId, createdAt])
+}
+
+model AffiliateSale {
+  id             String   @id @default(uuid())
+  affiliateId    String
+  affiliateLinkId String
+  affiliate      Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  affiliateLink  AffiliateLink @relation(fields: [affiliateLinkId], references: [id], onDelete: Cascade)
+  orderId        String?
+  customerName   String?
+  customerEmail  String?
+  grossAmount    Float
+  commissionRate Float
+  commissionAmount Float
+  status         String   @default("PENDING") // PENDING, APPROVED, CANCELLED, PAID
+  createdAt      DateTime @default(now())
+  approvedAt    DateTime?
+  paidAt        DateTime?
+
+  @@index([affiliateId, status])
+  @@index([createdAt])
+}
+
+model AffiliatePayout {
+  id          String   @id @default(uuid())
+  affiliateId String
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  amount      Float
+  status      String   @default("PENDING") // PENDING, PAID, CANCELLED
+  method      String?
+  reference   String?
+  paidAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([affiliateId, status])
+}
+
 // =========================================
 // RB FACTORY SITES - HISTORICO DO PROSPECT
 // =========================================
