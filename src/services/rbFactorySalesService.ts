@@ -73,14 +73,14 @@ export const rbFactorySalesService={
     let notes:any={};
     try{notes=pipeline[0]?.notes?JSON.parse(pipeline[0].notes):{};}catch{notes={};}
     notes.demoModel=model;
-    await (prisma as any).$executeRawUnsafe('UPDATE "RbFactorySalesPipeline" SET stage='DEMO_READY',demoId=?,nextAction='SEND_DEMO',notes=?,updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?',result.demo.id,JSON.stringify(notes),prospectId);
+    await (prisma as any).$executeRawUnsafe(`UPDATE "RbFactorySalesPipeline" SET stage='DEMO_READY',demoId=?,nextAction='SEND_DEMO',notes=?,updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,result.demo.id,JSON.stringify(notes),prospectId);
     return result;
   },
 
   async buildProposal(prospectId:string){
     await init();
     const proposal=await proposalGeneratorService.generateProposal(prospectId);
-    await (prisma as any).$executeRawUnsafe('UPDATE "RbFactorySalesPipeline" SET stage='PROPOSAL_READY',proposalId=?,nextAction='CONTACT_PROSPECT',updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?',proposal.id,prospectId);
+    await (prisma as any).$executeRawUnsafe(`UPDATE "RbFactorySalesPipeline" SET stage='PROPOSAL_READY',proposalId=?,nextAction='CONTACT_PROSPECT',updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,proposal.id,prospectId);
     return proposal;
   },
 
