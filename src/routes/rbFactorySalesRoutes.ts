@@ -3,6 +3,7 @@ import { rbFactorySalesController } from '../controllers/rbFactorySalesControlle
 const router=Router();
 router.get('/pipeline',rbFactorySalesController.list);
 router.post('/pipeline/prospect/:prospectId',rbFactorySalesController.create);
+router.get('/pipeline/prospect/:prospectId/models',rbFactorySalesController.models);
 router.post('/pipeline/prospect/:prospectId/demo',rbFactorySalesController.demo);
 router.post('/pipeline/prospect/:prospectId/proposal',rbFactorySalesController.proposal);
 router.patch('/pipeline/:id/stage',rbFactorySalesController.stage);
