@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import { seniorSalesController } from '../controllers/seniorSalesController';
+const router=Router();
+router.get('/health',seniorSalesController.health);
+router.get('/dashboard',seniorSalesController.dashboard);
+router.post('/conversations',seniorSalesController.create);
+router.get('/conversations/:id',seniorSalesController.get);
+router.post('/conversations/:id/respond',seniorSalesController.respond);
+router.post('/conversations/:id/follow-ups',seniorSalesController.followUp);
+export default router;

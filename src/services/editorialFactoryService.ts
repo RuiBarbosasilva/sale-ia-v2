@@ -5,6 +5,7 @@ import axios from 'axios';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import JSZip from 'jszip';
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
+import editorialAIService from './editorialAIService';
 
 const ROOT = path.resolve(process.env.EDITORIAL_STORAGE_PATH || 'storage/editorial');
 function clamp(n:number){ return Math.max(0, Math.min(100, Math.round(n))); }
@@ -27,17 +28,126 @@ export const editorialFactoryService = {
  async listOpportunities(limit=50){ return prisma.editorialOpportunity.findMany({orderBy:{opportunityScore:'desc'},take:Math.min(limit,200),include:{projects:{select:{id:true,title:true,status:true,qualityScore:true,productType:true}}}}); },
  async createProject(data:any){ const opp=data.opportunityId?await prisma.editorialOpportunity.findUnique({where:{id:data.opportunityId}}):null; const topic=data.topic||opp?.topic; if(!topic) throw new Error('TOPIC_REQUIRED'); return prisma.editorialProject.create({data:{opportunityId:data.opportunityId,productType:data.productType||'EBOOK',title:data.title||topic,subtitle:data.subtitle,author:data.author||'SALE-IA Editorial',audience:data.audience||opp?.audience||'Leitores interessados no tema',language:data.language||opp?.language||'pt-BR',market:data.market||opp?.market||'BR',status:'OUTLINE'}}); },
  async generate(projectId:string){
-  const p=await prisma.editorialProject.findUnique({where:{id:projectId},include:{opportunity:true}}); if(!p) throw new Error('PROJECT_NOT_FOUND'); const title=p.title||p.opportunity?.topic||'Novo livro';
-  const outline=['Introdução','Fundamentos essenciais','Método passo a passo','Erros comuns e como evitar','Aplicação prática','Checklist de implementação','Conclusão e próximos passos'];
-  const chapters=outline.map((t,i)=>({position:i+1,title:t,content:t+'\n\nEste capítulo apresenta conteúdo original e estruturado sobre '+title+'.\n\nObjetivo: transformar conhecimento em aplicação prática, com exemplos, critérios de decisão e checklist.\n\nNota editorial: este texto-base deve passar por revisão factual e editorial antes da publicação.',wordCount:words(t+' Este capítulo apresenta conteúdo original e estruturado sobre '+title+'.'),status:'DRAFT'}));
-  await prisma.editorialChapter.deleteMany({where:{projectId}}); await prisma.editorialChapter.createMany({data:chapters.map(c=>({...c,projectId}))});
-  const manuscript=['# '+title,p.subtitle?'## '+p.subtitle:'','Autor: '+(p.author||'SALE-IA Editorial')].concat(chapters.map(c=>'\n## '+c.title+'\n\n'+c.content)).filter(Boolean).join('\n');
-  const manuscriptPath=await write(path.join(ROOT,projectId,'manuscript.md'),manuscript); await prisma.editorialProject.update({where:{id:projectId},data:{manuscript,status:'REVIEW',manuscriptPath,generationProvider:'template-safe',generationModel:'editorial-base-v1'}}); return prisma.editorialProject.findUnique({where:{id:projectId},include:{chapters:true}});
+  const p=await prisma.editorialProject.findUnique({where:{id:projectId},include:{opportunity:true}});
+  if(!p) throw new Error('PROJECT_NOT_FOUND');
+  const researchIds=p.opportunity?.researchIds ? JSON.parse(p.opportunity.researchIds) : [];
+  const researchRows=researchIds.length ? await prisma.editorialResearch.findMany({where:{id:{in:researchIds}}}) : [];
+  const research=researchRows.map(r=>[
+    r.sourceTitle||r.sourceType||'Fonte',
+    r.sourceUrl||'',
+    r.snippet||''
+  ].join(' | ')).join('\n').slice(0,20000);
+
+  await prisma.editorialProject.update({where:{id:projectId},data:{status:'GENERATING',errorMessage:null}});
+
+  if(!editorialAIService.configured()){
+    const outline=['Introdução','Fundamentos essenciais','Método passo a passo','Erros comuns e como evitar','Aplicação prática','Checklist de implementação','Conclusão e próximos passos'];
+    const chapters=outline.map((t,i)=>({position:i+1,title:t,content:t+'\\n\\nEste capítulo apresenta um texto-base estruturado sobre '+(p.title||'o tema')+'.\\n\\nEste material está em modo de contingência e precisa de geração/revisão por um provedor de IA antes de ser considerado conteúdo comercial final.',wordCount:words(t+' Este capítulo apresenta um texto-base estruturado sobre o tema.'),status:'DRAFT'}));
+    await prisma.editorialChapter.deleteMany({where:{projectId}});
+    await prisma.editorialChapter.createMany({data:chapters.map(c=>({...c,projectId}))});
+    const manuscript=['# '+(p.title||'Livro'),p.subtitle?'## '+p.subtitle:'','Autor: '+(p.author||'SALE-IA Editorial')].concat(chapters.map(c=>'\\n## '+c.title+'\\n\\n'+c.content)).filter(Boolean).join('\\n');
+    const manuscriptPath=await write(path.join(ROOT,projectId,'manuscript.md'),manuscript);
+    await prisma.editorialProject.update({where:{id:projectId},data:{manuscript,status:'REVIEW',manuscriptPath,generationProvider:'fallback',generationModel:'editorial-base-v2'}});
+    return prisma.editorialProject.findUnique({where:{id:projectId},include:{chapters:true}});
+  }
+
+  try{
+    const plan=await editorialAIService.createEditorialPlan({
+      title:p.title||p.opportunity?.topic||'Novo livro',
+      audience:p.audience||p.opportunity?.audience||'Leitores interessados no tema',
+      language:p.language,market:p.market,productType:p.productType,research
+    });
+    const finalTitle=String(plan.data.title||p.title||'Novo livro').trim();
+    const subtitle=plan.data.subtitle ? String(plan.data.subtitle).trim() : null;
+    const audience=plan.data.audience ? String(plan.data.audience).trim() : p.audience;
+    const description=plan.data.description ? String(plan.data.description).trim() : null;
+    const planned=Array.isArray(plan.data.chapters) ? plan.data.chapters : [];
+    if(planned.length<5) throw new Error('EDITORIAL_AI_OUTLINE_TOO_SHORT');
+
+    await prisma.editorialProject.update({where:{id:projectId},data:{
+      title:finalTitle,subtitle,audience,description,
+      metadata:JSON.stringify(plan.data.metadata||{}),
+      generationProvider:plan.meta.provider,generationModel:plan.meta.model
+    }});
+    await prisma.editorialChapter.deleteMany({where:{projectId}});
+
+    const targetWords=Math.max(500,Number(process.env.EDITORIAL_WORDS_PER_CHAPTER||900));
+    const chapters:any[]=[];
+    let previousSummary='';
+    for(let i=0;i<planned.length;i++){
+      const c=planned[i]||{};
+      const chapter=await editorialAIService.createChapter({
+        title:finalTitle,subtitle,chapterTitle:String(c.title||('Capítulo '+(i+1))),
+        chapterGoal:String(c.goal||'Desenvolver o tema com aplicação prática'),
+        keyPoints:Array.isArray(c.keyPoints)?c.keyPoints.map(String):[],
+        previousSummary,research,audience:String(audience||''),language:p.language,targetWords
+      });
+      const content=chapter.text.trim();
+      if(words(content)<250) throw new Error('EDITORIAL_AI_CHAPTER_TOO_SHORT_'+(i+1));
+      const row=await prisma.editorialChapter.create({data:{
+        projectId,position:i+1,title:String(c.title||('Capítulo '+(i+1))),content,
+        wordCount:words(content),status:'DRAFT'
+      }});
+      chapters.push(row);
+      previousSummary=(previousSummary+'\n'+row.title+': '+content.slice(-1200)).slice(-5000);
+    }
+
+    const manuscript=['# '+finalTitle,subtitle?'## '+subtitle:'','Autor: '+(p.author||'SALE-IA Editorial')].concat(
+      chapters.map(c=>'\\n## '+c.title+'\\n\\n'+c.content)
+    ).filter(Boolean).join('\\n');
+    const manuscriptPath=await write(path.join(ROOT,projectId,'manuscript.md'),manuscript);
+    await prisma.editorialProject.update({where:{id:projectId},data:{
+      title:finalTitle,subtitle,audience,description,manuscript,manuscriptPath,status:'REVIEW',
+      generationProvider:plan.meta.provider,generationModel:plan.meta.model
+    }});
+
+    let review:any=null;
+    try{
+      review=await editorialAIService.reviewManuscript({title:finalTitle,manuscript,research,language:p.language});
+      await prisma.editorialQualityCheck.create({data:{
+        projectId,checkType:'AI_EDITORIAL_REVIEW',status:review.data.approved?'PASS':'REVIEW',
+        score:Number(review.data.score)||0,details:JSON.stringify(review.data)
+      }});
+    }catch(e:any){
+      await prisma.editorialQualityCheck.create({data:{
+        projectId,checkType:'AI_EDITORIAL_REVIEW',status:'REVIEW',score:0,
+        details:e?.message||'AI review failed'
+      }});
+    }
+    return {project:await prisma.editorialProject.findUnique({where:{id:projectId},include:{chapters:true}}),plan:plan.data,review:review?.data||null};
+  }catch(e:any){
+    await prisma.editorialProject.update({where:{id:projectId},data:{status:'ERROR',errorMessage:e?.message||'EDITORIAL_GENERATION_ERROR'}});
+    throw e;
+  }
  },
  async qualityGate(projectId:string){
-  const p=await prisma.editorialProject.findUnique({where:{id:projectId},include:{chapters:true}}); if(!p) throw new Error('PROJECT_NOT_FOUND'); const checks:any[]=[]; const count=p.chapters.length,total=p.chapters.reduce((a,c)=>a+c.wordCount,0);
-  checks.push({checkType:'MANUSCRIPT_PRESENT',status:p.manuscript&&p.manuscript.length>100?'PASS':'FAIL',score:p.manuscript&&p.manuscript.length>100?100:0,details:total+' palavras estimadas'}); checks.push({checkType:'CHAPTER_STRUCTURE',status:count>=5?'PASS':'FAIL',score:count>=5?100:40,details:count+' capítulos'}); const bad=/(TODO|TBD|LOREM IPSUM|\[INSIRA)/i.test(p.manuscript||''); checks.push({checkType:'PLACEHOLDER_SCAN',status:bad?'FAIL':'PASS',score:bad?0:100,details:'varredura de placeholders'}); checks.push({checkType:'METADATA',status:p.title&&p.author?'PASS':'FAIL',score:p.title&&p.author?100:40,details:'título e autor'});
-  await prisma.editorialQualityCheck.deleteMany({where:{projectId}}); await prisma.editorialQualityCheck.createMany({data:checks.map(c=>({...c,projectId}))}); const score=checks.reduce((a,c)=>a+c.score,0)/checks.length; const status=checks.every(c=>c.status==='PASS')&&score>=85?'READY':'REVIEW'; await prisma.editorialProject.update({where:{id:projectId},data:{qualityScore:score,status}}); return {projectId,score,status,checks};
+  const p=await prisma.editorialProject.findUnique({where:{id:projectId},include:{chapters:true,checks:true}});
+  if(!p) throw new Error('PROJECT_NOT_FOUND');
+  const checks:any[]=[];
+  const count=p.chapters.length;
+  const total=p.chapters.reduce((a,c)=>a+c.wordCount,0);
+  const minWords=p.productType==='COLORING_BOOK'?0:Math.max(1800,Number(process.env.EDITORIAL_MIN_WORDS||6000));
+
+  checks.push({checkType:'MANUSCRIPT_PRESENT',status:p.manuscript&&p.manuscript.length>100?'PASS':'FAIL',score:p.manuscript&&p.manuscript.length>100?100:0,details:total+' palavras estimadas'});
+  checks.push({checkType:'CHAPTER_STRUCTURE',status:count>=5?'PASS':'FAIL',score:count>=5?100:40,details:count+' capítulos'});
+  checks.push({checkType:'MINIMUM_WORD_COUNT',status:total>=minWords?'PASS':'FAIL',score:total>=minWords?100:40,details:total+' / '+minWords+' palavras'});
+  const bad=/(TODO|TBD|LOREM IPSUM|\[INSIRA|TEXTO-BASE|EDITORIAL_BASE)/i.test(p.manuscript||'');
+  checks.push({checkType:'PLACEHOLDER_SCAN',status:bad?'FAIL':'PASS',score:bad?0:100,details:'varredura de placeholders'});
+  checks.push({checkType:'METADATA',status:p.title&&p.author?'PASS':'FAIL',score:p.title&&p.author?100:40,details:'título e autor'});
+
+  const aiReview=p.checks.find((c:any)=>c.checkType==='AI_EDITORIAL_REVIEW');
+  if(aiReview){
+    checks.push({checkType:'AI_EDITORIAL_REVIEW',status:aiReview.status==='PASS'?'PASS':'FAIL',score:Number(aiReview.score)||0,details:aiReview.details||''});
+  } else {
+    checks.push({checkType:'AI_EDITORIAL_REVIEW',status:'FAIL',score:0,details:'Revisão editorial por IA não encontrada.'});
+  }
+
+  await prisma.editorialQualityCheck.deleteMany({where:{projectId}});
+  await prisma.editorialQualityCheck.createMany({data:checks.map(c=>({...c,projectId}))});
+  const score=checks.reduce((a,c)=>a+c.score,0)/checks.length;
+  const status=checks.every(c=>c.status==='PASS')&&score>=85?'READY':'REVIEW';
+  await prisma.editorialProject.update({where:{id:projectId},data:{qualityScore:score,status}});
+  return {projectId,score,status,checks,totalWords:total};
  },
  async render(projectId:string){
   const p=await prisma.editorialProject.findUnique({where:{id:projectId},include:{chapters:true}}); if(!p) throw new Error('PROJECT_NOT_FOUND'); if(p.status!=='READY') throw new Error('QUALITY_GATE_REQUIRED'); const dir=path.join(ROOT,projectId); await ensureDir(dir);
