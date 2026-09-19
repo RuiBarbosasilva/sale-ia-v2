@@ -1,0 +1,13 @@
+import { Router } from 'express';
+import * as c from '../controllers/editorialFactoryController';
+const router=Router();
+router.get('/health',(_req,res)=>res.json({success:true,module:'editorial-factory',status:'ONLINE'}));
+router.post('/research',c.research);
+router.get('/opportunities',c.opportunities);
+router.post('/projects',c.createProject);
+router.post('/projects/:id/generate',c.generate);
+router.post('/projects/:id/quality-gate',c.qualityGate);
+router.post('/projects/:id/render',c.render);
+router.post('/projects/:id/landing',c.landing);
+router.post('/projects/:id/publish-plan',c.publishPlan);
+export default router;
