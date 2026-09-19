@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { hunterController } from '../controllers/hunterController';
 const router=Router();
+router.post('/research', hunterController.research);
 router.get('/dashboard',hunterController.dashboard);
 router.get('/opportunities',hunterController.opportunities);
 router.post('/opportunities',hunterController.createOpportunity);
