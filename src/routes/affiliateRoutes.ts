@@ -13,6 +13,8 @@ router.post('/portal/payouts', affiliateController.requestPayout);
 
 router.get('/admin', affiliateController.adminList);
 router.get('/admin/stats', affiliateController.stats);
+router.get('/admin/payouts', affiliateController.payouts);
+router.patch('/admin/payouts/:id/status', affiliateController.payoutStatus);
 router.get('/admin/:id', affiliateController.adminGet);
 router.patch('/admin/:id', affiliateController.adminUpdate);
 
