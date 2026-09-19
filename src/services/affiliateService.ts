@@ -201,6 +201,14 @@ export const affiliateService = {
     });
   },
 
+  async setPayoutStatus(id: string, status: 'PROCESSING' | 'PAID' | 'REJECTED', reference?: string) {
+    const payout = await prisma.affiliatePayout.findUnique({ where: { id } });
+    if (!payout) throw new Error('PAYOUT_NOT_FOUND');
+    const data: any = { status, reference: reference || payout.reference };
+    if (status === 'PAID') data.paidAt = new Date();
+    return prisma.affiliatePayout.update({ where: { id }, data });
+  },
+
   async setSaleStatus(id: string, status: 'APPROVED' | 'REJECTED' | 'PAID') {
     const sale = await prisma.affiliateSale.findUnique({ where: { id } });
     if (!sale) throw new Error('SALE_NOT_FOUND');
