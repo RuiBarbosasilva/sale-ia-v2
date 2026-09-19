@@ -202,32 +202,26 @@ export const affiliateService = {
   },
 
   async setPayoutStatus(id: string, status: 'PROCESSING' | 'PAID' | 'REJECTED', reference?: string) {
-    const payout = await prisma.affiliatePayout.findUnique({ where: { id } });
+    const payout = await prisma.affiliatePayout.findUnique({
+      where: { id },
+      include: { items: true },
+    });
     if (!payout) throw new Error('PAYOUT_NOT_FOUND');
 
     const data: any = { status, reference: reference || payout.reference };
     if (status === 'PAID') data.paidAt = new Date();
 
-    if (status !== 'PAID') {
-      return prisma.affiliatePayout.update({ where: { id }, data });
-    }
-
-    // A payout requested by the current flow consumes the affiliate's
-    // available APPROVED commissions. When the payout is confirmed as PAID,
-    // those commissions must move to PAID as well; otherwise the portal would
-    // continue showing the same money as available.
     return prisma.$transaction(async (tx) => {
       const result = await tx.affiliatePayout.update({ where: { id }, data });
 
-      const approved = await tx.affiliateSale.aggregate({
-        where: { affiliateId: payout.affiliateId, status: 'APPROVED' },
-        _sum: { commissionAmount: true },
-      });
-      const approvedAmount = Number(approved._sum.commissionAmount || 0);
-
-      if (approvedAmount > 0 && Math.abs(approvedAmount - payout.amount) < 0.01) {
+      if (status === 'PAID' && payout.items.length > 0) {
+        const saleIds = payout.items.map((item) => item.saleId);
         await tx.affiliateSale.updateMany({
-          where: { affiliateId: payout.affiliateId, status: 'APPROVED' },
+          where: {
+            id: { in: saleIds },
+            affiliateId: payout.affiliateId,
+            status: 'APPROVED',
+          },
           data: { status: 'PAID', paidAt: new Date() },
         });
       }
@@ -246,19 +240,47 @@ export const affiliateService = {
   },
 
   async requestPayout(affiliateId: string, method?: string) {
-    const agg = await prisma.affiliateSale.aggregate({
-      where: { affiliateId, status: 'APPROVED' },
-      _sum: { commissionAmount: true },
-    });
-    const alreadyRequested = await prisma.affiliatePayout.aggregate({
-      where: { affiliateId, status: { in: ['REQUESTED', 'PROCESSING'] } },
-      _sum: { amount: true },
-    });
-    const available = Number(agg._sum.commissionAmount || 0) - Number(alreadyRequested._sum.amount || 0);
-    if (available <= 0) throw new Error('NO_AVAILABLE_BALANCE');
+    return prisma.$transaction(async (tx) => {
+      const approvedSales = await tx.affiliateSale.findMany({
+        where: {
+          affiliateId,
+          status: 'APPROVED',
+          payoutItems: {
+            none: {
+              payout: {
+                status: { in: ['REQUESTED', 'PROCESSING'] },
+              },
+            },
+          },
+        },
+        orderBy: { approvedAt: 'asc' },
+        select: { id: true, commissionAmount: true },
+      });
 
-    return prisma.affiliatePayout.create({
-      data: { affiliateId, amount: Number(available.toFixed(2)), method: method || null, status: 'REQUESTED' },
+      const available = approvedSales.reduce(
+        (sum, sale) => sum + Number(sale.commissionAmount || 0),
+        0,
+      );
+
+      if (available <= 0) throw new Error('NO_AVAILABLE_BALANCE');
+
+      const payout = await tx.affiliatePayout.create({
+        data: {
+          affiliateId,
+          amount: Number(available.toFixed(2)),
+          method: method || null,
+          status: 'REQUESTED',
+          items: {
+            create: approvedSales.map((sale) => ({
+              saleId: sale.id,
+              amount: Number(Number(sale.commissionAmount || 0).toFixed(2)),
+            })),
+          },
+        },
+        include: { items: true },
+      });
+
+      return payout;
     });
   },
 
@@ -267,7 +289,18 @@ export const affiliateService = {
       prisma.affiliate.findUnique({ where: { id: affiliateId } }),
       prisma.affiliateClick.count({ where: { affiliateId } }),
       prisma.affiliateSale.aggregate({ where: { affiliateId }, _sum: { amount: true, commissionAmount: true }, _count: true }),
-      prisma.affiliateSale.aggregate({ where: { affiliateId, status: 'APPROVED' }, _sum: { commissionAmount: true } }),
+      prisma.affiliateSale.aggregate({
+        where: {
+          affiliateId,
+          status: 'APPROVED',
+          payoutItems: {
+            none: {
+              payout: { status: { in: ['REQUESTED', 'PROCESSING'] } },
+            },
+          },
+        },
+        _sum: { commissionAmount: true },
+      }),
       prisma.affiliateSale.aggregate({ where: { affiliateId, status: 'PENDING' }, _sum: { commissionAmount: true } }),
       prisma.affiliateSale.aggregate({ where: { affiliateId, status: 'PAID' }, _sum: { commissionAmount: true } }),
       prisma.affiliatePayout.aggregate({ where: { affiliateId, status: { in: ['REQUESTED', 'PROCESSING'] } }, _sum: { amount: true } }),
@@ -280,10 +313,7 @@ export const affiliateService = {
         sales: sales._count,
         salesValue: Number(sales._sum.amount || 0),
         commissions: Number(sales._sum.commissionAmount || 0),
-        approvedBalance: Math.max(
-          0,
-          Number(approved._sum.commissionAmount || 0) - Number(payouts._sum.amount || 0),
-        ),
+        approvedBalance: Number(approved._sum.commissionAmount || 0),
         pendingCommission: Number(pending._sum.commissionAmount || 0),
         paidCommission: Number(paid._sum.commissionAmount || 0),
         payoutInProgress: Number(payouts._sum.amount || 0),
@@ -298,7 +328,17 @@ export const affiliateService = {
       prisma.affiliateClick.count(),
       prisma.affiliateSale.aggregate({ _sum: { amount: true, commissionAmount: true }, _count: true }),
       prisma.affiliateSale.aggregate({ where: { status: 'PENDING' }, _sum: { commissionAmount: true } }),
-      prisma.affiliateSale.aggregate({ where: { status: 'APPROVED' }, _sum: { commissionAmount: true } }),
+      prisma.affiliateSale.aggregate({
+        where: {
+          status: 'APPROVED',
+          payoutItems: {
+            none: {
+              payout: { status: { in: ['REQUESTED', 'PROCESSING'] } },
+            },
+          },
+        },
+        _sum: { commissionAmount: true },
+      }),
       prisma.affiliateSale.aggregate({ where: { status: 'PAID' }, _sum: { commissionAmount: true } }),
       prisma.affiliatePayout.aggregate({ where: { status: { in: ['REQUESTED', 'PROCESSING'] } }, _sum: { amount: true } }),
     ]);
@@ -312,4 +352,5 @@ export const affiliateService = {
       payoutsOpen: Number(payouts._sum.amount || 0),
     };
   },
+
 };
