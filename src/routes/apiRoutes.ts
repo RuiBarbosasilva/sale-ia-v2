@@ -26,6 +26,7 @@ import supplierRoutes from './supplierRoutes';
 import creativeRoutes from './creativeRoutes';
 import prospectingRoutes from './prospectingRoutes';
 import automationRoutes from "./automationRoutes";
+import affiliateRoutes from './affiliateRoutes';
 
 const router = Router();
 
@@ -81,5 +82,6 @@ router.use('/categories', categoryRoutes);
 router.use('/templates', templateRoutes);
 
 router.use('/site-factory-dashboard', siteFactoryDashboardRoutes);
+router.use('/affiliates', affiliateRoutes);
 
 export default router;
