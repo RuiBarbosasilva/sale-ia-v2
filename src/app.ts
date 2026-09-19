@@ -6,6 +6,7 @@ import affiliateIntelligenceRoutes from './routes/affiliateIntelligenceRoutes';
 import affiliateActionRoutes from './routes/affiliateActionRoutes';
 import affiliateNetworkSecurityRoutes from './routes/affiliateNetworkSecurityRoutes';
 import affiliatePublicRoutes from './routes/affiliatePublicRoutes';
+import hotmartRoutes from './routes/hotmartRoutes';
 import mlRoutes from './modules/mercadoLivre/routes/mercadoLivreRoutes';
 import cookieParser from 'cookie-parser';
 import express from 'express';
@@ -43,6 +44,7 @@ app.use('/api/affiliates', affiliateRoutes);
 app.use('/api/affiliate-intelligence', affiliateIntelligenceRoutes);
 app.use('/api/affiliate-actions', affiliateActionRoutes);
 app.use('/api/affiliate-networks', affiliateNetworkSecurityRoutes);
+app.use('/api/affiliate-hotmart', hotmartRoutes);
 app.use('/go', affiliatePublicRoutes);
 
 // Middleware global de tratamento de erros
