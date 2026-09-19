@@ -57,3 +57,9 @@ CHAVE API DO GOOGLE - SALE-IA-V2.txt
 _finalization_reports/
 prisma/migrations_DIAGNOSTICO_9/
 
+
+# Local development backups
+_local-backups/
+*.bak
+*.bak-*
+*.before-*

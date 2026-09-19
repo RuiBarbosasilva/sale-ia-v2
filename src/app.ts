@@ -1,4 +1,6 @@
-﻿import dashboardRoutes from './routes/dashboardRoutes';
+﻿import 'dotenv/config';
+import dashboardRoutes from './routes/dashboardRoutes';
+import prospectingRoutes from './routes/prospectingRoutes';
 import mlRoutes from './modules/mercadoLivre/routes/mercadoLivreRoutes';
 import cookieParser from 'cookie-parser';
 import express from 'express';
@@ -27,6 +29,9 @@ app.use('/generated-images', express.static('storage/generated-images'));
 // Registra as rotas principais da API
 app.use('/api', apiRoutes);
 
+// RB Factory Sites - Prospecção
+app.use('/api/websites/prospecting', prospectingRoutes);
+
 // Middleware global de tratamento de erros
 app.use(errorHandler);
 
@@ -34,6 +39,4 @@ export default app;
 
 app.use('/api/mercadolivre', mlRoutes);
 app.use('/dashboard', dashboardRoutes);
-
-
 

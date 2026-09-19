@@ -1,0 +1,334 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Polenta Vino e Cucina | Restaurante em Poços de Caldas</title>
+<meta name="description" content="Conheça o Polenta Vino e Cucina em Poços de Caldas. Desfrute de pratos marcantes, excelente carta de vinhos e um ambiente acolhedor. Reserve sua mesa!">
+<meta name="keywords" content="Polenta Vino e Cucina, Po�os de Caldas">
+<meta name="author" content="Polenta Vino e Cucina">
+<meta property="og:title" content="Polenta Vino e Cucina | Restaurante em Poços de Caldas">
+<meta property="og:description" content="Conheça o Polenta Vino e Cucina em Poços de Caldas. Desfrute de pratos marcantes, excelente carta de vinhos e um ambiente acolhedor. Reserve sua mesa!">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+--primary: #2563eb;
+--secondary: #1e40af;
+--accent: #10b981;
+--bg: #ffffff;
+--surface: #f8fafc;
+--text: #0f172a;
+--text-muted: #64748b;
+--border: #e2e8f0;
+--radius-sm: 4px;
+--radius-md: 8px;
+--radius-lg: 12px;
+--radius-xl: 16px;
+--shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+--shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+--shadow-lg: 0 10px 25px rgba(0,0,0,0.15);
+--font-base: 'Inter', sans-serif;
+--font-heading: 'Inter', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+font-family: var(--font-base);
+line-height: 1.6;
+color: var(--text);
+background: var(--bg);
+-webkit-font-smoothing: antialiased;
+-moz-osx-font-smoothing: grayscale;
+}
+img { max-width: 100%; height: auto; display: block; }
+a { color: inherit; text-decoration: none; }
+h1, h2, h3, h4 { font-family: var(--font-heading); line-height: 1.2; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
+h1 { font-size: clamp(2rem, 5vw, 3.75rem); }
+h2 { font-size: clamp(1.75rem, 4vw, 2.75rem); margin-bottom: 1rem; }
+h3 { font-size: clamp(1.25rem, 2.5vw, 1.5rem); margin-bottom: 0.5rem; }
+p { margin-bottom: 1rem; color: var(--text-muted); }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+nav.nav {
+position: sticky; top: 0; z-index: 100;
+background: var(--bg);
+border-bottom: 1px solid var(--border);
+box-shadow: var(--shadow-sm);
+backdrop-filter: blur(10px);
+}
+nav.nav .nav-inner {
+max-width: 1200px; margin: 0 auto; padding: 1rem 1.5rem;
+display: flex; justify-content: space-between; align-items: center;
+}
+nav.nav .logo { font-family: var(--font-heading); font-weight: 800; font-size: 1.25rem; color: var(--primary); }
+nav.nav .nav-links { display: flex; gap: 2rem; list-style: none; }
+nav.nav .nav-links a {
+color: var(--text); font-weight: 500; font-size: 0.95rem;
+transition: color 0.2s;
+}
+nav.nav .nav-links a:hover { color: var(--primary); }
+.hero {
+background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+color: #ffffff;
+padding: 6rem 1.5rem 5rem;
+text-align: center;
+position: relative;
+overflow: hidden;
+}
+.hero::before {
+content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+background: radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%);
+pointer-events: none;
+}
+.hero .container { position: relative; z-index: 1; }
+.hero h1 { color: #ffffff; font-weight: 900; margin-bottom: 1.25rem; }
+.hero .subtitle {
+font-size: clamp(1.1rem, 2vw, 1.35rem);
+color: rgba(255,255,255,0.92);
+max-width: 700px; margin: 0 auto 2.5rem;
+}
+.btn {
+display: inline-flex; align-items: center; gap: 0.5rem;
+padding: 1rem 2.25rem;
+border-radius: var(--radius-md);
+font-weight: 600; font-size: 1rem;
+cursor: pointer; border: none;
+transition: transform 0.2s, box-shadow 0.2s;
+text-decoration: none;
+}
+.btn-primary { background: var(--accent); color: #ffffff; box-shadow: var(--shadow-md); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.btn-outline { background: transparent; color: #ffffff; border: 2px solid #ffffff; }
+.btn-outline:hover { background: #ffffff; color: var(--primary); }
+.btn-dark { background: var(--primary); color: #ffffff; }
+.btn-dark:hover { background: var(--secondary); transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+section { padding: 5rem 1.5rem; }
+section.alt { background: var(--surface); }
+.section-header { text-align: center; max-width: 700px; margin: 0 auto 3rem; }
+.section-header .eyebrow {
+display: inline-block; padding: 0.35rem 1rem;
+background: rgba(16,185,129, 0.1);
+color: var(--accent); border-radius: 999px;
+font-size: 0.85rem; font-weight: 600; margin-bottom: 1rem; letter-spacing: 0.05em;
+text-transform: uppercase;
+}
+.features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; }
+.feature-card {
+background: var(--bg); padding: 2rem;
+border-radius: var(--radius-lg);
+box-shadow: var(--shadow-sm);
+border: 1px solid var(--border);
+transition: transform 0.2s, box-shadow 0.2s;
+}
+.feature-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+.feature-icon {
+width: 56px; height: 56px; border-radius: var(--radius-md);
+background: linear-gradient(135deg, var(--primary), var(--secondary));
+color: #ffffff; display: flex; align-items: center; justify-content: center;
+margin-bottom: 1.25rem;
+}
+.feature-icon svg { width: 28px; height: 28px; }
+.feature-card h3 { color: var(--text); }
+.feature-card p { color: var(--text-muted); margin-bottom: 0; }
+.benefits-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+.benefit-item {
+display: flex; gap: 1rem; padding: 1.5rem;
+background: var(--bg); border-radius: var(--radius-lg);
+border: 1px solid var(--border);
+}
+.benefit-check {
+flex-shrink: 0; width: 40px; height: 40px;
+background: var(--accent); color: #ffffff;
+border-radius: 50%; display: flex; align-items: center; justify-content: center;
+}
+.benefit-check svg { width: 20px; height: 20px; }
+.benefit-item h3 { font-size: 1.1rem; margin-bottom: 0.25rem; }
+.benefit-item p { color: var(--text-muted); margin: 0; font-size: 0.95rem; }
+.about-content { max-width: 800px; margin: 0 auto; text-align: center; }
+.about-content p { font-size: 1.125rem; line-height: 1.8; color: var(--text); }
+.faq-list { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 1rem; }
+.faq-item {
+background: var(--bg); padding: 1.5rem;
+border-radius: var(--radius-lg); border: 1px solid var(--border);
+}
+.faq-item h3 { color: var(--text); font-size: 1.05rem; margin-bottom: 0.5rem; }
+.faq-item p { color: var(--text-muted); margin-bottom: 0; }
+.cta-section {
+background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+color: #ffffff; text-align: center;
+padding: 5rem 1.5rem;
+}
+.cta-section h2 { color: #ffffff; margin-bottom: 1rem; }
+.cta-section p { color: rgba(255,255,255,0.92); font-size: 1.15rem; margin-bottom: 2rem; }
+footer { background: var(--text); color: rgba(255,255,255,0.7); padding: 3rem 1.5rem 2rem; text-align: center; }
+footer .footer-brand { color: #ffffff; font-family: var(--font-heading); font-weight: 800; font-size: 1.25rem; margin-bottom: 0.75rem; }
+footer p { font-size: 0.9rem; }
+.whatsapp-float {
+position: fixed; bottom: 24px; right: 24px;
+width: 60px; height: 60px; border-radius: 50%;
+background: #25D366; color: #ffffff;
+display: flex; align-items: center; justify-content: center;
+box-shadow: 0 8px 25px rgba(37,211,102,0.4);
+z-index: 999; animation: pulse 2s infinite;
+}
+.whatsapp-float svg { width: 32px; height: 32px; fill: #ffffff; }
+@keyframes pulse {
+0%, 100% { box-shadow: 0 8px 25px rgba(37,211,102,0.4); }
+50% { box-shadow: 0 8px 35px rgba(37,211,102,0.6); }
+}
+@media (max-width: 768px) {
+nav.nav .nav-links { display: none; }
+.hero { padding: 4rem 1.5rem 3rem; }
+section { padding: 3.5rem 1.5rem; }
+.feature-card, .benefit-item { padding: 1.5rem; }
+.cta-section { padding: 3.5rem 1.5rem; }
+}
+.hero { position: relative; overflow: hidden; }
+.hero-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 35%; }
+.hero-overlay { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(37,99,235, 0.86) 0%, rgba(30,64,175, 0.78) 100%); }
+.hero-image .container { position: relative; z-index: 2; }
+.gallery-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+.gallery-item { margin: 0; border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm); aspect-ratio: 4 / 3; background: var(--surface); }
+.gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s; }
+.gallery-item:hover img { transform: scale(1.04); }
+.feature-media { margin: -2rem -2rem 1.25rem; aspect-ratio: 16 / 10; overflow: hidden; background: var(--surface); }
+.feature-media img { width: 100%; height: 100%; object-fit: cover; }
+.skip-link { position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden; background: var(--primary); color: #fff; padding: 0.75rem 1.25rem; font-weight: 600; border-radius: var(--radius-md); z-index: 10000; }
+.skip-link:focus { position: fixed; left: 1rem; top: 1rem; width: auto; height: auto; overflow: visible; outline: 3px solid var(--accent); }
+*:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.mobile-toggle { display: none; background: transparent; border: none; cursor: pointer; padding: 0.5rem; width: 44px; height: 44px; flex-direction: column; justify-content: center; gap: 5px; }
+.hamburger-bar { display: block; width: 26px; height: 3px; background: var(--text); border-radius: 2px; transition: all 0.3s; }
+.mobile-toggle[aria-expanded="true"] .hamburger-bar:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+.mobile-toggle[aria-expanded="true"] .hamburger-bar:nth-child(2) { opacity: 0; }
+.mobile-toggle[aria-expanded="true"] .hamburger-bar:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+@media (max-width: 768px) {
+nav.nav .mobile-toggle { display: flex; }
+nav.nav .nav-links { display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg); flex-direction: column; gap: 0; padding: 1rem; box-shadow: var(--shadow-md); border-top: 1px solid var(--border); }
+nav.nav .nav-links.open { display: flex; }
+nav.nav .nav-links li { width: 100%; }
+nav.nav .nav-links a { display: block; padding: 0.85rem 1rem; border-radius: var(--radius-md); }
+nav.nav .nav-links a:hover, nav.nav .nav-links a:focus { background: var(--surface); color: var(--primary); }
+}
+.logo-img { height: 40px; width: auto; max-width: 180px; object-fit: contain; }
+@media (max-width: 768px) { .hero-bg { object-position: center 50%; } .feature-media { margin: -1.5rem -1.5rem 1rem; } }
+/* RB FACTORY SITES - Dynamic Website Renderer */
+.wf-section { position: relative; width: 100%; padding: clamp(3.5rem, 7vw, 6rem) 1.5rem; background: var(--bg); color: var(--text); }
+.wf-container { width: min(1200px, 100%); margin: 0 auto; }
+.wf-section-heading { max-width: 760px; margin: 0 auto 2.5rem; text-align: center; }
+.wf-kicker { display: inline-block; margin-bottom: .75rem; color: var(--accent); font-size: .78rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.wf-section-heading h2 { margin-bottom: .75rem; }
+.wf-section-heading p { max-width: 680px; margin: 0 auto; }
+.wf-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .85rem; margin-top: 1.5rem; }
+.wf-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: .8rem 1.25rem; border-radius: var(--radius-md); font-weight: 700; border: 1px solid transparent; transition: transform .2s ease, box-shadow .2s ease, background .2s ease; }
+.wf-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.wf-btn-primary { background: var(--accent); color: #fff; }
+.wf-btn-secondary { background: var(--surface); color: var(--primary); border-color: var(--border); }
+.wf-hero { overflow: hidden; background: var(--bg); }
+.wf-hero-content { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr); align-items: center; gap: clamp(2rem, 6vw, 5rem); }
+.wf-hero-copy { position: relative; z-index: 2; }
+.wf-hero-copy h1 { max-width: 760px; margin-bottom: 1rem; }
+.wf-hero-copy p { max-width: 680px; font-size: clamp(1.05rem, 2vw, 1.25rem); }
+.wf-hero-media { overflow: hidden; min-height: 360px; border-radius: var(--radius-xl); background: var(--surface); box-shadow: var(--shadow-lg); }
+.wf-hero-media img { width: 100%; height: 100%; min-height: 360px; object-fit: cover; }
+.wf-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.25rem; }
+.wf-card { overflow: hidden; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease; }
+.wf-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); border-color: rgba(0,0,0,.08); }
+.wf-card-media { aspect-ratio: 16 / 10; overflow: hidden; background: var(--surface); }
+.wf-card-media img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s ease; }
+.wf-card:hover .wf-card-media img { transform: scale(1.035); }
+.wf-card-body { padding: 1.35rem; }
+.wf-card-body h3 { margin-bottom: .5rem; }
+.wf-card-body p { margin-bottom: 0; }
+.wf-card-price { display: block; margin-top: .85rem; color: var(--primary); font-size: 1.1rem; }
+.wf-two-column { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(2rem, 6vw, 5rem); align-items: center; }
+.wf-about, .wf-location, .wf-contact, .wf-booking, .wf-generic { background: var(--surface); }
+.wf-gallery-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 1rem; }
+.wf-gallery-item { grid-column: span 4; margin: 0; overflow: hidden; aspect-ratio: 4 / 3; border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow-sm); }
+.wf-gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s ease; }
+.wf-gallery-item:hover img { transform: scale(1.04); }
+.wf-faq-list { max-width: 850px; margin: 0 auto; display: grid; gap: .85rem; }
+.wf-faq-item { padding: 1.2rem 1.35rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
+.wf-faq-item summary { cursor: pointer; font-weight: 750; color: var(--text); }
+.wf-faq-item p { margin: .85rem 0 0; }
+.wf-location-map { min-height: 260px; display: flex; align-items: center; justify-content: center; padding: 2rem; border: 1px solid var(--border); border-radius: var(--radius-xl); background: var(--bg); box-shadow: var(--shadow-sm); }
+.wf-contact .wf-container, .wf-booking .wf-container { max-width: 900px; text-align: center; }
+.wf-contact .wf-actions, .wf-booking .wf-actions { justify-content: center; }
+.wf-cta { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #fff; text-align: center; }
+.wf-cta h2, .wf-cta p { color: #fff; }
+.wf-cta-inner { max-width: 850px; margin: 0 auto; }
+.wf-cta .wf-kicker { color: rgba(255,255,255,.78); }
+.wf-generic .wf-section-heading { text-align: left; margin-left: 0; }
+.wf-stats .wf-card, .wf-social-proof .wf-card { text-align: center; }
+.wf-stats .wf-card h3, .wf-social-proof .wf-card h3 { color: var(--primary); font-size: clamp(1.5rem, 3vw, 2.2rem); }
+.wf-testimonials .wf-card-body::before { content: "“"; display: block; color: var(--accent); font-family: Georgia, serif; font-size: 3rem; line-height: .7; margin-bottom: .5rem; }
+.wf-process .wf-card { border-top: 3px solid var(--accent); }
+.wf-section + .wf-section { border-top: 1px solid rgba(0,0,0,.025); }
+@media (max-width: 900px) { .wf-hero-content, .wf-two-column { grid-template-columns: 1fr; } .wf-hero-media { order: -1; min-height: 300px; } .wf-hero-media img { min-height: 300px; } .wf-gallery-item { grid-column: span 6; } }
+@media (max-width: 640px) { .wf-section { padding: 3.25rem 1rem; } .wf-hero-copy h1 { font-size: clamp(2rem, 10vw, 3rem); } .wf-actions { flex-direction: column; align-items: stretch; } .wf-btn { width: 100%; } .wf-card-grid { grid-template-columns: 1fr; } .wf-gallery-grid { grid-template-columns: 1fr; } .wf-gallery-item { grid-column: auto; } .wf-hero-media, .wf-hero-media img { min-height: 240px; } }
+@media (prefers-reduced-motion: reduce) { .wf-card, .wf-btn, .wf-card-media img, .wf-gallery-item img { transition: none; } }
+</style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"LocalBusiness","name":"Polenta Vino e Cucina","description":"Localizado em Poços de Caldas, o Polenta Vino e Cucina é um restaurante dedicado a proporcionar momentos memoráveis através da gastronomia. Nosso espaço foi pensado para quem aprecia a boa mesa, oferecendo pratos preparados com rigor e ingredientes selecionados, harmonizados perfeitamente com rótulos especiais de vinhos em um ambiente que convida a celebrar os bons momentos da vida.","address":{"@type":"PostalAddress","addressLocality":"Po�os de Caldas","addressCountry":"BR"},"url":"","telephone":"+553530148565"}</script>
+</head>
+<body>
+<a href="#main-content" class="skip-link">Ir para o conteudo principal</a>
+<nav class="nav" role="navigation" aria-label="Principal">
+<div class="nav-inner">
+<div class="logo">Polenta Vino e Cucina</div>
+<button class="mobile-toggle" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobile-menu">
+<span class="hamburger-bar"></span>
+<span class="hamburger-bar"></span>
+<span class="hamburger-bar"></span>
+</button>
+<ul class="nav-links" id="mobile-menu" role="menu">
+<li><a href="#servicos">Serviços</a></li>
+<li><a href="#beneficios">Benefícios</a></li>
+<li><a href="#sobre">Sobre</a></li>
+<li><a href="#faq">FAQ</a></li>
+<li><a href="#contato">Contato</a></li>
+</ul>
+</div>
+</nav>
+<header class="hero hero-image" role="banner">
+<img class="hero-bg" src="https://upload.wikimedia.org/wikipedia/commons/5/52/Army_Photography_Contest_-_2007_-_FMWRC_-_Arts_and_Crafts_-_An_Opulent_Abode_%284930275672%29.jpg?utm_source=commons.wikimedia.org&amp;utm_campaign=imageinfo&amp;utm_content=thumbnail_unscaled" alt="Army Photography Contest - 2007 - FMWRC - Arts and Crafts - An Opulent Abode Photo By: SSG Robert Stewart To learn more " width="1600" height="1067" fetchpriority="high">
+<div class="hero-overlay" aria-hidden="true"></div>
+<div class="container">
+<h1>A verdadeira tradição italiana em Poços de Caldas</h1>
+<p class="subtitle">Soluções profissionais em Po�os de Caldas</p>
+<a href="https://wa.me/553530148565" class="btn btn-outline" target="_blank" rel="noopener">Reserve sua mesa</a>
+</div>
+</header>
+<section id="servicos" aria-labelledby="services-title"><div class="container"><div class="section-header"><span class="eyebrow">O que fazemos</span><h2 id="services-title">Nossos Serviços</h2></div><div class="features-grid"><div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div><h3>Almoço Executivo e à La Carte</h3><p>Opções de pratos principais que unem receitas clássicas e contemporâneas para o seu almoço na cidade.</p></div><div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div><h3>Jantar Romântico e em Família</h3><p>Um menu completo para noites especiais, com pratos marcantes, massas, acompanhamentos e sobremesas.</p></div><div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg></div><h3>Carta de Vinhos Exclusiva</h3><p>Rótulos cuidadosamente selecionados para acompanhar perfeitamente cada escolha do nosso cardápio.</p></div><div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div><h3>Eventos e Comemorações</h3><p>Um espaço aconchegante e estruturado para receber reuniões, aniversários e celebrações inesquecíveis.</p></div></div></div></section>
+<section id="beneficios" class="alt" aria-labelledby="benefits-title"><div class="container"><div class="section-header"><span class="eyebrow">Por que nos escolher</span><h2 id="benefits-title">Nossos Diferenciais</h2></div><div class="benefits-grid"><div class="benefit-item"><div class="benefit-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div><div><h3>Ambiente Acolhedor</h3><p>Espaço projetado para garantir conforto e uma atmosfera agradável durante toda a sua experiência gastronômica.</p></div></div><div class="benefit-item"><div class="benefit-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div><div><h3>Atendimento Profissional</h3><p>Equipe treinada para oferecer um serviço cortês, atencioso e que prioriza a sua satisfação em primeiro lugar.</p></div></div><div class="benefit-item"><div class="benefit-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div><div><h3>Localização Privilegiada</h3><p>Fácil acesso em Poços de Caldas, sendo o destino ideal tanto para moradores quanto para turistas da região.</p></div></div></div></div></section>
+<section id="galeria" class="alt" aria-labelledby="gallery-title"><div class="container"><div class="section-header"><span class="eyebrow">galeria</span><h2 id="gallery-title">Galeria</h2></div><div class="gallery-grid"><figure class="gallery-item"><img src="https://thumb.wikimedia.org/wikipedia/commons/thumb/3/33/Meeting_with_British_businesses_%286915424829%29.jpg/1920px-Meeting_with_British_businesses_%286915424829%29.jpg?utm_source=commons.wikimedia.org&amp;utm_campaign=imageinfo&amp;utm_content=thumbnail" alt="Foreign Office Minister Alistair Burt chairs a meeting with British businesses and Hina Rabbani Khar, Pakistan Foreign M" width="1600" height="1067" loading="lazy"></figure><figure class="gallery-item"><img src="(data-uri embutido)" alt="Imagem ilustrativa de galeria: polentas artesanais b2b (placeholder grafico gerado localmente, nao e fotografia real)" width="800" height="600" loading="lazy"></figure><figure class="gallery-item"><img src="https://upload.wikimedia.org/wikipedia/commons/2/28/Ford_B1774_NLGRF_photo_contact_sheet_%281976-10-08%29%28Gerald_Ford_Library%29.jpg?utm_source=commons.wikimedia.org&amp;utm_campaign=imageinfo&amp;utm_content=thumbnail_unscaled" alt="The photo contact sheet, identified as B1774 by the White House Photographic Office (WHPO), is housed at the Gerald R. F" width="1600" height="2059" loading="lazy"></figure><figure class="gallery-item"><img src="https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9f/Exterior_view_Hotel_Green_with_annex_and_park_from_the_south%2C_ca.1905_%28CHS-2781%29.jpg/1920px-Exterior_view_Hotel_Green_with_annex_and_park_from_the_south%2C_ca.1905_%28CHS-2781%29.jpg?utm_source=commons.wikimedia.org&amp;utm_campaign=imageinfo&amp;utm_content=thumbnail" alt="Exterior view Hotel Green with annex and park from the south, ca.1905 Photograph of the Green Hotel, Pasadena, from the " width="1600" height="1225" loading="lazy"></figure></div></div></section>
+
+<section id="sobre" aria-labelledby="about-title">
+<div class="container">
+<div class="section-header">
+<span class="eyebrow">Sobre nós</span>
+<h2 id="about-title">Conheça a Polenta Vino e Cucina</h2>
+</div>
+<div class="about-content">
+<p>Localizado em Poços de Caldas, o Polenta Vino e Cucina é um restaurante dedicado a proporcionar momentos memoráveis através da gastronomia. Nosso espaço foi pensado para quem aprecia a boa mesa, oferecendo pratos preparados com rigor e ingredientes selecionados, harmonizados perfeitamente com rótulos especiais de vinhos em um ambiente que convida a celebrar os bons momentos da vida.</p>
+</div>
+</div>
+</section>
+<section id="faq" class="alt" aria-labelledby="faq-title"><div class="container"><div class="section-header"><span class="eyebrow">Dúvidas frequentes</span><h2 id="faq-title">Perguntas Frequentes</h2></div><div class="faq-list"><div class="faq-item"><h3>É necessário fazer reserva antecipada?</h3><p>Recomendamos a reserva antecipada para garantir a sua mesa, especialmente nos finais de semana e datas comemorativas.</p></div><div class="faq-item"><h3>O restaurante possui opções de vinhos para harmonização?</h3><p>Sim, contamos com uma carta de vinhos variada e nossa equipe está preparada para sugerir a melhor harmonização para o seu prato.</p></div><div class="faq-item"><h3>O espaço é adequado para eventos particulares?</h3><p>Sim, oferecemos estrutura e atendimento personalizado para receber pequenos e médios eventos e comemorações.</p></div></div></div></section>
+<section id="contato" class="cta-section" aria-labelledby="cta-title">
+<div class="container">
+<h2 id="cta-title">Pronto para começar?</h2>
+<p>Entre em contato agora e descubra como podemos ajudar você.</p>
+<a href="https://wa.me/553530148565" class="btn btn-outline" target="_blank" rel="noopener">Reserve sua mesa</a>
+</div>
+</section>
+<footer role="contentinfo">
+<div class="container">
+<div class="footer-brand">Polenta Vino e Cucina</div>
+<p>&copy; 2026 Polenta Vino e Cucina. Todos os direitos reservados.</p>
+</div>
+</footer>
+<a href="https://wa.me/553530148565" class="whatsapp-float" target="_blank" rel="noopener" aria-label="Fale conosco no WhatsApp"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16.004 0h-.008C7.174 0 0 7.176 0 16c0 3.5 1.128 6.744 3.046 9.378L1.054 31.29l6.118-1.958C9.722 31.016 12.742 32 16.004 32 24.826 32 32 24.822 32 16S24.826 0 16.004 0zm9.35 22.614c-.39 1.1-1.932 2.014-3.164 2.282-.846.18-1.95.324-5.67-1.218-4.762-1.972-7.826-6.79-8.064-7.108-.228-.318-1.932-2.572-1.932-4.904s1.222-3.472 1.658-3.95c.436-.478.952-.596 1.27-.596.318 0 .636.002.914.016.294.014.688-.112 1.078.824.39.936 1.332 3.254 1.448 3.49.118.236.196.512.04.83-.158.318-.236.514-.472.79-.236.276-.496.616-.708.828-.236.236-.482.492-.208.968.276.476 1.222 2.022 2.624 3.268 1.806 1.606 3.332 2.106 3.808 2.342.476.236.752.198 1.028-.118.276-.318 1.186-1.384 1.502-1.86.318-.476.634-.396 1.068-.236.436.158 2.754 1.298 3.228 1.534.476.236.792.354.91.552.118.198.118 1.14-.272 2.24z"/></svg></a>
+<script>(function(){var b=document.querySelector(".mobile-toggle");var m=document.getElementById("mobile-menu");if(!b||!m)return;b.addEventListener("click",function(){var open=m.classList.toggle("open");b.setAttribute("aria-expanded",open?"true":"false");});m.addEventListener("click",function(e){if(e.target.tagName==="A"){m.classList.remove("open");b.setAttribute("aria-expanded","false");}});document.addEventListener("keydown",function(e){if(e.key==="Escape"&&m.classList.contains("open")){m.classList.remove("open");b.setAttribute("aria-expanded","false");b.focus();}});})();</script>
+</body>
+</html>
