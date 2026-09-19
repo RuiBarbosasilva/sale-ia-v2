@@ -31,6 +31,11 @@ function publicAffiliate(a: any) {
   return safe;
 }
 
+function safeAffiliate(a: any) {
+  if (!a) return a;
+  return publicAffiliate(a);
+}
+
 function finiteNumber(value: unknown, fallback?: number) {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
@@ -106,10 +111,11 @@ export const affiliateService = {
   },
 
   async list() {
-    return prisma.affiliate.findMany({
+    const affiliates = await prisma.affiliate.findMany({
       orderBy: { createdAt: 'desc' },
       include: { _count: { select: { links: true, clicks: true, sales: true, payouts: true } } },
     });
+    return affiliates.map(safeAffiliate);
   },
 
   async get(id: string) {
@@ -122,7 +128,12 @@ export const affiliateService = {
       },
     });
     if (!affiliate) throw new Error('AFFILIATE_NOT_FOUND');
-    return affiliate;
+    return {
+      ...safeAffiliate(affiliate),
+      links: affiliate.links,
+      sales: affiliate.sales,
+      payouts: affiliate.payouts,
+    };
   },
 
   async update(id: string, data: { status?: string; commissionRate?: number; notes?: string }) {
@@ -139,7 +150,7 @@ export const affiliateService = {
         ...(data.commissionRate !== undefined ? { commissionRate: Number(data.commissionRate) } : {}),
         ...(data.notes !== undefined ? { notes: String(data.notes).trim() || null } : {}),
       },
-    });
+    }).then(safeAffiliate);
   },
 
   async createOffer(data: { name: string; network?: string; externalId?: string; destinationUrl: string; category?: string; commissionRate?: number; metadata?: unknown }) {
@@ -233,11 +244,15 @@ export const affiliateService = {
   },
 
   async listLinks(affiliateId?: string) {
-    return prisma.affiliateLink.findMany({
+    const links = await prisma.affiliateLink.findMany({
       where: affiliateId ? { affiliateId } : undefined,
       include: { affiliate: true, offer: true, _count: { select: { clicks: true, sales: true } } },
       orderBy: { createdAt: 'desc' },
     });
+    return links.map((link) => ({
+      ...link,
+      affiliate: safeAffiliate(link.affiliate),
+    }));
   },
 
   async trackClick(code: string, meta: { ip?: string; userAgent?: string; referer?: string }) {
@@ -319,12 +334,16 @@ export const affiliateService = {
       ...(filters.status ? { status: filters.status } : {}),
       ...(filters.source ? { source: filters.source } : {}),
     };
-    return prisma.affiliateSale.findMany({
+    const sales = await prisma.affiliateSale.findMany({
       where,
       include: { affiliate: true, link: true, payoutItems: { include: { payout: true } } },
       orderBy: { createdAt: 'desc' },
       take: Math.min(Math.max(Number(filters.take || 100), 1), 500),
     });
+    return sales.map((sale) => ({
+      ...sale,
+      affiliate: safeAffiliate(sale.affiliate),
+    }));
   },
 
   async setSaleStatus(id: string, status: SaleStatus) {
@@ -431,7 +450,7 @@ export const affiliateService = {
   },
 
   async listPayouts(filters: { affiliateId?: string; status?: string } = {}) {
-    return prisma.affiliatePayout.findMany({
+    const payouts = await prisma.affiliatePayout.findMany({
       where: {
         ...(filters.affiliateId ? { affiliateId: filters.affiliateId } : {}),
         ...(filters.status ? { status: filters.status } : {}),
@@ -440,6 +459,10 @@ export const affiliateService = {
       orderBy: { requestedAt: 'desc' },
       take: 500,
     });
+    return payouts.map((payout) => ({
+      ...payout,
+      affiliate: safeAffiliate(payout.affiliate),
+    }));
   },
 
   async dashboard(affiliateId: string) {
