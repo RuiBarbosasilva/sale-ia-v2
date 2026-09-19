@@ -1,150 +1,150 @@
-﻿// src/modules/mercadoLivre/controllers/authController.ts
+// src/modules/mercadoLivre/controllers/authController.ts
 import { Request, Response } from 'express';
 import axios from 'axios';
 import { prisma } from '../lib/prisma';
 import { tokenService } from '../auth/tokenService';
 import { oauthStateService } from '../auth/oauthStateService';
 
+const ML_AUTH_URL = 'https://auth.mercadolivre.com.br/authorization';
+const ML_TOKEN_URL = 'https://api.mercadolibre.com/oauth/token';
+const ML_USER_URL = 'https://api.mercadolibre.com/users/me';
+
+function redirectError(res: Response, code: string) {
+  return res.redirect(`/dashboard/mercadolivre?status=error&message=${encodeURIComponent(code)}`);
+}
+
 export const connect = (req: Request, res: Response) => {
   try {
-    console.log('[ML OAuth] 🟢 Iniciando fluxo de conexão...');
-    const state = oauthStateService.generateState();
-    console.log('[ML OAuth] 🔑 State gerado');
-    
-    const appId = process.env.MERCADO_LIVRE_APP_ID;
-    const redirectUri = process.env.MERCADO_LIVRE_REDIRECT_URI;
-    
-    console.log('[ML OAuth] ⚙️ APP_ID:', appId ? 'CONFIGURADO' : '❌ AUSENTE');
-    console.log('[ML OAuth] ⚙️ REDIRECT_URI:', redirectUri ? 'CONFIGURADO' : 'AUSENTE');
-    
+    const appId = (process.env.MERCADO_LIVRE_APP_ID || '').trim();
+    const redirectUri = (process.env.MERCADO_LIVRE_REDIRECT_URI || '').trim();
     if (!appId || !redirectUri) {
-      throw new Error('Variáveis de ambiente do ML não configuradas no .env');
+      return res.status(500).json({
+        success: false,
+        error: 'MERCADO_LIVRE_OAUTH_NOT_CONFIGURED',
+        requestId: (req as any).requestId,
+      });
     }
 
-    const authUrl = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
-    
-    console.log('[ML OAuth] 🔗 Redirecionando para o Mercado Livre...');
-    res.redirect(authUrl);
-  } catch (error: any) {
-    console.error('[ML OAuth] ❌ Erro ao iniciar conexão:', error.message);
-    res.status(500).json({ error: 'MERCADO_LIVRE_INTERNAL_ERROR', requestId: (req as any).requestId });
+    const state = oauthStateService.generateState();
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: appId,
+      redirect_uri: redirectUri,
+      state,
+    });
+
+    return res.redirect(`${ML_AUTH_URL}?${params.toString()}`);
+  } catch {
+    return res.status(500).json({
+      success: false,
+      error: 'MERCADO_LIVRE_OAUTH_INIT_FAILED',
+      requestId: (req as any).requestId,
+    });
   }
 };
 
 export const callback = async (req: Request, res: Response) => {
-  console.log('\n========================================');
-  console.log('[ML OAuth] 🟡 CALLBACK RECEBIDO');
-  console.log('========================================');
-  
   const { code, state } = req.query;
-  console.log('[ML OAuth] Query params:', { code: code ? 'PRESENTE' : 'AUSENTE', state: state ? String(state).substring(0,8)+'...' : 'AUSENTE' });
 
-  if (!state || typeof state !== 'string' || !oauthStateService.validateAndConsumeState(state)) {
-    console.error('[ML OAuth] ❌ State inválido, expirado ou já utilizado');
-    return res.redirect(`/dashboard/mercadolivre?status=error&message=${encodeURIComponent('State inválido')}`);
+  if (
+    typeof state !== 'string' ||
+    state.length < 32 ||
+    state.length > 128 ||
+    !/^[a-f0-9]+$/i.test(state) ||
+    !oauthStateService.validateAndConsumeState(state)
+  ) {
+    return redirectError(res, 'MERCADO_LIVRE_OAUTH_INVALID_STATE');
   }
-  console.log('[ML OAuth] ✅ State validado');
 
-  if (!code || typeof code !== 'string') {
-    console.error('[ML OAuth] ❌ Code ausente');
-    return res.redirect(`/dashboard/mercadolivre?status=error&message=${encodeURIComponent('Code ausente')}`);
+  if (typeof code !== 'string' || code.length < 8 || code.length > 4096) {
+    return redirectError(res, 'MERCADO_LIVRE_OAUTH_INVALID_CODE');
   }
-  console.log('[ML OAuth] ✅ Code presente');
+
+  const appId = (process.env.MERCADO_LIVRE_APP_ID || '').trim();
+  const clientSecret = (process.env.MERCADO_LIVRE_CLIENT_SECRET || '').trim();
+  const redirectUri = (process.env.MERCADO_LIVRE_REDIRECT_URI || '').trim();
+
+  if (!appId || !clientSecret || !redirectUri) {
+    return redirectError(res, 'MERCADO_LIVRE_OAUTH_NOT_CONFIGURED');
+  }
 
   try {
-    console.log('\n[ML OAuth] 🔄 INICIANDO TROCA DE TOKEN (POST /oauth/token)');
-    
-    const appId = (process.env.MERCADO_LIVRE_APP_ID || '').trim();
-    const clientSecret = (process.env.MERCADO_LIVRE_CLIENT_SECRET || '').trim();
-    const redirectUri = (process.env.MERCADO_LIVRE_REDIRECT_URI || '').trim();
-    
-    console.log('[ML OAuth] Dados que serão enviados:');
-    console.log('  - grant_type: authorization_code');
-    console.log('  - client_id:', appId);
-    console.log('  - client_secret:', clientSecret ? '***CONFIGURADO***' : '❌ AUSENTE');
-    console.log('  - code:', code);
-    console.log('  - redirect_uri:', redirectUri);
-
-    // Montando o payload no formato exato exigido pelo OAuth2 (URL Encoded)
-    const params = new URLSearchParams();
-    params.append('grant_type', 'authorization_code');
-    params.append('client_id', appId);
-    params.append('client_secret', clientSecret);
-    params.append('code', code);
-    params.append('redirect_uri', redirectUri);
-
-    const tokenResponse = await axios.post('https://api.mercadolibre.com/oauth/token', params, {
-      headers: { 
-        'Content-Type': 'application/x-www-form-urlencoded', 
-        'Accept': 'application/json' 
-      },
-      validateStatus: () => true // Impede o Axios de lançar exceção automática para status 4xx/5xx
+    const params = new URLSearchParams({
+      grant_type: 'authorization_code',
+      client_id: appId,
+      client_secret: clientSecret,
+      code,
+      redirect_uri: redirectUri,
     });
 
-    // Verificando se a resposta foi um erro HTTP (ex: 400, 401)
-    if (tokenResponse.status >= 400) {
-      console.error('\n[ML OAuth] 🚨🚨🚨 O MERCADO LIVRE RETORNOU UM ERRO! 🚨🚨🚨');
-      console.error('[ML OAuth] Status HTTP:', tokenResponse.status);
-      console.error('[ML OAuth] Resposta de erro recebida do provedor', { status: tokenResponse.status });
-      throw new Error('MERCADO_LIVRE_TOKEN_EXCHANGE_FAILED');
+    const tokenResponse = await axios.post(ML_TOKEN_URL, params, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
+      },
+      timeout: 15000,
+      validateStatus: status => status >= 200 && status < 300,
+    });
+
+    const accessToken = tokenResponse.data?.access_token;
+    const userResponse = await axios.get(ML_USER_URL, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      timeout: 15000,
+      validateStatus: status => status >= 200 && status < 300,
+    });
+
+    const userData = userResponse.data;
+    if (!userData?.id || typeof userData.id !== 'number') {
+      throw new Error('MERCADO_LIVRE_USER_INVALID');
     }
 
-    console.log('[ML OAuth] ✅ Token recebido com sucesso!');
-    console.log('[ML OAuth] Access Token recebido');
-
-    // Buscando dados do usuário
-    console.log('[ML OAuth] 👤 Buscando dados em /users/me...');
-    const userResponse = await axios.get('https://api.mercadolibre.com/users/me', {
-      headers: { Authorization: `Bearer ${tokenResponse.data.access_token}` }
-    });
-    const userData = userResponse.data;
-    console.log('[ML OAuth] ✅ Usuário:', userData.nickname);
-
-    // Salvando no banco
-    const userId = (req as any).user?.id || 'SYSTEM';
     const account = await prisma.mercadoLivreAccount.upsert({
       where: { mlUserId: String(userData.id) },
-      update: { nickname: userData.nickname, isActive: true },
-      create: {
-        userId,
-        mlUserId: String(userData.id),
-        nickname: userData.nickname,
-        siteId: userData.site_id || 'MLB',
-        permalink: userData.permalink,
+      update: {
+        nickname: typeof userData.nickname === 'string' ? userData.nickname.slice(0, 120) : null,
         isActive: true,
-      }
+      },
+      create: {
+        userId: (req as any).user?.id || 'SYSTEM',
+        mlUserId: String(userData.id),
+        nickname: typeof userData.nickname === 'string' ? userData.nickname.slice(0, 120) : null,
+        siteId: typeof userData.site_id === 'string' ? userData.site_id.slice(0, 20) : 'MLB',
+        permalink: typeof userData.permalink === 'string' ? userData.permalink.slice(0, 500) : null,
+        isActive: true,
+      },
     });
 
     await tokenService.saveInitialTokens(account.id, tokenResponse.data);
-    console.log('[ML OAuth] 💾 Conta e tokens salvos no banco.');
 
-    // Redirecionamento final
-    const frontendUrl = process.env.FRONTEND_URL;
-    const successPath = frontendUrl 
-      ? `${frontendUrl}/dashboard/mercadolivre?status=success&accountId=${account.id}` 
-      : `/dashboard/mercadolivre?status=success&accountId=${account.id}`;
-      
-    console.log('[ML OAuth] 🏁 Redirecionando para:', successPath);
-    res.redirect(successPath);
-
-  } catch (error: any) {
-    console.error('\n========================================');
-    console.error('[ML OAuth] ❌ ERRO CRÍTICO NO CALLBACK');
-    console.error('========================================');
-    console.error('[ML OAuth] Falha no fluxo OAuth');
-    console.error('========================================\n');
-    
-    res.redirect('/dashboard/mercadolivre?status=error&message=MERCADO_LIVRE_OAUTH_FAILED');
+    return res.redirect('/dashboard/mercadolivre?status=success');
+  } catch (error) {
+    const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+    console.warn('[ML OAuth] callback failed', {
+      requestId: (req as any).requestId,
+      providerStatus: status || 'unknown',
+    });
+    return redirectError(res, 'MERCADO_LIVRE_OAUTH_FAILED');
   }
 };
 
 export const disconnect = async (req: Request, res: Response) => {
   try {
-    const { accountId } = req.params;
-    await prisma.mercadoLivreAccount.update({ where: { id: accountId }, data: { isActive: false } });
-    res.json({ success: true, message: 'Conta desconectada' });
-  } catch (error) {
-    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR' });
+    const accountId = req.params.accountId;
+    if (!/^[A-Za-z0-9_-]{10,100}$/.test(accountId)) {
+      return res.status(400).json({ success: false, error: 'INVALID_ACCOUNT_ID', requestId: (req as any).requestId });
+    }
+
+    const result = await prisma.mercadoLivreAccount.updateMany({
+      where: { id: accountId, isActive: true },
+      data: { isActive: false },
+    });
+
+    if (result.count === 0) {
+      return res.status(404).json({ success: false, error: 'MERCADO_LIVRE_ACCOUNT_NOT_FOUND', requestId: (req as any).requestId });
+    }
+
+    return res.json({ success: true, message: 'MERCADO_LIVRE_ACCOUNT_DISCONNECTED' });
+  } catch {
+    return res.status(500).json({ success: false, error: 'MERCADO_LIVRE_DISCONNECT_FAILED', requestId: (req as any).requestId });
   }
 };
-
