@@ -5,6 +5,7 @@ function ok(res:Response,data:any){ return res.json({success:true,data}); }
 function fail(res:Response,e:any){ return res.status(500).json({success:false,error:e?.message||'HUNTER_ERROR'}); }
 
 export const hunterController = {
+  async research(req:Request,res:Response){ try{return ok(res,await hunterService.researchMarket(req.body));}catch(e){return fail(res,e);} },
   async dashboard(req:Request,res:Response){ try{return ok(res,await hunterService.dashboard());}catch(e){return fail(res,e);} },
   async opportunities(req:Request,res:Response){ try{return ok(res,await hunterService.listOpportunities());}catch(e){return fail(res,e);} },
   async createOpportunity(req:Request,res:Response){ try{return ok(res,await hunterService.createOpportunity(req.body));}catch(e){return fail(res,e);} },
