@@ -6,7 +6,7 @@ import { tokenService } from '../auth/tokenService';
 export class ListingService {
   async getListings(accountId: string, limit: number = 50, offset: number = 0) {
     const accessToken = await tokenService.getValidToken(accountId);
-    const client = new MercadoLivreClient(accessToken, () => tokenService.refreshToken(accountId, ''));
+    const client = new MercadoLivreClient(accessToken, () => tokenService.getValidToken(accountId));
     
     const account = await prisma.mercadoLivreAccount.findUnique({ where: { id: accountId } });
     if (!account) throw new Error('ACCOUNT_NOT_FOUND');
@@ -30,7 +30,7 @@ export class ListingService {
 
   async getItem(accountId: string, mlItemId: string) {
     const accessToken = await tokenService.getValidToken(accountId);
-    const client = new MercadoLivreClient(accessToken, () => tokenService.refreshToken(accountId, 'placeholder'));
+    const client = new MercadoLivreClient(accessToken, () => tokenService.getValidToken(accountId));
     return await client.get<any>(`/items/${mlItemId}`);
   }
 
