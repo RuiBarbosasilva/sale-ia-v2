@@ -1,15 +1,20 @@
 import { Router } from 'express';
 import { affiliateController } from '../controllers/affiliateController';
+import { rateLimit } from '../middlewares/security';
 
 const router = Router();
 
-router.get('/health', affiliateController.health);
-router.post('/register', affiliateController.register);
+const registerRateLimit = rateLimit({ name: 'affiliate-register', windowMs: 15 * 60 * 1000, limit: 10 });
+const portalRateLimit = rateLimit({ name: 'affiliate-portal', windowMs: 5 * 60 * 1000, limit: 30 });
+const webhookRateLimit = rateLimit({ name: 'affiliate-webhook', windowMs: 60 * 1000, limit: 120 });
 
-router.get('/portal', affiliateController.portal);
-router.get('/portal/links', affiliateController.portalLinks);
-router.post('/portal/links', affiliateController.createPortalLink);
-router.post('/portal/payouts', affiliateController.requestPayout);
+router.get('/health', affiliateController.health);
+router.post('/register', registerRateLimit, affiliateController.register);
+
+router.get('/portal', portalRateLimit, affiliateController.portal);
+router.get('/portal/links', portalRateLimit, affiliateController.portalLinks);
+router.post('/portal/links', portalRateLimit, affiliateController.createPortalLink);
+router.post('/portal/payouts', portalRateLimit, affiliateController.requestPayout);
 
 router.get('/admin', affiliateController.adminList);
 router.get('/admin/stats', affiliateController.stats);
@@ -31,6 +36,6 @@ router.patch('/admin/links/:id', affiliateController.updateLink);
 router.post('/admin/sales', affiliateController.recordSale);
 router.patch('/admin/sales/:id/status', affiliateController.saleStatus);
 
-router.post('/webhook/sale', affiliateController.webhookSale);
+router.post('/webhook/sale', webhookRateLimit, affiliateController.webhookSale);
 
 export default router;
