@@ -81,9 +81,13 @@ Regras implementadas:
 
 ## Seguranca
 
+A administracao interna usa `x-sale-ia-admin-key`. O servidor aceita temporariamente `AFFILIATE_ADMIN_KEY` como fallback de compatibilidade; em producao, defina uma chave dedicada `SALE_IA_ADMIN_KEY`.
+
 Defina no `.env`:
 
 ```env
+SALE_IA_ADMIN_KEY="segredo-longo-e-exclusivo"
+
 AFFILIATE_ADMIN_KEY="segredo-longo"
 AFFILIATE_WEBHOOK_KEY="outro-segredo-longo"
 ```

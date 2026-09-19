@@ -7,8 +7,11 @@ import { hunterService } from '../services/hunterService';
 import { salesOrchestrationService } from '../services/salesOrchestrationService';
 import { opportunitySalesBridgeService } from '../services/opportunitySalesBridgeService';
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
+import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
+
+router.use(adminAuthorization);
 
 router.get('/mercadolivre', getMercadoLivreDashboard);
 
