@@ -1,0 +1,10 @@
+const fs=require('fs');
+const path=require('path');
+const root=path.resolve(__dirname,'..');
+for(const rel of ['runtime','storage/editorial','storage/generated-images']) fs.mkdirSync(path.join(root,rel),{recursive:true});
+const p=path.join(root,'.gitignore');
+let t=fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';
+const rules=['.env','.env.*','!.env.example','*.db','*.db-journal','*.db-shm','*.db-wal','node_modules/','dist/','runtime/','storage/','_audit_backups/','backups/'];
+for(const r of rules) if(!t.split(/\r?\n/).includes(r)) t+=(t.endsWith('\n')?'':'\n')+r+'\n';
+fs.writeFileSync(p,t);
+console.log('Guardian repair: diretórios e higiene do workspace corrigidos.');
