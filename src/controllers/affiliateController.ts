@@ -126,6 +126,22 @@ export const affiliateController = {
     try { res.json({ success: true, sale: await affiliateService.setSaleStatus(req.params.id, req.body.status) }); } catch (e) { handleError(res,e); }
   },
 
+  async payoutStatus(req: Request, res: Response) {
+    if (!adminGuard(req,res)) return;
+    try { res.json({ success: true, payout: await affiliateService.setPayoutStatus(req.params.id, req.body.status, req.body.reference) }); } catch (e) { handleError(res,e); }
+  },
+
+  async payouts(req: Request, res: Response) {
+    if (!adminGuard(req,res)) return;
+    try {
+      const affiliateId = req.query.affiliateId as string | undefined;
+      const status = req.query.status as string | undefined;
+      const { prisma } = await import('../modules/mercadoLivre/lib/prisma');
+      const rows = await prisma.affiliatePayout.findMany({ where: { ...(affiliateId ? { affiliateId } : {}), ...(status ? { status } : {}) }, include: { affiliate: true }, orderBy: { requestedAt: 'desc' } });
+      res.json({ success: true, payouts: rows });
+    } catch (e) { handleError(res,e); }
+  },
+
   async stats(req: Request, res: Response) {
     if (!adminGuard(req,res)) return;
     try { res.json({ success: true, stats: await affiliateService.adminStats() }); } catch (e) { handleError(res,e); }
