@@ -15,6 +15,7 @@ import express from 'express';
 import apiRoutes from './routes/apiRoutes';
 import { errorHandler } from './middlewares/errorHandler';
 import editorialFactoryRoutes from './routes/editorialFactoryRoutes';
+import seniorSalesRoutes from './routes/seniorSalesRoutes';
 
 const app = express();
 app.use(express.json());
@@ -34,6 +35,7 @@ app.get('/affiliates', (_req, res) => res.sendFile('affiliates/index.html', { ro
 app.get('/affiliates/admin', (_req, res) => res.sendFile('affiliates/admin.html', { root: 'public' }));
 app.get('/affiliates/intelligence', (_req, res) => res.sendFile('affiliates/intelligence.html', { root: 'public' }));
 app.get('/editorial', (_req, res) => res.sendFile('editorial/index.html', { root: 'public' }));
+app.get('/sales', (_req, res) => res.sendFile('sales/index.html', { root: 'public' }));
 app.use('/generated-images', express.static('storage/generated-images'));
 
 app.use('/api', apiRoutes);
@@ -46,6 +48,7 @@ app.use('/api/affiliate-hotmart', hotmartRoutes);
 app.use('/api/braip', braipRoutes);
 app.use('/api/hunter', hunterRoutes);
 app.use('/api/editorial', editorialFactoryRoutes);
+app.use('/api/sales', seniorSalesRoutes);
 app.use('/go', affiliatePublicRoutes);
 app.use('/api/mercadolivre', mlRoutes);
 app.use('/dashboard', dashboardRoutes);
