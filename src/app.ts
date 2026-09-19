@@ -2,6 +2,7 @@
 import dashboardRoutes from './routes/dashboardRoutes';
 import prospectingRoutes from './routes/prospectingRoutes';
 import affiliateRoutes from './routes/affiliateRoutes';
+import affiliateIntelligenceRoutes from './routes/affiliateIntelligenceRoutes';
 import affiliatePublicRoutes from './routes/affiliatePublicRoutes';
 import mlRoutes from './modules/mercadoLivre/routes/mercadoLivreRoutes';
 import cookieParser from 'cookie-parser';
@@ -36,6 +37,7 @@ app.use('/api', apiRoutes);
 // RB Factory Sites - Prospecção
 app.use('/api/websites/prospecting', prospectingRoutes);
 app.use('/api/affiliates', affiliateRoutes);
+app.use('/api/affiliate-intelligence', affiliateIntelligenceRoutes);
 app.use('/go', affiliatePublicRoutes);
 
 // Middleware global de tratamento de erros
