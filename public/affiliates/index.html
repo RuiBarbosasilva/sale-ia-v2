@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SALE-IA-V2 | Afiliados</title>
+<style>
+body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:1050px;margin:0 auto;padding:28px;background:#f5f7fb;color:#172033}
+.card{background:#fff;border:1px solid #e4e8f0;border-radius:14px;padding:20px;margin:14px 0;box-shadow:0 2px 10px #00000008}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+input,button,select{padding:11px;border:1px solid #ccd3df;border-radius:9px;font:inherit}button{cursor:pointer}
+.metric{font-size:28px;font-weight:700}.muted{color:#657085}.row{display:flex;gap:10px;flex-wrap:wrap}
+pre{white-space:pre-wrap;background:#101827;color:#e9eef7;padding:14px;border-radius:10px;overflow:auto}
+.hidden{display:none}
+</style></head>
+<body>
+<h1>Central de Afiliados</h1>
+<p class="muted">Cadastro, links rastreáveis, cliques, vendas, comissões e solicitações de saque.</p>
+<div class="card">
+<h2>Quero ser afiliado</h2>
+<div class="row"><input id="name" placeholder="Nome"><input id="email" type="email" placeholder="E-mail"><input id="phone" placeholder="Telefone"><button onclick="register()">Cadastrar</button></div>
+<pre id="registerOut" class="hidden"></pre>
+</div>
+<div class="card">
+<h2>Acesso do afiliado</h2>
+<div class="row"><input id="token" placeholder="Token de acesso" style="min-width:360px"><button onclick="login()">Entrar</button></div>
+</div>
+<div id="portal" class="hidden">
+<div class="grid">
+<div class="card"><div class="muted">Cliques</div><div id="clicks" class="metric">0</div></div>
+<div class="card"><div class="muted">Vendas</div><div id="sales" class="metric">0</div></div>
+<div class="card"><div class="muted">Comissões</div><div id="commissions" class="metric">R$ 0,00</div></div>
+<div class="card"><div class="muted">Saldo aprovado</div><div id="balance" class="metric">R$ 0,00</div></div>
+</div>
+<div class="card"><h2>Meus links</h2><div id="links"></div></div>
+</div>
+<script>
+const api=location.origin+'/api/affiliates';
+let token=localStorage.getItem('affiliateToken')||'';
+const brl=v=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v||0);
+async function call(path,opt={}){opt.headers={...(opt.headers||{}),'Content-Type':'application/json'};if(token)opt.headers.Authorization='Bearer '+token;const r=await fetch(api+path,opt);const j=await r.json();if(!r.ok)throw new Error(j.error||'Erro');return j}
+async function register(){try{const j=await call('/register',{method:'POST',body:JSON.stringify({name:name.value,email:email.value,phone:phone.value})});registerOut.classList.remove('hidden');registerOut.textContent=JSON.stringify(j,null,2);token=j.accessToken;localStorage.setItem('affiliateToken',token);await login()}catch(e){alert(e.message)}}
+async function login(){try{const j=await call('/portal');portal.classList.remove('hidden');clicks.textContent=j.metrics.clicks;sales.textContent=j.metrics.sales;commissions.textContent=brl(j.metrics.commissions);balance.textContent=brl(j.metrics.approvedBalance);const l=await call('/portal/links');links.innerHTML=l.links.map(x=>'<p><b>'+x.code+'</b> — '+location.origin+'/go/'+x.code+' — '+x.clickCount+' cliques</p>').join('')||'<p>Nenhum link.</p>'}catch(e){alert(e.message)}}
+if(token)login();
+</script>
+</body></html>
