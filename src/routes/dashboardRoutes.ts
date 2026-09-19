@@ -2,14 +2,17 @@
 import { Router } from 'express';
 import { getMercadoLivreDashboard } from '../controllers/dashboardController';
 import { fetchMLMetrics } from '../modules/mercadoLivre/controllers/metricsController';
+import { affiliateIntelligenceService } from '../services/affiliateIntelligenceService';
+import { hunterService } from '../services/hunterService';
+import { salesOrchestrationService } from '../services/salesOrchestrationService';
+import { opportunitySalesBridgeService } from '../services/opportunitySalesBridgeService';
+import { prisma } from '../modules/mercadoLivre/lib/prisma';
 
 const router = Router();
 
-// --- DASHBOARD MERCADO LIVRE (HTML) ---
 router.get('/mercadolivre', getMercadoLivreDashboard);
 
-// --- MÉTRICAS GERAIS DO DASHBOARD (JSON) ---
-router.get('/overview', async (req, res) => {
+router.get('/overview', async (_req, res) => {
   try {
     const metrics = await fetchMLMetrics();
 
@@ -20,7 +23,6 @@ router.get('/overview', async (req, res) => {
       });
     }
 
-    // Retornar métricas no formato que o frontend espera
     res.json({
       success: true,
       data: {
@@ -28,7 +30,6 @@ router.get('/overview', async (req, res) => {
         items: metrics.items,
         orders: metrics.orders,
         lastSync: metrics.lastSync,
-        // Campos agregados para compatibilidade
         totalRevenue: metrics.orders.revenue,
         totalItems: metrics.items.total,
         totalOrders: metrics.orders.total
@@ -41,6 +42,37 @@ router.get('/overview', async (req, res) => {
       message: 'Erro ao carregar métricas do dashboard'
     });
   }
+});
+
+router.get('/operations', async (_req, res) => {
+  const safe = async <T>(label:string, fn:()=>Promise<T>, fallback:T):Promise<T> => {
+    try { return await fn(); }
+    catch (error) {
+      console.warn('[Dashboard] Falha em', label, error);
+      return fallback;
+    }
+  };
+
+  const [affiliates, affiliateProducts, affiliateOpportunities, hunter, sales, plans, editorialProjects] = await Promise.all([
+    safe('affiliate networks', async()=> (await affiliateIntelligenceService.listNetworks()).length, 0),
+    safe('affiliate products', async()=> (await affiliateIntelligenceService.topProducts(200)).length, 0),
+    safe('affiliate opportunities', async()=> (await affiliateIntelligenceService.opportunities()).length, 0),
+    safe('hunter', ()=>hunterService.dashboard(), {opportunities:0,suppliers:0,products:0,mode:'UNAVAILABLE'}),
+    safe('sales', ()=>salesOrchestrationService.analytics(), {funnel:{openConversations:0,hotLeads:0,pendingActions:0,pendingFollowUps:0},offers:0,activeExperiments:0,metrics:[]}),
+    safe('opportunity plans', async()=> (await opportunitySalesBridgeService.plans()).length, 0),
+    safe('editorial projects', async()=> prisma.editorialProject.count(), 0)
+  ]);
+
+  return res.json({
+    success:true,
+    data:{
+      affiliates:{networks:affiliates,products:affiliateProducts,opportunities:affiliateOpportunities},
+      hunter,
+      sales,
+      opportunityPlans:plans,
+      editorial:{projects:editorialProjects}
+    }
+  });
 });
 
 export default router;
