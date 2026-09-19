@@ -24,7 +24,7 @@ function handleError(res: Response, error: any) {
   const map: Record<string, number> = {
     AFFILIATE_EMAIL_EXISTS: 409, AFFILIATE_NOT_FOUND: 404, LINK_NOT_FOUND: 404, OFFER_NOT_FOUND: 404,
     LINK_CODE_EXISTS: 409, INVALID_DESTINATION_URL: 400, INVALID_SALE_AMOUNT: 400,
-    AFFILIATE_REQUIRED: 400, SALE_NOT_FOUND: 404, NO_AVAILABLE_BALANCE: 400,
+    AFFILIATE_REQUIRED: 400, SALE_NOT_FOUND: 404, PAYOUT_NOT_FOUND: 404, NO_AVAILABLE_BALANCE: 400,
   };
   const code = error?.message || 'AFFILIATE_ERROR';
   return res.status(map[code] || 500).json({ success: false, error: code });
