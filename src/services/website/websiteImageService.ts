@@ -65,13 +65,32 @@ const SEGMENTS: Record<string, any> = {
 };
 
 function detectSegment(category: string): string {
-  const c = (category || '').toLowerCase();
+  const c = (category || '').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');
   if (c.includes('burguer') || c.includes('hamburguer') || c.includes('burger')) return 'hamburgueria';
   if (c.includes('clinic') || c.includes('odonto') || c.includes('dent') || c.includes('medic') || c.includes('saude')) return 'clinica';
   if (c.includes('imob') || c.includes('corret') || c.includes('real estate') || c.includes('imovel')) return 'imobiliaria';
   if (c.includes('advoc') || c.includes('jurid') || c.includes('advog')) return 'advocacia';
   if (c.includes('restaur') || c.includes('pizzar') || c.includes('cafe') || c.includes('lanchon')) return 'restaurante';
-  return 'b2b';
+  return 'unknown';
+}
+
+const SEGMENT_STOPWORDS = new Set(['empresa','negocio','negócio','servico','serviço','profissional','local','comercial','b2b']);
+
+function semanticScore(c: Candidate, query: string, segmentKey: string): number {
+  const hay = [c.alt || '', c.pageUrl || '', query].join(' ').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');
+  const terms = query.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').split(/[^a-z0-9]+/).filter(t => t.length >= 4 && !SEGMENT_STOPWORDS.has(t));
+  if (!terms.length) return 1;
+  const hits = terms.reduce((n, t) => n + (hay.includes(t) ? 1 : 0), 0);
+  const segmentTerms: Record<string,string[]> = {
+    hamburgueria: ['burger','hamburguer','hamburger','fries','grill','food'],
+    clinica: ['clinic','dental','dentist','doctor','health'],
+    imobiliaria: ['house','home','apartment','property','real estate'],
+    advocacia: ['law','lawyer','legal','office'],
+    restaurante: ['restaurant','food','dish','chef','pizza','cafe'],
+    unknown: []
+  };
+  const segHits = (segmentTerms[segmentKey] || []).reduce((n,t) => n + (hay.includes(t) ? 1 : 0), 0);
+  return Math.min(1, (hits / Math.max(1, terms.length)) * 0.75 + Math.min(1, segHits / 2) * 0.25);
 }
 
 const stripHtml = (s: string) => (s || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
@@ -205,8 +224,15 @@ export class WebsiteImageService {
       for (const [name, fn] of providers) {
         try {
           const candidates = await fn(variant);
-          for (const cand of candidates) {
-            if (this.passesQC(cand, slot, usedUrls)) {
+          const ranked = candidates
+            .filter(cand => this.passesQC(cand, slot, usedUrls))
+            .map(cand => ({ cand, score: semanticScore(cand, variant, segmentKey) }))
+            .sort((a, b) => b.score - a.score);
+
+          for (const item of ranked) {
+            const cand = item.cand;
+            const semanticThreshold = name === 'wikimedia-commons' ? 0.45 : 0.25;
+            if (item.score >= semanticThreshold) {
               usedUrls.add(cand.url);
               const alt = (cand.alt && cand.alt.length > 8) ? cand.alt.substring(0, 120) : (usage + ' - foto via ' + name);
               const meta: ImageMetadata = {
@@ -231,7 +257,11 @@ export class WebsiteImageService {
   // ---------- ESTRATEGIA + AQUISICAO ----------
   async acquireAssets(briefing: any, prd: PRD, ds: DesignSystem): Promise<{ assets: any; metadata: ImageMetadata[] }> {
     const segmentKey = detectSegment(prd?.business?.category || briefing?.category || '');
-    const seg = SEGMENTS[segmentKey] || SEGMENTS.b2b;
+    const seg = SEGMENTS[segmentKey] || {
+      hero: 'professional local business storefront service',
+      gallery: ['professional service team at work', 'local business interior', 'customer service professional', 'business storefront'],
+      galleryTitle: 'Conheça nosso negocio', galleryLabel: 'galeria'
+    };
     const businessName = prd?.business?.businessName || briefing?.businessName || 'Empresa';
     const usedUrls = new Set<string>();
     const metadata: ImageMetadata[] = [];
