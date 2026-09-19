@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SALE-IA | AI Sales</title>
+<style>body{font-family:Arial,sans-serif;background:#0b1020;color:#eef2ff;margin:0}.wrap{max-width:1200px;margin:auto;padding:24px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}.card{background:#151d33;border:1px solid #26304a;border-radius:14px;padding:18px}.big{font-size:30px;font-weight:700}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}button{padding:10px 14px;border:0;border-radius:9px;cursor:pointer}pre{white-space:pre-wrap;max-height:420px;overflow:auto}table{width:100%;border-collapse:collapse}td,th{padding:9px;border-bottom:1px solid #29324a;text-align:left}input{padding:10px;border-radius:8px;border:1px solid #44506d;background:#0f1629;color:white;width:360px}</style></head>
+<body><div class="wrap"><h1>SALE-IA — AI Sales Command Center</h1><p>Modo: <b>autonomia supervisionada</b>. O sistema pesquisa, pontua, cria oportunidades e prepara campanhas. Ações externas ficam sob aprovação.</p>
+<div class="toolbar"><input id="key" type="password" placeholder="AFFILIATE_ADMIN_KEY"><button onclick="bootstrap()">Cadastrar plataformas padrão</button><button onclick="plan()">Gerar plano de autonomia</button><button onclick="load()">Atualizar</button></div>
+<div id="cards" class="grid"></div><div class="card"><h2>Plataformas</h2><div id="networks"></div></div>
+<div class="card"><h2>Melhores oportunidades</h2><div id="opps"></div></div><div class="card"><h2>Plano da IA</h2><pre id="plan"></pre></div>
+</div><script>
+const H=()=>({'x-affiliate-admin-key':document.getElementById('key').value});
+async function api(path,opt={}){const r=await fetch('/api/affiliate-intelligence'+path,{...opt,headers:{'Content-Type':'application/json',...H(),...(opt.headers||{})}});return r.json();}
+async function load(){const [d,n,o]=await Promise.all([api('/dashboard'),api('/networks'),api('/opportunities?status=NEW')]);if(!d.success){alert(d.error);return}
+document.getElementById('cards').innerHTML=[['Redes',d.networks],['Produtos',d.products],['Oportunidades',d.opportunities],['Campanhas',d.campaigns],['Conteúdos rascunho',d.contentDrafts],['Ações pendentes',d.actionsPending]].map(x=>'<div class="card"><div>'+x[0]+'</div><div class="big">'+x[1]+'</div></div>').join('');
+document.getElementById('networks').innerHTML='<table><tr><th>Rede</th><th>Status</th><th>Produtos</th></tr>'+n.networks.map(x=>'<tr><td>'+x.name+'</td><td>'+x.credentialStatus+'</td><td>'+x._count.products+'</td></tr>').join('')+'</table>';
+document.getElementById('opps').innerHTML='<table><tr><th>Produto</th><th>Rede</th><th>Score</th><th>Ação</th></tr>'+o.opportunities.slice(0,30).map(x=>'<tr><td>'+x.product.name+'</td><td>'+x.product.network.name+'</td><td>'+Number(x.score).toFixed(1)+'</td><td>'+x.actionType+'</td></tr>').join('')+'</table>'; }
+async function bootstrap(){const r=await api('/bootstrap',{method:'POST'});alert(r.success?'Plataformas cadastradas: '+r.networks.length:r.error);load()}
+async function plan(){const r=await api('/autonomy-plan');document.getElementById('plan').textContent=JSON.stringify(r.plan||r,null,2)}
+load();
+</script></body></html>

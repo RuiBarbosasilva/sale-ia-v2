@@ -1,0 +1,2 @@
+import {Router} from 'express';import {affiliateActionController as c} from '../controllers/affiliateActionController';
+const r=Router();r.get('/',c.list);r.post('/:id/approve',c.approve);r.post('/:id/reject',c.reject);r.post('/:id/execute',c.execute);export default r;

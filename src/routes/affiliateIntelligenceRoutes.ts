@@ -1,0 +1,16 @@
+import { Router } from 'express';
+import { affiliateIntelligenceController as c } from '../controllers/affiliateIntelligenceController';
+const router=Router();
+router.get('/health',c.dashboard);
+router.post('/bootstrap',c.bootstrap);
+router.get('/dashboard',c.dashboard);
+router.get('/networks',c.networks);
+router.post('/networks',c.createNetwork);
+router.patch('/networks/:id',c.updateNetwork);
+router.post('/networks/:id/products/ingest',c.ingestProducts);
+router.get('/products',c.products);
+router.get('/opportunities',c.opportunities);
+router.get('/autonomy-plan',c.autonomyPlan);
+router.post('/campaigns',c.createCampaign);
+router.post('/campaigns/:id/content/generate',c.generateContent);
+export default router;

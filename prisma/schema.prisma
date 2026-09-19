@@ -908,3 +908,179 @@ model AffiliatePayoutItem {
   @@index([saleId])
   @@index([payoutId])
 }
+
+
+// ============================================================
+// SALE-IA-V2 - AI SALES / AFFILIATE INTELLIGENCE
+// Motor de descoberta, avaliacao, campanhas, conteudo e acoes.
+// ============================================================
+
+model AffiliateNetwork {
+  id                    String   @id @default(uuid())
+  name                  String   @unique
+  slug                  String   @unique
+  type                  String   @default("AFFILIATE_NETWORK")
+  baseUrl               String?
+  status                String   @default("CONFIGURED")
+  apiBaseUrl            String?
+  credentialStatus      String   @default("NOT_CONFIGURED")
+  credentialsEncrypted  String?
+  metadata              String?
+  active                Boolean  @default(true)
+  lastScanAt            DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  products AffiliateProduct[]
+  actions  AffiliateAction[]
+
+  @@index([active])
+  @@index([status])
+}
+
+model AffiliateProduct {
+  id                    String   @id @default(uuid())
+  networkId             String
+  network               AffiliateNetwork @relation(fields: [networkId], references: [id], onDelete: Cascade)
+  externalId            String?
+  name                  String
+  url                   String?
+  affiliateUrl          String?
+  category              String?
+  subcategory           String?
+  price                 Float?
+  commissionRate        Float?
+  commissionAmount      Float?
+  recurring              Boolean @default(false)
+  gravity               Float?
+  popularityScore       Float?
+  demandScore           Float?
+  competitionScore      Float?
+  contentScore          Float?
+  conversionScore       Float?
+  saturationScore       Float?
+  opportunityScore      Float  @default(0)
+  status                String @default("DISCOVERED")
+  affiliationStatus     String @default("NOT_AFFILIATED")
+  affiliationMode       String @default("MANUAL")
+  description           String?
+  salesPageUrl          String?
+  metadata              String?
+  lastScannedAt         DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  scores         AffiliateProductScore[]
+  opportunities  AffiliateOpportunity[]
+  campaigns      AffiliateCampaign[]
+
+  @@unique([networkId, externalId])
+  @@index([networkId])
+  @@index([status])
+  @@index([opportunityScore])
+  @@index([category])
+}
+
+model AffiliateProductScore {
+  id            String   @id @default(uuid())
+  productId     String
+  product       AffiliateProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  score         Float
+  demand        Float?
+  competition   Float?
+  commission    Float?
+  contentFit    Float?
+  trend         Float?
+  reasoning     String?
+  createdAt     DateTime @default(now())
+
+  @@index([productId, createdAt])
+}
+
+model AffiliateOpportunity {
+  id             String   @id @default(uuid())
+  productId      String
+  product        AffiliateProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  score          Float
+  status         String   @default("NEW")
+  recommendation String?
+  strategy       String?
+  requiresAction Boolean  @default(false)
+  actionType     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([status])
+  @@index([score])
+}
+
+model AffiliateCampaign {
+  id             String   @id @default(uuid())
+  productId      String
+  product        AffiliateProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name           String
+  objective      String   @default("SALES")
+  strategy       String?
+  targetAudience String?
+  status         String   @default("DRAFT")
+  budget         Float?
+  landingPageUrl String?
+  trackingCode   String?
+  metrics        String?
+  startedAt      DateTime?
+  pausedAt       DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  contents AffiliateContent[]
+  actions  AffiliateAction[]
+
+  @@index([productId])
+  @@index([status])
+}
+
+model AffiliateContent {
+  id          String   @id @default(uuid())
+  campaignId  String
+  campaign    AffiliateCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  platform    String
+  type        String
+  angle       String?
+  hook        String?
+  title       String?
+  body        String?
+  cta         String?
+  hashtags    String?
+  mediaPrompt String?
+  mediaUrl    String?
+  status      String @default("DRAFT")
+  scheduledFor DateTime?
+  publishedAt DateTime?
+  metrics     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([campaignId])
+  @@index([platform, status])
+}
+
+model AffiliateAction {
+  id          String   @id @default(uuid())
+  networkId   String?
+  network     AffiliateNetwork? @relation(fields: [networkId], references: [id], onDelete: SetNull)
+  campaignId  String?
+  campaign    AffiliateCampaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  type        String
+  status      String   @default("PENDING_APPROVAL")
+  title       String
+  description String?
+  payload     String?
+  result      String?
+  requiresApproval Boolean @default(true)
+  executedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+  @@index([type])
+}

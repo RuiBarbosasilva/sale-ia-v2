@@ -2,6 +2,8 @@
 import dashboardRoutes from './routes/dashboardRoutes';
 import prospectingRoutes from './routes/prospectingRoutes';
 import affiliateRoutes from './routes/affiliateRoutes';
+import affiliateIntelligenceRoutes from './routes/affiliateIntelligenceRoutes';
+import affiliateActionRoutes from './routes/affiliateActionRoutes';
 import affiliatePublicRoutes from './routes/affiliatePublicRoutes';
 import mlRoutes from './modules/mercadoLivre/routes/mercadoLivreRoutes';
 import cookieParser from 'cookie-parser';
@@ -28,6 +30,7 @@ app.use((req, res, next) => {
 app.use(express.static('public'));
 app.get('/affiliates', (_req, res) => res.sendFile('affiliates/index.html', { root: 'public' }));
 app.get('/affiliates/admin', (_req, res) => res.sendFile('affiliates/admin.html', { root: 'public' }));
+app.get('/affiliates/intelligence', (_req, res) => res.sendFile('affiliates/intelligence.html', { root: 'public' }));
 app.use('/generated-images', express.static('storage/generated-images'));
 
 // Registra as rotas principais da API
@@ -36,6 +39,8 @@ app.use('/api', apiRoutes);
 // RB Factory Sites - Prospecção
 app.use('/api/websites/prospecting', prospectingRoutes);
 app.use('/api/affiliates', affiliateRoutes);
+app.use('/api/affiliate-intelligence', affiliateIntelligenceRoutes);
+app.use('/api/affiliate-actions', affiliateActionRoutes);
 app.use('/go', affiliatePublicRoutes);
 
 // Middleware global de tratamento de erros
