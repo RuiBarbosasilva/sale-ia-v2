@@ -1,6 +1,7 @@
 ﻿// src/services/prospecting/websiteEnrichmentService.ts
 
 import { prisma } from '../../modules/mercadoLivre/lib/prisma';
+import { businessProspectingManager } from './providers/businessProspectingManager';
 
 export class WebsiteEnrichmentService {
   
@@ -19,6 +20,44 @@ export class WebsiteEnrichmentService {
       data: {},
       sources: [],
     };
+
+    // Reconsulta o provider quando existe um Place ID. Assim o botao
+    // "Enriquecer" realmente atualiza os dados atuais, em vez de apenas
+    // copiar novamente o que ja estava salvo no prospect.
+    if (prospect.providerPlaceId) {
+      try {
+        const freshDetails = await businessProspectingManager.getBusinessDetails(
+          prospect.providerPlaceId
+        );
+
+        if (freshDetails) {
+          await prisma.websiteProspect.update({
+            where: { id: prospectId },
+            data: {
+              companyName: freshDetails.name || prospect.companyName,
+              businessName: freshDetails.name || prospect.businessName,
+              address: freshDetails.formattedAddress || prospect.address,
+              city: freshDetails.city || prospect.city,
+              state: freshDetails.state || prospect.state,
+              postalCode: freshDetails.postalCode || prospect.postalCode,
+              phone: freshDetails.phone || prospect.phone,
+              currentWebsite: freshDetails.website || prospect.currentWebsite,
+              googleMapsUrl: freshDetails.googleMapsUrl || prospect.googleMapsUrl,
+              rating: freshDetails.rating ?? prospect.rating,
+              reviewCount: freshDetails.reviewCount ?? prospect.reviewCount,
+              businessHours: freshDetails.businessHours || prospect.businessHours,
+              description: freshDetails.description || prospect.description,
+              lastEnrichedAt: new Date(),
+            },
+          });
+
+          Object.assign(enrichment.data, freshDetails);
+          enrichment.sources.push('GOOGLE_PLACES_REFRESH');
+        }
+      } catch (error: any) {
+        console.error('[Enrichment] Provider refresh failed:', error.message);
+      }
+    }
 
     if (prospect.providerPlaceId) {
       enrichment.data.providerPlaceId = prospect.providerPlaceId;
