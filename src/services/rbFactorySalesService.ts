@@ -1,6 +1,5 @@
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
-import { siteAuditService } from './siteAuditService';
-import { siteGeneratorService } from './siteGeneratorService';
+import { websiteDemoFactoryService } from './prospecting/websiteDemoFactoryService';
 import { proposalGeneratorService } from './proposalGeneratorService';
 import { selectBenchmarkModel } from './rbFactoryTemplateEngine';
 import { RB_BENCHMARK_CATALOG } from './rbFactoryBenchmarkCatalog';
@@ -38,11 +37,12 @@ export const rbFactorySalesService={
     await init();
     const prospect=await prisma.websiteProspect.findUnique({where:{id:prospectId}});
     if(!prospect) throw new Error('WEBSITE_PROSPECT_NOT_FOUND');
-    const audit=prospect.currentWebsite ? await siteAuditService.auditWebsite(prospect.currentWebsite) : {score:0,status:'NO_WEBSITE',opportunity:'HIGH',priority:'HIGH',reachable:false};
-    const priority=Math.round((prospect.currentWebsite ? (100-(audit.score||0)) : 100) + (prospect.phone ? 5 : 0));
+    const auditScore=prospect.websiteHealthScore ?? 0;
+    const priority=Math.min(100, Math.round((prospect.websiteOpportunityScore ?? 0) + (prospect.phone ? 5 : 0)));
+    const audit={score:auditScore,status:prospect.websiteOpportunityStatus || (prospect.currentWebsite ? 'UNKNOWN' : 'NO_WEBSITE'),priority:prospect.priority};
     const existing=await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',prospectId);
     if(existing[0]) return existing[0];
-    const v=[id(),prospectId,prospect.currentWebsite?'AUDITED':'DISCOVERED',audit.score||0,Math.min(100,priority),null,null,'GENERATE_DEMO','OPEN',JSON.stringify({audit})];
+    const v=[id(),prospectId,prospect.currentWebsite?'AUDITED':'DISCOVERED',auditScore,priority,null,null,'GENERATE_DEMO','OPEN',JSON.stringify({audit,source:'official_prospecting_pipeline'})];
     await (prisma as any).$executeRawUnsafe('INSERT INTO "RbFactorySalesPipeline" ("id","prospectId","stage","auditScore","priority","nextAction","status","notes") VALUES (?,?,?,?,?,?,?,?)',...v);
     return (await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE id=?',v[0]))[0];
   },
@@ -67,13 +67,13 @@ export const rbFactorySalesService={
 
   async buildDemo(prospectId:string,options?:{niche?:string;modelIndex?:number}){
     await init();
-    const result=await siteGeneratorService.generateDemo(prospectId,options);
-    const model=result.model||null;
+    const result=await websiteDemoFactoryService.generateDemoForProspect(prospectId,{useAI:true});
+    const model=options?.modelIndex ? {index:options.modelIndex,niche:options.niche||null} : null;
     const pipeline=await (prisma as any).$queryRawUnsafe('SELECT notes FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',prospectId);
     let notes:any={};
     try{notes=pipeline[0]?.notes?JSON.parse(pipeline[0].notes):{};}catch{notes={};}
     notes.demoModel=model;
-    await (prisma as any).$executeRawUnsafe(`UPDATE "RbFactorySalesPipeline" SET stage='DEMO_READY',demoId=?,nextAction='SEND_DEMO',notes=?,updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,result.demo.id,JSON.stringify(notes),prospectId);
+    await (prisma as any).$executeRawUnsafe(`UPDATE "RbFactorySalesPipeline" SET stage='DEMO_READY',demoId=?,nextAction='SEND_DEMO',notes=?,updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,result.demoId,JSON.stringify(notes),prospectId);
     return result;
   },
 
