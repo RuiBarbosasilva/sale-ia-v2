@@ -56,9 +56,9 @@ export const rbFactorySalesAgentService = {
     }
     const result=await seniorSalesAgentService.respond(conversationId,{message});
     await this.syncPipelineAfterResponse(prospectId,result,message);
-    const terminal=String(result?.nextBestAction||'')==='LOST' || result?.temperature==='LOST';
     const explicitNoInterest=/(não tenho interesse|nao tenho interesse|não quero|nao quero|não me interessa|nao me interessa|pare de|pode parar|retire meu contato)/i.test(message);
-    const followUp=explicitNoInterest||terminal ? {reused:false,followUp:null,skipped:true,reason:'CUSTOMER_NOT_INTERESTED'} : await seniorSalesAgentService.scheduleRecommendedFollowUp(conversationId,result);
+    const terminal=explicitNoInterest || String(result?.nextBestAction||'')==='LOST';
+    const followUp=terminal ? {reused:false,followUp:null,skipped:true,reason:'CUSTOMER_NOT_INTERESTED'} : await seniorSalesAgentService.scheduleRecommendedFollowUp(conversationId,result);
     return {result,followUp,commercialContext:context};
   },
   async syncPipelineAfterResponse(prospectId:string,result:any,message?:string){
@@ -98,8 +98,10 @@ export const rbFactorySalesAgentService = {
     const base=await seniorSalesAgentService.dashboard();
     const pipeline=await (prisma as any).$queryRawUnsafe('SELECT p.id,p.prospectId,p.stage,p.priority,p.nextAction,p.updatedAt,w.companyName,w.segment,w.city,w.phone,w.websiteOpportunityScore FROM "RbFactorySalesPipeline" p JOIN "WebsiteProspect" w ON w.id=p.prospectId WHERE p.status=\'OPEN\' ORDER BY p.priority DESC,p.updatedAt DESC LIMIT 100');
     const stageCounts=await (prisma as any).$queryRawUnsafe('SELECT stage, COUNT(*) count FROM "RbFactorySalesPipeline" GROUP BY stage ORDER BY stage');
-    const pendingActions=await (prisma as any).$queryRawUnsafe('SELECT a.id,a.conversationId,a.type,a.title,a.payload,a.createdAt,c.context,c.stage,c.temperature FROM "SalesAction" a JOIN "SalesConversation" c ON c.id=a.conversationId WHERE a.status=\'PENDING_APPROVAL\' ORDER BY a.createdAt DESC LIMIT 100');
-    const pendingFollowUps=await (prisma as any).$queryRawUnsafe('SELECT f.id,f.conversationId,f.scheduledAt,f.reason,f.draft,c.context,c.stage,c.temperature FROM "SalesFollowUp" f JOIN "SalesConversation" c ON c.id=f.conversationId WHERE f.status=\'PENDING\' ORDER BY f.scheduledAt ASC LIMIT 100');
+    const pendingActionsRaw=await (prisma as any).$queryRawUnsafe('SELECT a.id,a.conversationId,a.type,a.title,a.payload,a.createdAt,c.context,c.stage,c.temperature FROM "SalesAction" a JOIN "SalesConversation" c ON c.id=a.conversationId WHERE a.status=\'PENDING_APPROVAL\' ORDER BY a.createdAt DESC LIMIT 100');
+    const pendingActions=pendingActionsRaw.map((a:any)=>{let ctx:any={};try{ctx=a.context?JSON.parse(a.context):{};}catch{} return {...a,context:undefined,companyName:ctx?.prospect?.companyName||null,prospectId:ctx?.prospect?.id||null,phone:ctx?.prospect?.phone||null};});
+    const pendingFollowUpsRaw=await (prisma as any).$queryRawUnsafe('SELECT f.id,f.conversationId,f.scheduledAt,f.reason,f.draft,c.context,c.stage,c.temperature FROM "SalesFollowUp" f JOIN "SalesConversation" c ON c.id=f.conversationId WHERE f.status=\'PENDING\' ORDER BY f.scheduledAt ASC LIMIT 100');
+    const pendingFollowUps=pendingFollowUpsRaw.map((f:any)=>{let ctx:any={};try{ctx=f.context?JSON.parse(f.context):{};}catch{} return {...f,context:undefined,companyName:ctx?.prospect?.companyName||null,prospectId:ctx?.prospect?.id||null,phone:ctx?.prospect?.phone||null};});
     return {...base,rbFactoryPipeline:stageCounts,pipeline,pendingActions,pendingFollowUps};
   }
 };
