@@ -20,9 +20,29 @@ export class WebsiteOutreachService {
     }
 
     const latestDemo = prospect.demos[0];
-    
+
     if (!latestDemo) {
       throw new Error('NO_DEMO_AVAILABLE: Gere uma demo antes de preparar o outreach');
+    }
+
+    if (latestDemo.status !== 'READY') {
+      throw new Error('DEMO_NOT_READY: A demo mais recente ainda nao foi aprovada pelo controle de qualidade');
+    }
+
+    let previewData: any = {};
+    try {
+      previewData = JSON.parse(latestDemo.previewData || '{}');
+    } catch {
+      previewData = {};
+    }
+
+    const qualityScore = Number(previewData.qualityReview?.overallScore || 0);
+    const criticalIssues = Array.isArray(previewData.qualityReview?.criticalIssues)
+      ? previewData.qualityReview.criticalIssues
+      : [];
+
+    if (qualityScore < 7.5 || criticalIssues.length > 0) {
+      throw new Error('DEMO_QUALITY_GATE: A demo precisa atingir score 7.5 e nao possuir problemas criticos antes do outreach');
     }
 
     const subject = `Uma nova ideia de site para ${prospect.companyName}`;
