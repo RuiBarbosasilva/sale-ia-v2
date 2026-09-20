@@ -5,6 +5,7 @@ const router=Router();
 router.use(adminAuthorization);
 router.get('/dashboard',rbFactorySalesAgentController.dashboard);
 router.get('/next-action',rbFactorySalesAgentController.nextSellerAction);
+router.post('/next-action/prepare',rbFactorySalesAgentController.prepareNextSellerAction);
 router.get('/queue',rbFactorySalesAgentController.sellerQueue);
 router.get('/follow-ups/due',rbFactorySalesAgentController.dueFollowUps);
 router.post('/prospect/:prospectId/conversations',rbFactorySalesAgentController.create);
