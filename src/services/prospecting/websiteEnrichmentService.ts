@@ -41,7 +41,9 @@ export class WebsiteEnrichmentService {
               state: freshDetails.state || prospect.state,
               postalCode: freshDetails.postalCode || prospect.postalCode,
               phone: freshDetails.phone || prospect.phone,
-              currentWebsite: freshDetails.website || prospect.currentWebsite,
+              // Se o provider confirmou os detalhes, website ausente significa
+              // que a empresa atualmente nao tem website cadastrado.
+              currentWebsite: freshDetails.website ?? null,
               googleMapsUrl: freshDetails.googleMapsUrl || prospect.googleMapsUrl,
               rating: freshDetails.rating ?? prospect.rating,
               reviewCount: freshDetails.reviewCount ?? prospect.reviewCount,
@@ -53,6 +55,15 @@ export class WebsiteEnrichmentService {
 
           Object.assign(enrichment.data, freshDetails);
           enrichment.sources.push('GOOGLE_PLACES_REFRESH');
+
+          // Trabalha com os dados persistidos apos o refresh. Isso evita que
+          // o retorno continue exibindo valores antigos do prospect.
+          const refreshedProspect = await prisma.websiteProspect.findUnique({
+            where: { id: prospectId },
+          });
+          if (refreshedProspect) {
+            Object.assign(prospect, refreshedProspect);
+          }
         }
       } catch (error: any) {
         console.error('[Enrichment] Provider refresh failed:', error.message);
