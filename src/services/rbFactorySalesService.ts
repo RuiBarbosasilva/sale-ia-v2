@@ -42,7 +42,13 @@ export const rbFactorySalesService={
     const priority=Math.min(100, Math.round((prospect.websiteOpportunityScore ?? 0) + (prospect.phone ? 5 : 0)));
     const audit={score:auditScore,status:prospect.websiteOpportunityStatus || (prospect.currentWebsite ? 'UNKNOWN' : 'NO_WEBSITE'),priority:prospect.priority};
     const existing=await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',prospectId);
-    if(existing[0]) return existing[0];
+    if(existing[0]) {
+      await (prisma as any).$executeRawUnsafe(
+        'UPDATE "RbFactorySalesPipeline" SET auditScore=?,priority=?,updatedAt=CURRENT_TIMESTAMP WHERE id=?',
+        auditScore, priority, existing[0].id
+      );
+      return (await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE id=?', existing[0].id))[0];
+    }
     const v=[id(),prospectId,prospect.currentWebsite?'AUDITED':'DISCOVERED',auditScore,priority,null,null,'GENERATE_DEMO','OPEN',JSON.stringify({audit,source:'official_prospecting_pipeline'})];
     await (prisma as any).$executeRawUnsafe('INSERT INTO "RbFactorySalesPipeline" ("id","prospectId","stage","auditScore","priority","nextAction","status","notes") VALUES (?,?,?,?,?,?,?,?)',...v);
     return (await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE id=?',v[0]))[0];
