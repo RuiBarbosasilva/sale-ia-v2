@@ -311,7 +311,7 @@ export const prospectingController = {
 
       const result = await websiteDemoFactoryService.generateDemosBatch(prospectIds);
 
-      for (const jobId of result.jobIds) {
+      for (const jobId of result.newJobIds) {
         setImmediate(() => websiteDemoFactoryService.processJob(jobId));
       }
 
