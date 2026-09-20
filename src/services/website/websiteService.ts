@@ -222,7 +222,12 @@ export class WebsiteService {
       } catch (e: any) { console.error('[generateFromBriefing] IA falhou, usando fallback:', e?.message); }
     }
     const html = websiteCompiler.compile(businessName, city, phone, design, content);
-    const version = (await prisma.websiteDemo.count({ where: { prospectId } })) + 1;
+    const latestVersion = await prisma.websiteDemo.findFirst({
+      where: { prospectId },
+      orderBy: { version: 'desc' },
+      select: { version: true },
+    });
+    const version = (latestVersion?.version || 0) + 1;
     const demo = await prisma.websiteDemo.create({
       data: {
         prospectId,
@@ -387,7 +392,12 @@ export class WebsiteService {
       }
     }
 
-    const version = (await prisma.websiteDemo.count({ where: { prospectId } })) + 1;
+    const latestVersion = await prisma.websiteDemo.findFirst({
+      where: { prospectId },
+      orderBy: { version: 'desc' },
+      select: { version: true },
+    });
+    const version = (latestVersion?.version || 0) + 1;
     const demo = await prisma.websiteDemo.create({
       data: {
         prospectId,
