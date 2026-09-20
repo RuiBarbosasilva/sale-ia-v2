@@ -4,6 +4,7 @@ import { adminAuthorization } from '../middlewares/security';
 const router=Router();
 router.use(adminAuthorization);
 router.get('/pipeline',rbFactorySalesController.list);
+router.get('/plans',rbFactorySalesController.plans);
 router.post('/pipeline/prospect/:prospectId',rbFactorySalesController.create);
 router.get('/pipeline/prospect/:prospectId/models',rbFactorySalesController.models);
 router.post('/pipeline/prospect/:prospectId/demo',rbFactorySalesController.demo);
