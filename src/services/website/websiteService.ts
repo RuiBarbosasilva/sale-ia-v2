@@ -577,7 +577,12 @@ export class WebsiteService {
   async rollbackTo(demoId: string): Promise<{ success: boolean; newDemoId: string; newVersion: number }> {
     const sourceDemo = await prisma.websiteDemo.findUnique({ where: { id: demoId } });
     if (!sourceDemo) throw new Error('Demo origem nao encontrada');
-    const newVersion = (await prisma.websiteDemo.count({ where: { prospectId: sourceDemo.prospectId } })) + 1;
+    const latestVersion = await prisma.websiteDemo.findFirst({
+      where: { prospectId: sourceDemo.prospectId },
+      orderBy: { version: 'desc' },
+      select: { version: true },
+    });
+    const newVersion = (latestVersion?.version || 0) + 1;
     let pd: any = {};
     try { pd = JSON.parse(sourceDemo.previewData || '{}'); } catch {}
     pd.rolledBackFrom = demoId;
