@@ -63,7 +63,7 @@ export class WebsiteProspectorService {
               postalCode: business.postalCode || existing.postalCode,
               phone: business.phone || existing.phone,
               whatsapp: business.phone || existing.whatsapp,
-              currentWebsite: business.website || existing.currentWebsite,
+              currentWebsite: business.website ?? null,
               googleMapsUrl: business.googleMapsUrl || existing.googleMapsUrl,
               description: business.description || existing.description,
               businessHours: business.businessHours || existing.businessHours,
@@ -87,7 +87,9 @@ export class WebsiteProspectorService {
             auditedCount++;
           }
 
-          qualifiedCount++;
+          if (websiteStatus.opportunityStatus !== 'WEBSITE_GOOD') {
+              qualifiedCount++;
+            }
           continue;
         }
 
@@ -867,7 +869,9 @@ export class WebsiteProspectorService {
                   totalAudited++;
                 }
 
-                totalQualified++;
+                if (websiteStatus.opportunityStatus !== 'WEBSITE_GOOD') {
+                  totalQualified++;
+                }
                 continue;
               }
 
