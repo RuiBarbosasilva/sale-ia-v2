@@ -11,6 +11,7 @@ async function init() {
   await (prisma as any).$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS "SalesConversation" (
       "id" TEXT PRIMARY KEY NOT NULL, "leadId" TEXT, "channel" TEXT NOT NULL DEFAULT 'WEB',
+      "context" TEXT,
       "stage" TEXT NOT NULL DEFAULT 'NEW', "temperature" TEXT NOT NULL DEFAULT 'COLD',
       "intentScore" REAL NOT NULL DEFAULT 0, "objection" TEXT, "lastIntent" TEXT,
       "nextBestAction" TEXT, "status" TEXT NOT NULL DEFAULT 'OPEN',
@@ -81,7 +82,8 @@ async function aiReply(context:string){
 export const seniorSalesAgentService = {
   async createConversation(input:any){
     await init(); const conversationId=id();
-    await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesConversation" ("id","leadId","channel") VALUES (?,?,?)',conversationId,input.leadId||null,input.channel||'WEB');
+    await (prisma as any).$executeRawUnsafe('ALTER TABLE "SalesConversation" ADD COLUMN "context" TEXT').catch(()=>{});
+    await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesConversation" ("id","leadId","channel","context") VALUES (?,?,?,?)',conversationId,input.leadId||null,input.channel||'WEB',input.context?JSON.stringify(input.context):null);
     return this.getConversation(conversationId);
   },
   async getConversation(idv:string){ await init(); const c=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesConversation" WHERE id=?',idv); if(!c[0]) throw new Error('SALES_CONVERSATION_NOT_FOUND'); const messages=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesConversationMessage" WHERE conversationId=? ORDER BY createdAt ASC',idv); const objections=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesObjection" WHERE conversationId=? ORDER BY createdAt DESC',idv); const followUps=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesFollowUp" WHERE conversationId=? ORDER BY scheduledAt ASC',idv); return {...c[0],messages,objections,followUps}; },
@@ -90,7 +92,8 @@ export const seniorSalesAgentService = {
     const localIntent=intent(customer), obj=classify(customer), temp=temperature(localIntent), st=stage(customer,localIntent);
     await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesConversationMessage" ("id","conversationId","role","content","intent","objection") VALUES (?,?,?,?,?,?)',id(),conversationId,'CUSTOMER',customer,String(localIntent),obj);
     if(obj) await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesObjection" ("id","conversationId","type","rawText") VALUES (?,?,?,?)',id(),conversationId,obj,customer);
-    const context=JSON.stringify({conversation:c,messages:c.messages.slice(-12),customerMessage:customer,detectedIntent:localIntent,detectedObjection:obj});
+    let commercialContext:any=null; try{commercialContext=c.context?JSON.parse(c.context):null;}catch{commercialContext=null;}
+    const context=JSON.stringify({conversation:c,messages:c.messages.slice(-12),commercialContext,customerMessage:customer,detectedIntent:localIntent,detectedObjection:obj});
     const ai=await aiReply(context);
     const reply=ai?.reply || this.fallback(customer,obj,localIntent);
     const next=ai?.nextBestAction || (localIntent>=60?'ASK_FOR_CLOSE':obj?'INVESTIGATE_OBJECTION':'DISCOVER_NEED');
