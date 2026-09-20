@@ -789,8 +789,7 @@ export class WebsiteProspectorService {
                       existing.whatsapp,
 
                     currentWebsite:
-                      business.website ||
-                      existing.currentWebsite,
+                      business.website ?? null,
 
                     googleMapsUrl:
                       business.googleMapsUrl ||
@@ -1000,7 +999,9 @@ export class WebsiteProspectorService {
                 totalAudited++;
               }
 
-              totalQualified++;
+              if (websiteStatus.opportunityStatus !== 'WEBSITE_GOOD') {
+                totalQualified++;
+              }
 
             } catch (businessError: any) {
               console.error(
