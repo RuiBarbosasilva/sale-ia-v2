@@ -46,7 +46,7 @@ export class WebsiteOpportunityScoringService {
         break;
       
       case 'WEBSITE_NEEDS_IMPROVEMENT':
-        score = 55;
+        score = 50;
         reasons.push('Site com problemas de SEO/acessibilidade');
         reasons.push('Oportunidade de otimizacao');
         break;
@@ -57,6 +57,12 @@ export class WebsiteOpportunityScoringService {
         reasons.push('Baixa prioridade de substituicao');
         break;
       
+      case 'ERROR':
+        score = 0;
+        reasons.push('Nao foi possivel auditar o site');
+        reasons.push('Nao abordar como oportunidade ate concluir nova auditoria');
+        break;
+      case 'UNKNOWN':
       default:
         score = 40;
         reasons.push('Status do site desconhecido');
@@ -114,7 +120,9 @@ export class WebsiteOpportunityScoringService {
       case 'WEBSITE_NEEDS_IMPROVEMENT':
         return 'Sugerir otimizacao de conversao e performance';
       case 'WEBSITE_GOOD':
-        return 'Monitorar e oferecer manutencao/servicos complementares';
+        return 'Nao priorizar para substituicao; monitorar ou oferecer servicos complementares';
+      case 'ERROR':
+        return 'Repetir auditoria antes de abordar comercialmente';
       default:
         return 'Realizar auditoria completa antes de abordar';
     }
