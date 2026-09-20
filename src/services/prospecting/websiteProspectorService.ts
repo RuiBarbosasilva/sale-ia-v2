@@ -373,6 +373,17 @@ export class WebsiteProspectorService {
     if (filters.state) where.state = filters.state;
     if (filters.niche) where.segment = { contains: filters.niche };
     if (filters.status) where.websiteOpportunityStatus = filters.status;
+    if (filters.opportunityOnly === true) {
+      where.websiteOpportunityStatus = {
+        in: [
+          'NO_WEBSITE',
+          'WEBSITE_OFFLINE',
+          'WEBSITE_BROKEN',
+          'WEBSITE_OUTDATED',
+          'WEBSITE_NEEDS_IMPROVEMENT',
+        ],
+      };
+    }
     if (filters.minScore) where.websiteOpportunityScore = { gte: filters.minScore };
     if (filters.priority) where.priority = filters.priority;
     if (filters.searchId) where.searchId = filters.searchId;
