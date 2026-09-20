@@ -1,5 +1,6 @@
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
 import { websiteDemoFactoryService } from './prospecting/websiteDemoFactoryService';
+import { websiteService } from './website/websiteService';
 import { proposalGeneratorService } from './proposalGeneratorService';
 import { selectBenchmarkModel } from './rbFactoryTemplateEngine';
 import { RB_BENCHMARK_CATALOG } from './rbFactoryBenchmarkCatalog';
@@ -82,6 +83,86 @@ export const rbFactorySalesService={
     const proposal=await proposalGeneratorService.generateProposal(prospectId);
     await (prisma as any).$executeRawUnsafe(`UPDATE "RbFactorySalesPipeline" SET stage='PROPOSAL_READY',proposalId=?,nextAction='CONTACT_PROSPECT',updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,proposal.id,prospectId);
     return proposal;
+  },
+
+  async sendProposal(prospectId:string){
+    await init();
+    const proposal=await prisma.websiteProposal.findFirst({where:{prospectId},orderBy:{updatedAt:'desc'}});
+    if(!proposal) throw new Error('WEBSITE_PROPOSAL_NOT_FOUND');
+    if(!['READY','SENT'].includes(proposal.status)) throw new Error('WEBSITE_PROPOSAL_NOT_READY');
+    const updated=await prisma.websiteProposal.update({
+      where:{id:proposal.id},
+      data:{status:'SENT',sentAt:proposal.sentAt||new Date()}
+    });
+    await prisma.websiteProspect.update({where:{id:prospectId},data:{status:'PROPOSAL_SENT',lastContactAt:new Date()}});
+    await (prisma as any).$executeRawUnsafe(
+      `UPDATE "RbFactorySalesPipeline" SET stage='CONTACTED',nextAction='FOLLOW_UP_PROPOSAL',proposalId=?,updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,
+      updated.id,prospectId
+    );
+    return updated;
+  },
+
+  async convertToLead(prospectId:string){
+    await init();
+    const prospect=await prisma.websiteProspect.findUnique({where:{id:prospectId}});
+    if(!prospect) throw new Error('WEBSITE_PROSPECT_NOT_FOUND');
+    if(prospect.linkedLeadId){
+      const existing=await prisma.lead.findUnique({where:{id:prospect.linkedLeadId}});
+      if(existing) return existing;
+    }
+    const phone=prospect.phone?.trim()||null;
+    const email=prospect.email?.trim().toLowerCase()||null;
+    const conditions:any[]=[];
+    if(phone) conditions.push({phone});
+    if(email) conditions.push({email});
+    let lead=conditions.length ? await prisma.lead.findFirst({where:{OR:conditions}}) : null;
+    if(!lead){
+      lead=await prisma.lead.create({
+        data:{
+          name:prospect.contactPerson||prospect.companyName,
+          phone,email,
+          status:'NEW_LEAD',
+          stage:'NEGOTIATION',
+          score:prospect.websiteOpportunityScore||0
+        }
+      });
+    } else {
+      lead=await prisma.lead.update({
+        where:{id:lead.id},
+        data:{
+          name:lead.name||prospect.contactPerson||prospect.companyName,
+          stage:'NEGOTIATION',
+          score:Math.max(lead.score||0,prospect.websiteOpportunityScore||0)
+        }
+      });
+    }
+    await prisma.websiteProspect.update({where:{id:prospectId},data:{linkedLeadId:lead.id,status:'NEGOTIATION'}});
+    await (prisma as any).$executeRawUnsafe(
+      `UPDATE "RbFactorySalesPipeline" SET stage='NEGOTIATION',nextAction='CLOSE_SALE',updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,
+      prospectId
+    );
+    return lead;
+  },
+
+  async acceptProposal(prospectId:string,domainName?:string){
+    await init();
+    const proposal=await prisma.websiteProposal.findFirst({where:{prospectId},orderBy:{updatedAt:'desc'}});
+    if(!proposal) throw new Error('WEBSITE_PROPOSAL_NOT_FOUND');
+    if(!['SENT','READY','ACCEPTED'].includes(proposal.status)) throw new Error('WEBSITE_PROPOSAL_NOT_ACCEPTABLE');
+    const lead=await this.convertToLead(prospectId);
+    const accepted=proposal.status==='ACCEPTED' ? proposal : await prisma.websiteProposal.update({
+      where:{id:proposal.id},
+      data:{status:'ACCEPTED',acceptedAt:new Date()}
+    });
+    const demo=await prisma.websiteDemo.findFirst({where:{prospectId,status:'READY'},orderBy:{version:'desc'}});
+    if(!demo) throw new Error('DEMO_NOT_READY_FOR_PROJECT');
+    const project=await websiteService.preparePublication(demo.id,domainName);
+    await prisma.websiteProspect.update({where:{id:prospectId},data:{status:'ACCEPTED'}});
+    await (prisma as any).$executeRawUnsafe(
+      `UPDATE "RbFactorySalesPipeline" SET stage='WON',nextAction='PREPARE_PROJECT',updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,
+      prospectId
+    );
+    return {proposal:accepted,lead,project};
   },
 
   async updateStage(idv:string,stage:string,nextAction?:string,notes?:string){
