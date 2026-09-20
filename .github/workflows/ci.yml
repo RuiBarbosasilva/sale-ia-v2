@@ -18,8 +18,6 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      # package-lock.json is currently out of sync with package.json (pdf-lib/jszip).
-      # Use npm install temporarily so CI can validate the branch; lockfile regeneration is a follow-up hardening task.
-      - run: npm install --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
       - run: npx prisma generate
       - run: npm run typecheck
