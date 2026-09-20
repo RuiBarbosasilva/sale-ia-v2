@@ -122,6 +122,8 @@ export class WebsiteDemoFactoryService {
     if (missingIds.length) throw new Error('PROSPECT_NOT_FOUND');
 
     const jobs: any[] = [];
+    const newJobIds: string[] = [];
+    const reusedJobIds: string[] = [];
     for (const prospectId of uniqueIds) {
       const activeJob = await prisma.websiteDemoJob.findFirst({
         where: {
@@ -132,6 +134,7 @@ export class WebsiteDemoFactoryService {
       });
       if (activeJob) {
         jobs.push(activeJob);
+        reusedJobIds.push(activeJob.id);
         continue;
       }
 
@@ -139,12 +142,15 @@ export class WebsiteDemoFactoryService {
         data: { prospectId, status: 'QUEUED', priority: 5 },
       });
       jobs.push(job);
+      newJobIds.push(job.id);
     }
 
     return {
-      queuedJobs: jobs.filter(j => j.status === 'QUEUED').length,
-      reusedJobs: jobs.filter(j => j.status !== 'QUEUED').length,
+      queuedJobs: newJobIds.length,
+      reusedJobs: reusedJobIds.length,
       jobIds: jobs.map(j => j.id),
+      newJobIds,
+      reusedJobIds,
       uniqueProspects: uniqueIds.length,
     };
   }
