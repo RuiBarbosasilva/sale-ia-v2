@@ -46,13 +46,13 @@ export const rbFactorySalesAgentService = {
       catch(e:any){if(e?.message==='SALES_CONVERSATION_PROSPECT_MISMATCH') throw e;}
     }
     const result=await seniorSalesAgentService.respond(conversationId,{message});
-    await this.syncPipelineAfterResponse(prospectId,result);
+    await this.syncPipelineAfterResponse(prospectId,result,message);
     const terminal=String(result?.nextBestAction||'')==='LOST' || result?.temperature==='LOST';
     const explicitNoInterest=/(não tenho interesse|nao tenho interesse|não quero|nao quero|não me interessa|nao me interessa|pare de|pode parar|retire meu contato)/i.test(message);
     const followUp=explicitNoInterest||terminal ? {reused:false,followUp:null,skipped:true,reason:'CUSTOMER_NOT_INTERESTED'} : await seniorSalesAgentService.scheduleRecommendedFollowUp(conversationId,result);
     return {result,followUp,commercialContext:context};
   },
-  async syncPipelineAfterResponse(prospectId:string,result:any){
+  async syncPipelineAfterResponse(prospectId:string,result:any,message?:string){
     const rows=await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',prospectId);
     const pipeline=rows[0];
     if(!pipeline) return null;
@@ -60,7 +60,7 @@ export const rbFactorySalesAgentService = {
     const nextAction=String(result?.nextBestAction||'FOLLOW_UP');
     const temperature=String(result?.temperature||'COLD');
     const intentScore=Number(result?.intentScore||0);
-    const conversationText=String(result?.customerMessage||result?.message||'').toLowerCase();
+    const conversationText=String(message||result?.customerMessage||result?.message||'').toLowerCase();
     const explicitNoInterest=/(não tenho interesse|nao tenho interesse|não quero|nao quero|não me interessa|nao me interessa|pare de|pode parar|retire meu contato)/i.test(conversationText);
     let nextStage=current;
     if(['DISCOVERED','AUDITED','DEMO_READY','PROPOSAL_READY','CONTACTED'].includes(current) && (temperature==='HOT'||temperature==='VERY_HOT'||intentScore>=45)){
