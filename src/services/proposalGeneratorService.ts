@@ -12,7 +12,7 @@ export class ProposalGeneratorService {
     if (!prospect) throw new Error('WEBSITE_PROSPECT_NOT_FOUND');
 
     const latestDemo = prospect.demos[0];
-    if (!latestDemo || latestDemo.status !== 'READY') {
+    if (!latestDemo || !['READY', 'APPROVED'].includes(latestDemo.status)) {
       throw new Error('DEMO_NOT_READY: Gere e aprove uma demo antes da proposta');
     }
 
@@ -73,7 +73,8 @@ RB Factory Sites
 `;
 
     const existingProposal = await prisma.websiteProposal.findFirst({
-      where: { prospectId }
+      where: { prospectId },
+      orderBy: { updatedAt: 'desc' }
     });
 
     const proposal = existingProposal
