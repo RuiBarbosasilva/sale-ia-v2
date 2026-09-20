@@ -7,6 +7,7 @@ router.get('/dashboard',rbFactorySalesAgentController.dashboard);
 router.post('/prospect/:prospectId/conversations',rbFactorySalesAgentController.create);
 router.post('/prospect/:prospectId/initial-approach',rbFactorySalesAgentController.initialApproach);
 router.post('/prospect/:prospectId/conversations/:conversationId/respond',rbFactorySalesAgentController.respond);
+router.get('/actions/:actionId/channel',rbFactorySalesAgentController.actionChannel);
 router.post('/actions/:actionId/approve',rbFactorySalesAgentController.approveAction);
 router.post('/actions/:actionId/reject',rbFactorySalesAgentController.rejectAction);
 router.post('/actions/:actionId/mark-sent',rbFactorySalesAgentController.markActionSent);
