@@ -20,6 +20,7 @@ router.get('/studio/briefing/:prospectId', websiteStudioController.getBriefing);
 router.get('/studio/versions/:prospectId', websiteStudioController.listVersions);
 router.post('/studio/generate', websiteStudioController.generateFromBriefing);
 router.post('/studio/demos/:id/regenerate', websiteStudioController.regenerate);
+router.post('/studio/demos/:id/repair-images', websiteStudioController.repairImages);
 router.post('/studio/demos/:id/approve', websiteStudioController.approve);
 router.get('/studio/demos/:id/html', websiteStudioController.getHtml);
 router.get('/studio/demos/:id/export', websiteStudioController.exportZip);
