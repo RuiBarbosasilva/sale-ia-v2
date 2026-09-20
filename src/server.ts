@@ -1,3 +1,4 @@
+import { websiteDemoFactoryService } from './services/prospecting/websiteDemoFactoryService';
 ﻿import { mercadoLivreWebhookWorker } from './modules/mercadoLivre/workers/mercadoLivreWebhookWorker';
 import app from './app';
 
@@ -20,6 +21,11 @@ import { initializeWorkers } from './config/queue';
 if (process.env.NODE_ENV !== 'test') {
   setTimeout(() => {
     try {
+      const recoveredDemoJobs = await websiteDemoFactoryService.recoverStaleJobs();
+      if (recoveredDemoJobs > 0) {
+        console.log(`[DEMO-JOBS] ${recoveredDemoJobs} job(s) stale recuperado(s)`);
+      }
+
       const workers = initializeWorkers();
 
       console.log('[WORKERS] Workers inicializados com sucesso');
