@@ -23,6 +23,7 @@ router.post('/generate-demos', prospectingController.generateDemosBatch);
 router.get('/jobs/:jobId', prospectingController.getJobStatus);
 
 router.get('/stats', prospectingController.getStats);
+router.get('/workflow', prospectingController.getWorkflow);
 
 router.post('/prospects/:id/outreach/prepare', prospectingController.prepareOutreach);
 router.post('/prospects/:id/outreach/send', prospectingController.sendOutreach);
