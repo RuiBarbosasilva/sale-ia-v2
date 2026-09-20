@@ -32,6 +32,10 @@ export class WebsiteProspectorService {
       const result = await businessProspectingManager.searchBusinesses(request);
       
       let qualifiedCount = 0;
+      let createdCount = 0;
+      let updatedCount = 0;
+      let duplicateCount = 0;
+      let auditedCount = 0;
       
       for (const business of result.businesses) {
         const enrichedBusiness = await this.enrichBusinessWithDetails(business);
@@ -40,6 +44,8 @@ export class WebsiteProspectorService {
         const existing = await this.findDuplicate(business);
         
         if (existing) {
+          duplicateCount++;
+          updatedCount++;
           const websiteStatus = await this.detectWebsiteStatus(business.website);
 
           await prisma.websiteProspect.update({
@@ -77,7 +83,8 @@ export class WebsiteProspectorService {
           });
 
           if (business.website) {
-            await this.auditWebsite(existing.id, business.website);
+            const audit = await this.auditWebsite(existing.id, business.website);
+            if (audit) auditedCount++;
           }
 
           qualifiedCount++;
@@ -122,9 +129,11 @@ export class WebsiteProspectorService {
         });
 
         if (business.website) {
-          await this.auditWebsite(prospect.id, business.website);
+          const audit = await this.auditWebsite(prospect.id, business.website);
+          if (audit) auditedCount++;
         }
 
+        createdCount++;
         qualifiedCount++;
       }
 
@@ -142,10 +151,10 @@ export class WebsiteProspectorService {
         searchId: search.id,
         totalFound: result.businesses.length,
         totalQualified: qualifiedCount,
-        totalDuplicates: 0,
-        totalCreated: qualifiedCount,
-        totalUpdated: 0,
-        totalAudited: 0,
+        totalDuplicates: duplicateCount,
+        totalCreated: createdCount,
+        totalUpdated: updatedCount,
+        totalAudited: auditedCount,
         nichesSearched: 1
       };
     } catch (error: any) {
