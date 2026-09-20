@@ -72,6 +72,9 @@ export class WebsiteEnrichmentService {
   private formatWhatsApp(phone?: string): string | null {
     if (!phone) return null;
     const digits = phone.replace(/\D/g, '');
+    if (digits.length >= 12 && digits.startsWith('55')) {
+      return `+${digits}`;
+    }
     if (digits.length >= 10) {
       return `+55${digits}`;
     }
