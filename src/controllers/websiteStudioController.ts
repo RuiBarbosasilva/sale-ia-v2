@@ -400,14 +400,44 @@ export const websiteStudioController = {
   async approve(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const demo = await prisma.websiteDemo.update({
+      const demo = await prisma.websiteDemo.findUnique({
         where: { id },
-        data: { status: 'APPROVED' }
       });
-      res.json({ success: true, demoId: demo.id, status: demo.status });
+
+      if (!demo) {
+        return res.status(404).json({ success: false, error: 'Demo não encontrada' });
+      }
+
+      const approvedDemo = await prisma.websiteDemo.update({
+        where: { id },
+        data: { status: 'APPROVED' },
+      });
+
+      // Aprovação comercial deve deixar o projeto pronto para a próxima etapa,
+      // sem fingir que houve publicação/deploy. A publicação continua explícita.
+      const project = await websiteService.preparePublication(
+        approvedDemo.id,
+        req.body?.domainName
+      );
+
+      await prisma.websiteProspect.update({
+        where: { id: approvedDemo.prospectId },
+        data: { status: 'APPROVED' },
+      });
+
+      res.json({
+        success: true,
+        demoId: approvedDemo.id,
+        prospectId: approvedDemo.prospectId,
+        status: approvedDemo.status,
+        projectId: project.id,
+        publicationStatus: 'READY_TO_PUBLISH',
+      });
     } catch (e: any) {
       console.error('[Studio] approve:', e.message);
-      res.status(404).json({ success: false, error: 'Demo não encontrada' });
+      const message = e?.message || '';
+      const statusCode = message.includes('não encontrada') || message.includes('nao encontrada') ? 404 : 500;
+      res.status(statusCode).json({ success: false, error: message || 'Erro ao aprovar demo' });
     }
   },
 
