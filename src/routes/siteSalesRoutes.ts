@@ -5,6 +5,7 @@ import { siteAuditService } from '../services/siteAuditService';
 import { siteGeneratorService } from '../services/siteGeneratorService';
 import { proposalGeneratorService } from '../services/proposalGeneratorService';
 import { getOrCreateLead } from '../services/leadService';
+import { websiteCommercialService } from '../services/websiteCommercialService';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -115,6 +116,40 @@ router.post('/prospects/:id/convert-lead', async (req: Request, res: Response) =
 });
 
 
+
+router.get('/plans', async (req: Request, res: Response) => {
+  try {
+    const plans = await proposalGeneratorService.listPlans();
+    res.json({ success: true, plans });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || 'Erro ao listar planos' });
+  }
+});
+
+router.post('/prospects/:id/accept-proposal', async (req: Request, res: Response) => {
+  try {
+    const proposalId = req.body?.proposalId;
+    if (!proposalId) {
+      return res.status(400).json({ error: 'PROPOSTA_OBRIGATORIA: informe proposalId' });
+    }
+
+    const proposal = await prisma.websiteProposal.findUnique({
+      where: { id: proposalId },
+      select: { prospectId: true },
+    });
+
+    if (!proposal || proposal.prospectId !== req.params.id) {
+      return res.status(404).json({ error: 'WEBSITE_PROPOSAL_NOT_FOUND' });
+    }
+
+    const result = await websiteCommercialService.acceptProposal(proposalId);
+    res.json(result);
+  } catch (e: any) {
+    const message = e?.message || 'Erro ao aceitar proposta';
+    const status = message.startsWith('WEBSITE_') || message.startsWith('DEMO_') || message.startsWith('LEAD_') ? 400 : 500;
+    res.status(status).json({ error: message });
+  }
+});
 
 router.get('/prospects', async (req: Request, res: Response) => {
   try {
