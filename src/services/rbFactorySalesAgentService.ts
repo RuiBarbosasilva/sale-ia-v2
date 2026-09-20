@@ -19,6 +19,13 @@ export const rbFactorySalesAgentService = {
       salesRules:{neverInventPriceOrDeadline:true,neverCreateProjectBeforeAcceptedProposal:true,externalActionsRequireApproval:true}
     };
   },
+  async ensureConversation(prospectId:string,channel='WHATSAPP'){
+    const context=await this.context(prospectId);
+    const rows=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesConversation" WHERE channel=? AND context LIKE ? ORDER BY createdAt DESC LIMIT 1',channel,`%\\"id\\":\\"${prospectId}\\"%`);
+    if(rows[0]) return {conversation:await seniorSalesAgentService.getConversation(rows[0].id),commercialContext:context,reused:true};
+    const c=await seniorSalesAgentService.createConversation({channel,leadId:context.lead?.id||null,context});
+    return {conversation:c,commercialContext:context,reused:false};
+  },
   async createConversation(prospectId:string,channel='WHATSAPP'){
     const context=await this.context(prospectId);
     const c=await seniorSalesAgentService.createConversation({channel,leadId:context.lead?.id||null,context});
@@ -27,7 +34,10 @@ export const rbFactorySalesAgentService = {
   async respond(prospectId:string,conversationId:string,message:string){
     const context=await this.context(prospectId);
     const conversation=await seniorSalesAgentService.getConversation(conversationId);
-    if(conversation.context && JSON.parse(conversation.context).prospect?.id!==prospectId) throw new Error('SALES_CONVERSATION_PROSPECT_MISMATCH');
+    if(conversation.context){
+      try{if(JSON.parse(conversation.context).prospect?.id!==prospectId) throw new Error('SALES_CONVERSATION_PROSPECT_MISMATCH');}
+      catch(e:any){if(e?.message==='SALES_CONVERSATION_PROSPECT_MISMATCH') throw e;}
+    }
     const result=await seniorSalesAgentService.respond(conversationId,{message});
     return {result,commercialContext:context};
   },
