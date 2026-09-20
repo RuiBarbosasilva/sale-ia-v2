@@ -441,6 +441,26 @@ export const websiteStudioController = {
     }
   },
 
+  async markProjectPublished(req: Request, res: Response) {
+    try {
+      const { projectId, domainName, hostingProvider, sourceCodeRepo } = req.body || {};
+      if (!projectId) return res.status(400).json({ success: false, error: 'projectId é obrigatório' });
+      const project = await websiteService.markProjectPublished(projectId, {
+        domainName, hostingProvider, sourceCodeRepo
+      });
+      res.json({
+        success: true,
+        project,
+        publicationStatus: 'PUBLISHED'
+      });
+    } catch (e: any) {
+      const message = e?.message || 'Erro ao registrar publicação';
+      const status = ['WEBSITE_PROJECT_NOT_FOUND'].includes(message) ? 404
+        : ['DOMAIN_REQUIRED', 'HOSTING_PROVIDER_REQUIRED'].includes(message) ? 400 : 500;
+      res.status(status).json({ success: false, error: message });
+    }
+  },
+
   // ---------- PREPARACAO DE PUBLICACAO (real, sem falso deploy) ----------
   async preparePublication(req: Request, res: Response) {
     try {
