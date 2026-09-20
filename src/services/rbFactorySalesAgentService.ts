@@ -45,7 +45,8 @@ export const rbFactorySalesAgentService = {
     }
     const result=await seniorSalesAgentService.respond(conversationId,{message});
     await this.syncPipelineAfterResponse(prospectId,result);
-    return {result,commercialContext:context};
+    const followUp=await seniorSalesAgentService.scheduleRecommendedFollowUp(conversationId,result);
+    return {result,followUp,commercialContext:context};
   },
   async syncPipelineAfterResponse(prospectId:string,result:any){
     const rows=await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',prospectId);
