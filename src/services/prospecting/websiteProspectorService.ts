@@ -82,9 +82,9 @@ export class WebsiteProspectorService {
             },
           });
 
-          if (business.website) {
-            const audit = await this.auditWebsite(existing.id, business.website);
-            if (audit) auditedCount++;
+          if (websiteStatus.audit) {
+            await this.persistWebsiteAudit(existing.id, websiteStatus.audit);
+            auditedCount++;
           }
 
           qualifiedCount++;
@@ -128,9 +128,9 @@ export class WebsiteProspectorService {
           },
         });
 
-        if (business.website) {
-          const audit = await this.auditWebsite(prospect.id, business.website);
-          if (audit) auditedCount++;
+        if (websiteStatus.audit) {
+          await this.persistWebsiteAudit(prospect.id, websiteStatus.audit);
+          auditedCount++;
         }
 
         createdCount++;
@@ -229,7 +229,8 @@ export class WebsiteProspectorService {
         hasWebsite: false,
         opportunityStatus: 'NO_WEBSITE' as WebsiteOpportunityStatus,
         opportunityScore: 95,
-        priority: 'HIGH'
+        priority: 'HIGH',
+        audit: null
       };
     }
 
@@ -267,36 +268,29 @@ export class WebsiteProspectorService {
         opportunityStatus: status,
         opportunityScore: score,
         priority,
-        auditScore: audit.auditScore
+        auditScore: audit.auditScore,
+        audit
       };
     } catch {
       return {
         hasWebsite: true,
         opportunityStatus: 'ERROR' as WebsiteOpportunityStatus,
         opportunityScore: 0,
-        priority: 'LOW'
+        priority: 'LOW',
+        audit: null
       };
     }
   }
 
-  private async auditWebsite(prospectId: string, website: string) {
-    try {
-      const audit = await websiteAuditService.audit(website);
-      
-      await prisma.websiteProspect.update({
-        where: { id: prospectId },
-        data: {
-          websiteHealthScore: audit.auditScore,
-          websiteOpportunityStatus: this.mapAuditToOpportunity(audit),
-          lastAuditAt: new Date()
-        },
-      });
-
-      return audit;
-    } catch (error: any) {
-      console.error(`[Prospector] Audit failed for ${website}:`, error.message);
-      return null;
-    }
+  private async persistWebsiteAudit(prospectId: string, audit: any) {
+    await prisma.websiteProspect.update({
+      where: { id: prospectId },
+      data: {
+        websiteHealthScore: audit.auditScore,
+        websiteOpportunityStatus: this.mapAuditToOpportunity(audit),
+        lastAuditAt: new Date()
+      },
+    });
   }
 
   private mapAuditToOpportunity(audit: any): WebsiteOpportunityStatus {
@@ -780,10 +774,10 @@ export class WebsiteProspectorService {
                 // ----------------------------------------------
                 // AUDITORIA DO SITE EXISTENTE
                 // ----------------------------------------------
-                if (business.website) {
-                  await this.auditWebsite(
+                if (websiteStatus.audit) {
+                  await this.persistWebsiteAudit(
                     existing.id,
-                    business.website
+                    websiteStatus.audit
                   );
 
                   totalAudited++;
@@ -906,10 +900,10 @@ export class WebsiteProspectorService {
               // ------------------------------------------------
               // AUDITORIA DO SITE NOVO
               // ------------------------------------------------
-              if (business.website) {
-                await this.auditWebsite(
+              if (websiteStatus.audit) {
+                await this.persistWebsiteAudit(
                   prospect.id,
-                  business.website
+                  websiteStatus.audit
                 );
 
                 totalAudited++;
