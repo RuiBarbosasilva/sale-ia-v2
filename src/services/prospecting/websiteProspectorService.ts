@@ -87,9 +87,15 @@ export class WebsiteProspectorService {
             auditedCount++;
           }
 
-          if (websiteStatus.opportunityStatus !== 'WEBSITE_GOOD') {
-              qualifiedCount++;
-            }
+          if ([
+            'NO_WEBSITE',
+            'WEBSITE_OFFLINE',
+            'WEBSITE_BROKEN',
+            'WEBSITE_OUTDATED',
+            'WEBSITE_NEEDS_IMPROVEMENT',
+          ].includes(websiteStatus.opportunityStatus)) {
+            qualifiedCount++;
+          }
           continue;
         }
 
@@ -136,7 +142,15 @@ export class WebsiteProspectorService {
         }
 
         createdCount++;
-        qualifiedCount++;
+        if ([
+          'NO_WEBSITE',
+          'WEBSITE_OFFLINE',
+          'WEBSITE_BROKEN',
+          'WEBSITE_OUTDATED',
+          'WEBSITE_NEEDS_IMPROVEMENT',
+        ].includes(websiteStatus.opportunityStatus)) {
+          qualifiedCount++;
+        }
       }
 
       await prisma.websiteProspectingSearch.update({
