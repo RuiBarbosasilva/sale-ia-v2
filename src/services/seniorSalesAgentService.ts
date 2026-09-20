@@ -37,6 +37,9 @@ async function init() {
       "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
   `);
+  await (prisma as any).$executeRawUnsafe('ALTER TABLE "SalesAction" ADD COLUMN "approvedAt" DATETIME').catch(()=>{});
+  await (prisma as any).$executeRawUnsafe('ALTER TABLE "SalesAction" ADD COLUMN "sentAt" DATETIME').catch(()=>{});
+  await (prisma as any).$executeRawUnsafe('ALTER TABLE "SalesAction" ADD COLUMN "decisionNote" TEXT').catch(()=>{});
   initialized = true;
 }
 function id(){ return crypto.randomUUID(); }
