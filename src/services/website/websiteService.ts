@@ -290,11 +290,61 @@ export class WebsiteService {
     }
     const { websiteImageService } = await import('./websiteImageService');
     const { websiteQualityService } = await import('./websiteQualityService');
-    const assets = websiteImageService.rebuildAssets(prevAssetsMeta);
-    content = { ...content, services: (content.services || []).map((s: any) => ({ ...s, image: (assets.services || {})[s.title] || null })) };
+
+    const prdForReview = prevPd.prd || {
+      business: { businessName, category, city, objective: '' },
+      content: {
+        services: (content.services || []).map((s: any) => ({ title: s.title, description: s.description })),
+        benefits: content.benefits,
+        faq: content.faq,
+        heroHeadline: content.heroHeadline
+      },
+      design: { visualDirection: design.visualStyle || '' }
+    };
+
+    // Demos antigas podem ter sido criadas antes do Image Engine. Se os
+    // metadados estiverem ausentes, tiverem placeholders ou não tiverem
+    // hero + galeria suficiente, reacquirimos imagens reais antes de compilar.
+    const previousAssetsSummary = websiteImageService.analyzeAssetsMetadata(prevAssetsMeta);
+    const needsImageRepair =
+      !Array.isArray(prevAssetsMeta) ||
+      prevAssetsMeta.length === 0 ||
+      previousAssetsSummary.placeholderCount > 0 ||
+      !previousAssetsSummary.hasHero ||
+      previousAssetsSummary.imageCount < 4 ||
+      previousAssetsSummary.realImageCount < 4;
+
+    let assets: any;
+    let assetsMeta = prevAssetsMeta;
+
+    if (needsImageRepair) {
+      console.log('[regenerateDemo] Image Engine: reparando/acquirindo imagens para demo ' + demoId);
+      const imageResult = await websiteImageService.acquireAssets(
+        briefing,
+        prdForReview,
+        prevPd.designSystem || design
+      );
+      assets = imageResult.assets;
+      assetsMeta = imageResult.metadata;
+    } else {
+      assets = websiteImageService.rebuildAssets(prevAssetsMeta);
+    }
+
+    const assetValidation = await this.validateGeneratedAssets(assets);
+    if (!assetValidation.valid) {
+      console.warn('[regenerateDemo] Imagens ainda apresentam problemas: ' + assetValidation.issues.join(' | '));
+    }
+
+    content = {
+      ...content,
+      services: (content.services || []).map((s: any) => ({
+        ...s,
+        image: (assets.services || {})[s.title] || null
+      }))
+    };
+
     const html = websiteCompiler.compileProfessional(businessName, city, phone, design, content, assets);
-    const assetsSummary = websiteImageService.analyzeAssetsMetadata(prevAssetsMeta);
-    const prdForReview = prevPd.prd || { business: { businessName, category, city, objective: '' }, content: { services: content.services, benefits: content.benefits, faq: content.faq, heroHeadline: content.heroHeadline }, design: { visualDirection: design.visualStyle || '' } };
+    const assetsSummary = websiteImageService.analyzeAssetsMetadata(assetsMeta);
     const qualityReview = await websiteQualityService.review(html, prdForReview, design, assetsSummary);
     const version = (await prisma.websiteDemo.count({ where: { prospectId: demo.prospectId } })) + 1;
     const newDemo = await prisma.websiteDemo.create({
@@ -304,10 +354,14 @@ export class WebsiteService {
         sourceCode: html,
         status: 'READY',
         version,
-        previewData: JSON.stringify({ briefing, creatorType, useAI: aiUsed, regeneratedFrom: demoId, mode, assets: prevAssetsMeta, assetsSummary, qualityReview, prd: prevPd.prd, designSystem: prevPd.designSystem, generatedAt: new Date().toISOString() })
+        previewData: JSON.stringify({ briefing, creatorType, useAI: aiUsed, regeneratedFrom: demoId, mode, assets: assetsMeta, assetsSummary, qualityReview, prd: prevPd.prd, designSystem: prevPd.designSystem, generatedAt: new Date().toISOString() })
       }
     });
     return newDemo;
+  }
+
+  async repairDemoImages(demoId: string) {
+    return this.regenerateDemo(demoId, 'content');
   }
 
   async listVersionsByProspect(prospectId: string) {
