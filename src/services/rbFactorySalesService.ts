@@ -177,6 +177,31 @@ export const rbFactorySalesService={
     await init();
     const allowed=['DISCOVERED','AUDITED','DEMO_READY','PROPOSAL_READY','CONTACTED','NEGOTIATION','WON','LOST'];
     if(!allowed.includes(stage)) throw new Error('INVALID_PIPELINE_STAGE');
+
+    const rows=await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE id=? LIMIT 1',idv);
+    const pipeline=rows[0];
+    if(!pipeline) throw new Error('RB_FACTORY_PIPELINE_NOT_FOUND');
+
+    const prerequisites:any={
+      AUDITED: ['DISCOVERED','AUDITED','DEMO_READY','PROPOSAL_READY','CONTACTED','NEGOTIATION'],
+      DEMO_READY: ['AUDITED','DEMO_READY','PROPOSAL_READY','CONTACTED','NEGOTIATION'],
+      PROPOSAL_READY: ['DEMO_READY','PROPOSAL_READY','CONTACTED','NEGOTIATION'],
+      CONTACTED: ['PROPOSAL_READY','CONTACTED','NEGOTIATION'],
+      NEGOTIATION: ['CONTACTED','NEGOTIATION'],
+      WON: ['NEGOTIATION','WON'],
+      LOST: ['DISCOVERED','AUDITED','DEMO_READY','PROPOSAL_READY','CONTACTED','NEGOTIATION']
+    };
+    if(stage !== pipeline.stage && prerequisites[stage] && !prerequisites[stage].includes(pipeline.stage)) {
+      throw new Error('INVALID_PIPELINE_TRANSITION');
+    }
+
+    if(stage === 'WON') {
+      const proposal=await prisma.websiteProposal.findFirst({where:{prospectId:pipeline.prospectId},orderBy:{updatedAt:'desc'}});
+      if(!proposal || proposal.status !== 'ACCEPTED') throw new Error('PROPOSAL_NOT_ACCEPTED');
+      const project=await prisma.websiteProject.findFirst({where:{prospectId:pipeline.prospectId}});
+      if(!project) throw new Error('WEBSITE_PROJECT_NOT_READY');
+    }
+
     await (prisma as any).$executeRawUnsafe('UPDATE "RbFactorySalesPipeline" SET stage=?,nextAction=COALESCE(?,nextAction),notes=COALESCE(?,notes),updatedAt=CURRENT_TIMESTAMP WHERE id=?',stage,nextAction||null,notes||null,idv);
     return (await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE id=?',idv))[0];
   }
