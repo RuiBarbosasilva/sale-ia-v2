@@ -6,6 +6,7 @@ import { ImageProvider } from './imageProviders/imageProvider';
 import { pexelsImageProvider } from './imageProviders/pexelsImageProvider';
 import { unsplashImageProvider } from './imageProviders/unsplashImageProvider';
 import { wikimediaImageProvider } from './imageProviders/wikimediaImageProvider';
+import { openverseImageProvider } from './imageProviders/openverseImageProvider';
 import { openAIImageProvider } from './imageProviders/openAIImageProvider';
 
 export interface ImageAsset {
@@ -139,6 +140,7 @@ export class WebsiteImageService {
   private readonly imageProviders: ImageProvider[] = [
     pexelsImageProvider,
     unsplashImageProvider,
+    openverseImageProvider,
     wikimediaImageProvider
   ];
 
