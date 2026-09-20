@@ -861,6 +861,7 @@ model AffiliateSale {
   linkId           String?
   link             AffiliateLink? @relation(fields: [linkId], references: [id], onDelete: SetNull)
   externalOrderId  String?        @unique
+  webhookEventId   String?        @unique
   source           String         @default("MANUAL")
   customerRef      String?
   amount           Float
