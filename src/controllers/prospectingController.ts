@@ -222,17 +222,36 @@ export const prospectingController = {
 
       const audit = await websiteAuditService.audit(prospect.currentWebsite);
 
+      // Normaliza o resultado da auditoria para o mesmo vocabulário usado
+      // pelo pipeline oficial de prospecção/scoring.
+      const opportunityStatus =
+        !audit.reachable ? 'WEBSITE_OFFLINE' :
+        audit.auditScore < 30 ? 'WEBSITE_BROKEN' :
+        audit.auditScore < 60 ? 'WEBSITE_OUTDATED' :
+        audit.auditScore < 80 ? 'WEBSITE_NEEDS_IMPROVEMENT' :
+        'WEBSITE_GOOD';
+
+      const websiteStatus =
+        opportunityStatus === 'WEBSITE_GOOD' ? 'HAS_WEBSITE' : 'WEBSITE_POOR';
+
       await prisma.websiteProspect.update({
         where: { id },
         data: {
           websiteHealthScore: audit.auditScore,
+          websiteStatus,
+          websiteOpportunityStatus: opportunityStatus,
           lastAuditAt: new Date(),
         },
       });
 
+      // Recalcula o score comercial com rating, telefone e demais sinais
+      // persistidos no prospect, mantendo uma única regra de pontuação.
+      const score = await websiteOpportunityScoringService.calculateScore(id);
+
       res.json({
         success: true,
         audit,
+        opportunity: score,
       });
     } catch (error: any) {
       res.status(500).json({
