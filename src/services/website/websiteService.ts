@@ -8,6 +8,22 @@ import { creatorSelector } from './creatorSelector';
 const prisma = new PrismaClient();
 
 export class WebsiteService {
+  private async validateGeneratedAssets(assets: any): Promise<{ valid: boolean; issues: string[] }> {
+    const issues: string[] = [];
+    const candidates: any[] = [];
+    if (assets?.hero) candidates.push({ slot: 'hero', asset: assets.hero });
+    if (Array.isArray(assets?.gallery)) assets.gallery.forEach((asset: any, i: number) => candidates.push({ slot: 'gallery-' + i, asset }));
+    if (assets?.services) Object.entries(assets.services).forEach(([name, asset]) => candidates.push({ slot: 'service-' + name, asset }));
+    for (const candidate of candidates) {
+      const result = await websiteImageService.validateImageAsset(candidate.asset);
+      if (!result.valid) issues.push('Imagem ' + candidate.slot + ': ' + result.reason);
+    }
+    if (!assets?.hero) issues.push('Imagem hero ausente');
+    if (!Array.isArray(assets?.gallery) || assets.gallery.length < 3) issues.push('Galeria com menos de 3 imagens');
+    return { valid: issues.length === 0, issues };
+  }
+
+
   async analyzeProspect(prospectId: string) {
     const prospect = await prisma.websiteProspect.findUnique({ where: { id: prospectId } });
     if (!prospect) throw new Error('Prospect não encontrado');
