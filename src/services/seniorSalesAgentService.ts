@@ -127,6 +127,19 @@ export const seniorSalesAgentService = {
     await (prisma as any).$executeRawUnsafe('UPDATE "SalesConversation" SET "nextBestAction"=\'SEND_FIRST_APPROACH\',"updatedAt"=CURRENT_TIMESTAMP WHERE id=?',conversationId);
     return {conversationId,reply,confidence,requiresApproval:true,nextBestAction:'SEND_FIRST_APPROACH'};
   },
+  async prepareActionChannel(actionId:string){
+    await init();
+    const rows=await (prisma as any).$queryRawUnsafe('SELECT a.*,c.channel,c.context FROM "SalesAction" a JOIN "SalesConversation" c ON c.id=a.conversationId WHERE a.id=? LIMIT 1',actionId);
+    const row=rows[0];
+    if(!row) throw new Error('SALES_ACTION_NOT_FOUND');
+    let context:any={}; try{context=row.context?JSON.parse(row.context):{};}catch{}
+    const phone=String(context?.prospect?.phone||'').replace(/\\D/g,'');
+    const payload=row.payload?JSON.parse(row.payload):{};
+    const message=String(payload.reply||'');
+    const whatsappPhone=phone.length===11 ? '55'+phone : phone.startsWith('55') ? phone : phone;
+    const whatsappUrl=whatsappPhone.length>=12 && message ? 'https://wa.me/'+whatsappPhone+'?text='+encodeURIComponent(message) : null;
+    return {actionId:row.id,status:row.status,channel:row.channel,companyName:context?.prospect?.companyName||null,phone:context?.prospect?.phone||null,message,whatsappUrl,canOpenWhatsApp:Boolean(whatsappUrl),requiresApproval:Boolean(row.requiresApproval)};
+  },
   async approveAction(actionId:string){
     await init();
     const rows=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE id=? LIMIT 1',actionId);
