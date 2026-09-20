@@ -175,6 +175,7 @@ export const rbFactorySalesService={
       `UPDATE "RbFactorySalesPipeline" SET stage='WON',nextAction='PREPARE_PROJECT',updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,
       prospectId
     );
+    await rbFactorySalesAgentService.closeSellerForProspect(prospectId,'WON');
     return {proposal:accepted,lead,project};
   },
 
