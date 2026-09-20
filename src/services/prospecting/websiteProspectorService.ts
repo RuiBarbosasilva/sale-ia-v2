@@ -171,6 +171,7 @@ export class WebsiteProspectorService {
   }
 
   private async findDuplicate(business: any) {
+    // 1) O identificador do provedor é a identidade mais confiável.
     if (business.providerPlaceId) {
       const byPlaceId = await prisma.websiteProspect.findFirst({
         where: { providerPlaceId: business.providerPlaceId },
@@ -178,14 +179,78 @@ export class WebsiteProspectorService {
       if (byPlaceId) return byPlaceId;
     }
 
-    const byNameCity = await prisma.websiteProspect.findFirst({
-      where: {
-        companyName: { equals: business.name },
-        city: { equals: business.city },
-      },
-    });
-    
-    return byNameCity;
+    // 2) Telefone + cidade é mais seguro que nome + cidade.
+    // Evita fundir filiais ou negócios diferentes com nomes iguais.
+    const phone = String(business.phone || '').replace(/\\D/g, '');
+    if (phone && business.city) {
+      const byPhoneCity = await prisma.websiteProspect.findFirst({
+        where: {
+          city: { equals: business.city },
+          phone: { not: null },
+        },
+      });
+
+      if (byPhoneCity) {
+        const storedPhone = String(byPhoneCity.phone || '').replace(/\\D/g, '');
+        if (storedPhone && storedPhone === phone) return byPhoneCity;
+      }
+    }
+
+    // 3) Site + cidade também é um identificador forte.
+    const website = String(business.website || '').trim().toLowerCase();
+    if (website && business.city) {
+      const byWebsiteCity = await prisma.websiteProspect.findFirst({
+        where: {
+          city: { equals: business.city },
+          currentWebsite: { not: null },
+        },
+      });
+
+      if (byWebsiteCity) {
+        const normalizeUrl = (value: string) =>
+          value
+            .trim()
+            .toLowerCase()
+            .replace(/^https?:\\/\\//, '')
+            .replace(/^www\\./, '')
+            .replace(/\\/$/, '');
+
+        if (normalizeUrl(String(byWebsiteCity.currentWebsite || '')) === normalizeUrl(website)) {
+          return byWebsiteCity;
+        }
+      }
+    }
+
+    // 4) Nome + endereço + cidade: fallback conservador.
+    // Não usar apenas nome + cidade, pois homônimos são comuns.
+    const name = String(business.name || '').trim();
+    const address = String(business.address || '').trim();
+
+    if (name && business.city && address) {
+      const candidates = await prisma.websiteProspect.findMany({
+        where: {
+          companyName: { equals: name },
+          city: { equals: business.city },
+        },
+        take: 10,
+      });
+
+      const normalizeText = (value: string) =>
+        value
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\\u0300-\\u036f]/g, '')
+          .replace(/[^a-z0-9]/g, '');
+
+      const normalizedAddress = normalizeText(address);
+
+      return candidates.find((candidate) => {
+        const candidateAddress = normalizeText(String(candidate.address || ''));
+        return candidateAddress && candidateAddress === normalizedAddress;
+      }) || null;
+    }
+
+    return null;
   }
 
   private async enrichBusinessWithDetails(business: any): Promise<any> {
