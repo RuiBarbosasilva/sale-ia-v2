@@ -58,7 +58,12 @@ export const affiliateIntelligenceService = {
       const s=scoreProduct(p);
       await prisma.affiliateProduct.update({where:{id:p.id},data:{demandScore:s.demand,competitionScore:s.competition,contentScore:s.content,conversionScore:s.conversion,popularityScore:s.trend,saturationScore:s.saturation,opportunityScore:s.score,status:s.score>=75?'SHORTLISTED':s.score>=55?'ANALYZED':'LOW_PRIORITY'}});
       await prisma.affiliateProductScore.create({data:{productId:p.id,score:s.score,demand:s.demand,competition:s.competition,commission:s.commission,contentFit:s.content,trend:s.trend,reasoning:'Score calculado por comissão, demanda, tendência, conteúdo, conversão, concorrência e saturação.'}});
-      if(s.score>=55){\n        const existingOpportunity=await prisma.affiliateOpportunity.findFirst({where:{productId:p.id,status:'NEW'}});\n        const opportunityData={score:s.score,recommendation:s.score>=75?'PRIORIZAR TESTE':'TESTAR COM CAUTELA',strategy:s.score>=75?'Conteúdo + landing page + tracking':'Conteúdo orgânico + validação',requiresAction:p.affiliationStatus!=='AFFILIATED',actionType:p.affiliationStatus==='AFFILIATED'?'CREATE_CAMPAIGN':'AFFILIATE_PRODUCT'};\n        if(existingOpportunity) await prisma.affiliateOpportunity.update({where:{id:existingOpportunity.id},data:opportunityData});\n        else await prisma.affiliateOpportunity.create({data:{productId:p.id,status:'NEW',...opportunityData}});\n      }
+      if(s.score>=55){
+        const existingOpportunity=await prisma.affiliateOpportunity.findFirst({where:{productId:p.id,status:'NEW'}});
+        const opportunityData={score:s.score,recommendation:s.score>=75?'PRIORIZAR TESTE':'TESTAR COM CAUTELA',strategy:s.score>=75?'Conteúdo + landing page + tracking':'Conteúdo orgânico + validação',requiresAction:p.affiliationStatus!=='AFFILIATED',actionType:p.affiliationStatus==='AFFILIATED'?'CREATE_CAMPAIGN':'AFFILIATE_PRODUCT'};
+        if(existingOpportunity) await prisma.affiliateOpportunity.update({where:{id:existingOpportunity.id},data:opportunityData});
+        else await prisma.affiliateOpportunity.create({data:{productId:p.id,status:'NEW',...opportunityData}});
+      }
     }
     await prisma.affiliateNetwork.update({where:{id:networkId},data:{lastScanAt:new Date()}});
     return {created,updated,total:created+updated};
