@@ -1,1 +1,35 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SALE-IA-V2 · Vendedor Sênior</title><style>body{font-family:Arial,sans-serif;max-width:1100px;margin:30px auto;padding:0 18px}h1{margin-bottom:4px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.card{border:1px solid #ddd;border-radius:12px;padding:16px}.chat{border:1px solid #ddd;border-radius:12px;padding:16px;margin-top:18px}.msg{padding:10px;margin:8px 0;border-radius:8px;background:#f5f5f5}textarea{width:100%;min-height:90px}button{padding:10px 14px;border:0;border-radius:8px;cursor:pointer;margin-top:8px}</style></head><body><h1>Vendedor Sênior IA</h1><p>Qualificação, objeções, follow-up e fechamento com aprovação humana para ações externas.</p><div id="dash" class="grid"></div><div class="chat"><button onclick="newChat()">Nova conversa</button><div id="conversation"></div><textarea id="message" placeholder="Mensagem do cliente..."></textarea><button onclick="send()">Analisar e gerar resposta</button></div><script>let cid=null;async function api(u,o){const r=await fetch(u,o);return r.json()}async function load(){const d=await api('/api/sales/dashboard');document.getElementById('dash').innerHTML=Object.entries(d).map(([k,v])=>'<div class="card"><b>'+k+'</b><div>'+v+'</div></div>').join('')}async function newChat(){const c=await api('/api/sales/conversations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel:'WEB'})});cid=c.id;render(c)}async function render(c){document.getElementById('conversation').innerHTML='<p><b>Status:</b> '+c.stage+' · '+c.temperature+'</p>'+(c.messages||[]).map(m=>'<div class="msg"><b>'+m.role+'</b>: '+m.content+'</div>').join('')}async function send(){if(!cid)await newChat();const m=document.getElementById('message').value;const r=await api('/api/sales/conversations/'+cid+'/respond',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:m})});document.getElementById('message').value='';const c=await api('/api/sales/conversations/'+cid);render(c);alert('Próxima ação: '+r.nextBestAction+' | Resposta gerada pronta para aprovação.')}load()</script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RB Factory Sites · Vendedor IA</title>
+<style>
+body{font-family:Arial,sans-serif;max-width:1250px;margin:24px auto;padding:0 16px;background:#fafafa;color:#222}
+h1{margin:0}.sub{color:#666;margin:6px 0 22px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.card,.panel{background:#fff;border:1px solid #ddd;border-radius:12px;padding:14px}.value{font-size:25px;font-weight:700;margin-top:6px}
+table{width:100%;border-collapse:collapse}.panel{margin-top:14px;overflow:auto}th,td{text-align:left;padding:9px;border-bottom:1px solid #eee;font-size:13px}
+button{padding:8px 11px;border:0;border-radius:7px;cursor:pointer}.primary{background:#111;color:#fff}.muted{color:#777}
+pre{white-space:pre-wrap;max-width:500px}
+</style></head>
+<body>
+<h1>RB Factory Sites · Vendedor IA</h1>
+<div class="sub">Operação comercial supervisionada: a IA analisa, prepara e recomenda; ações externas permanecem sob aprovação.</div>
+<div id="metrics" class="grid"></div>
+<div class="panel"><h2>Pipeline comercial</h2><div id="pipeline"></div></div>
+<div class="panel"><h2>Ações aguardando aprovação</h2><div id="actions"></div></div>
+<div class="panel"><h2>Próximos follow-ups</h2><div id="followups"></div></div>
+<script>
+async function api(u){const r=await fetch(u);if(!r.ok)throw new Error(await r.text());return r.json()}
+function esc(v){return String(v??'').replace(/[&<>"]/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[x]))}
+function table(rows,cols){if(!rows?.length)return '<p class="muted">Nenhum item.</p>';return '<table><tr>'+cols.map(x=>'<th>'+esc(x[1])+'</th>').join('')+'</tr>'+rows.map(r=>'<tr>'+cols.map(x=>'<td>'+esc(typeof x[0]==='function'?x[0](r):r[x[0]])+'</td>').join('')+'</tr>').join('')+'</table>'}
+async function load(){
+ try{
+  const d=await api('/api/rb-factory-sales-agent/dashboard');
+  const metrics={Conversas:d.conversations,'Leads quentes':d.hotLeads,'Ações pendentes':d.pendingActions,'Follow-ups':d.pendingFollowUps,'Objeções abertas':d.openObjections};
+  document.getElementById('metrics').innerHTML=Object.entries(metrics).map(([k,v])=>'<div class="card"><div>'+esc(k)+'</div><div class="value">'+esc(v)+'</div></div>').join('');
+  document.getElementById('pipeline').innerHTML=table(d.pipeline,[['companyName','Empresa'],['segment','Nicho'],['city','Cidade'],['stage','Estágio'],['priority','Prioridade'],['nextAction','Próxima ação'],['websiteOpportunityScore','Score']]);
+  document.getElementById('actions').innerHTML=table(d.pendingActions,[['title','Ação'],['stage','Estágio'],['temperature','Temperatura'],['createdAt','Criada em'],[r=>{try{return JSON.parse(r.payload||'{}').reply||''}catch{return ''}},'Rascunho']]);
+  document.getElementById('followups').innerHTML=table(d.pendingFollowUps,[['scheduledAt','Agendado'],['reason','Motivo'],['stage','Estágio'],['temperature','Temperatura'],['draft','Rascunho']]);
+ }catch(e){document.body.insertAdjacentHTML('beforeend','<p>'+esc(e.message)+'</p>')}
+}
+load();setInterval(load,30000);
+</script></body></html>
