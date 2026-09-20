@@ -94,6 +94,10 @@ export const rbFactorySalesAgentService = {
   async approveAction(actionId:string){ return seniorSalesAgentService.approveAction(actionId); },
   async rejectAction(actionId:string,reason?:string){ return seniorSalesAgentService.rejectAction(actionId,reason); },
   async markActionSent(actionId:string,metadata?:any){ return seniorSalesAgentService.markActionSent(actionId,metadata); },
+  async dueFollowUps(limit=50){
+    const rows=await (prisma as any).$queryRawUnsafe('SELECT f.id,f.conversationId,f.scheduledAt,f.reason,f.draft,c.context,c.stage,c.temperature FROM "SalesFollowUp" f JOIN "SalesConversation" c ON c.id=f.conversationId WHERE f.status=\'PENDING\' AND datetime(f.scheduledAt)<=datetime(\'now\') AND c.status=\'OPEN\' ORDER BY f.scheduledAt ASC LIMIT ?',(Number.isFinite(limit)?Math.min(100,Math.max(1,limit)):50));
+    return rows.map((row:any)=>{let ctx:any={};try{ctx=row.context?JSON.parse(row.context):{};}catch{} return {...row,context:undefined,companyName:ctx?.prospect?.companyName||null,prospectId:ctx?.prospect?.id||null,phone:ctx?.prospect?.phone||null};});
+  },
   async dashboard(){
     const base=await seniorSalesAgentService.dashboard();
     const pipeline=await (prisma as any).$queryRawUnsafe('SELECT p.id,p.prospectId,p.stage,p.priority,p.nextAction,p.updatedAt,w.companyName,w.segment,w.city,w.phone,w.websiteOpportunityScore FROM "RbFactorySalesPipeline" p JOIN "WebsiteProspect" w ON w.id=p.prospectId WHERE p.status=\'OPEN\' ORDER BY p.priority DESC,p.updatedAt DESC LIMIT 100');
