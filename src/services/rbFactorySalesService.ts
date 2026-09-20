@@ -68,6 +68,7 @@ export const rbFactorySalesService={
 
   async buildDemo(prospectId:string,options?:{niche?:string;modelIndex?:number}){
     await init();
+    await this.createFromProspect(prospectId);
     const result=await websiteDemoFactoryService.generateDemoForProspect(prospectId,{useAI:true});
     const model=options?.modelIndex ? {index:options.modelIndex,niche:options.niche||null} : null;
     const pipeline=await (prisma as any).$queryRawUnsafe('SELECT notes FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',prospectId);
@@ -80,6 +81,7 @@ export const rbFactorySalesService={
 
   async buildProposal(prospectId:string){
     await init();
+    await this.createFromProspect(prospectId);
     const proposal=await proposalGeneratorService.generateProposal(prospectId);
     await (prisma as any).$executeRawUnsafe(`UPDATE "RbFactorySalesPipeline" SET stage='PROPOSAL_READY',proposalId=?,nextAction='CONTACT_PROSPECT',updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,proposal.id,prospectId);
     return proposal;
@@ -149,14 +151,14 @@ export const rbFactorySalesService={
     const proposal=await prisma.websiteProposal.findFirst({where:{prospectId},orderBy:{updatedAt:'desc'}});
     if(!proposal) throw new Error('WEBSITE_PROPOSAL_NOT_FOUND');
     if(!['SENT','READY','ACCEPTED'].includes(proposal.status)) throw new Error('WEBSITE_PROPOSAL_NOT_ACCEPTABLE');
+    const demo=await prisma.websiteDemo.findFirst({where:{prospectId,status:{in:['APPROVED','READY']}},orderBy:{version:'desc'}});
+    if(!demo) throw new Error('DEMO_NOT_READY_FOR_PROJECT');
+    const project=await websiteService.preparePublication(demo.id,domainName);
     const lead=await this.convertToLead(prospectId);
     const accepted=proposal.status==='ACCEPTED' ? proposal : await prisma.websiteProposal.update({
       where:{id:proposal.id},
       data:{status:'ACCEPTED',acceptedAt:new Date()}
     });
-    const demo=await prisma.websiteDemo.findFirst({where:{prospectId,status:{in:['APPROVED','READY']}},orderBy:{version:'desc'}});
-    if(!demo) throw new Error('DEMO_NOT_READY_FOR_PROJECT');
-    const project=await websiteService.preparePublication(demo.id,domainName);
     await prisma.websiteProspect.update({where:{id:prospectId},data:{status:'ACCEPTED'}});
     await (prisma as any).$executeRawUnsafe(
       `UPDATE "RbFactorySalesPipeline" SET stage='WON',nextAction='PREPARE_PROJECT',updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,
