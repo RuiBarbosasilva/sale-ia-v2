@@ -44,7 +44,31 @@ export const rbFactorySalesAgentService = {
       catch(e:any){if(e?.message==='SALES_CONVERSATION_PROSPECT_MISMATCH') throw e;}
     }
     const result=await seniorSalesAgentService.respond(conversationId,{message});
+    await this.syncPipelineAfterResponse(prospectId,result);
     return {result,commercialContext:context};
+  },
+  async syncPipelineAfterResponse(prospectId:string,result:any){
+    const rows=await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',prospectId);
+    const pipeline=rows[0];
+    if(!pipeline) return null;
+    const current=String(pipeline.stage);
+    const nextAction=String(result?.nextBestAction||'FOLLOW_UP');
+    const temperature=String(result?.temperature||'COLD');
+    const intentScore=Number(result?.intentScore||0);
+    let nextStage=current;
+    if(['DISCOVERED','AUDITED','DEMO_READY','PROPOSAL_READY','CONTACTED'].includes(current) && (temperature==='HOT'||temperature==='VERY_HOT'||intentScore>=45)){
+      nextStage='NEGOTIATION';
+    }
+    if(current==='CONTACTED' && nextAction==='ASK_FOR_CLOSE') nextStage='NEGOTIATION';
+    if(current==='LOST' || current==='WON') nextStage=current;
+    const safeActions=new Set(['ASK_FOR_CLOSE','INVESTIGATE_OBJECTION','DISCOVER_NEED','SEND_FIRST_APPROACH','REVIEW']);
+    const normalizedAction=safeActions.has(nextAction)?nextAction:'FOLLOW_UP';
+    await (prisma as any).$executeRawUnsafe(
+      'UPDATE "RbFactorySalesPipeline" SET stage=?,nextAction=?,notes=?,updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?',
+      nextStage,normalizedAction,JSON.stringify({salesAgent:{temperature,intentScore,objection:result?.objection||null,confidence:Number(result?.confidence||0),updatedAt:new Date().toISOString()}}),prospectId
+    );
+    return {stage:nextStage,nextAction:normalizedAction};
+  },
   },
   async dashboard(){
     const base=await seniorSalesAgentService.dashboard();
