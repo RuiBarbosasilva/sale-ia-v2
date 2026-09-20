@@ -111,6 +111,22 @@ export const seniorSalesAgentService = {
     if(score>=60) return 'Pelo que você me contou, parece que existe uma necessidade concreta. Posso te mostrar a opção mais adequada e, se fizer sentido, avançamos para a contratação?';
     return 'Entendi. Para eu não te oferecer algo genérico: qual é o principal problema que você quer resolver hoje?';
   },
+  async prepareInitialApproach(conversationId:string){
+    await init();
+    const c=await this.getConversation(conversationId);
+    let commercialContext:any=null; try{commercialContext=c.context?JSON.parse(c.context):null;}catch{commercialContext=null;}
+    const prompt=JSON.stringify({task:'PREPARE_INITIAL_COMMERCIAL_APPROACH',commercialContext,conversation:{channel:c.channel,stage:c.stage,temperature:c.temperature}});
+    const aiResult=await aiReply(prompt);
+    const company=commercialContext?.prospect?.companyName||'sua empresa';
+    const reply=aiResult?.reply || (commercialContext?.prospect?.currentWebsite
+      ? 'Olá! Aqui é da RB Factory Sites. Analisei a presença digital da '+company+' e identifiquei alguns pontos que podem melhorar a forma como clientes encontram e conhecem a empresa. Preparei uma demonstração específica para vocês. Posso te mostrar?'
+      : 'Olá! Aqui é da RB Factory Sites. Identifiquei a '+company+' em nossa pesquisa e preparei uma demonstração de site profissional pensada para o negócio. Posso te mostrar?');
+    const confidence=Number(aiResult?.confidence||70);
+    await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesConversationMessage" ("id","conversationId","role","content","intent","objection") VALUES (?,?,?,?,?,?)',id(),conversationId,'AGENT_DRAFT',reply,'OUTREACH',null);
+    await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesAction" ("id","conversationId","type","title","payload") VALUES (?,?,?,?,?)',id(),conversationId,'SEND_MESSAGE','Enviar primeira abordagem comercial',JSON.stringify({reply,confidence,requiresApproval:true}));
+    await (prisma as any).$executeRawUnsafe('UPDATE "SalesConversation" SET "nextBestAction"=\'SEND_FIRST_APPROACH\',"updatedAt"=CURRENT_TIMESTAMP WHERE id=?',conversationId);
+    return {conversationId,reply,confidence,requiresApproval:true,nextBestAction:'SEND_FIRST_APPROACH'};
+  },
   async scheduleFollowUp(conversationId:string,input:any){ await init(); const when=new Date(input.scheduledAt||Date.now()+86400000); const reason=String(input.reason||'FOLLOW_UP'); const draft=String(input.draft||''); const idv=id(); await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesFollowUp" ("id","conversationId","scheduledAt","reason","draft") VALUES (?,?,?,?,?)',idv,conversationId,when.toISOString(),reason,draft); return (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesFollowUp" WHERE id=?',idv); },
   async dashboard(){ await init(); const q=async(sql:string)=>Number((await (prisma as any).$queryRawUnsafe(sql))[0]?.count||0); const [conversations,hot,pending,followups,objections]=await Promise.all([q('SELECT COUNT(*) count FROM "SalesConversation" WHERE status=\'OPEN\''),q('SELECT COUNT(*) count FROM "SalesConversation" WHERE temperature IN (\'HOT\',\'VERY_HOT\')'),q('SELECT COUNT(*) count FROM "SalesAction" WHERE status=\'PENDING_APPROVAL\''),q('SELECT COUNT(*) count FROM "SalesFollowUp" WHERE status=\'PENDING\''),q('SELECT COUNT(*) count FROM "SalesObjection" WHERE resolved=0')]); return {conversations,hotLeads:hot,pendingActions:pending,pendingFollowUps:followups,openObjections:objections,mode:'SENIOR_SALES_SUPERVISED'}; }
 };
