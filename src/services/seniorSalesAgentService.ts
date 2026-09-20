@@ -127,6 +127,24 @@ export const seniorSalesAgentService = {
     await (prisma as any).$executeRawUnsafe('UPDATE "SalesConversation" SET "nextBestAction"=\'SEND_FIRST_APPROACH\',"updatedAt"=CURRENT_TIMESTAMP WHERE id=?',conversationId);
     return {conversationId,reply,confidence,requiresApproval:true,nextBestAction:'SEND_FIRST_APPROACH'};
   },
+  async approveAction(actionId:string){
+    await init();
+    const rows=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE id=? LIMIT 1',actionId);
+    const action=rows[0];
+    if(!action) throw new Error('SALES_ACTION_NOT_FOUND');
+    if(action.status!=='PENDING_APPROVAL') throw new Error('SALES_ACTION_NOT_PENDING');
+    await (prisma as any).$executeRawUnsafe('UPDATE "SalesAction" SET status=\'APPROVED\' WHERE id=?',actionId);
+    return (await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE id=?',actionId))[0];
+  },
+  async rejectAction(actionId:string,reason?:string){
+    await init();
+    const rows=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE id=? LIMIT 1',actionId);
+    if(!rows[0]) throw new Error('SALES_ACTION_NOT_FOUND');
+    if(rows[0].status!=='PENDING_APPROVAL') throw new Error('SALES_ACTION_NOT_PENDING');
+    const payload=JSON.stringify({rejectionReason:reason||'REJECTED_BY_OPERATOR',originalPayload:rows[0].payload?JSON.parse(rows[0].payload):null});
+    await (prisma as any).$executeRawUnsafe('UPDATE "SalesAction" SET status=\'REJECTED\',payload=? WHERE id=?',payload,actionId);
+    return (await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE id=?',actionId))[0];
+  },
   async scheduleRecommendedFollowUp(conversationId:string,result:any){
     await init();
     const reason=String(result?.nextBestAction||'FOLLOW_UP');
