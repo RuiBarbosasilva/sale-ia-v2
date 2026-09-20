@@ -8,6 +8,7 @@ router.get('/queue',rbFactorySalesAgentController.sellerQueue);
 router.get('/follow-ups/due',rbFactorySalesAgentController.dueFollowUps);
 router.post('/prospect/:prospectId/conversations',rbFactorySalesAgentController.create);
 router.post('/prospect/:prospectId/initial-approach',rbFactorySalesAgentController.initialApproach);
+router.post('/prospect/:prospectId/proposal-approach',rbFactorySalesAgentController.proposalApproach);
 router.post('/prospect/:prospectId/conversations/:conversationId/respond',rbFactorySalesAgentController.respond);
 router.get('/prospect/:prospectId/conversations/:conversationId',rbFactorySalesAgentController.conversationHistory);
 router.get('/actions/:actionId/channel',rbFactorySalesAgentController.actionChannel);
