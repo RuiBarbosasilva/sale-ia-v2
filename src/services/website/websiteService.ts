@@ -306,15 +306,50 @@ export class WebsiteService {
   async preparePublication(demoId: string, domainName?: string) {
     const demo = await prisma.websiteDemo.findUnique({ where: { id: demoId } });
     if (!demo) throw new Error('Demo não encontrada');
+    if (!['READY', 'APPROVED'].includes(demo.status)) {
+      throw new Error('DEMO_NOT_PUBLISHABLE');
+    }
     const existing = await prisma.websiteProject.findFirst({ where: { prospectId: demo.prospectId } });
     if (existing) {
       return prisma.websiteProject.update({
         where: { id: existing.id },
-        data: { domainName: domainName || existing.domainName, status: 'PLANNING', currentVersion: demo.version }
+        data: {
+          domainName: domainName || existing.domainName,
+          status: existing.status === 'PUBLISHED' ? existing.status : 'PLANNING',
+          currentVersion: demo.version
+        }
       });
     }
     return prisma.websiteProject.create({
-      data: { prospectId: demo.prospectId, status: 'PLANNING', domainName: domainName || null, currentVersion: demo.version }
+      data: {
+        prospectId: demo.prospectId,
+        status: 'PLANNING',
+        domainName: domainName || null,
+        currentVersion: demo.version
+      }
+    });
+  }
+
+  async markProjectPublished(
+    projectId: string,
+    details: { domainName?: string; hostingProvider?: string; sourceCodeRepo?: string }
+  ) {
+    const project = await prisma.websiteProject.findUnique({ where: { id: projectId } });
+    if (!project) throw new Error('WEBSITE_PROJECT_NOT_FOUND');
+
+    const domainName = details.domainName?.trim() || project.domainName;
+    const hostingProvider = details.hostingProvider?.trim() || project.hostingProvider;
+    if (!domainName) throw new Error('DOMAIN_REQUIRED');
+    if (!hostingProvider) throw new Error('HOSTING_PROVIDER_REQUIRED');
+
+    return prisma.websiteProject.update({
+      where: { id: projectId },
+      data: {
+        domainName,
+        hostingProvider,
+        sourceCodeRepo: details.sourceCodeRepo?.trim() || project.sourceCodeRepo,
+        status: 'PUBLISHED'
+      }
     });
   }
 
