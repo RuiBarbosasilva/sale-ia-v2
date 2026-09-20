@@ -63,6 +63,67 @@ export const affiliateIntelligenceService = {
     await prisma.affiliateNetwork.update({where:{id:networkId},data:{lastScanAt:new Date()}});
     return {created,updated,total:created+updated};
   },
+  async importAffiliateOffer(networkId:string,input:any){
+    const network=await prisma.affiliateNetwork.findUnique({where:{id:networkId}});
+    if(!network) throw new Error('NETWORK_NOT_FOUND');
+    const name=String(input.name||'').trim();
+    const affiliateUrl=String(input.affiliateUrl||'').trim();
+    if(!name) throw new Error('AFFILIATE_PRODUCT_NAME_REQUIRED');
+    if(!affiliateUrl) throw new Error('AFFILIATE_URL_REQUIRED');
+
+    const externalId=input.externalId==null?'manual-'+crypto.randomBytes(6).toString('hex'):String(input.externalId);
+    const data:any={
+      name,
+      affiliateUrl,
+      url:input.url||affiliateUrl,
+      salesPageUrl:input.salesPageUrl||input.url||affiliateUrl,
+      category:input.category||null,
+      description:input.description||null,
+      price:input.price==null?null:num(input.price),
+      commissionRate:input.commissionRate==null?null:num(input.commissionRate),
+      commissionAmount:input.commissionAmount==null?null:num(input.commissionAmount),
+      recurring:Boolean(input.recurring),
+      affiliationStatus:'AFFILIATED',
+      affiliationMode:'MANUAL',
+      metadata:input.metadata?JSON.stringify(input.metadata):null,
+      lastScannedAt:new Date()
+    };
+
+    let product=await prisma.affiliateProduct.upsert({
+      where:{networkId_externalId:{networkId,externalId}},
+      update:data,
+      create:{networkId,externalId,...data}
+    });
+
+    const s=scoreProduct(product);
+    product=await prisma.affiliateProduct.update({
+      where:{id:product.id},
+      data:{
+        demandScore:s.demand,
+        competitionScore:s.competition,
+        contentScore:s.content,
+        conversionScore:s.conversion,
+        popularityScore:s.trend,
+        saturationScore:s.saturation,
+        opportunityScore:s.score,
+        status:s.score>=55?'SHORTLISTED':'ANALYZED'
+      }
+    });
+
+    await prisma.affiliateOpportunity.create({
+      data:{
+        productId:product.id,
+        score:s.score,
+        status:'NEW',
+        recommendation:'Produto afiliado manualmente; pronto para campanha supervisionada.',
+        strategy:'Conteúdo + landing page + tracking',
+        requiresAction:false,
+        actionType:'CREATE_CAMPAIGN'
+      }
+    });
+
+    return product;
+  },
   async topProducts(take=50){ return prisma.affiliateProduct.findMany({take:Math.min(Math.max(take,1),200),orderBy:{opportunityScore:'desc'},include:{network:{select:{name:true,slug:true}},_count:{select:{campaigns:true,scores:true}}}}); },
   async opportunities(status?:string){ return prisma.affiliateOpportunity.findMany({where:status?{status}:undefined,orderBy:[{score:'desc'},{createdAt:'desc'}],take:200,include:{product:{include:{network:{select:{name:true,slug:true}}}}}}); },
   async createCampaign(input:any){
