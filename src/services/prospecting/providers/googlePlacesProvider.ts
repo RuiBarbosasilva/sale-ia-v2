@@ -19,8 +19,14 @@ export class GooglePlacesProvider implements BusinessProspectingProvider {
     this.enabled = process.env.GOOGLE_PLACES_ENABLED === 'true';
     this.language = process.env.GOOGLE_PLACES_LANGUAGE || 'pt-BR';
     this.region = process.env.GOOGLE_PLACES_REGION || 'BR';
-    this.maxResults = parseInt(process.env.GOOGLE_PLACES_MAX_RESULTS || '50', 10);
-    this.timeoutMs = parseInt(process.env.GOOGLE_PLACES_TIMEOUT_MS || '15000', 10);
+    const configuredMaxResults = Number.parseInt(process.env.GOOGLE_PLACES_MAX_RESULTS || '50', 10);
+    const configuredTimeoutMs = Number.parseInt(process.env.GOOGLE_PLACES_TIMEOUT_MS || '15000', 10);
+    this.maxResults = Number.isFinite(configuredMaxResults) && configuredMaxResults > 0
+      ? Math.min(configuredMaxResults, 60)
+      : 50;
+    this.timeoutMs = Number.isFinite(configuredTimeoutMs) && configuredTimeoutMs > 0
+      ? configuredTimeoutMs
+      : 15000;
   }
 
   getStatus(): ProspectingProviderStatus {
@@ -39,8 +45,12 @@ export class GooglePlacesProvider implements BusinessProspectingProvider {
     const baseUrl = 'https://maps.googleapis.com/maps/api/place/textsearch/json';
     
     const businesses: FoundBusiness[] = [];
+    const seenPlaceIds = new Set<string>();
+    const requestedMaxResults = Math.min(
+      request.maxResults && request.maxResults > 0 ? request.maxResults : this.maxResults,
+      60,
+    );
     let pageToken: string | undefined;
-    let totalFound = 0;
 
     try {
       do {
@@ -52,37 +62,54 @@ export class GooglePlacesProvider implements BusinessProspectingProvider {
         };
         if (pageToken) params.pagetoken = pageToken;
 
-        const response = await axios.get(baseUrl, {
-          params,
-          timeout: this.timeoutMs,
-        });
+        let data: any;
+        let tokenAttempts = 0;
 
-        const data = response.data;
-        
+        // Google pode devolver INVALID_REQUEST enquanto o next_page_token
+        // ainda está sendo ativado. Repetimos algumas vezes antes de falhar.
+        while (true) {
+          const response = await axios.get(baseUrl, {
+            params,
+            timeout: this.timeoutMs,
+          });
+
+          data = response.data;
+
+          if (data.status === 'INVALID_REQUEST' && pageToken && tokenAttempts < 3) {
+            tokenAttempts++;
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            continue;
+          }
+
+          break;
+        }
+
         if (data.status === 'OVER_QUERY_LIMIT' || data.status === 'REQUEST_DENIED') {
           throw new Error(`GOOGLE_PLACES_ERROR: ${data.status} - ${data.error_message || ''}`);
         }
 
         if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-          throw new Error(`GOOGLE_PLACES_ERROR: ${data.status}`);
+          throw new Error(`GOOGLE_PLACES_ERROR: ${data.status} - ${data.error_message || ''}`);
         }
-
-        totalFound = Math.max(totalFound, data.results?.length || 0);
 
         if (Array.isArray(data.results)) {
           for (const place of data.results) {
-            if (businesses.length >= (request.maxResults || this.maxResults)) break;
-            
+            if (businesses.length >= requestedMaxResults) break;
+
+            const placeId = String(place.place_id || '').trim();
+            if (placeId && seenPlaceIds.has(placeId)) continue;
+
+            if (placeId) seenPlaceIds.add(placeId);
             businesses.push(this.mapPlaceToBusiness(place, request));
           }
         }
 
         pageToken = data.next_page_token;
-        
-        if (pageToken) {
+
+        if (pageToken && businesses.length < requestedMaxResults) {
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
-      } while (pageToken && businesses.length < (request.maxResults || this.maxResults));
+      } while (pageToken && businesses.length < requestedMaxResults);
 
       return {
         provider: this.name,
