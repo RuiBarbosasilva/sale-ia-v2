@@ -8,5 +8,8 @@ router.post('/pipeline/prospect/:prospectId',rbFactorySalesController.create);
 router.get('/pipeline/prospect/:prospectId/models',rbFactorySalesController.models);
 router.post('/pipeline/prospect/:prospectId/demo',rbFactorySalesController.demo);
 router.post('/pipeline/prospect/:prospectId/proposal',rbFactorySalesController.proposal);
+router.post('/pipeline/prospect/:prospectId/proposal/send',rbFactorySalesController.sendProposal);
+router.post('/pipeline/prospect/:prospectId/lead',rbFactorySalesController.convertLead);
+router.post('/pipeline/prospect/:prospectId/proposal/accept',rbFactorySalesController.acceptProposal);
 router.patch('/pipeline/:id/stage',rbFactorySalesController.stage);
 export default router;
