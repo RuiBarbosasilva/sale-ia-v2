@@ -74,13 +74,21 @@ export class WebsiteDemoFactoryService {
         options.useAI !== false
       );
 
+      const qualityApproved =
+        result.qualityReview?.recommendation === 'approve' &&
+        Number(result.qualityReview?.overallScore || 0) >= 7.5 &&
+        !(result.qualityReview?.criticalIssues?.length);
+
       await prisma.websiteProspect.update({
         where: { id: prospectId },
-        data: { demoStatus: 'READY' },
+        data: { demoStatus: qualityApproved ? 'READY' : 'NEEDS_REVIEW' },
       });
 
-      await this.logEvent(prospectId, 'DEMO_READY', 
-        `Demo v${result.demo.version} gerada com score ${result.qualityReview.overallScore}`);
+      await this.logEvent(
+        prospectId,
+        qualityApproved ? 'DEMO_READY' : 'DEMO_NEEDS_REVIEW',
+        `Demo v${result.demo.version} gerada com score ${result.qualityReview.overallScore}${qualityApproved ? '' : ' e encaminhada para revisao de qualidade'}`
+      );
 
       return {
         success: true,
