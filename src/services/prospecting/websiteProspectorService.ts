@@ -7,6 +7,15 @@ import { websiteAuditService } from '../website/websiteAuditService';
 import { BusinessSearchRequest, WebsiteOpportunityStatus } from '../../types/prospecting.types';
 
 export class WebsiteProspectorService {
+  private isCommercialOpportunity(status: WebsiteOpportunityStatus): boolean {
+    return [
+      'NO_WEBSITE',
+      'WEBSITE_OFFLINE',
+      'WEBSITE_BROKEN',
+      'WEBSITE_OUTDATED',
+      'WEBSITE_NEEDS_IMPROVEMENT',
+    ].includes(status);
+  }
   
   async searchProspects(request: BusinessSearchRequest) {
     if (request.niche === 'ALL') {
@@ -626,6 +635,13 @@ export class WebsiteProspectorService {
     const seenPlaceIds = new Set<string>();
     const seenKeys = new Set<string>();
 
+    const normalizeDedupText = (value: string) =>
+      String(value || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]/g, '');
+
     let totalFound = 0;
     let totalQualified = 0;
     let totalDuplicates = 0;
@@ -672,11 +688,11 @@ export class WebsiteProspectorService {
               const rawPlaceId = originalBusiness.providerPlaceId;
 
               const rawKey =
-                ((originalBusiness.name || '').toLowerCase().trim()) +
+                normalizeDedupText(originalBusiness.name || '') +
                 '|' +
-                ((originalBusiness.address || '').toLowerCase().trim()) +
+                normalizeDedupText(originalBusiness.address || '') +
                 '|' +
-                ((originalBusiness.phone || '').replace(/\D/g, ''));
+                String(originalBusiness.phone || '').replace(/\D/g, '');
 
               // ------------------------------------------------
               // DEDUPLICAÇÃO DENTRO DA PRÓPRIA PESQUISA
@@ -728,11 +744,11 @@ export class WebsiteProspectorService {
               }
 
               const enrichedKey =
-                ((business.name || '').toLowerCase().trim()) +
+                normalizeDedupText(business.name || '') +
                 '|' +
-                ((business.address || '').toLowerCase().trim()) +
+                normalizeDedupText(business.address || '') +
                 '|' +
-                ((business.phone || '').replace(/\D/g, ''));
+                String(business.phone || '').replace(/\D/g, '');
 
               if (enrichedKey !== '||') {
                 seenKeys.add(enrichedKey);
@@ -895,7 +911,7 @@ export class WebsiteProspectorService {
                   totalAudited++;
                 }
 
-                if (websiteStatus.opportunityStatus !== 'WEBSITE_GOOD') {
+                if (this.isCommercialOpportunity(websiteStatus.opportunityStatus)) {
                   totalQualified++;
                 }
                 continue;
@@ -1026,7 +1042,7 @@ export class WebsiteProspectorService {
                 totalAudited++;
               }
 
-              if (websiteStatus.opportunityStatus !== 'WEBSITE_GOOD') {
+              if (this.isCommercialOpportunity(websiteStatus.opportunityStatus)) {
                 totalQualified++;
               }
 
