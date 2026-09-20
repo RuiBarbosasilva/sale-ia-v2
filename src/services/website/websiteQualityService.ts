@@ -124,6 +124,11 @@ Regras criticas:
         if (accCrit) accCrit.score = Math.min(accCrit.score, 6);
         issues.push('Cobertura alt abaixo de 80%');
       }
+      if (assets.qualityIssues?.length) {
+        issues.push(...assets.qualityIssues.slice(0, 5));
+        imgCrit.score = Math.min(imgCrit.score, 4);
+        imgCrit.feedback = 'Uma ou mais imagens do demo nao passaram na validacao';
+      }
       if (issues.length > 0) r.criticalIssues = [...(r.criticalIssues || []), ...issues];
     }
     // SEO: meta tags obrigatorias
