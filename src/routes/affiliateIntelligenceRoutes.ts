@@ -8,6 +8,7 @@ router.get('/networks',c.networks);
 router.post('/networks',c.createNetwork);
 router.patch('/networks/:id',c.updateNetwork);
 router.post('/networks/:id/products/ingest',c.ingestProducts);
+router.post('/networks/:id/affiliate-offers/import',c.importAffiliateOffer);
 router.get('/products',c.products);
 router.get('/opportunities',c.opportunities);
 router.get('/autonomy-plan',c.autonomyPlan);
