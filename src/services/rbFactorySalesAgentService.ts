@@ -73,7 +73,10 @@ export const rbFactorySalesAgentService = {
   },
   async dashboard(){
     const base=await seniorSalesAgentService.dashboard();
-    const rows=await (prisma as any).$queryRawUnsafe('SELECT stage, COUNT(*) count FROM "RbFactorySalesPipeline" GROUP BY stage ORDER BY stage');
-    return {...base,rbFactoryPipeline:rows};
+    const pipeline=await (prisma as any).$queryRawUnsafe('SELECT p.id,p.prospectId,p.stage,p.priority,p.nextAction,p.updatedAt,w.companyName,w.segment,w.city,w.phone,w.websiteOpportunityScore FROM "RbFactorySalesPipeline" p JOIN "WebsiteProspect" w ON w.id=p.prospectId WHERE p.status=\'OPEN\' ORDER BY p.priority DESC,p.updatedAt DESC LIMIT 100');
+    const stageCounts=await (prisma as any).$queryRawUnsafe('SELECT stage, COUNT(*) count FROM "RbFactorySalesPipeline" GROUP BY stage ORDER BY stage');
+    const pendingActions=await (prisma as any).$queryRawUnsafe('SELECT a.id,a.conversationId,a.type,a.title,a.payload,a.createdAt,c.context,c.stage,c.temperature FROM "SalesAction" a JOIN "SalesConversation" c ON c.id=a.conversationId WHERE a.status=\'PENDING_APPROVAL\' ORDER BY a.createdAt DESC LIMIT 100');
+    const pendingFollowUps=await (prisma as any).$queryRawUnsafe('SELECT f.id,f.conversationId,f.scheduledAt,f.reason,f.draft,c.context,c.stage,c.temperature FROM "SalesFollowUp" f JOIN "SalesConversation" c ON c.id=f.conversationId WHERE f.status=\'PENDING\' ORDER BY f.scheduledAt ASC LIMIT 100');
+    return {...base,rbFactoryPipeline:stageCounts,pipeline,pendingActions,pendingFollowUps};
   }
 };
