@@ -275,7 +275,11 @@ export const affiliateService = {
     return { destinationUrl: link.destinationUrl };
   },
 
-  async recordSale(input: { affiliateId?: string; linkCode?: string; externalOrderId?: string; amount: number; commissionRate?: number; source?: string; customerRef?: string; metadata?: unknown }) {
+  async recordSale(input: { affiliateId?: string; linkCode?: string; externalOrderId?: string; webhookEventId?: string; amount: number; commissionRate?: number; source?: string; customerRef?: string; metadata?: unknown }) {
+    if (input.webhookEventId) {
+      const existing = await prisma.affiliateSale.findUnique({ where: { webhookEventId: input.webhookEventId } });
+      if (existing) return existing;
+    }
     if (input.externalOrderId) {
       const existing = await prisma.affiliateSale.findUnique({ where: { externalOrderId: input.externalOrderId } });
       if (existing) return existing;
@@ -310,6 +314,7 @@ export const affiliateService = {
           affiliateId,
           linkId,
           externalOrderId: input.externalOrderId || null,
+          webhookEventId: input.webhookEventId || null,
           source: input.source || 'MANUAL',
           customerRef: input.customerRef || null,
           amount: Number(amount.toFixed(2)),
@@ -320,9 +325,15 @@ export const affiliateService = {
         },
       });
     } catch (error: any) {
-      if (error?.code === 'P2002' && input.externalOrderId) {
-        const existing = await prisma.affiliateSale.findUnique({ where: { externalOrderId: input.externalOrderId } });
-        if (existing) return existing;
+      if (error?.code === 'P2002') {
+        if (input.webhookEventId) {
+          const existing = await prisma.affiliateSale.findUnique({ where: { webhookEventId: input.webhookEventId } });
+          if (existing) return existing;
+        }
+        if (input.externalOrderId) {
+          const existing = await prisma.affiliateSale.findUnique({ where: { externalOrderId: input.externalOrderId } });
+          if (existing) return existing;
+        }
       }
       throw error;
     }
