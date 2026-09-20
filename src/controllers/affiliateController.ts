@@ -27,7 +27,7 @@ function handleError(res: Response, error: any) {
     AFFILIATE_REQUIRED: 400, AFFILIATE_BLOCKED: 403, LINK_NOT_FOUND: 404, LINK_CODE_EXISTS: 409, OFFER_NOT_FOUND: 404,
     OFFER_NAME_REQUIRED: 400, SALE_NOT_FOUND: 404, PAYOUT_NOT_FOUND: 404, NO_AVAILABLE_BALANCE: 400,
     INVALID_DESTINATION_URL: 400, INVALID_SALE_AMOUNT: 400, INVALID_COMMISSION_RATE: 400, INVALID_AFFILIATE_STATUS: 400,
-    INVALID_SALE_STATUS: 400, INVALID_PAYOUT_STATUS: 400, INVALID_SALE_STATUS_TRANSITION: 409,
+    INVALID_SALE_STATUS: 400, INVALID_PAYOUT_STATUS: 400, INVALID_SALE_STATUS_TRANSITION: 409, WEBHOOK_EVENT_ID_REQUIRED: 400,
     INVALID_PAYOUT_STATUS_TRANSITION: 409, SALE_ALLOCATED_TO_OPEN_PAYOUT: 409, PAYOUT_WITHOUT_ITEMS: 409,
     PAYOUT_SALES_NOT_AVAILABLE: 409, PAYOUT_SALES_CHANGED: 409, PAYOUT_AMOUNT_MISMATCH: 409, NAME_AND_EMAIL_REQUIRED: 400, INVALID_TAKE: 400,
   };
@@ -55,7 +55,17 @@ export const affiliateController = {
   async updateLink(req: Request, res: Response) { if (!adminGuard(req, res)) return; try { res.json({ success: true, link: await affiliateService.updateLink(req.params.id, req.body || {}) }); } catch (e) { handleError(res, e); } },
   async recordSale(req: Request, res: Response) { if (!adminGuard(req, res)) return; try { res.status(201).json({ success: true, sale: await affiliateService.recordSale(req.body || {}) }); } catch (e) { handleError(res, e); } },
   async sales(req: Request, res: Response) { if (!adminGuard(req, res)) return; try { res.json({ success: true, sales: await affiliateService.listSales({ affiliateId: req.query.affiliateId as string | undefined, status: req.query.status as string | undefined, source: req.query.source as string | undefined, take: (() => { const n = Number(req.query.take || 100); if (!Number.isInteger(n) || n < 1 || n > 100) throw new Error('INVALID_TAKE'); return n; })() }) }); } catch (e) { handleError(res, e); } },
-  async webhookSale(req: Request, res: Response) { const expected = process.env.AFFILIATE_WEBHOOK_KEY; if (!timingSafeSecret(expected, req.header('x-affiliate-webhook-key'))) return res.status(401).json({ success: false, error: 'WEBHOOK_UNAUTHORIZED', requestId: (req as any).requestId }); try { const sale = await affiliateService.recordSale({ ...(req.body || {}), source: req.body?.source || 'WEBHOOK' }); res.status(201).json({ success: true, sale, idempotent: Boolean(req.body?.externalOrderId && sale.externalOrderId === req.body.externalOrderId) }); } catch (e) { handleError(res, e); } },
+  async webhookSale(req: Request, res: Response) {
+    const expected = process.env.AFFILIATE_WEBHOOK_KEY;
+    if (!timingSafeSecret(expected, req.header('x-affiliate-webhook-key'))) return res.status(401).json({ success: false, error: 'WEBHOOK_UNAUTHORIZED', requestId: (req as any).requestId });
+    const eventId = req.header('x-affiliate-event-id')?.trim();
+    if (!eventId || eventId.length < 8 || eventId.length > 200) return res.status(400).json({ success: false, error: 'WEBHOOK_EVENT_ID_REQUIRED', requestId: (req as any).requestId });
+    try {
+      const sale = await affiliateService.recordSale({ ...(req.body || {}), webhookEventId: eventId, source: req.body?.source || 'WEBHOOK' });
+      const idempotent = sale.webhookEventId === eventId;
+      res.status(idempotent ? 200 : 201).json({ success: true, sale, idempotent });
+    } catch (e) { handleError(res, e); }
+  },
   async saleStatus(req: Request, res: Response) { if (!adminGuard(req, res)) return; try { res.json({ success: true, sale: await affiliateService.setSaleStatus(req.params.id, req.body.status) }); } catch (e) { handleError(res, e); } },
   async payoutStatus(req: Request, res: Response) { if (!adminGuard(req, res)) return; try { res.json({ success: true, payout: await affiliateService.setPayoutStatus(req.params.id, req.body.status, req.body.reference, req.body.notes) }); } catch (e) { handleError(res, e); } },
   async payouts(req: Request, res: Response) { if (!adminGuard(req, res)) return; try { res.json({ success: true, payouts: await affiliateService.listPayouts({ affiliateId: req.query.affiliateId as string | undefined, status: req.query.status as string | undefined }) }); } catch (e) { handleError(res, e); } },
