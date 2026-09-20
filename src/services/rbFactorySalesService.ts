@@ -5,6 +5,7 @@ import { proposalGeneratorService } from './proposalGeneratorService';
 import { selectBenchmarkModel } from './rbFactoryTemplateEngine';
 import { RB_BENCHMARK_CATALOG } from './rbFactoryBenchmarkCatalog';
 import { rbFactorySalesAgentService } from './rbFactorySalesAgentService';
+import { websiteCommercialService } from './websiteCommercialService';
 
 let initialized=false;
 async function init(){
@@ -86,10 +87,10 @@ export const rbFactorySalesService={
     return result;
   },
 
-  async buildProposal(prospectId:string){
+  async buildProposal(prospectId:string,planCode?:string,planId?:string){
     await init();
     await this.createFromProspect(prospectId);
-    const proposal=await proposalGeneratorService.generateProposal(prospectId);
+    const proposal=await proposalGeneratorService.generateProposal(prospectId,{planCode,planId});
     await (prisma as any).$executeRawUnsafe(`UPDATE "RbFactorySalesPipeline" SET stage='PROPOSAL_READY',proposalId=?,nextAction='CONTACT_PROSPECT',updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,proposal.id,prospectId);
     const salesAgent=await rbFactorySalesAgentService.prepareProposalApproach(prospectId,'WHATSAPP');
     return {...proposal,salesAgent};
@@ -158,25 +159,27 @@ export const rbFactorySalesService={
 
   async acceptProposal(prospectId:string,domainName?:string){
     await init();
-    const proposal=await prisma.websiteProposal.findFirst({where:{prospectId},orderBy:{id:'desc'}});
-    if(!proposal) throw new Error('WEBSITE_PROPOSAL_NOT_FOUND');
-    if(!['SENT','READY','ACCEPTED'].includes(proposal.status)) throw new Error('WEBSITE_PROPOSAL_NOT_ACCEPTABLE');
-    const demo=await prisma.websiteDemo.findFirst({where:{prospectId,status:{in:['APPROVED','READY']}},orderBy:{version:'desc'}});
-    if(!demo) throw new Error('DEMO_NOT_READY_FOR_PROJECT');
-    // Fechamento comercial vem antes da criação do projeto.
-    const accepted=proposal.status==='ACCEPTED' ? proposal : await prisma.websiteProposal.update({
-      where:{id:proposal.id},
-      data:{status:'ACCEPTED',acceptedAt:new Date()}
+
+    const proposal=await prisma.websiteProposal.findFirst({
+      where:{prospectId},
+      orderBy:{id:'desc'}
     });
-    const project=await websiteService.preparePublication(demo.id,domainName);
-    const lead=await this.convertToLead(prospectId);
-    await prisma.websiteProspect.update({where:{id:prospectId},data:{status:'ACCEPTED'}});
+
+    if(!proposal) throw new Error('WEBSITE_PROPOSAL_NOT_FOUND');
+    if(!['SENT','READY','ACCEPTED'].includes(proposal.status)) {
+      throw new Error('WEBSITE_PROPOSAL_NOT_ACCEPTABLE');
+    }
+
+    const result=await websiteCommercialService.acceptProposal(proposal.id,domainName);
+
     await (prisma as any).$executeRawUnsafe(
-      `UPDATE "RbFactorySalesPipeline" SET stage='WON',nextAction='PREPARE_PROJECT',updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,
-      prospectId
+      `UPDATE "RbFactorySalesPipeline" SET stage='WON',nextAction='PREPARE_PROJECT',proposalId=?,updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,
+      proposal.id,prospectId
     );
+
     await rbFactorySalesAgentService.closeSellerForProspect(prospectId,'WON');
-    return {proposal:accepted,lead,project};
+
+    return result;
   },
 
   async updateStage(idv:string,stage:string,nextAction?:string,notes?:string){
