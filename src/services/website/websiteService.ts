@@ -249,7 +249,11 @@ export class WebsiteService {
         prospectId,
         templateId: templateId || undefined,
         sourceCode: html,
-        status: 'READY',
+        status: (
+          resultQualityApproved(customData)
+            ? 'READY'
+            : 'NEEDS_REVIEW'
+        ),
         version,
         previewData: JSON.stringify({ briefing: customData, creatorType, useAI: aiUsed, generatedAt: new Date().toISOString() })
       }
@@ -352,7 +356,11 @@ export class WebsiteService {
         prospectId: demo.prospectId,
         templateId: demo.templateId || undefined,
         sourceCode: html,
-        status: 'READY',
+        status: (
+          qualityReview.recommendation === 'approve' &&
+          Number(qualityReview.overallScore || 0) >= 7.5 &&
+          !(qualityReview.criticalIssues?.length)
+        ) ? 'READY' : 'NEEDS_REVIEW',
         version,
         previewData: JSON.stringify({ briefing, creatorType, useAI: aiUsed, regeneratedFrom: demoId, mode, assets: assetsMeta, assetsSummary, qualityReview, prd: prevPd.prd, designSystem: prevPd.designSystem, generatedAt: new Date().toISOString() })
       }
@@ -522,7 +530,11 @@ export class WebsiteService {
       data: {
         prospectId,
         sourceCode: html,
-        status: 'READY',
+        status: (
+          qualityReview.recommendation === 'approve' &&
+          Number(qualityReview.overallScore || 0) >= 7.5 &&
+          !(qualityReview.criticalIssues?.length)
+        ) ? 'READY' : 'NEEDS_REVIEW',
         version,
         previewData: JSON.stringify({
           briefing, research, prd, designSystem, qualityReview, assets: imageResult.metadata, assetsSummary: assetsSummary,
@@ -732,7 +744,7 @@ export class WebsiteService {
   }
 }
 
-export const websiteService = new WebsiteService();
+\n// Compatibility guard for the legacy generate() path. The professional pipeline\n// performs the authoritative quality gate; this helper only prevents an unknown\n// quality payload from being marked READY.\nfunction resultQualityApproved(data: any): boolean {\n  const review = data?.qualityReview;\n  return !!review && review.recommendation === 'approve' && Number(review.overallScore || 0) >= 7.5 && !(review.criticalIssues?.length);\n}\n\nexport const websiteService = new WebsiteService();
 
 
 
