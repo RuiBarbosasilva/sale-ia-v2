@@ -7,7 +7,7 @@ on:
 
 # CI only needs to read repository contents. Keep the default token least-privileged.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   typecheck:
@@ -18,18 +18,6 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-      - name: Commit synchronized package lock
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json
-          if git diff --cached --quiet; then
-            echo "package-lock.json already synchronized"
-            exit 0
-          fi
-          git commit -m "chore: regenerate package lock"
-          git push
       - run: npm ci --no-audit --no-fund
       - run: npx prisma generate
       - run: npm run typecheck
