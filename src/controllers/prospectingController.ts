@@ -116,7 +116,7 @@ export const prospectingController = {
 
   async listProspects(req: Request, res: Response) {
     try {
-      const { city, state, niche, status, minScore, priority, limit, searchId } = req.query;
+      const { city, state, niche, status, minScore, priority, limit, searchId, opportunityOnly } = req.query;
 
       const prospects = await websiteProspectorService.getProspects({
         city: city as string,
@@ -126,6 +126,7 @@ export const prospectingController = {
         minScore: minScore ? parseInt(minScore as string) : undefined,
         priority: priority as string,
         searchId: searchId as string,
+        opportunityOnly: String(opportunityOnly).toLowerCase() === 'true',
         limit: limit ? parseInt(limit as string) : 50,
       });
 
