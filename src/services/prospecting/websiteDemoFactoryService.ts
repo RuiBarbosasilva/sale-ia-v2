@@ -155,6 +155,36 @@ export class WebsiteDemoFactoryService {
     };
   }
 
+  async recoverStaleJobs(maxAgeMinutes = 120): Promise<number> {
+    const cutoff = new Date(Date.now() - maxAgeMinutes * 60 * 1000);
+    const staleJobs = await prisma.websiteDemoJob.findMany({
+      where: {
+        status: 'RESEARCHING',
+        OR: [
+          { startedAt: { lt: cutoff } },
+          { startedAt: null, updatedAt: { lt: cutoff } },
+        ],
+      },
+      select: { id: true },
+    });
+
+    if (!staleJobs.length) return 0;
+
+    await prisma.websiteDemoJob.updateMany({
+      where: { id: { in: staleJobs.map(job => job.id) } },
+      data: {
+        status: 'QUEUED',
+        progress: 0,
+        currentStage: 'Recuperado apos interrupcao',
+        error: null,
+        startedAt: null,
+        completedAt: null,
+      },
+    });
+
+    return staleJobs.length;
+  }
+
   async processJob(jobId: string): Promise<void> {
     const job = await prisma.websiteDemoJob.findUnique({
       where: { id: jobId },
