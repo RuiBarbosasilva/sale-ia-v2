@@ -195,7 +195,7 @@ export class WebsiteProspectorService {
       });
 
       if (byPhoneCity) {
-        const storedPhone = String(byPhoneCity.phone || '').replace(/\\D/g, '');
+        const storedPhone = String(byPhoneCity.phone || '').replace(/\D/g, '');
         if (storedPhone && storedPhone === phone) return byPhoneCity;
       }
     }
@@ -226,31 +226,44 @@ export class WebsiteProspectorService {
     }
 
     // 4) Nome + endereço + cidade: fallback conservador.
-    // Não usar apenas nome + cidade, pois homônimos são comuns.
+    // A comparação é normalizada para tolerar acentos, pontuação e espaços.
+    // Não usamos apenas nome + cidade, pois homônimos e filiais são comuns.
     const name = String(business.name || '').trim();
     const address = String(business.address || '').trim();
 
     if (name && business.city && address) {
-      const candidates = await prisma.websiteProspect.findMany({
-        where: {
-          companyName: { equals: name },
-          city: { equals: business.city },
-        },
-        take: 10,
-      });
-
       const normalizeText = (value: string) =>
         value
           .toLowerCase()
           .normalize('NFD')
-          .replace(/[\\u0300-\\u036f]/g, '')
+          .replace(/[\u0300-\u036f]/g, '')
           .replace(/[^a-z0-9]/g, '');
 
+      const normalizedName = normalizeText(name);
       const normalizedAddress = normalizeText(address);
+      const normalizedCity = normalizeText(String(business.city));
+
+      // Busca candidatos da mesma cidade e compara nome/endereço em memória.
+      // Isso evita depender de igualdade textual do banco quando há acentos
+      // ou pequenas diferenças de formatação.
+      const candidates = await prisma.websiteProspect.findMany({
+        where: {
+          city: { equals: business.city },
+        },
+        take: 100,
+      });
 
       return candidates.find((candidate) => {
+        const candidateName = normalizeText(String(candidate.companyName || ''));
         const candidateAddress = normalizeText(String(candidate.address || ''));
-        return candidateAddress && candidateAddress === normalizedAddress;
+        const candidateCity = normalizeText(String(candidate.city || ''));
+
+        return (
+          candidateCity === normalizedCity &&
+          candidateName === normalizedName &&
+          candidateAddress &&
+          candidateAddress === normalizedAddress
+        );
       }) || null;
     }
 
