@@ -147,6 +147,24 @@ export const seniorSalesAgentService = {
     await (prisma as any).$executeRawUnsafe('UPDATE "SalesConversation" SET "nextBestAction"=\'SEND_PROPOSAL\',"updatedAt"=CURRENT_TIMESTAMP WHERE id=?',conversationId);
     return {conversationId,reused:false,action:{id:actionId,title:'Enviar proposta comercial',payload:JSON.stringify({reply,confidence,requiresApproval:true}),status:'PENDING_APPROVAL'},reply,confidence,requiresApproval:true,nextBestAction:'SEND_PROPOSAL'};
   },
+  async prepareDemoApproach(conversationId:string){
+    await init();
+    const c=await this.getConversation(conversationId);
+    let commercialContext:any=null; try{commercialContext=c.context?JSON.parse(c.context):null;}catch{}
+    const existing=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE conversationId=? AND type=\'SEND_MESSAGE\' AND title=\'Enviar demonstração comercial\' AND status IN (\'PENDING_APPROVAL\',\'APPROVED\',\'SENT\') ORDER BY createdAt DESC LIMIT 1',conversationId);
+    if(existing[0]) return {conversationId,reused:true,action:existing[0],requiresApproval:true,nextBestAction:'SEND_DEMO'};
+    const company=commercialContext?.prospect?.companyName||'sua empresa';
+    const prompt=JSON.stringify({task:'PREPARE_DEMO_COMMERCIAL_APPROACH',commercialContext,conversation:{stage:c.stage,temperature:c.temperature}});
+    const aiResult=await aiReply(prompt);
+    const reply=aiResult?.reply||('Olá! '+company+', preparei uma demonstração do novo site com base no perfil da empresa. Posso te enviar o link para você avaliar?');
+    const confidence=Number(aiResult?.confidence||75);
+    const actionId=id();
+    await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesConversationMessage" ("id","conversationId","role","content","intent","objection") VALUES (?,?,?,?,?,?)',id(),conversationId,'AGENT_DRAFT',reply,'DEMO',null);
+    await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesAction" ("id","conversationId","type","title","payload") VALUES (?,?,?,?,?)',actionId,conversationId,'SEND_MESSAGE','Enviar demonstração comercial',JSON.stringify({reply,confidence,requiresApproval:true}));
+    await (prisma as any).$executeRawUnsafe('UPDATE "SalesConversation" SET "nextBestAction"=\'SEND_DEMO\',"updatedAt"=CURRENT_TIMESTAMP WHERE id=?',conversationId);
+    return {conversationId,reused:false,action:{id:actionId,title:'Enviar demonstração comercial',payload:JSON.stringify({reply,confidence,requiresApproval:true}),status:'PENDING_APPROVAL'},reply,confidence,requiresApproval:true,nextBestAction:'SEND_DEMO'};
+  },
+
   async getConversationHistory(conversationId:string){
     await init();
     const conversation=await this.getConversation(conversationId);
