@@ -38,6 +38,15 @@ export const rbFactorySalesAgentService = {
     const draft=await seniorSalesAgentService.prepareInitialApproach(conversation.conversation.id);
     return {...conversation,draft,reused:false};
   },
+  async conversationHistory(prospectId:string,conversationId:string){
+    const context=await this.context(prospectId);
+    const conversation=await seniorSalesAgentService.getConversationHistory(conversationId);
+    if(conversation.context){
+      try{if(JSON.parse(conversation.context).prospect?.id!==prospectId) throw new Error('SALES_CONVERSATION_PROSPECT_MISMATCH');}
+      catch(e:any){if(e?.message==='SALES_CONVERSATION_PROSPECT_MISMATCH') throw e;}
+    }
+    return {conversation,commercialContext:context};
+  },
   async respond(prospectId:string,conversationId:string,message:string){
     const context=await this.context(prospectId);
     const conversation=await seniorSalesAgentService.getConversation(conversationId);
