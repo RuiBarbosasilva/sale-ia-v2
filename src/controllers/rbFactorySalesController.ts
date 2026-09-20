@@ -7,5 +7,8 @@ export const rbFactorySalesController={
   async models(req:Request,res:Response){res.json({success:true,models:await rbFactorySalesService.models(String(req.params.prospectId))});},
   async demo(req:Request,res:Response){res.json({success:true,...await rbFactorySalesService.buildDemo(String(req.params.prospectId),{niche:req.body?.niche,modelIndex:req.body?.modelIndex})});},
   async proposal(req:Request,res:Response){res.json({success:true,proposal:await rbFactorySalesService.buildProposal(String(req.params.prospectId))});},
+  async sendProposal(req:Request,res:Response){res.json({success:true,proposal:await rbFactorySalesService.sendProposal(String(req.params.prospectId))});},
+  async convertLead(req:Request,res:Response){res.json({success:true,lead:await rbFactorySalesService.convertToLead(String(req.params.prospectId))});},
+  async acceptProposal(req:Request,res:Response){res.json({success:true,...await rbFactorySalesService.acceptProposal(String(req.params.prospectId),req.body?.domainName)});},
   async stage(req:Request,res:Response){res.json({success:true,pipeline:await rbFactorySalesService.updateStage(String(req.params.id),String(req.body.stage||''),req.body.nextAction,req.body.notes)});}
 };
