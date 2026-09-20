@@ -55,7 +55,17 @@ export const affiliateController = {
   async updateLink(req: Request, res: Response) { if (!adminGuard(req, res)) return; try { res.json({ success: true, link: await affiliateService.updateLink(req.params.id, req.body || {}) }); } catch (e) { handleError(res, e); } },
   async recordSale(req: Request, res: Response) { if (!adminGuard(req, res)) return; try { res.status(201).json({ success: true, sale: await affiliateService.recordSale(req.body || {}) }); } catch (e) { handleError(res, e); } },
   async sales(req: Request, res: Response) { if (!adminGuard(req, res)) return; try { res.json({ success: true, sales: await affiliateService.listSales({ affiliateId: req.query.affiliateId as string | undefined, status: req.query.status as string | undefined, source: req.query.source as string | undefined, take: (() => { const n = Number(req.query.take || 100); if (!Number.isInteger(n) || n < 1 || n > 100) throw new Error('INVALID_TAKE'); return n; })() }) }); } catch (e) { handleError(res, e); } },
-  async webhookSale(req: Request, res: Response) { const expected = process.env.AFFILIATE_WEBHOOK_KEY; if (!timingSafeSecret(expected, req.header('x-affiliate-webhook-key'))) return res.status(401).json({ success: false, error: 'WEBHOOK_UNAUTHORIZED', requestId: (req as any).requestId }); try { const sale = await affiliateService.recordSale({ ...(req.body || {}), source: req.body?.source || 'WEBHOOK' }); res.status(201).json({ success: true, sale, idempotent: Boolean(req.body?.externalOrderId && sale.externalOrderId === req.body.externalOrderId) }); } catch (e) { handleError(res, e); } },
+  async webhookSale(req: Request, res: Response) {
+    const expected = process.env.AFFILIATE_WEBHOOK_KEY;
+    if (!timingSafeSecret(expected, req.header('x-affiliate-webhook-key'))) return res.status(401).json({ success: false, error: 'WEBHOOK_UNAUTHORIZED', requestId: (req as any).requestId });
+    const eventId = req.header('x-affiliate-event-id')?.trim();
+    if (!eventId || eventId.length < 8 || eventId.length > 200) return res.status(400).json({ success: false, error: 'WEBHOOK_EVENT_ID_REQUIRED', requestId: (req as any).requestId });
+    try {
+      const sale = await affiliateService.recordSale({ ...(req.body || {}), webhookEventId: eventId, source: req.body?.source || 'WEBHOOK' });
+      const idempotent = sale.webhookEventId === eventId;
+      res.status(idempotent ? 200 : 201).json({ success: true, sale, idempotent });
+    } catch (e) { handleError(res, e); }
+  },
   async saleStatus(req: Request, res: Response) { if (!adminGuard(req, res)) return; try { res.json({ success: true, sale: await affiliateService.setSaleStatus(req.params.id, req.body.status) }); } catch (e) { handleError(res, e); } },
   async payoutStatus(req: Request, res: Response) { if (!adminGuard(req, res)) return; try { res.json({ success: true, payout: await affiliateService.setPayoutStatus(req.params.id, req.body.status, req.body.reference, req.body.notes) }); } catch (e) { handleError(res, e); } },
   async payouts(req: Request, res: Response) { if (!adminGuard(req, res)) return; try { res.json({ success: true, payouts: await affiliateService.listPayouts({ affiliateId: req.query.affiliateId as string | undefined, status: req.query.status as string | undefined }) }); } catch (e) { handleError(res, e); } },
