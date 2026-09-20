@@ -448,7 +448,7 @@ export const prospectingController = {
 
   async getGroupedProspects(req: Request, res: Response) {
     try {
-      const filters = { city: req.query.city, state: req.query.state, niche: req.query.niche, status: req.query.status, priority: req.query.priority, minScore: req.query.minScore ? parseInt(String(req.query.minScore)) : undefined, searchId: req.query.searchId };
+      const filters = { city: req.query.city, state: req.query.state, niche: req.query.niche, status: req.query.status, priority: req.query.priority, minScore: req.query.minScore ? parseInt(String(req.query.minScore)) : undefined, searchId: req.query.searchId, opportunityOnly: String(req.query.opportunityOnly).toLowerCase() === 'true' };
       const grouped = await websiteProspectorService.getGroupedProspects(filters);
       res.json({ success: true, data: grouped, totalCities: grouped.length, totalProspects: grouped.reduce((s: number, c: any) => s + c.total, 0) });
     } catch (error: any) { res.status(500).json({ success: false, error: error.message }); }
