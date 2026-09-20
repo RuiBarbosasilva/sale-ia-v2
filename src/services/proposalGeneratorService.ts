@@ -163,6 +163,10 @@ RB Factory Sites
       orderBy: { id: 'desc' },
     });
 
+    if (existingProposal?.status === 'ACCEPTED') {
+      throw new Error('PROPOSAL_ALREADY_ACCEPTED: A proposta aceita nao pode ser sobrescrita');
+    }
+
     const proposal = existingProposal
       ? await prisma.websiteProposal.update({
           where: { id: existingProposal.id },
