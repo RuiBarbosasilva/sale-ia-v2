@@ -127,6 +127,12 @@ export const seniorSalesAgentService = {
     await (prisma as any).$executeRawUnsafe('UPDATE "SalesConversation" SET "nextBestAction"=\'SEND_FIRST_APPROACH\',"updatedAt"=CURRENT_TIMESTAMP WHERE id=?',conversationId);
     return {conversationId,reply,confidence,requiresApproval:true,nextBestAction:'SEND_FIRST_APPROACH'};
   },
+  async getConversationHistory(conversationId:string){
+    await init();
+    const conversation=await this.getConversation(conversationId);
+    const actions=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE conversationId=? ORDER BY createdAt DESC',conversationId);
+    return {...conversation,actions};
+  },
   async prepareActionChannel(actionId:string){
     await init();
     const rows=await (prisma as any).$queryRawUnsafe('SELECT a.*,c.channel,c.context FROM "SalesAction" a JOIN "SalesConversation" c ON c.id=a.conversationId WHERE a.id=? LIMIT 1',actionId);
