@@ -381,40 +381,64 @@ export const affiliateService = {
   },
 
   async requestPayout(affiliateId: string, method?: string) {
-    return prisma.$transaction(async (tx) => {
-      const affiliate = await tx.affiliate.findUnique({ where: { id: affiliateId } });
-      if (!affiliate) throw new Error('AFFILIATE_NOT_FOUND');
-      if (affiliate.status === 'BLOCKED') throw new Error('AFFILIATE_BLOCKED');
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const affiliate = await tx.affiliate.findUnique({ where: { id: affiliateId } });
+        if (!affiliate) throw new Error('AFFILIATE_NOT_FOUND');
+        if (affiliate.status === 'BLOCKED') throw new Error('AFFILIATE_BLOCKED');
 
-      const approvedSales = await tx.affiliateSale.findMany({
-        where: {
-          affiliateId,
-          status: 'APPROVED',
-          payoutItems: { none: { payout: { status: { in: ['REQUESTED', 'PROCESSING'] } } } },
-        },
-        orderBy: { approvedAt: 'asc' },
-        select: { id: true, commissionAmount: true },
-      });
+        // Idempotency for repeated requests: if an open payout already exists,
+        // return it instead of creating a second payout for the same balance.
+        const existingOpen = await tx.affiliatePayout.findFirst({
+          where: { affiliateId, status: { in: ['REQUESTED', 'PROCESSING'] } },
+          orderBy: { requestedAt: 'desc' },
+          include: { items: true },
+        });
+        if (existingOpen) return existingOpen;
 
-      const available = approvedSales.reduce((sum, sale) => sum + Number(sale.commissionAmount || 0), 0);
-      if (available <= 0) throw new Error('NO_AVAILABLE_BALANCE');
-
-      return tx.affiliatePayout.create({
-        data: {
-          affiliateId,
-          amount: Number(available.toFixed(2)),
-          method: method?.trim() || null,
-          status: 'REQUESTED',
-          items: {
-            create: approvedSales.map((sale) => ({
-              saleId: sale.id,
-              amount: Number(Number(sale.commissionAmount || 0).toFixed(2)),
-            })),
+        const approvedSales = await tx.affiliateSale.findMany({
+          where: {
+            affiliateId,
+            status: 'APPROVED',
+            payoutItems: { none: { payout: { status: { in: ['REQUESTED', 'PROCESSING'] } } } },
           },
-        },
-        include: { items: true },
+          orderBy: { approvedAt: 'asc' },
+          select: { id: true, commissionAmount: true },
+        });
+
+        const available = approvedSales.reduce((sum, sale) => sum + Number(sale.commissionAmount || 0), 0);
+        if (available <= 0) throw new Error('NO_AVAILABLE_BALANCE');
+
+        return tx.affiliatePayout.create({
+          data: {
+            affiliateId,
+            amount: Number(available.toFixed(2)),
+            method: method?.trim() || null,
+            status: 'REQUESTED',
+            items: {
+              create: approvedSales.map((sale) => ({
+                saleId: sale.id,
+                amount: Number(Number(sale.commissionAmount || 0).toFixed(2)),
+              })),
+            },
+          },
+          include: { items: true },
+        });
       });
-    });
+    } catch (error: any) {
+      // PR33's unique saleId constraint is the database-level race barrier.
+      // If two requests race, the loser can safely return the payout created
+      // by the winner instead of leaking a raw Prisma P2002 to the caller.
+      if (error?.code === 'P2002') {
+        const existingOpen = await prisma.affiliatePayout.findFirst({
+          where: { affiliateId, status: { in: ['REQUESTED', 'PROCESSING'] } },
+          orderBy: { requestedAt: 'desc' },
+          include: { items: true },
+        });
+        if (existingOpen) return existingOpen;
+      }
+      throw error;
+    }
   },
 
   async setPayoutStatus(id: string, status: PayoutStatus, reference?: string, notes?: string) {
