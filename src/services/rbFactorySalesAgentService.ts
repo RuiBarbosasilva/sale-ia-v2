@@ -136,6 +136,25 @@ export const rbFactorySalesAgentService = {
         row.stage==='NEGOTIATION'?'NEGOTIATION':row.stage
     }));
   },
+  async prepareNextSellerAction(){
+    const queue=await this.sellerQueue(1);
+    const item=queue[0];
+    if(!item) return {available:false,created:false,nextAction:null};
+    const prospectId=String(item.prospectId);
+    const stage=String(item.stage);
+    const nextAction=String(item.nextAction||'');
+    const conversation=await this.ensureConversation(prospectId,'WHATSAPP');
+    const conversationId=conversation.conversation.id;
+    const pending=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE conversationId=? AND status IN (\'PENDING_APPROVAL\',\'APPROVED\') ORDER BY createdAt DESC LIMIT 1',conversationId);
+    if(pending[0]) return {available:true,created:false,item,conversationId,action:pending[0],reason:'EXISTING_ACTION'};
+    const pendingFollow=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesFollowUp" WHERE conversationId=? AND status=\'PENDING\' ORDER BY scheduledAt ASC LIMIT 1',conversationId);
+    if(pendingFollow[0]) return {available:true,created:false,item,conversationId,followUp:pendingFollow[0],reason:'EXISTING_FOLLOW_UP'};
+    let draft:any;
+    if(stage==='DISCOVERED'||stage==='AUDITED') draft=await seniorSalesAgentService.prepareInitialApproach(conversationId);
+    else if(stage==='PROPOSAL_READY'||nextAction==='FOLLOW_UP_PROPOSAL') draft=await seniorSalesAgentService.prepareProposalApproach(conversationId);
+    else return {available:true,created:false,item,conversationId,reason:'WAITING_FOR_CUSTOMER_OR_NEXT_EVENT'};
+    return {available:true,created:true,item,conversationId,draft};
+  },
   async nextSellerAction(){
     const queue=await this.sellerQueue(1);
     const item=queue[0];
