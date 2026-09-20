@@ -9,5 +9,6 @@ export const rbFactorySalesAgentController={
   },
   async dashboard(_req:Request,res:Response){try{res.json({success:true,...await rbFactorySalesAgentService.dashboard()});}catch(e){return rbFactorySalesAgentController.errors(e,res);}},
   async create(req:Request,res:Response){try{res.status(201).json({success:true,...await rbFactorySalesAgentService.createConversation(String(req.params.prospectId),String(req.body?.channel||'WHATSAPP'))});}catch(e){return rbFactorySalesAgentController.errors(e,res);}},
+  async initialApproach(req:Request,res:Response){try{res.json({success:true,...await rbFactorySalesAgentService.prepareInitialApproach(String(req.params.prospectId),String(req.body?.channel||'WHATSAPP'))});}catch(e){return rbFactorySalesAgentController.errors(e,res);}},
   async respond(req:Request,res:Response){try{res.json({success:true,...await rbFactorySalesAgentService.respond(String(req.params.prospectId),String(req.params.conversationId),String(req.body?.message||''))});}catch(e){return rbFactorySalesAgentController.errors(e,res);}}
 };
