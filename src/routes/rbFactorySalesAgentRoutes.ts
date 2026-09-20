@@ -5,5 +5,6 @@ const router=Router();
 router.use(adminAuthorization);
 router.get('/dashboard',rbFactorySalesAgentController.dashboard);
 router.post('/prospect/:prospectId/conversations',rbFactorySalesAgentController.create);
+router.post('/prospect/:prospectId/initial-approach',rbFactorySalesAgentController.initialApproach);
 router.post('/prospect/:prospectId/conversations/:conversationId/respond',rbFactorySalesAgentController.respond);
 export default router;
