@@ -334,6 +334,51 @@ export const prospectingController = {
     }
   },
 
+  async getWorkflow(req: Request, res: Response) {
+    try {
+      const [prospects, demos, readyDemos, outreaches, sentOutreaches] = await Promise.all([
+        prisma.websiteProspect.count(),
+        prisma.websiteDemo.count(),
+        prisma.websiteDemo.count({ where: { status: 'READY' } }),
+        prisma.websiteOutreach.count(),
+        prisma.websiteOutreach.count({ where: { status: 'SENT' } }),
+      ]);
+
+      const [noWebsite, websiteOpportunity, demoReady, contacted] = await Promise.all([
+        prisma.websiteProspect.count({ where: { websiteOpportunityStatus: 'NO_WEBSITE' } }),
+        prisma.websiteProspect.count({
+          where: {
+            websiteOpportunityStatus: {
+              in: ['WEBSITE_OFFLINE', 'WEBSITE_BROKEN', 'WEBSITE_OUTDATED', 'WEBSITE_NEEDS_IMPROVEMENT'],
+            },
+          },
+        }),
+        prisma.websiteProspect.count({ where: { demoStatus: 'READY' } }),
+        prisma.websiteProspect.count({ where: { contactedAt: { not: null } } }),
+      ]);
+
+      return res.json({
+        success: true,
+        workflow: {
+          discovered: prospects,
+          opportunities: websiteOpportunity + noWebsite,
+          demos: readyDemos,
+          contacted,
+          outreach: { prepared: outreaches, sent: sentOutreaches },
+        },
+        totals: { prospects, demos, readyDemos },
+        stages: {
+          noWebsite,
+          websiteOpportunity,
+          demoReady,
+          contacted,
+        },
+      });
+    } catch (error: any) {
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  },
+
   async getStats(req: Request, res: Response) {
     try {
       const stats = await websiteProspectorService.getStats();
