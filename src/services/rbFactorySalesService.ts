@@ -4,6 +4,7 @@ import { websiteService } from './website/websiteService';
 import { proposalGeneratorService } from './proposalGeneratorService';
 import { selectBenchmarkModel } from './rbFactoryTemplateEngine';
 import { RB_BENCHMARK_CATALOG } from './rbFactoryBenchmarkCatalog';
+import { rbFactorySalesAgentService } from './rbFactorySalesAgentService';
 
 let initialized=false;
 async function init(){
@@ -107,7 +108,8 @@ export const rbFactorySalesService={
       `UPDATE "RbFactorySalesPipeline" SET stage='CONTACTED',nextAction='FOLLOW_UP_PROPOSAL',proposalId=?,updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,
       updated.id,prospectId
     );
-    return updated;
+    const salesAgent=await rbFactorySalesAgentService.ensureConversation(prospectId,'WHATSAPP');
+    return {...updated,salesAgent:{conversationId:salesAgent.conversation.id,reused:salesAgent.reused}};
   },
 
   async convertToLead(prospectId:string){
