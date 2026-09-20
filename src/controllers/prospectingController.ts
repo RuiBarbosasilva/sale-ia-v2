@@ -70,6 +70,8 @@ export const prospectingController = {
         totalUpdated: result.totalUpdated ?? 0,
         totalDuplicates: result.totalDuplicates ?? 0,
         totalAudited: result.totalAudited ?? 0,
+        failedNiches: result.failedNiches ?? [],
+        failedNichesCount: result.failedNichesCount ?? 0,
       });
     } catch (error: any) {
       const statusCode = error.message.includes('NOT_CONFIGURED') ? 503 : 500;
