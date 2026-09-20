@@ -155,7 +155,9 @@ export class WebsiteProspectorService {
         totalCreated: createdCount,
         totalUpdated: updatedCount,
         totalAudited: auditedCount,
-        nichesSearched: 1
+        nichesSearched: 1,
+        failedNiches: [],
+        failedNichesCount: 0
       };
     } catch (error: any) {
       await prisma.websiteProspectingSearch.update({
