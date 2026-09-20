@@ -6,7 +6,8 @@ import { businessProspectingManager } from './providers/businessProspectingManag
 import { websiteAuditService } from '../website/websiteAuditService';
 import { BusinessSearchRequest, WebsiteOpportunityStatus } from '../../types/prospecting.types';
 
-export class WebsiteProspectorService {\n  private async handoffQualifiedProspectToSeller(prospectId:string){
+export class WebsiteProspectorService {
+  private async handoffQualifiedProspectToSeller(prospectId:string){
     try{
       const { rbFactorySalesService } = await import('../rbFactorySalesService');
       const { rbFactorySalesAgentService } = await import('../rbFactorySalesAgentService');
@@ -58,7 +59,9 @@ export class WebsiteProspectorService {\n  private async handoffQualifiedProspec
       let createdCount = 0;
       let updatedCount = 0;
       let duplicateCount = 0;
-      let auditedCount = 0;\n      let sellerHandoffs = 0;\n      let sellerHandoffFailures = 0;
+      let auditedCount = 0;
+      let sellerHandoffs = 0;
+      let sellerHandoffFailures = 0;
       
       for (const business of result.businesses) {
         const enrichedBusiness = await this.enrichBusinessWithDetails(business);
@@ -117,7 +120,8 @@ export class WebsiteProspectorService {\n  private async handoffQualifiedProspec
             'WEBSITE_OUTDATED',
             'WEBSITE_NEEDS_IMPROVEMENT',
           ].includes(websiteStatus.opportunityStatus)) {
-            qualifiedCount++;\n            if (business.phone) { const handoff=await this.handoffQualifiedProspectToSeller(existing.id); if(handoff.handoffStatus==='READY_FOR_APPROVAL') sellerHandoffs++; else sellerHandoffFailures++; }
+            qualifiedCount++;
+            if (business.phone) { const handoff=await this.handoffQualifiedProspectToSeller(existing.id); if(handoff.handoffStatus==='READY_FOR_APPROVAL') sellerHandoffs++; else sellerHandoffFailures++; }
           }
           continue;
         }
@@ -172,7 +176,8 @@ export class WebsiteProspectorService {\n  private async handoffQualifiedProspec
           'WEBSITE_OUTDATED',
           'WEBSITE_NEEDS_IMPROVEMENT',
         ].includes(websiteStatus.opportunityStatus)) {
-          qualifiedCount++;\n          if (business.phone) { const handoff=await this.handoffQualifiedProspectToSeller(prospect.id); if(handoff.handoffStatus==='READY_FOR_APPROVAL') sellerHandoffs++; else sellerHandoffFailures++; }
+          qualifiedCount++;
+          if (business.phone) { const handoff=await this.handoffQualifiedProspectToSeller(prospect.id); if(handoff.handoffStatus==='READY_FOR_APPROVAL') sellerHandoffs++; else sellerHandoffFailures++; }
         }
       }
 
@@ -196,7 +201,10 @@ export class WebsiteProspectorService {\n  private async handoffQualifiedProspec
         totalAudited: auditedCount,
         nichesSearched: 1,
         failedNiches: [],
-        failedNichesCount: 0,\n        sellerHandoffs,\n        sellerHandoffFailures\n      };
+        failedNichesCount: 0,
+        sellerHandoffs,
+        sellerHandoffFailures
+      };
     } catch (error: any) {
       await prisma.websiteProspectingSearch.update({
         where: { id: search.id },
