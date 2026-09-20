@@ -413,13 +413,8 @@ export const websiteStudioController = {
         data: { status: 'APPROVED' },
       });
 
-      // Aprovação comercial deve deixar o projeto pronto para a próxima etapa,
-      // sem fingir que houve publicação/deploy. A publicação continua explícita.
-      const project = await websiteService.preparePublication(
-        approvedDemo.id,
-        req.body?.domainName
-      );
-
+      // Aprovar a demo não significa venda fechada.
+      // O projeto só deve ser criado após a aceitação comercial da proposta.
       await prisma.websiteProspect.update({
         where: { id: approvedDemo.prospectId },
         data: { status: 'APPROVED' },
@@ -430,8 +425,7 @@ export const websiteStudioController = {
         demoId: approvedDemo.id,
         prospectId: approvedDemo.prospectId,
         status: approvedDemo.status,
-        projectId: project.id,
-        publicationStatus: 'READY_TO_PUBLISH',
+        publicationStatus: 'AWAITING_COMMERCIAL_ACCEPTANCE',
       });
     } catch (e: any) {
       console.error('[Studio] approve:', e.message);
