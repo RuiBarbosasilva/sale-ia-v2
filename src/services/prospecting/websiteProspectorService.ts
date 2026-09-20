@@ -440,6 +440,18 @@ export class WebsiteProspectorService {
       where.websiteOpportunityStatus = filters.status;
     }
 
+    if (filters.opportunityOnly === true) {
+      where.websiteOpportunityStatus = {
+        in: [
+          'NO_WEBSITE',
+          'WEBSITE_OFFLINE',
+          'WEBSITE_BROKEN',
+          'WEBSITE_OUTDATED',
+          'WEBSITE_NEEDS_IMPROVEMENT',
+        ],
+      };
+    }
+
     if (filters.priority) {
       where.priority = filters.priority;
     }
