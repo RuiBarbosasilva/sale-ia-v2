@@ -15,7 +15,7 @@ export class OpenverseImageProvider implements ImageProvider {
       });
 
       return (res.data?.results || []).map((p: any) => ({
-        url: p.thumbnail || p.url || '',
+        url: p.url || p.thumbnail || '',
         width: Number(p.width || 0),
         height: Number(p.height || 0),
         author: p.creator || '',
