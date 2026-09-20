@@ -154,7 +154,7 @@ export const rbFactorySalesService={
       where:{id:proposal.id},
       data:{status:'ACCEPTED',acceptedAt:new Date()}
     });
-    const demo=await prisma.websiteDemo.findFirst({where:{prospectId,status:'READY'},orderBy:{version:'desc'}});
+    const demo=await prisma.websiteDemo.findFirst({where:{prospectId,status:{in:['APPROVED','READY']}},orderBy:{version:'desc'}});
     if(!demo) throw new Error('DEMO_NOT_READY_FOR_PROJECT');
     const project=await websiteService.preparePublication(demo.id,domainName);
     await prisma.websiteProspect.update({where:{id:prospectId},data:{status:'ACCEPTED'}});
