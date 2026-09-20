@@ -9,4 +9,5 @@ router.post('/conversations/:id/respond',seniorSalesController.respond);
 router.post('/conversations/:id/follow-ups',seniorSalesController.followUp);
 router.post('/actions/:id/approve',seniorSalesController.approveAction);
 router.post('/actions/:id/reject',seniorSalesController.rejectAction);
+router.post('/actions/:id/mark-sent',seniorSalesController.markActionSent);
 export default router;
