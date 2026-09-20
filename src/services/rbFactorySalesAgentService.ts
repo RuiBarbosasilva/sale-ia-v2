@@ -96,6 +96,34 @@ export const rbFactorySalesAgentService = {
     const rows=await (prisma as any).$queryRawUnsafe('SELECT f.id,f.conversationId,f.scheduledAt,f.reason,f.draft,c.context,c.stage,c.temperature FROM "SalesFollowUp" f JOIN "SalesConversation" c ON c.id=f.conversationId WHERE f.status=\'PENDING\' AND datetime(f.scheduledAt)<=datetime(\'now\') AND c.status=\'OPEN\' ORDER BY f.scheduledAt ASC LIMIT ?',(Number.isFinite(limit)?Math.min(100,Math.max(1,limit)):50));
     return rows.map((row:any)=>{let ctx:any={};try{ctx=row.context?JSON.parse(row.context):{};}catch{} return {...row,context:undefined,companyName:ctx?.prospect?.companyName||null,prospectId:ctx?.prospect?.id||null,phone:ctx?.prospect?.phone||null};});
   },
+  async sellerQueue(limit=50){
+    const safeLimit=Number.isFinite(limit)?Math.min(100,Math.max(1,limit)):50;
+    const rows=await (prisma as any).$queryRawUnsafe(`
+      SELECT p.id,p.prospectId,p.stage,p.priority,p.nextAction,p.updatedAt,
+             w.companyName,w.segment,w.city,w.phone,w.websiteOpportunityScore,
+             c.id conversationId,c.status conversationStatus,c.temperature,c.intentScore
+      FROM "RbFactorySalesPipeline" p
+      JOIN "WebsiteProspect" w ON w.id=p.prospectId
+      LEFT JOIN "SalesConversation" c ON c.id=(
+        SELECT c2.id FROM "SalesConversation" c2
+        WHERE c2.context LIKE '%' || p.prospectId || '%' ORDER BY c2.createdAt DESC LIMIT 1
+      )
+      WHERE p.status='OPEN' AND p.stage NOT IN ('WON','LOST')
+      ORDER BY
+        CASE WHEN p.nextAction='ASK_FOR_CLOSE' THEN 1
+             WHEN p.nextAction='INVESTIGATE_OBJECTION' THEN 2
+             WHEN p.nextAction='FOLLOW_UP' THEN 3
+             WHEN p.stage='PROPOSAL_READY' THEN 4
+             WHEN p.stage='DEMO_READY' THEN 5 ELSE 6 END,
+        p.priority DESC,p.updatedAt DESC
+      LIMIT ?`,safeLimit);
+    return rows.map((row:any)=>({
+      ...row,
+      sellerState:row.stage==='DISCOVERED'||row.stage==='AUDITED'?'APPROACH_PENDING':
+        row.stage==='CONTACTED'?'WAITING_REPLY':
+        row.stage==='NEGOTIATION'?'NEGOTIATION':row.stage
+    }));
+  },
   async dashboard(){
     const base=await seniorSalesAgentService.dashboard();
     const pipeline=await (prisma as any).$queryRawUnsafe('SELECT p.id,p.prospectId,p.stage,p.priority,p.nextAction,p.updatedAt,w.companyName,w.segment,w.city,w.phone,w.websiteOpportunityScore FROM "RbFactorySalesPipeline" p JOIN "WebsiteProspect" w ON w.id=p.prospectId WHERE p.status=\'OPEN\' ORDER BY p.priority DESC,p.updatedAt DESC LIMIT 100');
