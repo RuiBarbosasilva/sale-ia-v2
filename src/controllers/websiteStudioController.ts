@@ -194,6 +194,25 @@ export const websiteStudioController = {
     }
   },
 
+  // ---------- REPARO DE IMAGENS ----------
+  async repairImages(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const newDemo = await websiteService.repairDemoImages(id);
+      res.json({
+        success: true,
+        demoId: newDemo.id,
+        version: newDemo.version,
+        repairedFrom: id,
+        previewUrl: `/api/websites/studio/demos/${newDemo.id}/html`,
+        exportUrl: `/api/websites/studio/demos/${newDemo.id}/export`
+      });
+    } catch (e: any) {
+      console.error('[Studio] repairImages:', e.message);
+      res.status(e.message.includes('não encontrada') ? 404 : 500).json({ success: false, error: e.message });
+    }
+  },
+
   // ---------- PREVIEW (HTML isolado para iframe) ----------
   async getHtml(req: Request, res: Response) {
     try {
