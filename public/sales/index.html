@@ -18,7 +18,15 @@ pre{white-space:pre-wrap;max-width:500px}
 <div class="panel"><h2>Ações aguardando aprovação</h2><div id="actions"></div></div>
 <div class="panel"><h2>Próximos follow-ups</h2><div id="followups"></div></div>
 <script>
-async function api(u){const r=await fetch(u);if(!r.ok)throw new Error(await r.text());return r.json()}
+async function api(u,opts={}){
+ const key=localStorage.getItem('saleIaAdminKey')||'';
+ const headers=Object.assign({},opts.headers||{},key?{'x-sale-ia-admin-key':key}:{});
+ const r=await fetch(u,Object.assign({},opts,{headers}));
+ if(r.status===401){const entered=prompt('Chave administrativa do Sale-IA:');if(entered){localStorage.setItem('saleIaAdminKey',entered);return api(u,opts)}}
+ if(!r.ok)throw new Error(await r.text());return r.json()
+}
+async function approve(id){await api('/api/rb-factory-sales-agent/actions/'+encodeURIComponent(id)+'/approve',{method:'POST'});load()}
+async function rejectAction(id){const reason=prompt('Motivo da rejeição:')||'REJECTED_BY_OPERATOR';await api('/api/rb-factory-sales-agent/actions/'+encodeURIComponent(id)+'/reject',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason})});load()}
 function esc(v){return String(v??'').replace(/[&<>"]/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[x]))}
 function table(rows,cols){if(!rows?.length)return '<p class="muted">Nenhum item.</p>';return '<table><tr>'+cols.map(x=>'<th>'+esc(x[1])+'</th>').join('')+'</tr>'+rows.map(r=>'<tr>'+cols.map(x=>'<td>'+esc(typeof x[0]==='function'?x[0](r):r[x[0]])+'</td>').join('')+'</tr>').join('')+'</table>'}
 async function load(){
