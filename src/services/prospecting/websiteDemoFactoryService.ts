@@ -110,22 +110,42 @@ export class WebsiteDemoFactoryService {
   }
 
   async generateDemosBatch(prospectIds: string[]): Promise<any> {
-    const jobs: any[] = [];
+    const uniqueIds = [...new Set(prospectIds.map(String).map(id => id.trim()).filter(Boolean))];
+    if (!uniqueIds.length) throw new Error('PROSPECT_IDS_OBRIGATORIOS');
 
-    for (const prospectId of prospectIds) {
-      const job = await prisma.websiteDemoJob.create({
-        data: {
+    const prospects = await prisma.websiteProspect.findMany({
+      where: { id: { in: uniqueIds } },
+      select: { id: true },
+    });
+    const existingIds = new Set(prospects.map(p => p.id));
+    const missingIds = uniqueIds.filter(id => !existingIds.has(id));
+    if (missingIds.length) throw new Error('PROSPECT_NOT_FOUND');
+
+    const jobs: any[] = [];
+    for (const prospectId of uniqueIds) {
+      const activeJob = await prisma.websiteDemoJob.findFirst({
+        where: {
           prospectId,
-          status: 'QUEUED',
-          priority: 5,
+          status: { in: ['QUEUED', 'RESEARCHING'] },
         },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (activeJob) {
+        jobs.push(activeJob);
+        continue;
+      }
+
+      const job = await prisma.websiteDemoJob.create({
+        data: { prospectId, status: 'QUEUED', priority: 5 },
       });
       jobs.push(job);
     }
 
     return {
-      queuedJobs: jobs.length,
+      queuedJobs: jobs.filter(j => j.status === 'QUEUED').length,
+      reusedJobs: jobs.filter(j => j.status !== 'QUEUED').length,
       jobIds: jobs.map(j => j.id),
+      uniqueProspects: uniqueIds.length,
     };
   }
 
