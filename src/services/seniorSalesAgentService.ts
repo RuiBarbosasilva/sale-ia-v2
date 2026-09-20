@@ -29,7 +29,7 @@ async function init() {
     CREATE TABLE IF NOT EXISTS "SalesAction" (
       "id" TEXT PRIMARY KEY NOT NULL, "conversationId" TEXT NOT NULL, "type" TEXT NOT NULL,
       "title" TEXT NOT NULL, "payload" TEXT, "requiresApproval" INTEGER NOT NULL DEFAULT 1,
-      "status" TEXT NOT NULL DEFAULT 'PENDING_APPROVAL', "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      "status" TEXT NOT NULL DEFAULT 'PENDING_APPROVAL', "approvedAt" DATETIME, "sentAt" DATETIME, "decisionNote" TEXT, "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
     CREATE TABLE IF NOT EXISTS "SalesObjection" (
       "id" TEXT PRIMARY KEY NOT NULL, "conversationId" TEXT NOT NULL, "type" TEXT NOT NULL,
@@ -134,6 +134,14 @@ export const seniorSalesAgentService = {
     if(!action) throw new Error('SALES_ACTION_NOT_FOUND');
     if(action.status!=='PENDING_APPROVAL') throw new Error('SALES_ACTION_NOT_PENDING');
     await (prisma as any).$executeRawUnsafe('UPDATE "SalesAction" SET status=\'APPROVED\' WHERE id=?',actionId);
+    return (await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE id=?',actionId))[0];
+  },
+  async markActionSent(actionId:string,metadata?:any){
+    await init();
+    const rows=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE id=? LIMIT 1',actionId);
+    if(!rows[0]) throw new Error('SALES_ACTION_NOT_FOUND');
+    if(rows[0].status!=='APPROVED') throw new Error('SALES_ACTION_NOT_APPROVED');
+    await (prisma as any).$executeRawUnsafe('UPDATE "SalesAction" SET status=\'SENT\',sentAt=CURRENT_TIMESTAMP,decisionNote=? WHERE id=?',metadata?JSON.stringify(metadata):null,actionId);
     return (await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE id=?',actionId))[0];
   },
   async rejectAction(actionId:string,reason?:string){
