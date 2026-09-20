@@ -21,7 +21,7 @@ export const rbFactorySalesAgentService = {
   },
   async ensureConversation(prospectId:string,channel='WHATSAPP'){
     const context=await this.context(prospectId);
-    const rows=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesConversation" WHERE channel=? AND context LIKE ? ORDER BY createdAt DESC LIMIT 1',channel,`%\\"id\\":\\"${prospectId}\\"%`);
+    const rows=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesConversation" WHERE channel=? AND context LIKE ? ORDER BY createdAt DESC LIMIT 1',channel,`%"id":"${prospectId}"%`);
     if(rows[0]) return {conversation:await seniorSalesAgentService.getConversation(rows[0].id),commercialContext:context,reused:true};
     const c=await seniorSalesAgentService.createConversation({channel,leadId:context.lead?.id||null,context});
     return {conversation:c,commercialContext:context,reused:false};
@@ -33,8 +33,10 @@ export const rbFactorySalesAgentService = {
   },
   async prepareInitialApproach(prospectId:string,channel='WHATSAPP'){
     const conversation=await this.ensureConversation(prospectId,channel);
+    const existing=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE conversationId=? AND type=\'SEND_MESSAGE\' AND title=\'Enviar primeira abordagem comercial\' AND status IN (\'PENDING_APPROVAL\',\'APPROVED\',\'SENT\') ORDER BY createdAt DESC LIMIT 1',conversation.conversation.id);
+    if(existing[0]) return {...conversation,draft:{conversationId:conversation.conversation.id,reused:true,action:existing[0],nextBestAction:'SEND_FIRST_APPROACH'}};
     const draft=await seniorSalesAgentService.prepareInitialApproach(conversation.conversation.id);
-    return {...conversation,draft};
+    return {...conversation,draft,reused:false};
   },
   async respond(prospectId:string,conversationId:string,message:string){
     const context=await this.context(prospectId);
