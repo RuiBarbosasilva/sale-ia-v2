@@ -424,6 +424,10 @@ export class WebsiteService {
     const { websiteImageService } = await import('./websiteImageService');
     const imageResult = await websiteImageService.acquireAssets(briefing, prd, designSystem);
     const assets = imageResult.assets;
+    const assetValidation = await this.validateGeneratedAssets(assets);
+    if (!assetValidation.valid) {
+      console.warn('[Pipeline] Algumas imagens não passaram na validação final: ' + assetValidation.issues.join(' | '));
+    }
     content = { ...content, services: (content.services || []).map((s: any) => ({ ...s, image: (assets.services || {})[s.title] || null })) };
     console.log('[Pipeline] Imagens: ' + imageResult.metadata.length + ' assets | providers: ' + [...new Set(imageResult.metadata.map((m: any) => m.provider))].join(', '));
 
