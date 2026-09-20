@@ -185,7 +185,7 @@ export class WebsiteProspectorService {
 
     // 2) Telefone + cidade é mais seguro que nome + cidade.
     // Evita fundir filiais ou negócios diferentes com nomes iguais.
-    const phone = String(business.phone || '').replace(/\\D/g, '');
+    const phone = String(business.phone || '').replace(/\D/g, '');
     if (phone && business.city) {
       const byPhoneCity = await prisma.websiteProspect.findFirst({
         where: {
@@ -278,7 +278,7 @@ export class WebsiteProspectorService {
         postalCode: details.postalCode || business.postalCode,
         address: details.formattedAddress || business.address,
         phone: details.phone || business.phone,
-        website: details.website || business.website,
+        website: details.website ?? null,
         rating: details.rating ?? business.rating,
         reviewCount: details.reviewCount ?? business.reviewCount,
         businessHours: details.businessHours || business.businessHours,
