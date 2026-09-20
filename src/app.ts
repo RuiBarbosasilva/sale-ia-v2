@@ -21,6 +21,7 @@ import seniorSalesRoutes from './routes/seniorSalesRoutes';
 import salesOrchestrationRoutes from './routes/salesOrchestrationRoutes';
 import opportunitySalesBridgeRoutes from './routes/opportunitySalesBridgeRoutes';
 import rbFactorySalesRoutes from './routes/rbFactorySalesRoutes';
+import rbFactorySalesAgentRoutes from './routes/rbFactorySalesAgentRoutes';
 
 const app = express();
 
