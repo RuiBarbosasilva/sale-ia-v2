@@ -27,7 +27,7 @@ async function load(){
   const metrics={Conversas:d.conversations,'Leads quentes':d.hotLeads,'Ações pendentes':d.pendingActions,'Follow-ups':d.pendingFollowUps,'Objeções abertas':d.openObjections};
   document.getElementById('metrics').innerHTML=Object.entries(metrics).map(([k,v])=>'<div class="card"><div>'+esc(k)+'</div><div class="value">'+esc(v)+'</div></div>').join('');
   document.getElementById('pipeline').innerHTML=table(d.pipeline,[['companyName','Empresa'],['segment','Nicho'],['city','Cidade'],['stage','Estágio'],['priority','Prioridade'],['nextAction','Próxima ação'],['websiteOpportunityScore','Score']]);
-  document.getElementById('actions').innerHTML=table(d.pendingActions,[['title','Ação'],['stage','Estágio'],['temperature','Temperatura'],['createdAt','Criada em'],[r=>{try{return JSON.parse(r.payload||'{}').reply||''}catch{return ''}},'Rascunho']]);
+  document.getElementById('actions').innerHTML=table(d.pendingActions,[['title','Ação'],['stage','Estágio'],['temperature','Temperatura'],['createdAt','Criada em'],[r=>{try{return JSON.parse(r.payload||'{}').reply||''}catch{return ''}},'Rascunho'],[r=>'<button class="primary" onclick="approve(\\''+r.id+'\\')">Aprovar</button> <button onclick="rejectAction(\\''+r.id+'\\')">Rejeitar</button>','Controle']]);
   document.getElementById('followups').innerHTML=table(d.pendingFollowUps,[['scheduledAt','Agendado'],['reason','Motivo'],['stage','Estágio'],['temperature','Temperatura'],['draft','Rascunho']]);
  }catch(e){document.body.insertAdjacentHTML('beforeend','<p>'+esc(e.message)+'</p>')}
 }
