@@ -212,9 +212,14 @@ const providers = this.imageProviders
         try {
            const candidates = await fn(variant);
            const validCandidates = candidates.filter(cand => this.passesQC(cand, slot, usedUrls));
-           const rankedCandidates = rankImageCandidates(validCandidates, variant, usage, slot);
+           const rankedCandidates = rankImageCandidates(validCandidates, variant, usedUrls);
 
            for (const cand of rankedCandidates) {
+             const availability = await this.validateImageAsset(cand);
+             if (!availability.valid) {
+               console.warn('[ImageEngine] imagem rejeitada [' + usage + '] -> ' + name + ': ' + availability.reason);
+               continue;
+             }
              usedUrls.add(cand.url);
              const alt = (cand.alt && cand.alt.length > 8) ? cand.alt.substring(0, 120) : (usage + ' - foto via ' + name);
              const meta: ImageMetadata = {
@@ -319,11 +324,21 @@ const providers = this.imageProviders
       issues.push('URL invalida (nao http)');
       return { valid: false, issues, reason: 'URL invalida' };
     }
-    // Head request para validar sem baixar
+    // Valida por HEAD; alguns CDNs bloqueiam HEAD, então tenta GET sem descarregar o arquivo inteiro.
     try {
-      const res = await axios.head(asset.url, { timeout: 8000, headers: { 'User-Agent': UA }, maxRedirects: 3, validateStatus: (s: number) => s < 500 });
+      let res = await axios.head(asset.url, { timeout: 8000, headers: { 'User-Agent': UA }, maxRedirects: 3, validateStatus: (status: number) => status < 500 });
+      if (res.status === 405 || res.status === 403 || res.status === 404) {
+        res = await axios.get(asset.url, {
+          timeout: 8000,
+          headers: { 'User-Agent': UA, Range: 'bytes=0-2047' },
+          responseType: 'arraybuffer',
+          maxContentLength: 64 * 1024,
+          maxRedirects: 3,
+          validateStatus: (status: number) => status < 500
+        });
+      }
       if (res.status >= 400) { issues.push('HTTP ' + res.status); return { valid: false, issues, reason: 'HTTP ' + res.status }; }
-      const ct = String(res.headers['content-type'] || '').toLowerCase();
+      const ct = String(res.headers['content-type'] || asset.mime || '').toLowerCase();
       if (ct && !/image\/(jpeg|jpg|png|webp|gif|svg)/.test(ct)) {
         issues.push('MIME invalido: ' + ct);
         return { valid: false, issues, reason: 'MIME invalido' };
@@ -333,7 +348,7 @@ const providers = this.imageProviders
         issues.push('arquivo > 15MB');
         return { valid: false, issues, reason: 'arquivo muito grande' };
       }
-      return { valid: true, issues: [], reason: 'OK' };
+      return { valid: true, issues, reason: 'OK' };
     } catch (e: any) {
       issues.push('erro rede: ' + (e?.message || '').substring(0, 80));
       return { valid: false, issues, reason: 'erro rede' };
