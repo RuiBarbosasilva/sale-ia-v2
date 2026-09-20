@@ -178,6 +178,7 @@ export const seniorSalesAgentService = {
   async scheduleRecommendedFollowUp(conversationId:string,result:any){
     await init();
     const reason=String(result?.nextBestAction||'FOLLOW_UP');
+    if(['LOST','WON','REVIEW'].includes(reason)) return {reused:false,followUp:null,skipped:true,reason:'TERMINAL_OR_REVIEW'};
     const existing=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesFollowUp" WHERE conversationId=? AND status=\'PENDING\' ORDER BY scheduledAt ASC LIMIT 1',conversationId);
     if(existing[0]) return {reused:true,followUp:existing[0]};
     const draft=String(result?.reply||'');
