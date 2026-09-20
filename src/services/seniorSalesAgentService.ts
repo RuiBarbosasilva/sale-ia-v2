@@ -192,13 +192,24 @@ export const seniorSalesAgentService = {
     await (prisma as any).$executeRawUnsafe('UPDATE "SalesAction" SET status=\'REJECTED\',payload=? WHERE id=?',payload,actionId);
     return (await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE id=?',actionId))[0];
   },
+  async closeConversationWork(conversationId:string,outcome:'WON'|'LOST'){
+    await init();
+    await (prisma as any).$executeRawUnsafe('UPDATE "SalesFollowUp" SET status=\'CANCELLED\' WHERE conversationId=? AND status=\'PENDING\'',conversationId);
+    await (prisma as any).$executeRawUnsafe('UPDATE "SalesAction" SET status=\'CANCELLED\',decisionNote=? WHERE conversationId=? AND status IN (\'PENDING_APPROVAL\',\'APPROVED\')',outcome,conversationId);
+    await (prisma as any).$executeRawUnsafe('UPDATE "SalesConversation" SET status=\'CLOSED\',nextBestAction=?,updatedAt=CURRENT_TIMESTAMP WHERE id=?',outcome==='WON'?'WON':'LOST',conversationId);
+    return {conversationId,outcome,closed:true};
+  },
   async scheduleRecommendedFollowUp(conversationId:string,result:any){
     await init();
     const reason=String(result?.nextBestAction||'FOLLOW_UP');
     if(['LOST','WON','REVIEW'].includes(reason)) return {reused:false,followUp:null,skipped:true,reason:'TERMINAL_OR_REVIEW'};
     const existing=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesFollowUp" WHERE conversationId=? AND status=\'PENDING\' ORDER BY scheduledAt ASC LIMIT 1',conversationId);
     if(existing[0]) return {reused:true,followUp:existing[0]};
-    const draft=String(result?.reply||'');
+    const draft=reason==='ASK_FOR_CLOSE'
+      ? 'Olá! Passando para saber se conseguiu avaliar nossa proposta. Se fizer sentido para vocês, posso avançar com os próximos passos.'
+      : reason==='INVESTIGATE_OBJECTION'
+        ? 'Olá! Fiquei à disposição caso tenha ficado alguma dúvida sobre a proposta ou sobre como podemos melhorar a presença digital da empresa. Posso esclarecer algum ponto?'
+        : 'Olá! Passando para acompanhar nossa conversa sobre o site da empresa. Se quiser, posso retomar a demonstração e explicar os próximos passos.';
     const scheduledAt=new Date(Date.now()+(reason==='ASK_FOR_CLOSE'?86400000:reason==='INVESTIGATE_OBJECTION'?2*86400000:3*86400000));
     const followUp=await this.scheduleFollowUp(conversationId,{scheduledAt,reason,draft});
     return {reused:false,followUp};
