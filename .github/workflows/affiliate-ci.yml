@@ -2,9 +2,12 @@ name: Affiliate Module CI
 
 on:
   push:
-    branches: [main, 'feature/**']
+    branches: [main, 'feature/**', 'chore/**', 'fix/**']
   pull_request:
     branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
   verify:
@@ -13,12 +16,17 @@ jobs:
       DATABASE_URL: file:./ci.db
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm install --no-audit --no-fund
+
+      - run: npm ci --no-audit --no-fund
       - run: npx prisma validate
       - run: npx prisma generate
       - run: npx prisma migrate deploy
       - run: npm run typecheck
+      - run: npm run build
+      - run: npm test -- --runInBand --forceExit
+      - run: npm run guardian:verify
