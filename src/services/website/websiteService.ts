@@ -309,6 +309,17 @@ export class WebsiteService {
     if (!['READY', 'APPROVED'].includes(demo.status)) {
       throw new Error('DEMO_NOT_PUBLISHABLE');
     }
+
+    // Regra comercial da Factory: projeto só nasce depois que uma proposta
+    // foi efetivamente aceita. Aprovar a demo é apenas aprovação técnica.
+    const acceptedProposal = await prisma.websiteProposal.findFirst({
+      where: { prospectId: demo.prospectId, status: 'ACCEPTED' },
+      orderBy: { id: 'desc' }
+    });
+    if (!acceptedProposal) {
+      throw new Error('PROPOSAL_NOT_ACCEPTED');
+    }
+
     const existing = await prisma.websiteProject.findFirst({ where: { prospectId: demo.prospectId } });
     if (existing) {
       return prisma.websiteProject.update({
