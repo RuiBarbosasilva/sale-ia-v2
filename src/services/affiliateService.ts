@@ -13,6 +13,11 @@ function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
 }
 
+function boundedText(value: unknown, max: number) {
+  const text = String(value ?? '').trim();
+  return text.length > max ? text.slice(0, max) : text;
+}
+
 function makeCode(seed: string) {
   const base = seed.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 24) || 'afiliado';
   return `${base}-${crypto.randomBytes(4).toString('hex')}`;
@@ -73,8 +78,8 @@ function assertPayoutTransition(from: PayoutStatus, to: PayoutStatus) {
 
 export const affiliateService = {
   async register(input: { name: string; email: string; phone?: string }) {
-    const name = String(input.name || '').trim();
-    const email = normalizeEmail(String(input.email || ''));
+    const name = boundedText(input.name, 120);
+    const email = boundedText(normalizeEmail(String(input.email || '')), 254);
     if (name.length < 2 || !email.includes('@')) throw new Error('NAME_AND_EMAIL_REQUIRED');
 
     const existing = await prisma.affiliate.findUnique({ where: { email } });
@@ -85,7 +90,7 @@ export const affiliateService = {
       data: {
         name,
         email,
-        phone: input.phone?.trim() || null,
+        phone: input.phone ? boundedText(input.phone, 40) || null : null,
         slug: makeCode(name),
         status: 'PENDING',
         accessTokenHash: hashToken(token),
@@ -154,7 +159,7 @@ export const affiliateService = {
   },
 
   async createOffer(data: { name: string; network?: string; externalId?: string; destinationUrl: string; category?: string; commissionRate?: number; metadata?: unknown }) {
-    const name = String(data.name || '').trim();
+    const name = boundedText(data.name, 160);
     if (!name) throw new Error('OFFER_NAME_REQUIRED');
     if (!/^https?:\/\//i.test(data.destinationUrl)) throw new Error('INVALID_DESTINATION_URL');
     const rate = finiteNumber(data.commissionRate, 10)!;
@@ -163,10 +168,10 @@ export const affiliateService = {
     return prisma.affiliateOffer.create({
       data: {
         name,
-        network: data.network?.trim() || null,
-        externalId: data.externalId?.trim() || null,
-        destinationUrl: data.destinationUrl,
-        category: data.category?.trim() || null,
+        network: data.network ? boundedText(data.network, 100) || null : null,
+        externalId: data.externalId ? boundedText(data.externalId, 200) || null : null,
+        destinationUrl: boundedText(data.destinationUrl, 2048),
+        category: data.category ? boundedText(data.category, 100) || null : null,
         commissionRate: rate,
         metadata: data.metadata ? JSON.stringify(data.metadata) : null,
       },
@@ -212,7 +217,7 @@ export const affiliateService = {
     }
     if (!destinationUrl || !/^https?:\/\//i.test(destinationUrl)) throw new Error('INVALID_DESTINATION_URL');
 
-    const code = data.code?.trim() || makeCode(affiliate.slug);
+    const code = data.code ? boundedText(data.code, 100) || makeCode(affiliate.slug) : makeCode(affiliate.slug);
     const existing = await prisma.affiliateLink.findUnique({ where: { code } });
     if (existing) throw new Error('LINK_CODE_EXISTS');
 
@@ -222,7 +227,7 @@ export const affiliateService = {
         offerId: data.offerId || null,
         code,
         destinationUrl,
-        campaign: data.campaign?.trim() || null,
+        campaign: data.campaign ? boundedText(data.campaign, 160) || null : null,
       },
       include: { offer: true },
     });
@@ -315,8 +320,8 @@ export const affiliateService = {
           linkId,
           externalOrderId: input.externalOrderId || null,
           webhookEventId: input.webhookEventId || null,
-          source: input.source || 'MANUAL',
-          customerRef: input.customerRef || null,
+          source: boundedText(input.source || 'MANUAL', 80),
+          customerRef: input.customerRef ? boundedText(input.customerRef, 200) || null : null,
           amount: Number(amount.toFixed(2)),
           commissionRate: rate,
           commissionAmount,
@@ -413,7 +418,7 @@ export const affiliateService = {
           data: {
             affiliateId,
             amount: Number(available.toFixed(2)),
-            method: method?.trim() || null,
+            method: method ? boundedText(method, 100) || null : null,
             status: 'REQUESTED',
             items: {
               create: approvedSales.map((sale) => ({
