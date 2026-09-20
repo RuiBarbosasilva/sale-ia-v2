@@ -1,7 +1,7 @@
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
 
 export class WebsiteCommercialService {
-  async acceptProposal(proposalId: string) {
+  async acceptProposal(proposalId: string, domainName?: string) {
     const proposal = await prisma.websiteProposal.findUnique({
       where: { id: proposalId },
       include: {
@@ -83,11 +83,16 @@ export class WebsiteCommercialService {
         where: { prospectId: prospect.id },
       });
 
+      if (existingProject && domainName && !existingProject.domainName) {
+        await tx.websiteProject.update({ where: { id: existingProject.id }, data: { domainName } });
+      }
+
       const project = existingProject || await tx.websiteProject.create({
         data: {
           prospectId: prospect.id,
           status: 'PLANNING',
           currentVersion: approvedDemo.version,
+          domainName: domainName || undefined,
         },
       });
 
