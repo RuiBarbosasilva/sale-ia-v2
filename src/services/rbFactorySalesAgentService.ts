@@ -129,6 +129,23 @@ export const rbFactorySalesAgentService = {
         row.stage==='NEGOTIATION'?'NEGOTIATION':row.stage
     }));
   },
+  async nextSellerAction(){
+    const queue=await this.sellerQueue(1);
+    const item=queue[0];
+    if(!item) return {available:false,nextAction:null};
+    const conversationId=item.conversationId||null;
+    let action:any=null;
+    let followUp:any=null;
+    if(conversationId){
+      const actions=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE conversationId=? AND status IN (\'PENDING_APPROVAL\',\'APPROVED\') ORDER BY createdAt DESC LIMIT 1',conversationId);
+      action=actions[0]||null;
+      const follows=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesFollowUp" WHERE conversationId=? AND status=\'PENDING\' ORDER BY scheduledAt ASC LIMIT 1',conversationId);
+      followUp=follows[0]||null;
+    }
+    let channel:any=null;
+    if(action) channel=await seniorSalesAgentService.prepareActionChannel(action.id);
+    return {available:true,item,action,followUp,channel};
+  },
   async dashboard(){
     const base=await seniorSalesAgentService.dashboard();
     const pipeline=await (prisma as any).$queryRawUnsafe('SELECT p.id,p.prospectId,p.stage,p.priority,p.nextAction,p.updatedAt,w.companyName,w.segment,w.city,w.phone,w.websiteOpportunityScore FROM "RbFactorySalesPipeline" p JOIN "WebsiteProspect" w ON w.id=p.prospectId WHERE p.status=\'OPEN\' ORDER BY p.priority DESC,p.updatedAt DESC LIMIT 100');
