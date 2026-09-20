@@ -4,6 +4,7 @@ import { adminAuthorization } from '../middlewares/security';
 const router=Router();
 router.use(adminAuthorization);
 router.get('/dashboard',rbFactorySalesAgentController.dashboard);
+router.get('/queue',rbFactorySalesAgentController.sellerQueue);
 router.get('/follow-ups/due',rbFactorySalesAgentController.dueFollowUps);
 router.post('/prospect/:prospectId/conversations',rbFactorySalesAgentController.create);
 router.post('/prospect/:prospectId/initial-approach',rbFactorySalesAgentController.initialApproach);
