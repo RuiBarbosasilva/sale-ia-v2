@@ -8,5 +8,6 @@ export const seniorSalesController={
   respond: async (req:Request,res:Response)=>res.json(await seniorSalesAgentService.respond(req.params.id,req.body||{})),
   followUp: async (req:Request,res:Response)=>res.status(201).json(await seniorSalesAgentService.scheduleFollowUp(req.params.id,req.body||{})),
   approveAction: async (req:Request,res:Response)=>res.json(await seniorSalesAgentService.approveAction(req.params.id)),
-  rejectAction: async (req:Request,res:Response)=>res.json(await seniorSalesAgentService.rejectAction(req.params.id,req.body?.reason))
+  rejectAction: async (req:Request,res:Response)=>res.json(await seniorSalesAgentService.rejectAction(req.params.id,req.body?.reason)),
+  markActionSent: async (req:Request,res:Response)=>res.json(await seniorSalesAgentService.markActionSent(req.params.id,req.body||{}))
 };
