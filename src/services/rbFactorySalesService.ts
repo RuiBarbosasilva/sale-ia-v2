@@ -95,7 +95,7 @@ export const rbFactorySalesService={
 
   async sendProposal(prospectId:string){
     await init();
-    const proposal=await prisma.websiteProposal.findFirst({where:{prospectId},orderBy:{updatedAt:'desc'}});
+    const proposal=await prisma.websiteProposal.findFirst({where:{prospectId},orderBy:{id:'desc'}});
     if(!proposal) throw new Error('WEBSITE_PROPOSAL_NOT_FOUND');
     if(!['READY','SENT'].includes(proposal.status)) throw new Error('WEBSITE_PROPOSAL_NOT_READY');
     const updated=await prisma.websiteProposal.update({
@@ -154,7 +154,7 @@ export const rbFactorySalesService={
 
   async acceptProposal(prospectId:string,domainName?:string){
     await init();
-    const proposal=await prisma.websiteProposal.findFirst({where:{prospectId},orderBy:{updatedAt:'desc'}});
+    const proposal=await prisma.websiteProposal.findFirst({where:{prospectId},orderBy:{id:'desc'}});
     if(!proposal) throw new Error('WEBSITE_PROPOSAL_NOT_FOUND');
     if(!['SENT','READY','ACCEPTED'].includes(proposal.status)) throw new Error('WEBSITE_PROPOSAL_NOT_ACCEPTABLE');
     const demo=await prisma.websiteDemo.findFirst({where:{prospectId,status:{in:['APPROVED','READY']}},orderBy:{version:'desc'}});
@@ -196,7 +196,7 @@ export const rbFactorySalesService={
     }
 
     if(stage === 'WON') {
-      const proposal=await prisma.websiteProposal.findFirst({where:{prospectId:pipeline.prospectId},orderBy:{updatedAt:'desc'}});
+      const proposal=await prisma.websiteProposal.findFirst({where:{prospectId:pipeline.prospectId},orderBy:{id:'desc'}});
       if(!proposal || proposal.status !== 'ACCEPTED') throw new Error('PROPOSAL_NOT_ACCEPTED');
       const project=await prisma.websiteProject.findFirst({where:{prospectId:pipeline.prospectId}});
       if(!project) throw new Error('WEBSITE_PROJECT_NOT_READY');
