@@ -87,11 +87,18 @@ export const rbFactorySalesAgentService = {
     try{notes=pipeline.notes?JSON.parse(pipeline.notes):{};}catch{notes={raw:pipeline.notes};}
     notes.salesAgent={temperature,intentScore,objection:result?.objection||null,confidence:Number(result?.confidence||0),updatedAt:new Date().toISOString()};
     if(explicitNoInterest) notes.salesAgent.outcome='EXPLICIT_NOT_INTERESTED';
+    if(nextStage==='LOST' || nextStage==='WON') await this.closeSellerForProspect(prospectId,nextStage);
     await (prisma as any).$executeRawUnsafe(
       'UPDATE "RbFactorySalesPipeline" SET stage=?,nextAction=?,notes=?,updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?',
       nextStage,normalizedAction,JSON.stringify(notes),prospectId
     );
     return {stage:nextStage,nextAction:normalizedAction};
+  },
+  async closeSellerForProspect(prospectId:string,outcome:'WON'|'LOST'){
+    const rows=await (prisma as any).$queryRawUnsafe('SELECT id FROM "SalesConversation" WHERE context LIKE ? ORDER BY createdAt DESC', '%' + prospectId + '%');
+    const results=[];
+    for(const row of rows) results.push(await seniorSalesAgentService.closeConversationWork(row.id,outcome));
+    return {prospectId,outcome,conversationsClosed:results.length,results};
   },
   async prepareActionChannel(actionId:string){ return seniorSalesAgentService.prepareActionChannel(actionId); },
   async approveAction(actionId:string){ return seniorSalesAgentService.approveAction(actionId); },
