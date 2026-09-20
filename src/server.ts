@@ -19,7 +19,7 @@ import { initializeWorkers } from './config/queue';
 // Workers somente em ambiente real.
 // Em testes, nenhum timer ou worker de background sera criado.
 if (process.env.NODE_ENV !== 'test') {
-  setTimeout(() => {
+  setTimeout(async () => {
     try {
       const recoveredDemoJobs = await websiteDemoFactoryService.recoverStaleJobs();
       if (recoveredDemoJobs > 0) {
