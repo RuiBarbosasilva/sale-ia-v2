@@ -81,6 +81,7 @@ export const rbFactorySalesAgentService = {
     );
     return {stage:nextStage,nextAction:normalizedAction};
   },
+  async prepareActionChannel(actionId:string){ return seniorSalesAgentService.prepareActionChannel(actionId); },
   async approveAction(actionId:string){ return seniorSalesAgentService.approveAction(actionId); },
   async rejectAction(actionId:string,reason?:string){ return seniorSalesAgentService.rejectAction(actionId,reason); },
   async markActionSent(actionId:string,metadata?:any){ return seniorSalesAgentService.markActionSent(actionId,metadata); },
