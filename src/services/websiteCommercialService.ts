@@ -1,5 +1,4 @@
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
-import { getOrCreateLead } from './leadService';
 
 export class WebsiteCommercialService {
   async acceptProposal(proposalId: string) {
@@ -37,15 +36,27 @@ export class WebsiteCommercialService {
     }
 
     const result = await prisma.$transaction(async tx => {
-      const lead = prospect.linkedLeadId
+      let safeLead = prospect.linkedLeadId
         ? await tx.lead.findUnique({ where: { id: prospect.linkedLeadId } })
-        : await getOrCreateLead(prospect.phone!, prospect.companyName);
+        : null;
 
-      const safeLead = lead || await tx.lead.findUnique({ where: { phone: prospect.phone! } });
-      if (!safeLead) throw new Error('LEAD_CONVERSION_FAILED');
+      if (!safeLead) {
+        safeLead = await tx.lead.findUnique({ where: { phone: prospect.phone! } });
+      }
 
-      if (prospect.email && !safeLead.email) {
-        await tx.lead.update({
+      if (!safeLead) {
+        safeLead = await tx.lead.create({
+          data: {
+            name: prospect.companyName,
+            phone: prospect.phone!,
+            email: prospect.email || undefined,
+            status: 'NEW_LEAD',
+            stage: 'PROSPECTADO',
+            score: prospect.score || 0,
+          },
+        });
+      } else if (prospect.email && !safeLead.email) {
+        safeLead = await tx.lead.update({
           where: { id: safeLead.id },
           data: { email: prospect.email },
         });
