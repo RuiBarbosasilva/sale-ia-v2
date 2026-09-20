@@ -91,7 +91,8 @@ export const rbFactorySalesService={
     await this.createFromProspect(prospectId);
     const proposal=await proposalGeneratorService.generateProposal(prospectId);
     await (prisma as any).$executeRawUnsafe(`UPDATE "RbFactorySalesPipeline" SET stage='PROPOSAL_READY',proposalId=?,nextAction='CONTACT_PROSPECT',updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,proposal.id,prospectId);
-    return proposal;
+    const salesAgent=await rbFactorySalesAgentService.prepareProposalApproach(prospectId,'WHATSAPP');
+    return {...proposal,salesAgent};
   },
 
   async sendProposal(prospectId:string){
@@ -109,7 +110,8 @@ export const rbFactorySalesService={
       updated.id,prospectId
     );
     const salesAgent=await rbFactorySalesAgentService.ensureConversation(prospectId,'WHATSAPP');
-    return {...updated,salesAgent:{conversationId:salesAgent.conversation.id,reused:salesAgent.reused}};
+    const followUp=await rbFactorySalesAgentService.prepareProposalApproach(prospectId,'WHATSAPP');
+    return {...updated,salesAgent:{conversationId:salesAgent.conversation.id,reused:salesAgent.reused,proposalApproach:followUp.draft}};
   },
 
   async convertToLead(prospectId:string){
