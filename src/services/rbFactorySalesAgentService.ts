@@ -70,7 +70,6 @@ export const rbFactorySalesAgentService = {
     );
     return {stage:nextStage,nextAction:normalizedAction};
   },
-  },
   async dashboard(){
     const base=await seniorSalesAgentService.dashboard();
     const pipeline=await (prisma as any).$queryRawUnsafe('SELECT p.id,p.prospectId,p.stage,p.priority,p.nextAction,p.updatedAt,w.companyName,w.segment,w.city,w.phone,w.websiteOpportunityScore FROM "RbFactorySalesPipeline" p JOIN "WebsiteProspect" w ON w.id=p.prospectId WHERE p.status=\'OPEN\' ORDER BY p.priority DESC,p.updatedAt DESC LIMIT 100');
