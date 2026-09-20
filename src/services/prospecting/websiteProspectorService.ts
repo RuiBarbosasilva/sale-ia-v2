@@ -832,7 +832,10 @@ export class WebsiteProspectorService {
                 if (websiteStatus.audit) {
                   await this.persistWebsiteAudit(
                     existing.id,
-                    websiteStatus.audit
+                    websiteStatus.audit,
+                    websiteStatus.opportunityStatus,
+                    websiteStatus.opportunityScore,
+                    websiteStatus.priority
                   );
 
                   totalAudited++;
@@ -958,7 +961,10 @@ export class WebsiteProspectorService {
               if (websiteStatus.audit) {
                 await this.persistWebsiteAudit(
                   prospect.id,
-                  websiteStatus.audit
+                  websiteStatus.audit,
+                  websiteStatus.opportunityStatus,
+                  websiteStatus.opportunityScore,
+                  websiteStatus.priority
                 );
 
                 totalAudited++;
