@@ -211,9 +211,9 @@ export class WebsiteProspectorService {
           value
             .trim()
             .toLowerCase()
-            .replace(/^https?:\\/\\//, '')
-            .replace(/^www\\./, '')
-            .replace(/\\/$/, '');
+            .replace(/^https?:\/\//, '')
+            .replace(/^www\./, '')
+            .replace(/\/$/, '');
 
         if (normalizeUrl(String(byWebsiteCity.currentWebsite || '')) === normalizeUrl(website)) {
           return byWebsiteCity;
