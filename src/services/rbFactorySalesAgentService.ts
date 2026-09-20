@@ -47,7 +47,9 @@ export const rbFactorySalesAgentService = {
     }
     const result=await seniorSalesAgentService.respond(conversationId,{message});
     await this.syncPipelineAfterResponse(prospectId,result);
-    const followUp=await seniorSalesAgentService.scheduleRecommendedFollowUp(conversationId,result);
+    const terminal=String(result?.nextBestAction||'')==='LOST' || result?.temperature==='LOST';
+    const explicitNoInterest=/(não tenho interesse|nao tenho interesse|não quero|nao quero|não me interessa|nao me interessa|pare de|pode parar|retire meu contato)/i.test(message);
+    const followUp=explicitNoInterest||terminal ? {reused:false,followUp:null,skipped:true,reason:'CUSTOMER_NOT_INTERESTED'} : await seniorSalesAgentService.scheduleRecommendedFollowUp(conversationId,result);
     return {result,followUp,commercialContext:context};
   },
   async syncPipelineAfterResponse(prospectId:string,result:any){
@@ -58,17 +60,24 @@ export const rbFactorySalesAgentService = {
     const nextAction=String(result?.nextBestAction||'FOLLOW_UP');
     const temperature=String(result?.temperature||'COLD');
     const intentScore=Number(result?.intentScore||0);
+    const conversationText=String(result?.customerMessage||result?.message||'').toLowerCase();
+    const explicitNoInterest=/(não tenho interesse|nao tenho interesse|não quero|nao quero|não me interessa|nao me interessa|pare de|pode parar|retire meu contato)/i.test(conversationText);
     let nextStage=current;
     if(['DISCOVERED','AUDITED','DEMO_READY','PROPOSAL_READY','CONTACTED'].includes(current) && (temperature==='HOT'||temperature==='VERY_HOT'||intentScore>=45)){
       nextStage='NEGOTIATION';
     }
     if(current==='CONTACTED' && nextAction==='ASK_FOR_CLOSE') nextStage='NEGOTIATION';
+    if(explicitNoInterest) nextStage='LOST';
     if(current==='LOST' || current==='WON') nextStage=current;
     const safeActions=new Set(['ASK_FOR_CLOSE','INVESTIGATE_OBJECTION','DISCOVER_NEED','SEND_FIRST_APPROACH','REVIEW']);
-    const normalizedAction=safeActions.has(nextAction)?nextAction:'FOLLOW_UP';
+    const normalizedAction=explicitNoInterest||nextStage==='LOST'||nextStage==='WON' ? (nextStage==='LOST'?'REVIEW':'FOLLOW_UP') : (safeActions.has(nextAction)?nextAction:'FOLLOW_UP');
+    let notes:any={};
+    try{notes=pipeline.notes?JSON.parse(pipeline.notes):{};}catch{notes={raw:pipeline.notes};}
+    notes.salesAgent={temperature,intentScore,objection:result?.objection||null,confidence:Number(result?.confidence||0),updatedAt:new Date().toISOString()};
+    if(explicitNoInterest) notes.salesAgent.outcome='EXPLICIT_NOT_INTERESTED';
     await (prisma as any).$executeRawUnsafe(
       'UPDATE "RbFactorySalesPipeline" SET stage=?,nextAction=?,notes=?,updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?',
-      nextStage,normalizedAction,JSON.stringify({salesAgent:{temperature,intentScore,objection:result?.objection||null,confidence:Number(result?.confidence||0),updatedAt:new Date().toISOString()}}),prospectId
+      nextStage,normalizedAction,JSON.stringify(notes),prospectId
     );
     return {stage:nextStage,nextAction:normalizedAction};
   },
