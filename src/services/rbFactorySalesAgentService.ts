@@ -27,9 +27,7 @@ export const rbFactorySalesAgentService = {
     return {conversation:c,commercialContext:context,reused:false};
   },
   async createConversation(prospectId:string,channel='WHATSAPP'){
-    const context=await this.context(prospectId);
-    const c=await seniorSalesAgentService.createConversation({channel,leadId:context.lead?.id||null,context});
-    return {conversation:c,commercialContext:context};
+    return this.ensureConversation(prospectId,channel);
   },
   async prepareInitialApproach(prospectId:string,channel='WHATSAPP'){
     const conversation=await this.ensureConversation(prospectId,channel);
