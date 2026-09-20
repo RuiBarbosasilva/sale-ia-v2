@@ -7,6 +7,10 @@ export const rbFactorySalesAgentController={
     const status=['WEBSITE_PROSPECT_NOT_FOUND','SALES_CONVERSATION_NOT_FOUND'].includes(message)?404:['SALES_CONVERSATION_PROSPECT_MISMATCH'].includes(message)?409:500;
     res.status(status).json({success:false,error:message});
   },
+  async dueFollowUps(req:Request,res:Response){
+    try{res.json({success:true,followUps:await rbFactorySalesAgentService.dueFollowUps(Number(req.query?.limit||50))});}
+    catch(e){return rbFactorySalesAgentController.errors(e,res);}
+  },
   async dashboard(_req:Request,res:Response){try{res.json({success:true,...await rbFactorySalesAgentService.dashboard()});}catch(e){return rbFactorySalesAgentController.errors(e,res);}},
   async create(req:Request,res:Response){try{res.status(201).json({success:true,...await rbFactorySalesAgentService.createConversation(String(req.params.prospectId),String(req.body?.channel||'WHATSAPP'))});}catch(e){return rbFactorySalesAgentController.errors(e,res);}},
   async initialApproach(req:Request,res:Response){try{res.json({success:true,...await rbFactorySalesAgentService.prepareInitialApproach(String(req.params.prospectId),String(req.body?.channel||'WHATSAPP'))});}catch(e){return rbFactorySalesAgentController.errors(e,res);}},
