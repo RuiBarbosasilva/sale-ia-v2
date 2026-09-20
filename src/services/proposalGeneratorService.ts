@@ -74,7 +74,7 @@ RB Factory Sites
 
     const existingProposal = await prisma.websiteProposal.findFirst({
       where: { prospectId },
-      orderBy: { updatedAt: 'desc' }
+      orderBy: { id: 'desc' }
     });
 
     const proposal = existingProposal
