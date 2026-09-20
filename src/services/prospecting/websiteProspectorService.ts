@@ -578,6 +578,7 @@ export class WebsiteProspectorService {
     let totalUpdated = 0;
     let totalCreated = 0;
     let totalAudited = 0;
+    const failedNiches: Array<{ niche: string; error: string }> = [];
 
     try {
       for (let i = 0; i < PROSPECTING_NICHES.length; i++) {
@@ -998,11 +999,13 @@ export class WebsiteProspectorService {
           }
 
         } catch (nicheError: any) {
+          const errorMessage = String(nicheError?.message || 'Erro desconhecido');
+          failedNiches.push({ niche, error: errorMessage });
           console.error(
             '[RB FACTORY] Erro no nicho ' +
             niche +
             ': ' +
-            nicheError.message
+            errorMessage
           );
         }
       }
@@ -1037,7 +1040,7 @@ export class WebsiteProspectorService {
           id: search.id
         },
         data: {
-          status: 'COMPLETED',
+          status: failedNiches.length ? 'COMPLETED_WITH_ERRORS' : 'COMPLETED',
           totalFound,
           totalQualified,
           completedAt: new Date()
@@ -1053,7 +1056,9 @@ export class WebsiteProspectorService {
         totalUpdated,
         totalAudited,
         nichesSearched:
-          PROSPECTING_NICHES.length
+          PROSPECTING_NICHES.length,
+        failedNiches,
+        failedNichesCount: failedNiches.length
       };
 
     } catch (error: any) {
