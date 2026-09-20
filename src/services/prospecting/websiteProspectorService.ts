@@ -291,10 +291,20 @@ export class WebsiteProspectorService {
   }
 
   private mapAuditToOpportunity(audit: any): WebsiteOpportunityStatus {
-    if (!audit.reachable) return 'WEBSITE_OFFLINE';
-    if (audit.criticalIssues.length > 2) return 'WEBSITE_BROKEN';
-    if (audit.auditScore < 50) return 'WEBSITE_OUTDATED';
-    if (audit.auditScore < 75) return 'WEBSITE_NEEDS_IMPROVEMENT';
+    if (!audit?.reachable) return 'WEBSITE_OFFLINE';
+
+    // websiteAuditService exposes findings as `issues`, not
+    // `criticalIssues`. Keep this mapping defensive so a successful
+    // audit is never downgraded to a generic error because an optional
+    // field is absent.
+    const issues = Array.isArray(audit?.issues) ? audit.issues : [];
+    const auditScore = Number.isFinite(Number(audit?.auditScore))
+      ? Number(audit.auditScore)
+      : 0;
+
+    if (issues.length > 2 || auditScore < 30) return 'WEBSITE_BROKEN';
+    if (auditScore < 50) return 'WEBSITE_OUTDATED';
+    if (auditScore < 75) return 'WEBSITE_NEEDS_IMPROVEMENT';
     return 'WEBSITE_GOOD';
   }
 
