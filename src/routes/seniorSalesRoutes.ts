@@ -7,4 +7,6 @@ router.post('/conversations',seniorSalesController.create);
 router.get('/conversations/:id',seniorSalesController.get);
 router.post('/conversations/:id/respond',seniorSalesController.respond);
 router.post('/conversations/:id/follow-ups',seniorSalesController.followUp);
+router.post('/actions/:id/approve',seniorSalesController.approveAction);
+router.post('/actions/:id/reject',seniorSalesController.rejectAction);
 export default router;
