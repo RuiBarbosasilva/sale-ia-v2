@@ -96,6 +96,7 @@ export class WebsiteDemoFactoryService {
         version: result.demo.version,
         qualityScore: result.qualityReview.overallScore,
         qualityRecommendation: result.qualityReview.recommendation,
+        criticalIssues: result.qualityReview.criticalIssues || [],
       };
     } catch (error: any) {
       await prisma.websiteProspect.update({
