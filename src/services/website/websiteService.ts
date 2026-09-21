@@ -539,26 +539,10 @@ export class WebsiteService {
   }
 
   async markProjectPublished(
-    projectId: string,
-    details: { domainName?: string; hostingProvider?: string; sourceCodeRepo?: string }
+    _projectId: string,
+    _details: { domainName?: string; hostingProvider?: string; sourceCodeRepo?: string }
   ) {
-    const project = await prisma.websiteProject.findUnique({ where: { id: projectId } });
-    if (!project) throw new Error('WEBSITE_PROJECT_NOT_FOUND');
-
-    const domainName = details.domainName?.trim() || project.domainName;
-    const hostingProvider = details.hostingProvider?.trim() || project.hostingProvider;
-    if (!domainName) throw new Error('DOMAIN_REQUIRED');
-    if (!hostingProvider) throw new Error('HOSTING_PROVIDER_REQUIRED');
-
-    return prisma.websiteProject.update({
-      where: { id: projectId },
-      data: {
-        domainName,
-        hostingProvider,
-        sourceCodeRepo: details.sourceCodeRepo?.trim() || project.sourceCodeRepo,
-        status: 'PUBLISHED'
-      }
-    });
+    throw new Error('REAL_DEPLOYMENT_REQUIRED');
   }
 
 
