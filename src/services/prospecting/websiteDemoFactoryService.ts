@@ -251,7 +251,7 @@ export class WebsiteDemoFactoryService {
       const approved =
         result.qualityRecommendation === 'approve' &&
         Number(result.qualityScore || 0) >= 7.5 &&
-        !(result.qualityReview?.criticalIssues?.length);
+        !(result.criticalIssues?.length);
       await prisma.websiteDemoJob.update({
         where: { id: jobId },
         data: {
