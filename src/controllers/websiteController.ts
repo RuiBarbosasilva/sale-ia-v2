@@ -1,5 +1,8 @@
 import { Request, Response } from 'express';
 import { websiteService } from '../services/website/websiteService';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export class WebsiteController {
   async analyze(req: Request, res: Response) {
@@ -17,8 +20,35 @@ export class WebsiteController {
     try {
       const { prospectId } = req.body;
       if (!prospectId) return res.status(400).json({ error: 'prospectId obrigatório' });
-      const result = await websiteService.generateWebsite(prospectId);
-      res.json({ success: true, ...result });
+
+      // Rota legada: mantém compatibilidade, mas não permite mais que uma
+      // geração simples bypass o Image Engine e o Quality Gate profissional.
+      const prospect = await prisma.websiteProspect.findUnique({ where: { id: prospectId } });
+      if (!prospect) return res.status(404).json({ success: false, error: 'Prospect não encontrado' });
+
+      const result = await websiteService.generateProfessional(
+        prospectId,
+        {
+          businessName: prospect.companyName || 'Sua Empresa',
+          category: prospect.segment || 'negócio',
+          city: prospect.city || 'sua cidade',
+          phone: prospect.phone || '',
+          whatsapp: prospect.phone || '',
+          email: prospect.email || '',
+          website: prospect.currentWebsite || ''
+        },
+        true
+      );
+
+      res.json({
+        success: true,
+        demoId: result.demo.id,
+        version: result.demo.version,
+        qualityScore: result.qualityReview.overallScore,
+        qualityRecommendation: result.qualityReview.recommendation,
+        improvementCycles: result.improvementCycles,
+        previewUrl: '/api/websites/studio/demos/' + result.demo.id + '/html'
+      });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
