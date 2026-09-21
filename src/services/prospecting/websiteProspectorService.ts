@@ -22,7 +22,7 @@ export class WebsiteProspectorService {
   }
 
 
-  private isCommercialOpportunity(status: WebsiteOpportunityStatus): boolean {
+  private preferValidCity(primary?: string | null, fallback?: string | null): string | undefined {\n    const p = String(primary || '').trim();\n    const f = String(fallback || '').trim();\n    if (p && !p.includes('\uFFFD')) return p;\n    if (f && !f.includes('\uFFFD')) return f;\n    return p || f || undefined;\n  }\n\n  private isCommercialOpportunity(status: WebsiteOpportunityStatus): boolean {
     return [
       'NO_WEBSITE',
       'WEBSITE_OFFLINE',
@@ -135,7 +135,7 @@ export class WebsiteProspectorService {
             category: business.category,
             subcategory: business.subcategory,
             segment: business.category,
-            city: request.city || business.city,
+            city: this.preferValidCity(business.city, request.city),
             state: request.state || business.state,
             country: request.country || 'BR',
             address: business.address,
