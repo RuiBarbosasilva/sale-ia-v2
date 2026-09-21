@@ -171,8 +171,18 @@ export class WebsiteDemoFactoryService {
 
     if (!staleJobs.length) return 0;
 
-    await prisma.websiteDemoJob.updateMany({
-      where: { id: { in: staleJobs.map(job => job.id) } },
+    // Reclaim atomically: a worker may renew the lease between the SELECT
+    // above and this UPDATE. Never requeue a job whose lease is valid now.
+    const reclaimed = await prisma.websiteDemoJob.updateMany({
+      where: {
+        id: { in: staleJobs.map(job => job.id) },
+        status: 'RESEARCHING',
+        OR: [
+          { leaseUntil: { lt: new Date() } },
+          { leaseUntil: null, startedAt: { lt: cutoff } },
+          { leaseUntil: null, startedAt: null, updatedAt: { lt: cutoff } },
+        ],
+      },
       data: {
         status: 'QUEUED',
         progress: 0,
@@ -184,7 +194,7 @@ export class WebsiteDemoFactoryService {
       },
     });
 
-    return staleJobs.length;
+    return reclaimed.count;
   }
 
   async processJob(jobId: string): Promise<void> {
@@ -258,6 +268,7 @@ export class WebsiteDemoFactoryService {
           currentStage: 'Erro',
           error: error.message,
           completedAt: new Date(),
+          leaseUntil: null,
         },
       });
     }
