@@ -145,6 +145,47 @@ export const rbFactorySalesAgentService = {
         row.stage==='NEGOTIATION'?'NEGOTIATION':row.stage
     }));
   },
+  async executeCommercialDecision(prospectId:string){
+    const context=await this.context(prospectId);
+    const pipeline=context.pipeline;
+    if(!pipeline) return {executed:false,action:'WAIT',reason:'PIPELINE_NOT_FOUND'};
+    if(['WON','LOST'].includes(String(pipeline.stage))) return {executed:false,action:'WAIT',reason:'TERMINAL_PIPELINE',stage:pipeline.stage};
+    const conversation=await this.ensureConversation(prospectId,'WHATSAPP');
+    const c=conversation.conversation;
+    const nextAction=String(pipeline.nextAction||'');
+    const { rbFactorySalesService }=await import('./rbFactorySalesService');
+
+    if(nextAction==='PREPARE_DEMO' || nextAction==='SEND_DEMO' || String(pipeline.stage)==='AUDITED'){
+      if(context.demo?.status==='READY' || context.demo?.status==='APPROVED'){
+        const draft=await seniorSalesAgentService.prepareDemoApproach(c.id);
+        return {executed:true,action:'SEND_DEMO',reason:'DEMO_ALREADY_READY',conversationId:c.id,draft};
+      }
+      const demo=await rbFactorySalesService.buildDemo(prospectId);
+      if(demo?.qualityRecommendation==='approve' && Number(demo?.qualityScore||0)>=7.5){
+        const draft=await seniorSalesAgentService.prepareDemoApproach(c.id);
+        return {executed:true,action:'SEND_DEMO',reason:'DEMO_BUILT_AND_APPROVED',conversationId:c.id,demo,draft};
+      }
+      return {executed:true,action:'WAIT',reason:'DEMO_QUALITY_GATE_NOT_PASSED',demo};
+    }
+
+    if(nextAction==='PREPARE_PROPOSAL' || nextAction==='SEND_PROPOSAL' || String(pipeline.stage)==='PROPOSAL_READY'){
+      if(context.proposal?.status==='READY' || context.proposal?.status==='SENT'){
+        const draft=await seniorSalesAgentService.prepareProposalApproach(c.id);
+        return {executed:true,action:'SEND_PROPOSAL',reason:'PROPOSAL_ALREADY_READY',conversationId:c.id,draft};
+      }
+      if(!context.demo || !['READY','APPROVED'].includes(String(context.demo.status))) return {executed:false,action:'WAIT',reason:'DEMO_REQUIRED_BEFORE_PROPOSAL'};
+      const proposal=await rbFactorySalesService.buildProposal(prospectId);
+      return {executed:true,action:'SEND_PROPOSAL',reason:'PROPOSAL_BUILT',conversationId:c.id,proposal};
+    }
+
+    if(nextAction==='ASK_FOR_CLOSE' || nextAction==='FOLLOW_UP' || nextAction==='INVESTIGATE_OBJECTION' || nextAction==='DISCOVER_NEED' || nextAction==='DISCOVER_DECISION_MAKER'){
+      const reason=nextAction;
+      const prepared=await seniorSalesAgentService.prepareFollowUp(c.id,reason);
+      const followUp=await seniorSalesAgentService.scheduleFollowUp(c.id,{scheduledAt:new Date(),reason,draft:prepared.draft});
+      return {executed:true,action:reason,reason:'SELLER_MESSAGE_PREPARED',conversationId:c.id,followUp,prepared};
+    }
+    return {executed:false,action:'WAIT',reason:'NO_EXECUTABLE_COMMERCIAL_ACTION',nextAction};
+  },
   async prepareNextSellerAction(){
     const queue=await this.sellerQueue(1);
     const item=queue[0];
@@ -152,6 +193,9 @@ export const rbFactorySalesAgentService = {
     const prospectId=String(item.prospectId);
     const stage=String(item.stage);
     const nextAction=String(item.nextAction||'');
+    if(['PREPARE_DEMO','PREPARE_PROPOSAL','SEND_DEMO','SEND_PROPOSAL','ASK_FOR_CLOSE','INVESTIGATE_OBJECTION','DISCOVER_NEED','DISCOVER_DECISION_MAKER'].includes(nextAction)){
+      return await this.executeCommercialDecision(prospectId);
+    }
     const conversation=await this.ensureConversation(prospectId,'WHATSAPP');
     const conversationId=conversation.conversation.id;
     const pending=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE conversationId=? AND status IN (\'PENDING_APPROVAL\',\'APPROVED\') ORDER BY createdAt DESC LIMIT 1',conversationId);
