@@ -1,4 +1,5 @@
 ﻿import { Queue, Worker } from 'bullmq';
+import { rbFactorySalesAutonomyService } from '../services/rbFactorySalesAutonomyService';
 import IORedis from 'ioredis';
 
 const isTestEnvironment =
@@ -93,12 +94,19 @@ export const followUpQueue: QueueLike = isTestEnvironment
       connection: connection!
     });
 
+export const salesAutonomyQueue: QueueLike = isTestEnvironment
+  ? createDisabledQueue('sales-autonomy')
+  : new Queue('sales-autonomy', {
+      connection: connection!
+    });
+
 export function initializeWorkers() {
   if (isTestEnvironment) {
     return {
       prospectWorker: null,
       campaignWorker: null,
-      followUpWorker: null
+      followUpWorker: null,
+      salesAutonomyWorker: null
     };
   }
 
@@ -130,12 +138,35 @@ export function initializeWorkers() {
       { connection: connection! }
     );
 
+    const salesAutonomyWorker = new Worker(
+      'sales-autonomy',
+      async (job) => {
+        console.log('[RB-FACTORY-AUTONOMY] Executando ciclo:', job.name);
+        return rbFactorySalesAutonomyService.cycle(Number(job.data?.limit || process.env.RB_FACTORY_AUTONOMY_BATCH || 10));
+      },
+      { connection: connection! }
+    );
+
+    if (process.env.RB_FACTORY_AUTONOMY_ENABLED === 'true') {
+      const schedulerQueue:any = salesAutonomyQueue as any;
+      if (typeof schedulerQueue.upsertJobScheduler === 'function') {
+        schedulerQueue.upsertJobScheduler(
+          'rb-factory-sales-cycle',
+          { every: Number(process.env.RB_FACTORY_AUTONOMY_INTERVAL_MS || 900000) },
+          { name: 'rb-factory-autonomy-cycle', data: { limit: Number(process.env.RB_FACTORY_AUTONOMY_BATCH || 10) } }
+        ).catch((error:any) => console.warn('[RB-FACTORY-AUTONOMY] Scheduler error:', error?.message || error));
+      } else {
+        console.warn('[RB-FACTORY-AUTONOMY] Job scheduler nao disponivel nesta versao do BullMQ.');
+      }
+    }
+
     console.log('[WORKERS] Inicializados com sucesso.');
 
     return {
       prospectWorker,
       campaignWorker,
-      followUpWorker
+      followUpWorker,
+      salesAutonomyWorker
     };
   } catch (error) {
     console.warn(
