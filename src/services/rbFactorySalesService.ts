@@ -115,9 +115,13 @@ export const rbFactorySalesService={
     await init();
     const pipelineRows=await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',prospectId);
     const pipeline=pipelineRows[0];
-    if (pipeline && !['PROPOSAL_READY','CONTACTED','NEGOTIATION'].includes(pipeline.stage)) throw new Error('PROPOSAL_NOT_READY_FOR_SENDING');
-    const proposal=await prisma.websiteProposal.findFirst({where:{prospectId},orderBy:{id:'desc'}});
+    if (!pipeline) throw new Error('RB_FACTORY_PIPELINE_NOT_FOUND');
+    if (!['PROPOSAL_READY','CONTACTED','NEGOTIATION'].includes(pipeline.stage)) throw new Error('PROPOSAL_NOT_READY_FOR_SENDING');
+    const proposal = pipeline.proposalId
+      ? await prisma.websiteProposal.findUnique({where:{id:pipeline.proposalId}})
+      : null;
     if(!proposal) throw new Error('WEBSITE_PROPOSAL_NOT_FOUND');
+    if(proposal.prospectId !== prospectId) throw new Error('INVALID_COMMERCIAL_STATE');
     if(!['READY','SENT'].includes(proposal.status)) throw new Error('WEBSITE_PROPOSAL_NOT_READY');
     const updated=await prisma.websiteProposal.update({where:{id:proposal.id},data:{status:'SENT',sentAt:proposal.sentAt||new Date()}});
     await prisma.websiteProspect.update({where:{id:prospectId},data:{status:'PROPOSAL_SENT',lastContactAt:new Date()}});
@@ -157,12 +161,16 @@ export const rbFactorySalesService={
   async acceptProposal(prospectId:string,domainName?:string){
     return withPipelineLock(prospectId, async()=>{
     await init();
-    const proposal=await prisma.websiteProposal.findFirst({where:{prospectId},orderBy:{id:'desc'}});
-    if(!proposal) throw new Error('WEBSITE_PROPOSAL_NOT_FOUND');
     const pipelineRows=await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',prospectId);
     const pipeline=pipelineRows[0];
-    if(pipeline && !['PROPOSAL_READY','CONTACTED','NEGOTIATION','WON'].includes(pipeline.stage)) throw new Error('INVALID_COMMERCIAL_STATE');
-    if(!['SENT','READY','ACCEPTED'].includes(proposal.status)) throw new Error('WEBSITE_PROPOSAL_NOT_ACCEPTABLE');
+    if(!pipeline) throw new Error('RB_FACTORY_PIPELINE_NOT_FOUND');
+    if(!['PROPOSAL_READY','CONTACTED','NEGOTIATION','WON'].includes(pipeline.stage)) throw new Error('INVALID_COMMERCIAL_STATE');
+    const proposal = pipeline.proposalId
+      ? await prisma.websiteProposal.findUnique({where:{id:pipeline.proposalId}})
+      : null;
+    if(!proposal) throw new Error('WEBSITE_PROPOSAL_NOT_FOUND');
+    if(proposal.prospectId !== prospectId) throw new Error('INVALID_COMMERCIAL_STATE');
+    if(!['SENT','ACCEPTED'].includes(proposal.status)) throw new Error('WEBSITE_PROPOSAL_NOT_ACCEPTABLE');
     const result=await websiteCommercialService.acceptProposal(proposal.id,domainName);
     await (prisma as any).$executeRawUnsafe(`UPDATE "RbFactorySalesPipeline" SET stage='WON',nextAction='PREPARE_PROJECT',proposalId=?,updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,proposal.id,prospectId);
     await rbFactorySalesAgentService.closeSellerForProspect(prospectId,'WON');
