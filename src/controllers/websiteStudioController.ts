@@ -500,7 +500,16 @@ export const websiteStudioController = {
       const message = e?.message || 'Erro ao publicar projeto';
       const statusCode =
         ['WEBSITE_PROJECT_NOT_FOUND', 'APPROVED_DEMO_VERSION_NOT_FOUND'].includes(message) ? 404 :
-        ['PROPOSAL_NOT_ACCEPTED', 'DEMO_QUALITY_GATE_FAILED', 'VERCEL_TOKEN_NOT_CONFIGURED', 'DEPLOYMENT_PROVIDER_NOT_SUPPORTED'].includes(message) ? 400 :
+        [
+          'PROPOSAL_NOT_ACCEPTED',
+          'DEMO_QUALITY_GATE_FAILED',
+          'VERCEL_TOKEN_NOT_CONFIGURED',
+          'DEPLOYMENT_PROVIDER_NOT_SUPPORTED',
+          'DEPLOYMENT_URL_NOT_VERIFIED',
+          'DEPLOYMENT_ALREADY_IN_PROGRESS',
+          'PROPOSAL_SNAPSHOT_MISSING',
+          'APPROVED_DEMO_VERSION_MISMATCH'
+        ].includes(message) ? 409 :
         502;
       res.status(statusCode).json({ success: false, error: message });
     }
