@@ -132,6 +132,13 @@ export const rbFactorySalesAgentService = {
     try{notes=pipeline.notes?JSON.parse(pipeline.notes):{};}catch{notes={raw:pipeline.notes};}
     notes.salesAgent={temperature,intentScore,objection:result?.objection||null,confidence:Number(result?.confidence||0),updatedAt:new Date().toISOString()};
     if(explicitNoInterest) notes.salesAgent.outcome='EXPLICIT_NOT_INTERESTED';
+    if(nextAction==='ESCALATE_HUMAN_NEGOTIATION'){
+      notes.salesAgent.escalation={required:true,reason:result?.decisionPolicy?.reason||result?.decisionBarrier||'HUMAN_NEGOTIATION_REQUIRED',message:String(message||'').slice(0,1000),createdAt:new Date().toISOString()};
+      notes.salesAgent.autonomyPaused=true;
+    }
+    if(nextAction==='DISCOVER_DECISION_MAKER'){
+      notes.salesAgent.decisionMaker={required:true,identified:false,reason:'DECISION_AUTHORITY_UNCLEAR',lastMessage:String(message||'').slice(0,500),updatedAt:new Date().toISOString()};
+    }
     if(nextStage==='LOST' || nextStage==='WON') await this.closeSellerForProspect(prospectId,nextStage);
     await (prisma as any).$executeRawUnsafe(
       'UPDATE "RbFactorySalesPipeline" SET stage=?,nextAction=?,notes=?,updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?',
