@@ -74,6 +74,12 @@ export class WebsiteProspectorService {
       for (const business of result.businesses) {
         await businessProspectingManager.enrichBusinessesWithDetails([business]);
 
+        // A cidade explicitamente solicitada na pesquisa e a fonte autoritativa.
+        // O provider pode retornar uma localidade corrompida por encoding.
+        if (request.city) {
+          business.city = request.city;
+        }
+
         const existing = await this.findDuplicate(business);
         
         if (existing) {
@@ -89,7 +95,7 @@ export class WebsiteProspectorService {
               category: business.category || existing.category,
               subcategory: business.subcategory || existing.subcategory,
               segment: business.category || existing.segment,
-              city: this.preferValidCity(business.city, existing.city),
+              city: this.preferValidCity(request.city, business.city) || existing.city,
               state: business.state || existing.state,
               country: existing.country || 'BR',
               address: business.address || existing.address,
@@ -143,7 +149,7 @@ export class WebsiteProspectorService {
             category: business.category,
             subcategory: business.subcategory,
             segment: business.category,
-            city: this.preferValidCity(business.city, request.city),
+            city: request.city || this.preferValidCity(business.city, request.city),
             state: request.state || business.state,
             country: request.country || 'BR',
             address: business.address,
