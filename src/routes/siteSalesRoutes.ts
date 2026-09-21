@@ -2,7 +2,6 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { siteProspectingService } from '../services/siteProspectingService';
 import { siteAuditService } from '../services/siteAuditService';
-import { siteGeneratorService } from '../services/siteGeneratorService';
 import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
@@ -33,11 +32,12 @@ router.post('/prospects/:id/audit', adminAuthorization, async (req: Request, res
   } catch (e: any) { res.status(500).json({ error: e.message }); }
 });
 
-router.post('/prospects/:id/demo', adminAuthorization, async (req: Request, res: Response) => {
-  try {
-    const result = await siteGeneratorService.generateDemo(req.params.id);
-    res.json({ success: true, demo: result.demo, previewUrl: result.previewUrl });
-  } catch (e: any) { res.status(500).json({ error: e.message }); }
+router.post('/prospects/:id/demo', adminAuthorization, async (_req: Request, res: Response) => {
+  return res.status(410).json({
+    success: false,
+    error: 'LEGACY_DEMO_FLOW_DISABLED',
+    message: 'A geracao de demos deve ocorrer pelo pipeline RB Factory Sites, que usa enriquecimento, imagens, quality gate e idempotencia.'
+  });
 });
 
 router.get('/demo/:id', async (req: Request, res: Response) => {
