@@ -3,11 +3,12 @@ import { PrismaClient } from '@prisma/client';
 import { siteProspectingService } from '../services/siteProspectingService';
 import { siteAuditService } from '../services/siteAuditService';
 import { siteGeneratorService } from '../services/siteGeneratorService';
+import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
 const prisma = new PrismaClient();
 
-router.post('/prospect', async (req: Request, res: Response) => {
+router.post('/prospect', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const { city, state, segment, quantity } = req.body;
     if (!city || !state || !segment) return res.status(400).json({ error: 'Cidade, estado e segmento sao obrigatorios' });
@@ -18,7 +19,7 @@ router.post('/prospect', async (req: Request, res: Response) => {
   } catch (e: any) { res.status(500).json({ error: e.message }); }
 });
 
-router.post('/prospects/:id/audit', async (req: Request, res: Response) => {
+router.post('/prospects/:id/audit', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const p = await prisma.websiteProspect.findUnique({ where: { id: req.params.id } });
     if (!p) return res.status(404).json({ error: 'Prospect nao encontrado' });
@@ -32,7 +33,7 @@ router.post('/prospects/:id/audit', async (req: Request, res: Response) => {
   } catch (e: any) { res.status(500).json({ error: e.message }); }
 });
 
-router.post('/prospects/:id/demo', async (req: Request, res: Response) => {
+router.post('/prospects/:id/demo', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const result = await siteGeneratorService.generateDemo(req.params.id);
     res.json({ success: true, demo: result.demo, previewUrl: result.previewUrl });
@@ -48,7 +49,7 @@ router.get('/demo/:id', async (req: Request, res: Response) => {
   } catch (e: any) { res.status(500).json({ error: e.message }); }
 });
 
-router.post('/prospects/:id/proposal', async (req: Request, res: Response) => {
+router.post('/prospects/:id/proposal', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const p = await prisma.websiteProspect.findUnique({ where: { id: req.params.id } });
     if (!p) return res.status(404).json({ error: 'Prospect nao encontrado' });
@@ -59,7 +60,7 @@ router.post('/prospects/:id/proposal', async (req: Request, res: Response) => {
   } catch (e: any) { res.status(500).json({ error: e.message }); }
 });
 
-router.post('/prospects/:id/convert-lead', async (req: Request, res: Response) => {
+router.post('/prospects/:id/convert-lead', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const p = await prisma.websiteProspect.findUnique({ where: { id: req.params.id } });
     if (!p) return res.status(404).json({ error: 'Prospect nao encontrado' });
