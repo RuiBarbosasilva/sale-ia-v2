@@ -530,7 +530,9 @@ export const websiteStudioController = {
     } catch (e: any) {
       const message = e?.message || 'Erro ao registrar publicação';
       const status = ['WEBSITE_PROJECT_NOT_FOUND'].includes(message) ? 404
-        : ['DOMAIN_REQUIRED', 'HOSTING_PROVIDER_REQUIRED'].includes(message) ? 400 : 500;
+        : ['DOMAIN_REQUIRED', 'HOSTING_PROVIDER_REQUIRED'].includes(message) ? 400
+        : ['REAL_DEPLOYMENT_REQUIRED'].includes(message) ? 409
+        : 500;
       res.status(status).json({ success: false, error: message });
     }
   },
