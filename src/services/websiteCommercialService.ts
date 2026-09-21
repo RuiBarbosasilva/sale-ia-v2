@@ -1,6 +1,61 @@
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
 
 export class WebsiteCommercialService {
+  async activateSubscriptionAfterPublication(prospectId: string, publishedAt: Date = new Date()) {
+    const prospect = await prisma.websiteProspect.findUnique({
+      where: { id: prospectId },
+      include: { selectedPlan: true }
+    });
+
+    if (!prospect) throw new Error('WEBSITE_PROSPECT_NOT_FOUND');
+    if (!prospect.selectedPlan) throw new Error('WEBSITE_PLAN_REQUIRED');
+
+    const monthlyPrice = Number(prospect.selectedPlan.monthlyPrice || 0);
+    if (monthlyPrice <= 0) return null;
+
+    const existing = await prisma.websiteSubscription.findFirst({
+      where: {
+        prospectId,
+        planId: prospect.selectedPlan.id,
+        status: { in: ['PENDING', 'ACTIVE'] }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const nextBillingDate = new Date(publishedAt);
+    nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
+
+    if (existing) {
+      if (existing.status === 'ACTIVE') return existing;
+
+      return prisma.websiteSubscription.update({
+        where: { id: existing.id },
+        data: {
+          status: 'ACTIVE',
+          startDate: publishedAt,
+          nextBillingDate,
+          amount: monthlyPrice,
+          billingDay: publishedAt.getDate(),
+          notes: 'Mensalidade ativada após publicação do site.'
+        }
+      });
+    }
+
+    return prisma.websiteSubscription.create({
+      data: {
+        prospectId,
+        planId: prospect.selectedPlan.id,
+        planCode: prospect.selectedPlan.code,
+        amount: monthlyPrice,
+        status: 'ACTIVE',
+        billingDay: publishedAt.getDate(),
+        startDate: publishedAt,
+        nextBillingDate,
+        notes: 'Mensalidade iniciada após publicação do site.'
+      }
+    });
+  }
+
   async acceptProposal(proposalId: string, domainName?: string) {
     const proposal = await prisma.websiteProposal.findUnique({
       where: { id: proposalId },
@@ -98,32 +153,7 @@ export class WebsiteCommercialService {
 
       const monthlyPrice = Number(prospect.selectedPlan.monthlyPrice || 0);
 
-      let subscription = null;
-      if (monthlyPrice > 0) {
-        subscription = await tx.websiteSubscription.findFirst({
-          where: {
-            prospectId: prospect.id,
-            planId: prospect.selectedPlan.id,
-            status: { in: ['PENDING', 'ACTIVE'] },
-          },
-          orderBy: { createdAt: 'desc' },
-        });
-
-        if (!subscription) {
-          subscription = await tx.websiteSubscription.create({
-            data: {
-              prospectId: prospect.id,
-              planId: prospect.selectedPlan.id,
-              planCode: prospect.selectedPlan.code,
-              amount: monthlyPrice,
-              status: 'PENDING',
-              billingDay: 1,
-              startDate: new Date(),
-              notes: 'Criada na aprovacao da proposta; aguarda confirmacao de pagamento.',
-            },
-          });
-        }
-      }
+      const subscription = null;
 
       await tx.websiteProspect.update({
         where: { id: prospect.id },
