@@ -153,7 +153,7 @@ export const seniorSalesAgentService = {
   async prepareInitialApproach(conversationId:string){
     return withSalesLock('initial-approach:'+conversationId, async()=>{
     await init();
-    const existing=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE conversationId=? AND type=\\'SEND_MESSAGE\\' AND title=\\'Enviar primeira abordagem comercial\\' AND status IN (\\'PENDING_APPROVAL\\',\\'APPROVED\\',\\'SENT\\') ORDER BY createdAt DESC LIMIT 1',conversationId);
+    const existing=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE conversationId=? AND type=\'SEND_MESSAGE\' AND title=\'Enviar primeira abordagem comercial\' AND status IN (\'PENDING_APPROVAL\',\'APPROVED\',\'SENT\') ORDER BY createdAt DESC LIMIT 1',conversationId);
     if(existing[0]) return {conversationId,reused:true,action:existing[0],requiresApproval:true,nextBestAction:'SEND_FIRST_APPROACH'};
     const c=await this.getConversation(conversationId);
     let commercialContext:any=null; try{commercialContext=c.context?JSON.parse(c.context):null;}catch{commercialContext=null;}
@@ -323,7 +323,7 @@ export const seniorSalesAgentService = {
     const reason=String(input.reason||'FOLLOW_UP');
     const draft=String(input.draft||'');
     const existing=await (prisma as any).$queryRawUnsafe(
-      'SELECT * FROM "SalesFollowUp" WHERE conversationId=? AND status=\\'PENDING\\' AND reason=? ORDER BY scheduledAt ASC LIMIT 1',
+      'SELECT * FROM "SalesFollowUp" WHERE conversationId=? AND status=\'PENDING\' AND reason=? ORDER BY scheduledAt ASC LIMIT 1',
       conversationId,reason
     );
     if(existing[0]) return existing;
