@@ -130,6 +130,31 @@ export class WebsiteOutreachService {
       };
     }
 
+    // Claim atomico: evita dois workers/processos enviarem o mesmo e-mail
+    // simultaneamente. SENDING antigo pode ser recuperado apos 15 minutos.
+    const staleBefore = new Date(Date.now() - 15 * 60 * 1000);
+    const claim = await prisma.websiteOutreach.updateMany({
+      where: {
+        id: outreach.id,
+        OR: [
+          { status: 'READY' },
+          { status: 'SENDING', updatedAt: { lt: staleBefore } },
+        ],
+      },
+      data: { status: 'SENDING' },
+    });
+
+    if (claim.count !== 1) {
+      const current = await prisma.websiteOutreach.findUnique({ where: { id: outreach.id } });
+      return {
+        success: false,
+        status: current?.status || 'NOT_READY',
+        message: current?.status === 'SENT'
+          ? 'E-mail ja enviado anteriormente (idempotente)'
+          : 'Outreach ja esta em processamento por outro worker',
+      };
+    }
+
     const emailStatus = emailManager.getStatus();
     const activeProvider = emailManager.getActiveProvider();
 
