@@ -1,12 +1,13 @@
 
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
 const prisma = new PrismaClient();
 
 // Agendar novo post
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const { segmentId, platform, content, hashtags, scheduledFor } = req.body;
     const post = await prisma.scheduledPost.create({
@@ -37,7 +38,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // Simular Job de Publicação (Verifica posts pendentes e "publica")
-router.post('/run-job', async (req: Request, res: Response) => {
+router.post('/run-job', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const now = new Date();
     const pendingPosts = await prisma.scheduledPost.findMany({
@@ -66,7 +67,7 @@ router.post('/run-job', async (req: Request, res: Response) => {
 });
 
 // Deletar post
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', adminAuthorization, async (req: Request, res: Response) => {
   try {
     await prisma.scheduledPost.delete({ where: { id: req.params.id } });
     return res.json({ success: true });
