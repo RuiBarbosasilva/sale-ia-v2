@@ -176,7 +176,8 @@ export function initializeWorkers() {
     return {
       prospectWorker: null,
       campaignWorker: null,
-      followUpWorker: null
+      followUpWorker: null,
+      salesAutonomyWorker: null
     };
   }
 }
