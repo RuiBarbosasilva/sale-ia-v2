@@ -4,7 +4,7 @@ import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
 
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const { niche } = req.query;
     const products = await productService.list(niche as string);
@@ -14,7 +14,7 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/niches', async (req: Request, res: Response) => {
+router.get('/niches', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const niches = await productService.getNiches();
     return res.json({ success: true, niches });
