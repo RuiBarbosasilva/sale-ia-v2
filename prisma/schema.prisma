@@ -735,6 +735,7 @@ model WebsiteDemoJob {
   error        String?
   demoId       String?
   startedAt    DateTime?
+  leaseUntil   DateTime?
   completedAt  DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
