@@ -54,6 +54,18 @@ function cacheAudit(url: string, value: WebsiteAuditResult): void {
   });
 }
 
+function cleanHtmlText(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export const websiteAuditService = {
   async audit(rawUrl: string): Promise<WebsiteAuditResult> {
     const url = normalizeUrl(rawUrl);
@@ -73,37 +85,92 @@ export const websiteAuditService = {
 
       const html = String(response.data || '');
       const responseMs = Date.now() - started;
-      const https = /^https:/i.test(response.request?.res?.responseUrl || url);
+      const finalUrl = response.request?.res?.responseUrl || url;
+      const https = /^https:/i.test(finalUrl);
       const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/\s+/g, ' ').trim() || null;
       const hasViewport = /name=["']viewport["']/i.test(html);
       const hasDescription = /name=["']description["']/i.test(html);
-      const hasHttps = /^https:/i.test(url);
+      const hasCanonical = /<link[^>]+rel=["'][^"']*canonical[^"']*["']/i.test(html);
+      const hasH1 = /<h1(?:\s[^>]*)?>[\s\S]*?<\/h1>/i.test(html);
+      const hasNav = /<nav(?:\s[^>]*)?>[\s\S]*?<\/nav>/i.test(html);
+      const hasContactLink = /(?:href|action)=["'][^"']*(?:contato|contact|whatsapp|tel:|mailto:)[^"']*["']/i.test(html);
+      const hasPhone = /(?:\+?\d[\s().-]?){8,}/.test(cleanHtmlText(html));
+      const hasSocialLink = /(?:instagram|facebook|linkedin|youtube|tiktok)\.com/i.test(html);
+      const textLength = cleanHtmlText(html).length;
+      const imageCount = (html.match(/<img\b/gi) || []).length;
+      const hasModernMeta = /<meta[^>]+(?:name|property)=["'](?:og:|twitter:|theme-color)/i.test(html);
 
       if (response.status >= 400) issues.push(`HTTP_${response.status}`);
-      if (!hasHttps) issues.push('NO_HTTPS');
+      if (!https) issues.push('NO_HTTPS');
       if (!hasViewport) issues.push('NO_MOBILE_VIEWPORT');
       if (!hasDescription) issues.push('NO_META_DESCRIPTION');
       if (!title) issues.push('NO_TITLE');
+      if (!hasH1) issues.push('NO_H1');
+      if (!hasNav) issues.push('NO_NAVIGATION');
+      if (textLength < 300) issues.push('LOW_CONTENT');
+      if (imageCount === 0) issues.push('NO_IMAGES');
+      if (!hasContactLink && !hasPhone) issues.push('NO_CONTACT_SIGNAL');
+      if (!hasCanonical) issues.push('NO_CANONICAL');
+      if (!hasSocialLink) issues.push('NO_SOCIAL_LINK');
+      if (!hasModernMeta) issues.push('NO_SOCIAL_META');
       if (responseMs > 3000) issues.push('SLOW_RESPONSE');
 
-      let score = 100 - issues.length * 12;
-      if (!hasViewport) score -= 8;
-      if (!hasDescription) score -= 5;
+      // Sinais comerciais e técnicos têm pesos diferentes.
+      // Ausência de SEO/social isoladamente não transforma um site em
+      // oportunidade forte; problemas de acesso, mobile e contato pesam mais.
+      let score = 100;
+      const deductions: Record<string, number> = {
+        HTTP: 45,
+        NO_HTTPS: 12,
+        NO_MOBILE_VIEWPORT: 22,
+        NO_META_DESCRIPTION: 5,
+        NO_TITLE: 8,
+        NO_H1: 5,
+        NO_NAVIGATION: 8,
+        LOW_CONTENT: 12,
+        NO_IMAGES: 6,
+        NO_CONTACT_SIGNAL: 18,
+        NO_CANONICAL: 3,
+        NO_SOCIAL_LINK: 2,
+        NO_SOCIAL_META: 2,
+        SLOW_RESPONSE: 12,
+      };
+
+      for (const issue of issues) {
+        const key = issue.startsWith('HTTP_') ? 'HTTP' : issue;
+        score -= deductions[key] || 0;
+      }
+
       score = Math.max(0, Math.min(100, score));
 
-      const poor = response.status >= 400 || score < 65;
+      const reachable = response.status >= 200 && response.status < 400;
+      const criticalFailure =
+        !reachable ||
+        issues.includes('NO_MOBILE_VIEWPORT') ||
+        issues.includes('NO_CONTACT_SIGNAL');
+
+      const poor = !reachable || score < 55;
       const opportunityScore = Math.max(0, 100 - score);
+
+      let opportunityStatus: 'HIGH' | 'MEDIUM' | 'LOW';
+      if (!reachable || (criticalFailure && opportunityScore >= 35) || opportunityScore >= 65) {
+        opportunityStatus = 'HIGH';
+      } else if (opportunityScore >= 35) {
+        opportunityStatus = 'MEDIUM';
+      } else {
+        opportunityStatus = 'LOW';
+      }
 
       const result: WebsiteAuditResult = {
         url,
-        reachable: response.status < 400,
+        reachable,
         statusCode: response.status,
         auditScore: score,
         score,
         status: poor ? 'WEBSITE_POOR' : 'HAS_WEBSITE',
-        opportunityStatus: opportunityScore >= 50 ? 'HIGH' : opportunityScore >= 25 ? 'MEDIUM' : 'LOW',
+        opportunityStatus,
         opportunityScore,
-        priority: opportunityScore >= 50 ? 'HIGH' : opportunityScore >= 25 ? 'MEDIUM' : 'LOW',
+        priority: opportunityStatus,
         https,
         responseMs,
         title,
