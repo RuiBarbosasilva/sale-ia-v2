@@ -168,7 +168,7 @@ export const websiteStudioController = {
         message.includes('não encontrado') || message.includes('nao encontrado') ? 400 : 500;
       res.status(statusCode).json({ success: false, error: message });
     }
-  }
+  },
 
   async listVersions(req: Request, res: Response) {
     try {
