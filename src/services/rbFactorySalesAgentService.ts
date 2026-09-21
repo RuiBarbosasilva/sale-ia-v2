@@ -164,7 +164,7 @@ export const rbFactorySalesAgentService = {
     const pipeline=context.pipeline;
     if(!pipeline) return {executed:false,action:'WAIT',reason:'PIPELINE_NOT_FOUND'};
     if(['WON','LOST'].includes(String(pipeline.stage))) return {executed:false,action:'WAIT',reason:'TERMINAL_PIPELINE',stage:pipeline.stage};
-    const conversation=await this.ensureConversation(targetProspectId,'WHATSAPP');
+    const conversation=await this.ensureConversation(prospectId,'WHATSAPP');
     const c=conversation.conversation;
     const nextAction=String(pipeline.nextAction||'');
     const { rbFactorySalesService }=await import('./rbFactorySalesService');
