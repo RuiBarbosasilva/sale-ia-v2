@@ -1,10 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { creativeGeneratorService } from '../services/creativeGeneratorService';
+import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
 
 // Gerar criativo unico
-router.post('/generate', async (req: Request, res: Response) => {
+router.post('/generate', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const { productName, segment, targetAudience, tone } = req.body;
     
@@ -26,7 +27,7 @@ router.post('/generate', async (req: Request, res: Response) => {
 });
 
 // Gerar criativos em lote
-router.post('/generate-batch', async (req: Request, res: Response) => {
+router.post('/generate-batch', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const { products, targetAudience } = req.body;
     
