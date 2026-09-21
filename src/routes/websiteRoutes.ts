@@ -23,7 +23,8 @@ router.post('/studio/generate', adminAuthorization, websiteStudioController.gene
 router.post('/studio/demos/:id/regenerate', adminAuthorization, websiteStudioController.regenerate);
 router.post('/studio/demos/:id/repair-images', adminAuthorization, websiteStudioController.repairImages);
 router.post('/studio/demos/:id/approve', adminAuthorization, websiteStudioController.approve);
-router.get('/studio/demos/:id/html', adminAuthorization, websiteStudioController.getHtml);
+// Preview HTML de demo: a própria demo é destinada a ser compartilhada com prospects; ações administrativas continuam protegidas.
+router.get('/studio/demos/:id/html', websiteStudioController.getHtml);
 router.get('/studio/demos/:id/export', adminAuthorization, websiteStudioController.exportZip);
 router.post('/studio/generate-professional', adminAuthorization, websiteStudioController.generateProfessional);
 router.get('/studio/ai-status', adminAuthorization, websiteStudioController.aiStatus);
