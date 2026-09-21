@@ -1,9 +1,10 @@
 ﻿import { Router, Request, Response } from "express";
 import { resetLeadHumanMode, getLeads } from "../services/leadService";
+import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
 // Listar leads (CRM)
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const { status, stage, search } = req.query;
     const leads = await getLeads({
@@ -18,7 +19,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 
-router.post("/reset-human-mode", async (req: Request, res: Response) => {
+router.post("/reset-human-mode", adminAuthorization, async (req: Request, res: Response) => {
   try {
     const { phone } = req.body;
     if (!phone) return res.status(400).json({ status: "error", message: "O campo 'phone' é obrigatório." });
