@@ -391,6 +391,26 @@ export const rbFactorySalesAutonomyService = {
     await init();
     return (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesHumanAlert" WHERE status=\'OPEN\' ORDER BY createdAt DESC LIMIT ?',safeLimit(limit,20));
   },
+  async resolveAlert(alertId:string){
+    await init();
+    const idValue=String(alertId||'').trim();
+    if(!idValue) throw new Error('ALERT_ID_REQUIRED');
+    const row=(await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesHumanAlert" WHERE id=? LIMIT 1',idValue))[0];
+    if(!row) throw new Error('ALERT_NOT_FOUND');
+    const pipelineRows=await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',row.prospectId);
+    const pipeline=pipelineRows[0];
+    if(pipeline){
+      let notes:any={};
+      try{notes=pipeline.notes?JSON.parse(pipeline.notes):{};}catch{notes={};}
+      if(notes.salesAgent) {
+        notes.salesAgent.autonomyPaused=false;
+        notes.salesAgent.escalation={...(notes.salesAgent.escalation||{}),required:false,resolvedAt:new Date().toISOString()};
+      }
+      await (prisma as any).$executeRawUnsafe('UPDATE "RbFactorySalesPipeline" SET notes=?,updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?',JSON.stringify(notes),row.prospectId);
+    }
+    await (prisma as any).$executeRawUnsafe('UPDATE "RbFactorySalesHumanAlert" SET status=\'RESOLVED\',acknowledgedAt=COALESCE(acknowledgedAt,CURRENT_TIMESTAMP) WHERE id=?',idValue);
+    return (await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesHumanAlert" WHERE id=? LIMIT 1',idValue))[0];
+  },
   async acknowledgeAlert(alertId:string){
     await init();
     const idValue=String(alertId||'').trim();
