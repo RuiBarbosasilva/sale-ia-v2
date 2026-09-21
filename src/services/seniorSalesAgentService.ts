@@ -247,6 +247,35 @@ export const seniorSalesAgentService = {
     const followUp=await this.scheduleFollowUp(conversationId,{scheduledAt,reason,draft});
     return {reused:false,followUp};
   },
+  async prepareFollowUp(conversationId:string, reason:string){
+    await init();
+    const c=await this.getConversation(conversationId);
+    let commercialContext:any=null; try{commercialContext=c.context?JSON.parse(c.context):null;}catch{}
+    const recentMessages=c.messages.slice(-10).map((m:any)=>({role:m.role,content:m.content}));
+    const prompt=JSON.stringify({
+      task:'PREPARE_HUMAN_FOLLOW_UP',
+      reason,
+      conversation:{stage:c.stage,temperature:c.temperature,objection:c.objection,lastIntent:c.lastIntent},
+      recentMessages,
+      commercialContext,
+      salesPsychology:RB_FACTORY_SALES_PSYCHOLOGY,
+      instructions:[
+        'continue the existing conversation instead of restarting the sales pitch',
+        'sound like a real salesperson who remembers what was discussed',
+        'use one relevant reason to contact the prospect',
+        'use one clear question or next step',
+        'keep it concise and natural for WhatsApp',
+        'never guilt, pressure, fake urgency or pretend the prospect said something they did not say'
+      ]
+    });
+    const aiResult=await aiReply(prompt);
+    const fallback=reason==='ASK_FOR_CLOSE'
+      ? 'Oi! Conseguiu olhar a proposta com calma? Se fizer sentido, posso te ajudar a deixar os próximos passos bem simples.'
+      : reason==='INVESTIGATE_OBJECTION'
+        ? 'Oi! Fiquei pensando no ponto que você levantou. Se quiser, me diga o que ainda está te deixando em dúvida e eu vejo isso com você.'
+        : 'Oi! Passando por aqui para retomar nossa conversa. Se ainda fizer sentido para vocês, posso te mostrar o próximo passo sem compromisso.';
+    return {draft:aiResult?.reply||fallback,confidence:Number(aiResult?.confidence||70),decisionBarrier:aiResult?.decisionBarrier||null};
+  },
   async scheduleFollowUp(conversationId:string,input:any){ await init(); const when=new Date(input.scheduledAt||Date.now()+86400000); const reason=String(input.reason||'FOLLOW_UP'); const draft=String(input.draft||''); const idv=id(); await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesFollowUp" ("id","conversationId","scheduledAt","reason","draft") VALUES (?,?,?,?,?)',idv,conversationId,when.toISOString(),reason,draft); return (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesFollowUp" WHERE id=?',idv); },
   async dashboard(){ await init(); const q=async(sql:string)=>Number((await (prisma as any).$queryRawUnsafe(sql))[0]?.count||0); const [conversations,hot,pending,followups,objections]=await Promise.all([q('SELECT COUNT(*) count FROM "SalesConversation" WHERE status=\'OPEN\''),q('SELECT COUNT(*) count FROM "SalesConversation" WHERE temperature IN (\'HOT\',\'VERY_HOT\')'),q('SELECT COUNT(*) count FROM "SalesAction" WHERE status=\'PENDING_APPROVAL\''),q('SELECT COUNT(*) count FROM "SalesFollowUp" WHERE status=\'PENDING\''),q('SELECT COUNT(*) count FROM "SalesObjection" WHERE resolved=0')]); return {conversations,hotLeads:hot,pendingActions:pending,pendingFollowUps:followups,openObjections:objections,mode:'SENIOR_SALES_SUPERVISED'}; }
 };
