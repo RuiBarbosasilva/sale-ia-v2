@@ -14,6 +14,7 @@ class OAuthStateService {
   constructor() {
     // Limpeza automática de estados expirados a cada 1 minuto
     this.cleanupInterval = setInterval(() => this.cleanup(), 60 * 1000);
+    this.cleanupInterval.unref();
   }
 
   generateState(): string {
