@@ -142,6 +142,8 @@ export const seniorSalesAgentService = {
   },
   async prepareInitialApproach(conversationId:string){
     await init();
+    const existing=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE conversationId=? AND type=\\'SEND_MESSAGE\\' AND title=\\'Enviar primeira abordagem comercial\\' AND status IN (\\'PENDING_APPROVAL\\',\\'APPROVED\\',\\'SENT\\') ORDER BY createdAt DESC LIMIT 1',conversationId);
+    if(existing[0]) return {conversationId,reused:true,action:existing[0],requiresApproval:true,nextBestAction:'SEND_FIRST_APPROACH'};
     const c=await this.getConversation(conversationId);
     let commercialContext:any=null; try{commercialContext=c.context?JSON.parse(c.context):null;}catch{commercialContext=null;}
     const prompt=JSON.stringify({task:'PREPARE_INITIAL_COMMERCIAL_APPROACH',commercialContext,conversation:{channel:c.channel,stage:c.stage,temperature:c.temperature},salesPsychology:RB_FACTORY_SALES_PSYCHOLOGY,instructions:['personalize from observed facts','sound like a real WhatsApp conversation','lead with relevance, not a generic sales pitch','offer a low-friction next step','do not invent urgency or proof']});
@@ -302,6 +304,20 @@ export const seniorSalesAgentService = {
         : 'Oi! Passando por aqui para retomar nossa conversa. Se ainda fizer sentido para vocês, posso te mostrar o próximo passo sem compromisso.';
     return {draft:aiResult?.reply||fallback,confidence:Number(aiResult?.confidence||70),decisionBarrier:aiResult?.decisionBarrier||null};
   },
-  async scheduleFollowUp(conversationId:string,input:any){ await init(); const when=new Date(input.scheduledAt||Date.now()+86400000); const reason=String(input.reason||'FOLLOW_UP'); const draft=String(input.draft||''); const idv=id(); await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesFollowUp" ("id","conversationId","scheduledAt","reason","draft") VALUES (?,?,?,?,?)',idv,conversationId,when.toISOString(),reason,draft); return (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesFollowUp" WHERE id=?',idv); },
+  async scheduleFollowUp(conversationId:string,input:any){
+    await init();
+    const when=new Date(input.scheduledAt||Date.now()+86400000);
+    const reason=String(input.reason||'FOLLOW_UP');
+    const draft=String(input.draft||'');
+    const existing=await (prisma as any).$queryRawUnsafe(
+      'SELECT * FROM "SalesFollowUp" WHERE conversationId=? AND status=\\'PENDING\\' AND reason=? ORDER BY scheduledAt ASC LIMIT 1',
+      conversationId,reason
+    );
+    if(existing[0]) return existing;
+    const idv=id();
+    await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesFollowUp" ("id","conversationId","scheduledAt","reason","draft") VALUES (?,?,?,?,?)',idv,conversationId,when.toISOString(),reason,draft);
+    const created=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesFollowUp" WHERE id=?',idv);
+    return created;
+  },
   async dashboard(){ await init(); const q=async(sql:string)=>Number((await (prisma as any).$queryRawUnsafe(sql))[0]?.count||0); const [conversations,hot,pending,followups,objections]=await Promise.all([q('SELECT COUNT(*) count FROM "SalesConversation" WHERE status=\'OPEN\''),q('SELECT COUNT(*) count FROM "SalesConversation" WHERE temperature IN (\'HOT\',\'VERY_HOT\')'),q('SELECT COUNT(*) count FROM "SalesAction" WHERE status=\'PENDING_APPROVAL\''),q('SELECT COUNT(*) count FROM "SalesFollowUp" WHERE status=\'PENDING\''),q('SELECT COUNT(*) count FROM "SalesObjection" WHERE resolved=0')]); return {conversations,hotLeads:hot,pendingActions:pending,pendingFollowUps:followups,openObjections:objections,mode:'SENIOR_SALES_SUPERVISED'}; }
 };
