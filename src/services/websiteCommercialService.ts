@@ -182,6 +182,23 @@ export class WebsiteCommercialService {
     }
 
     const result = await prisma.$transaction(async tx => {
+      // Claim atômico da proposta antes de criar Lead/Projeto.
+      // Como WebsiteProject.prospectId não é UNIQUE, o findFirst/create sozinho
+      // permitiria dois accepts concorrentes criarem dois projetos. O updateMany
+      // condicional usa a própria linha UNIQUE da proposta como trava lógica.
+      const claim = await tx.websiteProposal.updateMany({
+        where: {
+          id: proposal.id,
+          status: { not: 'ACCEPTED' },
+          acceptedAt: null,
+        },
+        data: { status: 'ACCEPTING' },
+      });
+
+      if (claim.count !== 1) {
+        throw new Error('PROPOSAL_ACCEPTANCE_IN_PROGRESS');
+      }
+
       let safeLead = prospect.linkedLeadId
         ? await tx.lead.findUnique({ where: { id: prospect.linkedLeadId } })
         : null;
