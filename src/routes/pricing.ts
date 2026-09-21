@@ -1,6 +1,5 @@
 ﻿import { Router } from "express";
 import pricingService from "../services/pricingService";
-import { adminAuthorization } from "../middlewares/security";
 
 const router = Router();
 
@@ -97,7 +96,7 @@ router.get("/:id", async (req, res) => {
 /**
  * POST /negotiate
  */
-router.post("/negotiate", adminAuthorization, async (req, res) => {
+router.post("/negotiate", async (req, res) => {
   try {
     const result =
       await pricingService.negotiateQuote({
