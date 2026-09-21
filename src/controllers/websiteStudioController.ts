@@ -513,23 +513,16 @@ export const websiteStudioController = {
         success: true,
         project,
         publicationStatus: 'READY_TO_PUBLISH',
-        note: 'Publicação automática requer integração com provedor (Vercel/Netlify). Use o ZIP para publicar manualmente.',
+        note: 'O projeto está preparado para publicação automática no Vercel. O endpoint /studio/projects/publish faz o deploy real, aguarda READY, verifica a URL e só então marca PUBLISHED.',
         instructions: {
-          vercel: [
+          automatic: [
+            'Configure VERCEL_TOKEN no ambiente do Sale-IA v2',
+            'Chame POST /api/websites/studio/projects/publish com projectId',
+            'O sistema publica a versão comercialmente aprovada e retorna a URL real'
+          ],
+          manualFallback: [
             'Exporte o ZIP (botão Exportar ZIP)',
-            'Acesse https://vercel.com/new',
-            'Arraste a pasta extraída com index.html',
-            'Configure o domínio se necessário'
-          ],
-          netlify: [
-            'Exporte o ZIP',
-            'Acesse https://app.netlify.com/drop',
-            'Arraste a pasta extraída',
-            'Site publicado instantaneamente'
-          ],
-          hosting: [
-            'Exporte o ZIP',
-            'Envie index.html via FTP para public_html'
+            'Publique manualmente em um provedor de hospedagem'
           ]
         }
       });
