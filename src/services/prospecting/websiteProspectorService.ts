@@ -231,31 +231,34 @@ export class WebsiteProspectorService {
     // Evita fundir filiais ou negócios diferentes com nomes iguais.
     const phone = String(business.phone || '').replace(/\D/g, '');
     if (phone && business.city) {
-      const byPhoneCity = await prisma.websiteProspect.findFirst({
+      const byPhoneCity = await prisma.websiteProspect.findMany({
         where: {
           city: { equals: business.city },
           phone: { not: null },
         },
+        take: 100,
       });
 
-      if (byPhoneCity) {
-        const storedPhone = String(byPhoneCity.phone || '').replace(/\D/g, '');
-        if (storedPhone && storedPhone === phone) return byPhoneCity;
-      }
+      const phoneMatch = byPhoneCity.find((candidate) => {
+        const storedPhone = String(candidate.phone || '').replace(/\D/g, '');
+        return storedPhone && storedPhone === phone;
+      });
+
+      if (phoneMatch) return phoneMatch;
     }
 
     // 3) Site + cidade também é um identificador forte.
     const website = String(business.website || '').trim().toLowerCase();
     if (website && business.city) {
-      const byWebsiteCity = await prisma.websiteProspect.findFirst({
+      const byWebsiteCity = await prisma.websiteProspect.findMany({
         where: {
           city: { equals: business.city },
           currentWebsite: { not: null },
         },
+        take: 100,
       });
 
-      if (byWebsiteCity) {
-        const normalizeUrl = (value: string) =>
+      const normalizeUrl = (value: string) =>
           value
             .trim()
             .toLowerCase()
@@ -263,10 +266,13 @@ export class WebsiteProspectorService {
             .replace(/^www\./, '')
             .replace(/\/$/, '');
 
-        if (normalizeUrl(String(byWebsiteCity.currentWebsite || '')) === normalizeUrl(website)) {
-          return byWebsiteCity;
+        const websiteMatch = byWebsiteCity.find((candidate) =>
+          normalizeUrl(String(candidate.currentWebsite || '')) === normalizeUrl(website)
+        );
+
+        if (websiteMatch) {
+          return websiteMatch;
         }
-      }
     }
 
     // 4) Nome + endereço + cidade: fallback conservador.
@@ -669,6 +675,8 @@ export class WebsiteProspectorService {
     let totalUpdated = 0;
     let totalCreated = 0;
     let totalAudited = 0;
+    let sellerHandoffs = 0;
+    let sellerHandoffFailures = 0;
     const failedNiches: Array<{ niche: string; error: string }> = [];
 
     try {
@@ -934,6 +942,14 @@ export class WebsiteProspectorService {
 
                 if (this.isCommercialOpportunity(websiteStatus.opportunityStatus)) {
                   totalQualified++;
+                  if (business.phone) {
+                    const handoff = await this.handoffQualifiedProspectToSeller(existing.id);
+                    if (handoff.handoffStatus === 'READY_FOR_APPROVAL') {
+                      sellerHandoffs++;
+                    } else {
+                      sellerHandoffFailures++;
+                    }
+                  }
                 }
                 continue;
               }
@@ -1065,6 +1081,14 @@ export class WebsiteProspectorService {
 
               if (this.isCommercialOpportunity(websiteStatus.opportunityStatus)) {
                 totalQualified++;
+                if (business.phone) {
+                  const handoff = await this.handoffQualifiedProspectToSeller(prospect.id);
+                  if (handoff.handoffStatus === 'READY_FOR_APPROVAL') {
+                    sellerHandoffs++;
+                  } else {
+                    sellerHandoffFailures++;
+                  }
+                }
               }
 
             } catch (businessError: any) {
@@ -1151,6 +1175,8 @@ export class WebsiteProspectorService {
         totalAudited,
         nichesSearched:
           PROSPECTING_NICHES.length,
+        sellerHandoffs,
+        sellerHandoffFailures,
         failedNiches,
         failedNichesCount: failedNiches.length
       };
