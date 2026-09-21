@@ -4,6 +4,7 @@ import { websiteDesignService } from './websiteDesignService';
 import { websiteContentService } from './websiteContentService';
 import { websiteCompiler } from './websiteCompiler';
 import { creatorSelector } from './creatorSelector';
+import { websiteImageService } from './websiteImageService';
 
 const prisma = new PrismaClient();
 
