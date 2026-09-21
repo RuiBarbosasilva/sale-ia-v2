@@ -141,26 +141,38 @@ export const rbFactorySalesAutonomyService = {
   async bootstrap(){ const row=await controlRow(); ensureRuntimeTimer(); if(row?.status==='RUNNING') void runRuntimeCycle(); return this.status(); },
   async discoverAndQualify(config:any={}){
     const city=String(config.city||'Poços de Caldas'), state=String(config.state||'MG').toUpperCase();
-    const niches=Array.isArray(config.niches)?config.niches:[]; const maxResults=Math.min(20,Math.max(1,Number(config.maxResults||10)));
+    const niches=Array.isArray(config.niches)?config.niches:[];
+    const maxResults=Math.min(20,Math.max(1,Number(config.maxResults||10)));
     const results:any[]=[];
     for(const niche of niches){
+      const control=await controlRow();
+      if(control?.status!=='RUNNING') break;
       try{
         const found=await websiteProspectorService.searchProspects({city,state,niche,maxResults});
         const prospects=await websiteProspectorService.getProspects({city,state,niche,limit:maxResults,opportunityOnly:true});
         for(const p of prospects.slice(0,maxResults)){
+          const currentControl=await controlRow();
+          if(currentControl?.status!=='RUNNING') break;
           try{
             await websiteEnrichmentService.enrichProspect(p.id);
             await websiteOpportunityScoringService.calculateScore(p.id);
             const fresh=await prisma.websiteProspect.findUnique({where:{id:p.id}});
-            if(fresh?.demoStatus!=='READY' && fresh?.demoStatus!=='APPROVED'){
+            if(fresh?.demoStatus!=='READY' && fresh?.demoStatus!=='APPROVED' && RB_FACTORY_SALES_AUTONOMY.autoPrepareDemo){
               try{ await websiteDemoFactoryService.generateDemoForProspect(p.id,{useAI:true}); }catch{}
             }
             const afterDemo=await prisma.websiteProspect.findUnique({where:{id:p.id}});
-            if(afterDemo?.email && process.env.RB_FACTORY_EMAIL_AUTOSEND==='true'){
-              try{ const prepared=await websiteOutreachService.prepareOutreach(p.id); if(prepared?.outreachId) await websiteOutreachService.sendOutreach(p.id); }catch{}
+            const stillRunning=(await controlRow())?.status==='RUNNING';
+            if(stillRunning && businessHours() && afterDemo?.email && process.env.RB_FACTORY_EMAIL_AUTOSEND==='true'){
+              try{
+                const prepared=await websiteOutreachService.prepareOutreach(p.id);
+                if(prepared?.outreachId && (await controlRow())?.status==='RUNNING') await websiteOutreachService.sendOutreach(p.id);
+              }catch(error:any){
+                await audit({prospectId:p.id,action:'EMAIL_OUTBOUND',status:'BLOCKED',reason:String(error?.message||error)});
+              }
             }
-            }
-          }catch{}
+          }catch(error:any){
+            await audit({prospectId:p.id,action:'PROSPECT_QUALIFICATION',status:'ERROR',reason:String(error?.message||error)});
+          }
         }
         results.push({niche,found:found.totalFound,created:found.totalCreated,audited:found.totalAudited,qualified:found.totalQualified});
       }catch(error:any){ results.push({niche,error:String(error?.message||error)}); }
