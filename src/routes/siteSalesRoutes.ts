@@ -40,7 +40,7 @@ router.post('/prospects/:id/demo', adminAuthorization, async (_req: Request, res
   });
 });
 
-router.get('/demo/:id', async (req: Request, res: Response) => {
+router.get('/demo/:id', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const demo = await prisma.websiteDemo.findUnique({ where: { id: req.params.id } });
     if (!demo) return res.status(404).json({ error: 'Demo nao encontrado' });
@@ -65,7 +65,7 @@ router.post('/prospects/:id/convert-lead', adminAuthorization, async (_req: Requ
   });
 });
 
-router.get('/prospects', async (req: Request, res: Response) => {
+router.get('/prospects', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const { city, segment, status } = req.query;
     const where: any = {};
