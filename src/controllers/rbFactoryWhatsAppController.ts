@@ -9,7 +9,10 @@ function webhookEventKey(req:Request,phone:string,message:string){
   const body:any=req.body||{};
   const explicit=body.eventId||body.eventID||body.messageId||body.messageID||body.key?.id||body.data?.key?.id||body.data?.messageId||body.data?.eventId;
   if(explicit) return 'provider:'+String(explicit);
-  return 'content:'+crypto.createHash('sha256').update(JSON.stringify({phone,message})).digest('hex');
+  // Providers without a stable event id can legitimately deliver the same text again later.
+  // Keep the fallback dedupe bounded to a short time bucket instead of suppressing that text forever.
+  const bucket=Math.floor(Date.now()/(5*60*1000));
+  return 'content:'+crypto.createHash('sha256').update(JSON.stringify({phone,message,bucket})).digest('hex');
 }
 
 export const rbFactoryWhatsAppController = {
