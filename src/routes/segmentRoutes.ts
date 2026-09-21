@@ -1,10 +1,11 @@
 ﻿import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
 const prisma = new PrismaClient();
 
-router.post('/segments/query', async (req: Request, res: Response) => {
+router.post('/segments/query', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const { status, segment, scoreMin, scoreMax } = req.body;
     const where: any = {};
@@ -22,7 +23,7 @@ router.post('/segments/query', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/segments/stats', async (req: Request, res: Response) => {
+router.get('/segments/stats', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const total = await prisma.lead.count();
     const byStatus = await prisma.lead.groupBy({ by: ['status'], _count: true });
