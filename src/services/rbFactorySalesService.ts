@@ -26,6 +26,12 @@ async function init(){
       "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
   `);
+  // O lock em memória evita corridas dentro do processo; este índice garante
+  // unicidade também quando houver mais de uma instância/processo do servidor.
+  await (prisma as any).$executeRawUnsafe(`
+    CREATE UNIQUE INDEX IF NOT EXISTS "RbFactorySalesPipeline_prospectId_key"
+    ON "RbFactorySalesPipeline" ("prospectId");
+  `);
   initialized=true;
 }
 function id(){return crypto.randomUUID();}
