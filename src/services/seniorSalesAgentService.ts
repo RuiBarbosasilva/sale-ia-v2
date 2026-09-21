@@ -127,8 +127,10 @@ export const seniorSalesAgentService = {
     const confidence=Math.min(Number(ai?.confidence||65), Number(policy.confidence||100));
     await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesConversationMessage" ("id","conversationId","role","content","intent","objection") VALUES (?,?,?,?,?,?)',id(),conversationId,'AGENT_DRAFT',reply,String(ai?.intent||localIntent),obj);
     await (prisma as any).$executeRawUnsafe('UPDATE "SalesConversation" SET "stage"=?,"temperature"=?,"intentScore"=?,"objection"=?,"lastIntent"=?,"nextBestAction"=?,"updatedAt"=CURRENT_TIMESTAMP WHERE id=?',st,temp,localIntent,obj,ai?.intent||String(localIntent),next,conversationId);
-    await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesAction" ("id","conversationId","type","title","payload") VALUES (?,?,?,?,?)',id(),conversationId,'SEND_MESSAGE','Enviar resposta comercial',JSON.stringify({reply,confidence,escalationRequired:Boolean(ai?.escalationRequired)||policy.escalationRequired,persuasionStrategy:ai?.persuasionStrategy||null,decisionBarrier:ai?.decisionBarrier||null,decisionPolicy:policy}));
-    return {conversationId,reply,stage:st,temperature:temp,intentScore:localIntent,objection:obj,nextBestAction:next,confidence,requiresApproval:true,escalationRequired:Boolean(ai?.escalationRequired)||policy.escalationRequired,persuasionStrategy:ai?.persuasionStrategy||null,decisionBarrier:ai?.decisionBarrier||null,decisionPolicy:policy};
+    const actionId=id();
+    await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesAction" ("id","conversationId","type","title","payload") VALUES (?,?,?,?,?)',actionId,conversationId,'SEND_MESSAGE','Enviar resposta comercial',JSON.stringify({reply,confidence,escalationRequired:Boolean(ai?.escalationRequired)||policy.escalationRequired,persuasionStrategy:ai?.persuasionStrategy||null,decisionBarrier:ai?.decisionBarrier||null,decisionPolicy:policy}));
+    const action=(await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE id=? LIMIT 1',actionId))[0];
+    return {conversationId,reply,stage:st,temperature:temp,intentScore:localIntent,objection:obj,nextBestAction:next,confidence,requiresApproval:true,escalationRequired:Boolean(ai?.escalationRequired)||policy.escalationRequired,persuasionStrategy:ai?.persuasionStrategy||null,decisionBarrier:ai?.decisionBarrier||null,decisionPolicy:policy,action};
   },
   fallback(customer:string,obj:string|null,score:number){
     if(obj==='PRICE') return 'Entendo. Antes de falar em preço, quero evitar te indicar algo que não faça sentido. O que pesa mais para você: o valor inicial, o custo mensal ou o retorno esperado?';
@@ -243,6 +245,7 @@ export const seniorSalesAgentService = {
   },
   async scheduleRecommendedFollowUp(conversationId:string,result:any){
     await init();
+    const c=await this.getConversation(conversationId);
     const reason=String(result?.nextBestAction||'FOLLOW_UP');
     if(['LOST','WON','REVIEW'].includes(reason)) return {reused:false,followUp:null,skipped:true,reason:'TERMINAL_OR_REVIEW'};
     const existing=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesFollowUp" WHERE conversationId=? AND status=\'PENDING\' ORDER BY scheduledAt ASC LIMIT 1',conversationId);
