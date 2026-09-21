@@ -439,14 +439,26 @@ export class WebsiteService {
       throw new Error('VERCEL_TOKEN_NOT_CONFIGURED');
     }
 
-    await prisma.websiteProject.update({
-      where: { id: projectId },
+    // Lock atomico de publicação: evita dois cliques/webhooks iniciarem
+    // deployments simultâneos para o mesmo projeto.
+    const claim = await prisma.websiteProject.updateMany({
+      where: {
+        id: projectId,
+        status: { not: 'PUBLISHED' },
+        deploymentStatus: { not: 'DEPLOYING' }
+      },
       data: {
         deploymentStatus: 'DEPLOYING',
         status: 'CODING',
         currentVersion: demo.version
       }
     });
+
+    if (claim.count === 0) {
+      const current = await prisma.websiteProject.findUnique({ where: { id: projectId } });
+      if (current?.status === 'PUBLISHED' && current.publishedUrl) return current;
+      throw new Error('DEPLOYMENT_ALREADY_IN_PROGRESS');
+    }
 
     try {
       const deployment = await vercelDeploymentProvider.deploy({
