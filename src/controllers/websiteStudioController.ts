@@ -499,6 +499,8 @@ export const websiteStudioController = {
     } catch (e: any) {
       const message = e?.message || 'Erro ao publicar projeto';
       const statusCode =
+        constPublicationSyncFailed = message.startsWith('PUBLICATION_STATE_SYNC_FAILED:');
+      const statusCode =
         ['WEBSITE_PROJECT_NOT_FOUND', 'APPROVED_DEMO_VERSION_NOT_FOUND'].includes(message) ? 404 :
         [
           'PROPOSAL_NOT_ACCEPTED',
@@ -510,7 +512,7 @@ export const websiteStudioController = {
           'PROPOSAL_SNAPSHOT_MISSING',
           'APPROVED_DEMO_VERSION_MISMATCH',
           'PUBLICATION_STATE_SYNC_FAILED'
-        ].includes(message) ? 409 :
+        ].includes(message) || constPublicationSyncFailed ? 409 :
         502;
       res.status(statusCode).json({ success: false, error: message });
     }
