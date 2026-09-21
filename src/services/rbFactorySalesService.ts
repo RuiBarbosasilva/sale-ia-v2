@@ -40,9 +40,9 @@ export const rbFactorySalesService={
     await init();
     const prospect=await prisma.websiteProspect.findUnique({where:{id:prospectId}});
     if(!prospect) throw new Error('WEBSITE_PROSPECT_NOT_FOUND');
-    const auditScore=prospect.websiteHealthScore ?? 0;
-    const priority=Math.min(100, Math.round((prospect.websiteOpportunityScore ?? 0) + (prospect.phone ? 5 : 0)));
-    const audit={score:auditScore,status:prospect.websiteOpportunityStatus || (prospect.currentWebsite ? 'UNKNOWN' : 'NO_WEBSITE'),priority:prospect.priority};
+    const auditScore=prospect.websiteScore ?? 0;
+    const priority=Math.min(100, Math.round((prospect.score ?? prospect.websiteScore ?? 0) + (prospect.phone ? 5 : 0)));
+    const audit={score:auditScore,status:prospect.websiteStatus || (prospect.currentWebsite ? 'UNKNOWN' : 'NO_WEBSITE'),priority:prospect.priority};
     const existing=await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',prospectId);
     if(existing[0]) {
       await (prisma as any).$executeRawUnsafe(
@@ -83,7 +83,9 @@ export const rbFactorySalesService={
     let notes:any={};
     try{notes=pipeline[0]?.notes?JSON.parse(pipeline[0].notes):{};}catch{notes={};}
     notes.demoModel=model;
-    await (prisma as any).$executeRawUnsafe(`UPDATE "RbFactorySalesPipeline" SET stage='DEMO_READY',demoId=?,nextAction='SEND_DEMO',notes=?,updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,result.demoId,JSON.stringify(notes),prospectId);
+    const demoStage = result.qualityRecommendation === 'approve' && Number(result.qualityScore || 0) >= 7.5 ? 'DEMO_READY' : 'AUDITED';
+    const nextAction = demoStage === 'DEMO_READY' ? 'SEND_DEMO' : 'IMPROVE_DEMO';
+    await (prisma as any).$executeRawUnsafe(`UPDATE "RbFactorySalesPipeline" SET stage=?,demoId=?,nextAction=?,notes=?,updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,demoStage,result.demoId,nextAction,JSON.stringify(notes),prospectId);
     return result;
   },
 
@@ -136,7 +138,7 @@ export const rbFactorySalesService={
           phone,email,
           status:'NEW_LEAD',
           stage:'NEGOTIATION',
-          score:prospect.websiteOpportunityScore||0
+          score:prospect.score||prospect.websiteScore||0
         }
       });
     } else {
@@ -145,7 +147,7 @@ export const rbFactorySalesService={
         data:{
           name:lead.name||prospect.contactPerson||prospect.companyName,
           stage:'NEGOTIATION',
-          score:Math.max(lead.score||0,prospect.websiteOpportunityScore||0)
+          score:Math.max(lead.score||0,prospect.score||prospect.websiteScore||0)
         }
       });
     }
