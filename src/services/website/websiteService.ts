@@ -11,6 +11,7 @@ import { websiteCommercialService } from '../websiteCommercialService';
 const prisma = new PrismaClient();
 const PROPOSAL_SNAPSHOT_PREFIX = '<!-- RB_FACTORY_PROPOSAL_SNAPSHOT:';
 const PROPOSAL_SNAPSHOT_SUFFIX = ' -->';
+const DEPLOYMENT_RECOVERY_TIMEOUT_MS = 15 * 60 * 1000;
 
 function readCommercialSnapshot(content?: string | null): { demoId: string; demoVersion: number } | null {
   if (!content) return null;
@@ -505,6 +506,30 @@ export class WebsiteService {
       throw new Error('VERCEL_TOKEN_NOT_CONFIGURED');
     }
 
+    // Se o processo caiu durante um deployment, o estado DEPLOYING não pode
+    // bloquear o projeto para sempre. Só recuperamos operações sem timestamp
+    // de início conhecido (legado) nunca automaticamente; estados modernos
+    // são recuperáveis apenas após 15 minutos, tempo muito acima do polling
+    // máximo do provider, evitando liberar um deployment ainda em andamento.
+    if (project.deploymentStatus === 'DEPLOYING' && project.deploymentStartedAt) {
+      const cutoff = new Date(Date.now() - DEPLOYMENT_RECOVERY_TIMEOUT_MS);
+      if (project.deploymentStartedAt < cutoff) {
+        await prisma.websiteProject.updateMany({
+          where: {
+            id: projectId,
+            status: 'CODING',
+            deploymentStatus: 'DEPLOYING',
+            deploymentStartedAt: project.deploymentStartedAt
+          },
+          data: {
+            deploymentStatus: 'FAILED',
+            status: 'REVIEW',
+            deploymentStartedAt: null
+          }
+        });
+      }
+    }
+
     // Lock atomico de publicação: evita dois cliques/webhooks iniciarem
     // deployments simultâneos para o mesmo projeto.
     const claim = await prisma.websiteProject.updateMany({
@@ -515,6 +540,7 @@ export class WebsiteService {
       },
       data: {
         deploymentStatus: 'DEPLOYING',
+        deploymentStartedAt: new Date(),
         status: 'CODING',
         currentVersion: demo.version
       }
@@ -543,6 +569,7 @@ export class WebsiteService {
         where: { id: projectId },
         data: {
           deploymentStatus: 'FAILED',
+          deploymentStartedAt: null,
           status: 'REVIEW'
         }
       }).catch(() => undefined);
@@ -552,7 +579,7 @@ export class WebsiteService {
     if (!deployment?.verified || !deployment?.url) {
       await prisma.websiteProject.update({
         where: { id: projectId },
-        data: { deploymentStatus: 'FAILED', status: 'REVIEW' }
+        data: { deploymentStatus: 'FAILED', deploymentStartedAt: null, status: 'REVIEW' }
       }).catch(() => undefined);
       throw new Error('DEPLOYMENT_URL_NOT_VERIFIED');
     }
@@ -566,6 +593,7 @@ export class WebsiteService {
         hostingProvider: deployment.provider,
         deploymentId: deployment.deploymentId,
         deploymentStatus: 'READY',
+        deploymentStartedAt: null,
         publishedUrl: deployment.url,
         publishedAt
       }
