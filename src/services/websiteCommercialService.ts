@@ -90,19 +90,36 @@ export class WebsiteCommercialService {
       });
     }
 
-    return prisma.websiteSubscription.create({
-      data: {
-        prospectId,
-        planId: prospect.selectedPlan.id,
-        planCode: prospect.selectedPlan.code,
-        amount: monthlyPrice,
-        status: 'ACTIVE',
-        billingDay: publishedAt.getDate(),
-        startDate: publishedAt,
-        nextBillingDate,
-        notes: 'Mensalidade iniciada após publicação do site.'
+    try {
+      return await prisma.websiteSubscription.create({
+        data: {
+          prospectId,
+          planId: prospect.selectedPlan.id,
+          planCode: prospect.selectedPlan.code,
+          amount: monthlyPrice,
+          status: 'ACTIVE',
+          billingDay: publishedAt.getDate(),
+          startDate: publishedAt,
+          nextBillingDate,
+          notes: 'Mensalidade iniciada após publicação do site.'
+        }
+      });
+    } catch (error: any) {
+      // A restrição única de linhas PENDING/ACTIVE protege contra duas
+      // chamadas concorrentes tentando iniciar a mesma mensalidade.
+      if (error?.code === 'P2002') {
+        const winner = await prisma.websiteSubscription.findFirst({
+          where: {
+            prospectId,
+            planId: prospect.selectedPlan.id,
+            status: { in: ['PENDING', 'ACTIVE'] }
+          },
+          orderBy: { createdAt: 'desc' }
+        });
+        if (winner) return winner;
       }
-    });
+      throw error;
+    }
   }
 
   async acceptProposal(proposalId: string, domainName?: string) {
