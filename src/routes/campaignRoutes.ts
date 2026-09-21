@@ -1,10 +1,11 @@
 ﻿import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
 const prisma = new PrismaClient();
 
-router.post('/campaigns', async (req: Request, res: Response) => {
+router.post('/campaigns', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const { name, type, channel, dailyLimit, frequencyLimit } = req.body;
     const campaign = await prisma.campaign.create({
@@ -16,7 +17,7 @@ router.post('/campaigns', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/campaigns/:id/leads', async (req: Request, res: Response) => {
+router.post('/campaigns/:id/leads', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const { leadIds } = req.body;
     const results = [];
@@ -34,7 +35,7 @@ router.post('/campaigns/:id/leads', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/campaigns/:id/start', async (req: Request, res: Response) => {
+router.post('/campaigns/:id/start', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const campaign = await prisma.campaign.update({ where: { id: req.params.id }, data: { status: 'RUNNING' } });
     return res.json({ success: true, campaign });
