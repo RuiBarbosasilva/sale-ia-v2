@@ -552,7 +552,7 @@ export class WebsiteService {
 
   /**
    * Auto Improvement Loop (P9): ate 3 ciclos tentando resolver critical issues.
-   * Threshold: score < 7.0 OU criticalIssues.length > 0
+   * Threshold: score < 7.5 OU criticalIssues.length > 0
    * Nao loop infinito: retorna apos 3 ciclos mesmo se nao atingir threshold.
    */
   async improveDemo(demoId: string, maxCycles: number = 3): Promise<{
@@ -593,7 +593,7 @@ export class WebsiteService {
     let cycles = 0;
 
     for (let i = 1; i <= maxCycles; i++) {
-      const needsImprovement = currentReview.overallScore < 7.0 || (currentReview.criticalIssues && currentReview.criticalIssues.length > 0);
+      const needsImprovement = currentReview.overallScore < 7.5 || (currentReview.criticalIssues && currentReview.criticalIssues.length > 0);
       if (!needsImprovement) break;
 
       cycles++;
