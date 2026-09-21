@@ -586,18 +586,42 @@ export class WebsiteService {
 
     const publishedAt = new Date();
 
-    const published = await prisma.websiteProject.update({
-      where: { id: projectId },
-      data: {
-        status: 'PUBLISHED',
-        hostingProvider: deployment.provider,
-        deploymentId: deployment.deploymentId,
-        deploymentStatus: 'READY',
-        deploymentStartedAt: null,
-        publishedUrl: deployment.url,
-        publishedAt
+    // A Vercel deployment that already reached READY is an external fact.
+    // Persist that fact with bounded retries so a transient DB failure does
+    // not leave the project permanently in DEPLOYING after the site is live.
+    let published;
+    let lastPersistenceError: any = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        published = await prisma.websiteProject.update({
+          where: { id: projectId },
+          data: {
+            status: 'PUBLISHED',
+            hostingProvider: deployment.provider,
+            deploymentId: deployment.deploymentId,
+            deploymentStatus: 'READY',
+            deploymentStartedAt: null,
+            publishedUrl: deployment.url,
+            publishedAt
+          }
+        });
+        break;
+      } catch (error: any) {
+        lastPersistenceError = error;
+        if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 250 * (attempt + 1)));
       }
-    });
+    }
+
+    if (!published) {
+      // Keep DEPLOYING: this is safer than marking FAILED, because the
+      // provider has already confirmed a real production deployment. The
+      // recorded deploymentStartedAt lets the recovery/reconciliation flow
+      // identify the stale state without falsely declaring the site failed.
+      throw new Error(
+        'PUBLICATION_STATE_SYNC_FAILED:' +
+        (lastPersistenceError?.message || 'DATABASE_UPDATE_FAILED')
+      );
+    }
 
     // A publicação é um fato externo já confirmado pelo provedor. Falhas
     // posteriores (assinatura/evento) não podem transformar um site publicado
