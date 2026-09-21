@@ -1,5 +1,52 @@
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
 
+const PROPOSAL_SNAPSHOT_PREFIX = '<!-- RB_FACTORY_PROPOSAL_SNAPSHOT:';
+const PROPOSAL_SNAPSHOT_SUFFIX = ' -->';
+
+type ProposalSnapshot = {
+  version: number;
+  planId: string;
+  planCode: string;
+  planName: string;
+  projectPrice: number;
+  monthlyPrice: number;
+  demoVersion: number;
+  qualityScore: number;
+  paymentTerms: string;
+  monthlyStartRule: string;
+  generatedAt: string;
+};
+
+function readProposalSnapshot(content?: string | null): ProposalSnapshot | null {
+  if (!content) return null;
+  const start = content.indexOf(PROPOSAL_SNAPSHOT_PREFIX);
+  if (start < 0) return null;
+  const payloadStart = start + PROPOSAL_SNAPSHOT_PREFIX.length;
+  const end = content.indexOf(PROPOSAL_SNAPSHOT_SUFFIX, payloadStart);
+  if (end < 0) return null;
+
+  try {
+    const json = Buffer.from(content.slice(payloadStart, end), 'base64').toString('utf8');
+    const parsed = JSON.parse(json) as Partial<ProposalSnapshot>;
+    if (!parsed.planId || !parsed.planCode || !parsed.demoVersion) return null;
+    return {
+      version: Number(parsed.version || 1),
+      planId: String(parsed.planId),
+      planCode: String(parsed.planCode),
+      planName: String(parsed.planName || parsed.planCode),
+      projectPrice: Number(parsed.projectPrice || 0),
+      monthlyPrice: Number(parsed.monthlyPrice || 0),
+      demoVersion: Number(parsed.demoVersion),
+      qualityScore: Number(parsed.qualityScore || 0),
+      paymentTerms: String(parsed.paymentTerms || ''),
+      monthlyStartRule: String(parsed.monthlyStartRule || ''),
+      generatedAt: String(parsed.generatedAt || ''),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export class WebsiteCommercialService {
   async activateSubscriptionAfterPublication(prospectId: string, publishedAt: Date = new Date()) {
     const prospect = await prisma.websiteProspect.findUnique({
@@ -109,16 +156,25 @@ export class WebsiteCommercialService {
     const prospect = proposal.prospect;
     if (!prospect) throw new Error('WEBSITE_PROSPECT_NOT_FOUND');
 
-    const approvedDemo =
-      prospect.demos.find(d => d.status === 'APPROVED') ||
-      prospect.demos.find(d => d.status === 'READY');
+    const snapshot = readProposalSnapshot(proposal.content);
+    if (!snapshot) {
+      throw new Error('PROPOSAL_SNAPSHOT_MISSING: A proposta nao possui o snapshot comercial necessario para aceite');
+    }
+
+    const approvedDemo = prospect.demos.find(
+      d => d.version === snapshot.demoVersion && ['APPROVED', 'READY'].includes(d.status)
+    );
 
     if (!approvedDemo) {
       throw new Error('DEMO_NOT_READY: Nenhuma demo aprovada encontrada');
     }
 
-    if (!prospect.selectedPlan) {
-      throw new Error('WEBSITE_PLAN_REQUIRED: Prospect sem plano selecionado');
+    const acceptedPlan = await prisma.websitePlan.findFirst({
+      where: { id: snapshot.planId, code: snapshot.planCode, active: true },
+    });
+
+    if (!acceptedPlan) {
+      throw new Error('WEBSITE_PLAN_SNAPSHOT_INVALID: O plano registrado na proposta nao esta mais disponivel');
     }
 
     if (!prospect.phone) {
@@ -186,7 +242,7 @@ export class WebsiteCommercialService {
         },
       });
 
-      const monthlyPrice = Number(prospect.selectedPlan.monthlyPrice || 0);
+      const monthlyPrice = snapshot.monthlyPrice;
 
       const subscription = null;
 
@@ -195,7 +251,8 @@ export class WebsiteCommercialService {
         data: {
           linkedLeadId: updatedLead.id,
           status: 'WON',
-          estimatedValue: Number(prospect.selectedPlan.projectPrice || 0) + monthlyPrice,
+          selectedPlanId: acceptedPlan.id,
+          estimatedValue: snapshot.projectPrice + snapshot.monthlyPrice,
         },
       });
 
@@ -208,10 +265,12 @@ export class WebsiteCommercialService {
             proposalId: proposal.id,
             projectId: project.id,
             demoVersion: approvedDemo.version,
-            planId: prospect.selectedPlan.id,
-            planCode: prospect.selectedPlan.code,
-            projectPrice: prospect.selectedPlan.projectPrice,
+            planId: acceptedPlan.id,
+            planCode: snapshot.planCode,
+            projectPrice: snapshot.projectPrice,
             monthlyPrice,
+            paymentTerms: snapshot.paymentTerms,
+            monthlyStartRule: snapshot.monthlyStartRule,
             leadId: updatedLead.id,
           }),
         },
