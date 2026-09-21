@@ -14,6 +14,7 @@ export class BusinessProspectingManager {
   private readonly detailsCache = new Map<string, CachedDetails>();
   private readonly detailsCacheTtlMs = 10 * 60 * 1000;
   private readonly detailsCacheMaxEntries = 1000;
+  private readonly detailsConcurrency = 4;
 
   getStatus(): { provider: string; status: ProspectingProviderStatus }[] {
     return this.providers.map(p => ({ provider: p.name, status: p.getStatus() }));
@@ -68,6 +69,38 @@ export class BusinessProspectingManager {
       console.error('[BusinessProspectingManager] getBusinessDetails failed:', error.message);
       return null;
     }
+  }
+
+  async enrichBusinessesWithDetails<T extends { providerPlaceId?: string }>(businesses: T[]): Promise<T[]> {
+    const result = [...businesses];
+
+    for (let start = 0; start < result.length; start += this.detailsConcurrency) {
+      const batch = result.slice(start, start + this.detailsConcurrency);
+
+      await Promise.all(
+        batch.map(async (business) => {
+          if (!business.providerPlaceId) return;
+
+          const details = await this.getBusinessDetails(business.providerPlaceId);
+          if (!details) return;
+
+          Object.assign(business, {
+            city: details.city || (business as any).city,
+            state: details.state || (business as any).state,
+            postalCode: details.postalCode || (business as any).postalCode,
+            address: details.formattedAddress || (business as any).address,
+            phone: details.phone || (business as any).phone,
+            website: details.website ?? null,
+            rating: details.rating ?? (business as any).rating,
+            reviewCount: details.reviewCount ?? (business as any).reviewCount,
+            businessHours: details.businessHours || (business as any).businessHours,
+            googleMapsUrl: details.googleMapsUrl || (business as any).googleMapsUrl,
+          });
+        }),
+      );
+    }
+
+    return result;
   }
 }
 
