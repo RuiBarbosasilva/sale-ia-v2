@@ -3,7 +3,7 @@ import { prisma } from '../modules/mercadoLivre/lib/prisma';
 import { rbFactorySalesAgentService } from '../services/rbFactorySalesAgentService';
 import { rbFactorySalesAutonomyService } from '../services/rbFactorySalesAutonomyService';
 
-function normalizePhone(v:any){ return String(v||'').replace(/\\D/g,''); }
+function normalizePhone(v:any){ return String(v||'').replace(/\D/g,''); }
 
 export const rbFactoryWhatsAppController = {
   async webhook(req:Request,res:Response){
@@ -14,7 +14,7 @@ export const rbFactoryWhatsAppController = {
       if(!phone || !message) return res.status(400).json({success:false,error:'PHONE_AND_MESSAGE_REQUIRED'});
 
       const prospects=await (prisma as any).$queryRawUnsafe(
-        'SELECT id FROM "WebsiteProspect" WHERE REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(phone,\'\'),\'\\\\\',\'\'),\'-\',\'\'),\'(\',\'\'),\')\',\'\') LIKE ? LIMIT 5',
+        'SELECT id FROM "WebsiteProspect" WHERE REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(phone,\'\'),\'-\',\'\'),\'(\',\'\'),\')\',\'\'),\' \',\'\'),\'+\',\'\') LIKE ? LIMIT 5',
         '%' + phone.slice(-8)
       );
       const prospectId=prospects[0]?.id;
