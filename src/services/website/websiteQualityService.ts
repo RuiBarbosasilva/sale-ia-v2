@@ -197,23 +197,61 @@ Regras criticas:
       { name: 'SEO', score: hasMeta ? 7 : 4, feedback: hasMeta ? 'Meta tags OK' : 'Adicionar meta' },
       { name: 'Técnico', score: 9, feedback: `${html.length} bytes válidos` }
     ];
+    const criticalIssues: string[] = [];
+
     if (assets) {
       const imgCrit = criteria.find(c => c.name === 'Imagens');
       if (imgCrit) {
-        if (!assets.hasHero) { imgCrit.score = 4; imgCrit.feedback = 'Sem hero'; }
-        else if (assets.heroProvider === 'local-placeholder') { imgCrit.score = 5; imgCrit.feedback = 'Hero placeholder'; }
-        else if (assets.realImageCount >= 6) { imgCrit.score = 9; imgCrit.feedback = `${assets.realImageCount} imagens reais`; }
+        if (!assets.hasHero) {
+          imgCrit.score = 4;
+          imgCrit.feedback = 'Sem hero';
+          criticalIssues.push('Falta hero image real');
+        } else if (assets.heroProvider === 'local-placeholder') {
+          imgCrit.score = 5;
+          imgCrit.feedback = 'Hero placeholder';
+          criticalIssues.push('Hero é placeholder');
+        } else if (assets.realImageCount >= 6) {
+          imgCrit.score = 9;
+          imgCrit.feedback = `${assets.realImageCount} imagens reais`;
+        }
+
+        if (assets.placeholderCount > 0) {
+          imgCrit.score = Math.min(imgCrit.score, 5);
+          criticalIssues.push('Existem imagens placeholder no demo');
+        }
+
+        if (assets.qualityIssues?.length) {
+          imgCrit.score = Math.min(imgCrit.score, 4);
+          criticalIssues.push(...assets.qualityIssues.slice(0, 5));
+        }
+
+        if (assets.altCoverage < 0.8 && assets.imageCount > 0) {
+          const accCrit = criteria.find(c => c.name === 'Acessibilidade');
+          if (accCrit) accCrit.score = Math.min(accCrit.score, 6);
+          criticalIssues.push('Cobertura alt abaixo de 80%');
+        }
       }
     }
+
     const overall = criteria.reduce((s, c) => s + c.score, 0) / criteria.length;
+    const overallScore = Math.round(overall * 10) / 10;
+    const recommendation =
+      criticalIssues.length > 0 ? 'improve' :
+      overallScore >= this.MIN_SCORE ? 'approve' :
+      overallScore >= this.CRITICAL_THRESHOLD ? 'improve' : 'regenerate';
+
     return {
-      overallScore: Math.round(overall * 10) / 10,
+      overallScore,
       criteria,
       strengths: ['Estrutura HTML5 válida', 'Design system aplicado'],
-      weaknesses: [!hasResponsive ? 'Responsividade' : null, !hasMeta ? 'Meta SEO' : null].filter(Boolean) as string[],
+      weaknesses: [
+        !hasResponsive ? 'Responsividade' : null,
+        !hasMeta ? 'Meta SEO' : null,
+        ...criticalIssues.slice(0, 3)
+      ].filter(Boolean) as string[],
       improvements: ['Micro-interações', 'Core Web Vitals', 'Prova social'],
-      criticalIssues: [],
-      recommendation: overall >= this.MIN_SCORE ? 'approve' : overall >= this.CRITICAL_THRESHOLD ? 'improve' : 'regenerate',
+      criticalIssues,
+      recommendation,
       assetsSummary: assets
     };
   }
