@@ -16,6 +16,7 @@ export interface WebsiteSectionDefinition {
   priority?: number;
   enabled?: boolean;
   conversionRole?: string;
+  id?: string;
 }
 
 export class WebsiteSectionRenderer {
@@ -132,7 +133,7 @@ export class WebsiteSectionRenderer {
       '';
 
     return `
-<section id="hero" class="wf-section wf-hero wf-hero-${this.variant(section)}" aria-labelledby="hero-title">
+<section id="${this.sectionId('hero', section)}" class="wf-section wf-hero wf-hero-${this.variant(section)}" aria-labelledby="hero-title">
   <div class="wf-container wf-hero-content">
     <div class="wf-hero-copy">
       <span class="wf-eyebrow">${this.esc(context.businessName)}</span>
@@ -253,7 +254,7 @@ export class WebsiteSectionRenderer {
     if (!text) return '';
 
     return `
-<section id="about" class="wf-section wf-about wf-about-${this.variant(section)}">
+<section id="${this.sectionId('about', section)}" class="wf-section wf-about wf-about-${this.variant(section)}">
   <div class="wf-container wf-two-column">
     <div>
       <span class="wf-kicker">${this.esc(section.title || 'Sobre')}</span>
@@ -314,7 +315,7 @@ export class WebsiteSectionRenderer {
     if (!items.length) return '';
 
     return `
-<section id="gallery" class="wf-section wf-gallery wf-gallery-${this.variant(section)}">
+<section id="${this.sectionId('gallery', section)}" class="wf-section wf-gallery wf-gallery-${this.variant(section)}">
   <div class="wf-container">
     <div class="wf-section-heading">
       <span class="wf-kicker">${this.esc(section.title || 'Galeria')}</span>
@@ -409,7 +410,7 @@ export class WebsiteSectionRenderer {
     if (!items.length) return '';
 
     return `
-<section id="faq" class="wf-section wf-faq wf-faq-${this.variant(section)}">
+<section id="${this.sectionId('faq', section)}" class="wf-section wf-faq wf-faq-${this.variant(section)}">
   <div class="wf-container">
     <div class="wf-section-heading">
       <span class="wf-kicker">Dúvidas</span>
@@ -443,7 +444,7 @@ export class WebsiteSectionRenderer {
       '';
 
     return `
-<section id="location" class="wf-section wf-location wf-location-${this.variant(section)}">
+<section id="${this.sectionId('location', section)}" class="wf-section wf-location wf-location-${this.variant(section)}">
   <div class="wf-container wf-two-column">
     <div>
       <span class="wf-kicker">Localização</span>
@@ -466,7 +467,7 @@ export class WebsiteSectionRenderer {
     const c = context.content || {};
 
     return `
-<section id="contact" class="wf-section wf-contact wf-contact-${this.variant(section)}">
+<section id="${this.sectionId('contact', section)}" class="wf-section wf-contact wf-contact-${this.variant(section)}">
   <div class="wf-container">
     <div class="wf-section-heading">
       <span class="wf-kicker">Contato</span>
@@ -487,7 +488,7 @@ export class WebsiteSectionRenderer {
     const c = context.content || {};
 
     return `
-<section id="booking" class="wf-section wf-booking wf-booking-${this.variant(section)}">
+<section id="${this.sectionId('booking', section)}" class="wf-section wf-booking wf-booking-${this.variant(section)}">
   <div class="wf-container">
     <div class="wf-section-heading">
       <span class="wf-kicker">Agendamento</span>
@@ -553,7 +554,7 @@ export class WebsiteSectionRenderer {
     const c = context.content || {};
 
     return `
-<section id="cta" class="wf-section wf-cta wf-cta-${this.variant(section)}">
+<section id="${this.sectionId('cta', section)}" class="wf-section wf-cta wf-cta-${this.variant(section)}">
   <div class="wf-container wf-cta-inner">
     <div>
       <span class="wf-kicker">Próximo passo</span>
@@ -610,7 +611,7 @@ export class WebsiteSectionRenderer {
     }
 
     return `
-<section id="${this.slug(section.type)}" class="wf-section wf-generic wf-generic-${this.variant(section)}">
+<section id="${this.sectionId(section.type, section)}" class="wf-section wf-generic wf-generic-${this.variant(section)}">
   <div class="wf-container">
     <div class="wf-section-heading">
       <h2>${this.esc(section.title || section.type)}</h2>
@@ -633,7 +634,7 @@ export class WebsiteSectionRenderer {
       this.defaultTitle(type);
 
     return `
-<section id="${this.slug(type)}" class="wf-section wf-cards wf-${this.slug(type)} wf-${this.slug(type)}-${this.variant(section)}">
+<section id="${this.sectionId(type, section)}" class="wf-section wf-cards wf-${this.slug(type)} wf-${this.slug(type)}-${this.variant(section)}">
   <div class="wf-container">
     <div class="wf-section-heading">
       <span class="wf-kicker">${this.esc(type)}</span>
@@ -684,6 +685,16 @@ export class WebsiteSectionRenderer {
   private items(value: any): any[] {
     if (!Array.isArray(value)) return [];
     return value.filter(Boolean);
+  }
+
+  private sectionId(type: string, section: WebsiteSectionDefinition): string {
+    const explicit = String(section.id || '').trim();
+    if (explicit) return this.slug(explicit);
+    const base = this.slug(type);
+    const title = String(section.title || '').trim();
+    const variant = String(section.variant || '').trim();
+    const suffix = title || variant;
+    return suffix ? base + '-' + this.slug(suffix) : base;
   }
 
   private variant(section: WebsiteSectionDefinition): string {
