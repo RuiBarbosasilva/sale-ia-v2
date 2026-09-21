@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { rbFactorySalesService } from '../services/rbFactorySalesService';
 import { proposalGeneratorService } from '../services/proposalGeneratorService';
+import { RB_FACTORY_COMMERCIAL, getInitialCommercialPlan, getLaunchOffer } from '../config/rbFactoryCommercial';
 
 export const rbFactorySalesController={
   async errors(e:any,res:Response){
@@ -13,6 +14,18 @@ export const rbFactorySalesController={
   async create(req:Request,res:Response){try{res.json({success:true,pipeline:await rbFactorySalesService.createFromProspect(String(req.params.prospectId))});}catch(e){return rbFactorySalesController.errors(e,res);}},
   async models(req:Request,res:Response){res.json({success:true,models:await rbFactorySalesService.models(String(req.params.prospectId))});},
   async plans(_req:Request,res:Response){try{res.json({success:true,plans:await proposalGeneratorService.listPlans()});}catch(e){return rbFactorySalesController.errors(e,res);}},
+  async presentation(_req:Request,res:Response){
+    res.json({
+      success:true,
+      brand:RB_FACTORY_COMMERCIAL.brand,
+      presentation:RB_FACTORY_COMMERCIAL.presentation,
+      payment:RB_FACTORY_COMMERCIAL.payment,
+      initialOffer:getInitialCommercialPlan(),
+      comparison:RB_FACTORY_COMMERCIAL.plans,
+      launchOffer:getLaunchOffer(),
+      whatsapp:RB_FACTORY_COMMERCIAL.whatsapp,
+    });
+  },
   async demo(req:Request,res:Response){try{res.json({success:true,...await rbFactorySalesService.buildDemo(String(req.params.prospectId),{niche:req.body?.niche,modelIndex:req.body?.modelIndex})});}catch(e){return rbFactorySalesController.errors(e,res);}},
   async proposal(req:Request,res:Response){try{res.json({success:true,proposal:await rbFactorySalesService.buildProposal(String(req.params.prospectId),req.body?.planCode,req.body?.planId)});}catch(e){return rbFactorySalesController.errors(e,res);}},
   async sendProposal(req:Request,res:Response){try{res.json({success:true,proposal:await rbFactorySalesService.sendProposal(String(req.params.prospectId))});}catch(e){return rbFactorySalesController.errors(e,res);}},
