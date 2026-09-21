@@ -164,7 +164,7 @@ export const rbFactorySalesAgentService = {
     const pipeline=context.pipeline;
     if(!pipeline) return {executed:false,action:'WAIT',reason:'PIPELINE_NOT_FOUND'};
     if(['WON','LOST'].includes(String(pipeline.stage))) return {executed:false,action:'WAIT',reason:'TERMINAL_PIPELINE',stage:pipeline.stage};
-    const conversation=await this.ensureConversation(prospectId,'WHATSAPP');
+    const conversation=await this.ensureConversation(targetProspectId,'WHATSAPP');
     const c=conversation.conversation;
     const nextAction=String(pipeline.nextAction||'');
     const { rbFactorySalesService }=await import('./rbFactorySalesService');
@@ -206,11 +206,11 @@ export const rbFactorySalesAgentService = {
       : await this.sellerQueue(1);
     const item=queue[0];
     if(!item) return {available:false,created:false,nextAction:null};
-    const prospectId=String(item.prospectId);
+    const targetProspectId=String(item.prospectId);
     const stage=String(item.stage);
     const nextAction=String(item.nextAction||'');
     if(['PREPARE_DEMO','PREPARE_PROPOSAL','SEND_DEMO','SEND_PROPOSAL','ASK_FOR_CLOSE','INVESTIGATE_OBJECTION','DISCOVER_NEED','DISCOVER_DECISION_MAKER'].includes(nextAction)){
-      return await this.executeCommercialDecision(prospectId);
+      return await this.executeCommercialDecision(targetProspectId);
     }
     const conversation=await this.ensureConversation(prospectId,'WHATSAPP');
     const conversationId=conversation.conversation.id;
