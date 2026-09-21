@@ -834,7 +834,6 @@ export class WebsiteProspectorService {
                       existing.state,
 
                     country:
-                      business.country ||
                       existing.country ||
                       request.country ||
                       'BR',
@@ -986,7 +985,6 @@ export class WebsiteProspectorService {
                       request.state,
 
                     country:
-                      business.country ||
                       request.country ||
                       'BR',
 
