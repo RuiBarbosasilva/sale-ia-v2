@@ -65,63 +65,34 @@ export class WebsiteService {
   }
 
   async generateWebsite(prospectId: string) {
+    // Compatibilidade legada: toda geração comercial passa pelo pipeline
+    // profissional, Image Engine e Quality Gate. Nunca gravamos READY aqui.
     const prospect = await prisma.websiteProspect.findUnique({ where: { id: prospectId } });
     if (!prospect) throw new Error('Prospect não encontrado');
-    
-    const creatorType = creatorSelector.selectCreator(prospect.segment || '');
-    const design = websiteDesignService.getDesignTokens(creatorType);
-    const content = websiteContentService.generateContent(
-      prospect.companyName || 'Sua Empresa',
-      prospect.segment || 'negócio',
-      prospect.city || 'sua cidade',
-      creatorType,
-      prospect.phone
+
+    const result = await this.generateProfessional(
+      prospectId,
+      {
+        businessName: prospect.companyName || 'Sua Empresa',
+        category: prospect.segment || 'negócio',
+        city: prospect.city || 'sua cidade',
+        phone: prospect.phone || '',
+        whatsapp: prospect.phone || '',
+        email: prospect.email || '',
+        website: prospect.currentWebsite || ''
+      },
+      true
     );
-    
-    const html = websiteCompiler.compile(
-      prospect.companyName || 'Sua Empresa',
-      prospect.city || 'sua cidade',
-      prospect.phone || '',
-      design,
-      content
-    );
-    
-    const slug = (prospect.companyName || 'empresa').toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 50);
-    
-    let demo = await prisma.websiteDemo.findFirst({ where: { prospectId } });
-    
-    if (demo) {
-      demo = await prisma.websiteDemo.update({
-        where: { id: demo.id },
-        data: {
-          sourceCode: html,
-          status: 'READY',
-          version: demo.version + 1,
-          previewData: JSON.stringify({ businessName: prospect.companyName, segment: prospect.segment, city: prospect.city, generatedAt: new Date().toISOString() })
-        }
-      });
-    } else {
-      demo = await prisma.websiteDemo.create({
-        data: {
-          prospectId,
-          sourceCode: html,
-          status: 'READY',
-          version: 1,
-          previewData: JSON.stringify({ businessName: prospect.companyName, segment: prospect.segment, city: prospect.city, generatedAt: new Date().toISOString() })
-        }
-      });
-    }
-    
-    await prisma.websiteProspect.update({
-      where: { id: prospectId },
-      data: { status: 'DEMO_READY' }
-    });
-    
+
     return {
       success: true,
-      demoId: demo.id,
-      previewUrl: '/api/websites/demo/' + demo.id,
-      version: demo.version
+      demoId: result.demo.id,
+      previewUrl: '/api/websites/studio/demos/' + result.demo.id + '/html',
+      version: result.demo.version,
+      status: result.demo.status,
+      qualityScore: result.qualityReview.overallScore,
+      qualityRecommendation: result.qualityReview.recommendation,
+      criticalIssues: result.criticalIssues
     };
   }
 
@@ -148,43 +119,34 @@ export class WebsiteService {
     const prospect = await prisma.websiteProspect.findUnique({ where: { id: prospectId } });
     if (!prospect) throw new Error('Prospect não encontrado');
 
-    const creatorType = creatorSelector.selectCreator(prospect.segment || '');
-    const design = websiteDesignService.getDesignTokens(creatorType);
-    const content = websiteContentService.generateContent(
-      customData.businessName || prospect.companyName || 'Sua Empresa',
-      customData.category || prospect.segment || 'negócio',
-      customData.city || prospect.city || 'sua cidade',
-      creatorType,
-      customData.whatsapp || prospect.phone
+    // Template continua sendo validado para compatibilidade comercial, mas
+    // não controla mais a geração visual. A Factory usa o pipeline profissional
+    // para garantir Research -> PRD -> Creative -> Images -> Quality Gate.
+    const result = await this.generateProfessional(
+      prospectId,
+      {
+        ...customData,
+        businessName: customData?.businessName || prospect.companyName || 'Sua Empresa',
+        category: customData?.category || prospect.segment || 'negócio',
+        city: customData?.city || prospect.city || 'sua cidade',
+        phone: customData?.phone || customData?.whatsapp || prospect.phone || '',
+        whatsapp: customData?.whatsapp || customData?.phone || prospect.phone || '',
+        templateId
+      },
+      customData?.useAI !== false
     );
 
-    const html = websiteCompiler.compile(
-      customData.businessName || prospect.companyName || 'Sua Empresa',
-      customData.city || prospect.city || 'sua cidade',
-      customData.whatsapp || prospect.phone || '',
-      design,
-      content
-    );
-
-    const demo = await prisma.websiteDemo.create({
-      data: {
-        prospectId,
-        templateId,
-        sourceCode: html,
-        status: 'READY',
-        version: 1,
-        previewData: JSON.stringify({ ...customData, generatedAt: new Date().toISOString() })
-      }
-    });
-
-    await prisma.websiteProspect.update({
-      where: { id: prospectId },
-      data: { status: 'DEMO_GERADA' }
-    });
-
-    return { success: true, demoId: demo.id };
+    return {
+      success: true,
+      demoId: result.demo.id,
+      version: result.demo.version,
+      status: result.demo.status,
+      templateId,
+      qualityScore: result.qualityReview.overallScore,
+      qualityRecommendation: result.qualityReview.recommendation,
+      criticalIssues: result.criticalIssues
+    };
   }
-
   /**
    * MIGRADO da raiz: gera proposta comercial com base em template.
    * Nota: para o fluxo de vendas via siteSalesRoutes, o service dedicado
