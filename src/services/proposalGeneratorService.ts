@@ -86,11 +86,8 @@ export class ProposalGeneratorService {
     const businessName = prospect.companyName || 'Sua Empresa';
     const segment = prospect.segment || 'negócio';
     const city = prospect.city || 'sua cidade';
-    const opportunity =
-      prospect.websiteOpportunityStatus ||
-      prospect.websiteStatus ||
-      'UNKNOWN';
-    const score = prospect.websiteOpportunityScore ?? prospect.score ?? 0;
+    const opportunity = prospect.websiteStatus || 'UNKNOWN';
+    const score = prospect.score ?? prospect.websiteScore ?? 0;
     const features = parseFeatures(plan.features);
 
     const problemStatement =
