@@ -16,6 +16,8 @@ export const rbFactorySalesAgentController={
     catch(e){return rbFactorySalesAgentController.errors(e,res);}
   },
   async dashboard(_req:Request,res:Response){try{res.json({success:true,...await rbFactorySalesAgentService.dashboard()});}catch(e){return rbFactorySalesAgentController.errors(e,res);}},
+  async nextSellerAction(_req:Request,res:Response){try{res.json({success:true,...await rbFactorySalesAgentService.nextSellerAction()});}catch(e){return rbFactorySalesAgentController.errors(e,res);}},
+  async prepareNextSellerAction(_req:Request,res:Response){try{res.json({success:true,...await rbFactorySalesAgentService.prepareNextSellerAction()});}catch(e){return rbFactorySalesAgentController.errors(e,res);}},
   async create(req:Request,res:Response){try{res.status(201).json({success:true,...await rbFactorySalesAgentService.createConversation(String(req.params.prospectId),String(req.body?.channel||'WHATSAPP'))});}catch(e){return rbFactorySalesAgentController.errors(e,res);}},
   async initialApproach(req:Request,res:Response){try{res.json({success:true,...await rbFactorySalesAgentService.prepareInitialApproach(String(req.params.prospectId),String(req.body?.channel||'WHATSAPP'))});}catch(e){return rbFactorySalesAgentController.errors(e,res);}},
   async proposalApproach(req:Request,res:Response){
