@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { seniorSalesController } from '../controllers/seniorSalesController';
+import { adminAuthorization } from '../middlewares/security';
 const router=Router();
+router.use(adminAuthorization);
 router.get('/health',seniorSalesController.health);
 router.get('/dashboard',seniorSalesController.dashboard);
 router.post('/conversations',seniorSalesController.create);
