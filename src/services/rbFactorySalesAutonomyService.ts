@@ -387,6 +387,19 @@ export const rbFactorySalesAutonomyService = {
     return result;
   },
 
+  async alerts(limit=20){
+    await init();
+    return (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesHumanAlert" WHERE status=\'OPEN\' ORDER BY createdAt DESC LIMIT ?',safeLimit(limit,20));
+  },
+  async acknowledgeAlert(alertId:string){
+    await init();
+    const idValue=String(alertId||'').trim();
+    if(!idValue) throw new Error('ALERT_ID_REQUIRED');
+    const row=(await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesHumanAlert" WHERE id=? LIMIT 1',idValue))[0];
+    if(!row) throw new Error('ALERT_NOT_FOUND');
+    await (prisma as any).$executeRawUnsafe('UPDATE "RbFactorySalesHumanAlert" SET status=\'ACKNOWLEDGED\',acknowledgedAt=CURRENT_TIMESTAMP WHERE id=? AND status=\'OPEN\'',idValue);
+    return (await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesHumanAlert" WHERE id=? LIMIT 1',idValue))[0];
+  },
   async history(limit=50){
     await init();
     return (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesAutonomyRun" ORDER BY createdAt DESC LIMIT ?',safeLimit(limit,50));
