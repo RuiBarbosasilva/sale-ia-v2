@@ -31,6 +31,7 @@ export const rbFactoryWhatsAppController = {
       const name=req.body?.name || req.body?.pushName || null;
       if(!phone || !message) return res.status(400).json({success:false,error:'PHONE_AND_MESSAGE_REQUIRED'});
       await (prisma as any).$executeRawUnsafe('CREATE TABLE IF NOT EXISTS "RbFactoryWhatsAppEvent" ("eventKey" TEXT PRIMARY KEY NOT NULL, "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)');
+      await (prisma as any).$executeRawUnsafe('DELETE FROM "RbFactoryWhatsAppEvent" WHERE "createdAt" < DATETIME(\'now\', \'-90 days\')');
       try{
         await (prisma as any).$executeRawUnsafe('INSERT INTO "RbFactoryWhatsAppEvent" ("eventKey") VALUES (?)',eventKey);
       }catch{
