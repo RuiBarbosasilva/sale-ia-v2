@@ -7,7 +7,7 @@ const router = Router();
 const prisma = new PrismaClient();
 
 // Listar fornecedores
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const suppliers = await prisma.supplier.findMany({
       where: { isActive: true },
@@ -53,7 +53,7 @@ router.post('/product-link', adminAuthorization, async (req: Request, res: Respo
 });
 
 // Gerar relatório de sugestão de compra
-router.get('/purchase-report', async (req: Request, res: Response) => {
+router.get('/purchase-report', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const targetSales = parseFloat(req.query.target as string) || 10000; // Meta padrão de R$ 10.000
     const report = await marginAnalysisService.generatePurchaseReport(targetSales);
