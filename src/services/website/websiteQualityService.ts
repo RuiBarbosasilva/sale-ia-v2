@@ -165,12 +165,17 @@ Regras criticas:
     if (responsiveCrit && !hasViewport) responsiveCrit.score = Math.min(responsiveCrit.score, 4);
 
     const whatsappCrit = r.criteria.find(c => c.name === "WhatsApp / Contato");
-    const phoneAvailable = true; // padrão Factory: todo site comercial deve ter WhatsApp funcional;
+    const briefingPhone = String((prd as any)?.business?.phone || (prd as any)?.business?.whatsapp || '').replace(/\D/g, '');
+    const phoneAvailable = briefingPhone.length >= 10;
     if (whatsappCrit) {
       if (phoneAvailable && !hasWhatsAppLink) {
         whatsappCrit.score = Math.min(whatsappCrit.score, 4);
         r.criticalIssues = [...(r.criticalIssues || []), "WhatsApp/contato não encontrado no HTML"];
-      } else if (hasWhatsAppLink) whatsappCrit.score = Math.max(whatsappCrit.score, 8);
+      } else if (hasWhatsAppLink) {
+        whatsappCrit.score = Math.max(whatsappCrit.score, 8);
+      } else {
+        whatsappCrit.feedback = 'Telefone/WhatsApp não informado no briefing; não inventar contato.';
+      }
     }
 
     const perfCrit = r.criteria.find(c => c.name === "Performance");
