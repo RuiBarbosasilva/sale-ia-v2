@@ -47,7 +47,7 @@ export const rbFactoryWhatsAppController = {
       }
 
       const conversation=await rbFactorySalesAgentService.ensureConversation(prospectId,'WHATSAPP');
-      const result=await rbFactorySalesAgentService.respond(prospectId,conversation.conversation.id,message);
+      const result=await rbFactorySalesAgentService.respond(prospectId,conversation.conversation.id,message,eventKey);
 
       let sent=false;
       let sendResult:any=null;
