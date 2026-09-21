@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { marginAnalysisService } from '../services/marginAnalysisService';
+import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -19,7 +20,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // Cadastrar fornecedor
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const { name, contactName, phone, email, website } = req.body;
     const supplier = await prisma.supplier.create({ data: { name, contactName, phone, email, website } });
@@ -30,7 +31,7 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // Vincular produto a fornecedor com preço de custo
-router.post('/product-link', async (req: Request, res: Response) => {
+router.post('/product-link', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const { supplierId, productId, costPrice, minQuantity, leadTimeDays } = req.body;
     
