@@ -508,7 +508,8 @@ export const websiteStudioController = {
           'DEPLOYMENT_URL_NOT_VERIFIED',
           'DEPLOYMENT_ALREADY_IN_PROGRESS',
           'PROPOSAL_SNAPSHOT_MISSING',
-          'APPROVED_DEMO_VERSION_MISMATCH'
+          'APPROVED_DEMO_VERSION_MISMATCH',
+          'PUBLICATION_STATE_SYNC_FAILED'
         ].includes(message) ? 409 :
         502;
       res.status(statusCode).json({ success: false, error: message });
