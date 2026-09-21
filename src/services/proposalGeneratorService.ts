@@ -5,6 +5,8 @@ const prisma = new PrismaClient();
 type GenerateProposalOptions = {
   planId?: string;
   planCode?: string;
+  demoId?: string;
+  demoVersion?: number;
 };
 
 function parseFeatures(value?: string | null): string[] {
@@ -39,14 +41,23 @@ export class ProposalGeneratorService {
     const prospect = await prisma.websiteProspect.findUnique({
       where: { id: prospectId },
       include: {
-        demos: { orderBy: { version: 'desc' }, take: 1 },
+        demos: {
+          where: options.demoId ? { id: options.demoId } : undefined,
+          orderBy: { version: 'desc' },
+          take: 10,
+        },
         selectedPlan: true,
       },
     });
 
     if (!prospect) throw new Error('WEBSITE_PROSPECT_NOT_FOUND');
 
-    const latestDemo = prospect.demos[0];
+    const latestDemo = options.demoId
+      ? prospect.demos.find(d => d.id === options.demoId)
+      : options.demoVersion !== undefined
+        ? prospect.demos.find(d => d.version === options.demoVersion)
+        : prospect.demos[0];
+
     if (!latestDemo || !['READY', 'APPROVED'].includes(latestDemo.status)) {
       throw new Error('DEMO_NOT_READY: Gere e aprove uma demo antes da proposta');
     }
@@ -117,6 +128,7 @@ export class ProposalGeneratorService {
       planName: plan.name,
       projectPrice: Number(plan.projectPrice || 0),
       monthlyPrice: Number(plan.monthlyPrice || 0),
+      demoId: latestDemo.id,
       demoVersion: latestDemo.version,
       qualityScore,
       paymentTerms: '50% na aprovação + 50% na publicação',
@@ -178,6 +190,14 @@ RB Factory Sites
 
     if (existingProposal?.status === 'ACCEPTED') {
       throw new Error('PROPOSAL_ALREADY_ACCEPTED: A proposta aceita nao pode ser sobrescrita');
+    }
+
+    if (existingProposal?.status === 'SENT') {
+      throw new Error('PROPOSAL_ALREADY_SENT: A proposta enviada nao pode ser sobrescrita');
+    }
+
+    if (existingProposal?.status === 'ACCEPTING') {
+      throw new Error('PROPOSAL_ACCEPTANCE_IN_PROGRESS: A proposta está em processo de aceite');
     }
 
     const proposal = existingProposal
