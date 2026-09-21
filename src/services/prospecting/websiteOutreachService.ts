@@ -110,7 +110,7 @@ export class WebsiteOutreachService {
     }
 
     const outreach = await prisma.websiteOutreach.findFirst({
-      where: { prospectId, channel: 'EMAIL', status: 'READY' },
+      where: { prospectId, channel: 'EMAIL' },
       orderBy: { createdAt: 'desc' },
     });
 
