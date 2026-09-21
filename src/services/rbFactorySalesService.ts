@@ -78,9 +78,9 @@ export const rbFactorySalesService={
   },
 
   async buildDemo(prospectId:string,options?:{niche?:string;modelIndex?:number}){
+    await this.createFromProspect(prospectId);
     return withPipelineLock(prospectId, async()=>{
     await init();
-    await this.createFromProspect(prospectId);
     const result=await websiteDemoFactoryService.generateDemoForProspect(prospectId,{useAI:true});
     const model=options?.modelIndex ? {index:options.modelIndex,niche:options.niche||null} : null;
     const pipeline=await (prisma as any).$queryRawUnsafe('SELECT notes FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',prospectId);
@@ -94,9 +94,11 @@ export const rbFactorySalesService={
   },
 
   async buildProposal(prospectId:string,planCode?:string,planId?:string){
+    await this.createFromProspect(prospectId);
     return withPipelineLock(prospectId, async()=>{
     await init();
-    const pipeline = await this.createFromProspect(prospectId);
+    const pipelineRows=await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',prospectId);
+    const pipeline=pipelineRows[0];
     if (!['DEMO_READY', 'PROPOSAL_READY', 'CONTACTED', 'NEGOTIATION'].includes(pipeline.stage)) throw new Error('DEMO_NOT_READY_FOR_PROPOSAL');
     if (!pipeline.demoId) throw new Error('DEMO_NOT_READY_FOR_PROPOSAL');
     const selectedDemo = await prisma.websiteDemo.findUnique({where:{id:pipeline.demoId},select:{id:true,prospectId:true,version:true,status:true}});
