@@ -203,7 +203,7 @@ export const seniorSalesAgentService = {
     const row=rows[0];
     if(!row) throw new Error('SALES_ACTION_NOT_FOUND');
     let context:any={}; try{context=row.context?JSON.parse(row.context):{};}catch{}
-    const phone=String(context?.prospect?.phone||'').replace(/\\D/g,'');
+    const phone=String(context?.prospect?.phone||'').replace(/\D/g,'');
     const payload=row.payload?JSON.parse(row.payload):{};
     const message=String(payload.reply||'');
     const whatsappPhone=phone.length===11 ? '55'+phone : phone.startsWith('55') ? phone : phone;
