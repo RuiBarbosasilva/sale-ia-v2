@@ -134,7 +134,7 @@ export const rbFactorySalesAutonomyService = {
       if(result.processed>=max) break;
       result.processed++;
       try{
-        const prepared=await rbFactorySalesAgentService.prepareNextSellerAction();
+        const prepared=await rbFactorySalesAgentService.prepareNextSellerAction(String(item.prospectId));
         if(!prepared?.available){
           result.items.push({prospectId:item.prospectId,status:'WAITING',reason:'NO_ACTION'});
           continue;
