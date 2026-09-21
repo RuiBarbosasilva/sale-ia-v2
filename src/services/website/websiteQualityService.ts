@@ -165,7 +165,7 @@ Regras criticas:
     if (responsiveCrit && !hasViewport) responsiveCrit.score = Math.min(responsiveCrit.score, 4);
 
     const whatsappCrit = r.criteria.find(c => c.name === "WhatsApp / Contato");
-    const phoneAvailable = Boolean((prd as any)?.business?.phone || (prd as any)?.contact?.phone);
+    const phoneAvailable = true; // padrão Factory: todo site comercial deve ter WhatsApp funcional;
     if (whatsappCrit) {
       if (phoneAvailable && !hasWhatsAppLink) {
         whatsappCrit.score = Math.min(whatsappCrit.score, 4);
