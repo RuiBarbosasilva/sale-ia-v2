@@ -134,15 +134,17 @@ export const websiteStudioController = {
   // ---------- GERACAO ----------
   async generateFromBriefing(req: Request, res: Response) {
     try {
-      const { prospectId, templateId, customData, useAI } = req.body || {};
+      const { prospectId, customData, useAI } = req.body || {};
       if (!prospectId) return res.status(400).json({ success: false, error: 'prospectId é obrigatório' });
       if (!customData || !customData.businessName) {
         return res.status(400).json({ success: false, error: 'customData.businessName é obrigatório' });
       }
 
-      const result = await websiteService.generateFromBriefing(
+      // Compatibilidade: a rota antiga /studio/generate agora entra no
+      // pipeline profissional, evitando uma segunda fábrica que pudesse
+      // gerar demos READY sem Image Engine + Quality Gate.
+      const result = await websiteService.generateProfessional(
         prospectId,
-        templateId || null,
         customData,
         useAI !== false
       );
@@ -151,17 +153,22 @@ export const websiteStudioController = {
         success: true,
         demoId: result.demo.id,
         version: result.demo.version,
-        aiUsed: result.aiUsed,
-        creatorType: result.creatorType,
+        aiUsed: Boolean(useAI !== false),
+        creatorType: result.designSystem?.visualStyle || null,
+        qualityScore: result.qualityReview.overallScore,
+        qualityRecommendation: result.qualityReview.recommendation,
+        improvementCycles: result.improvementCycles,
         previewUrl: `/api/websites/studio/demos/${result.demo.id}/html`,
         exportUrl: `/api/websites/studio/demos/${result.demo.id}/export`
       });
     } catch (e: any) {
       console.error('[Studio] generateFromBriefing:', e.message);
-      const known = ['Prospect não encontrado', 'Template não encontrado'];
-      res.status(known.includes(e.message) ? 400 : 500).json({ success: false, error: e.message });
+      const message = e?.message || 'Erro ao gerar demo';
+      const statusCode =
+        message.includes('não encontrado') || message.includes('nao encontrado') ? 400 : 500;
+      res.status(statusCode).json({ success: false, error: message });
     }
-  },
+  }
 
   async listVersions(req: Request, res: Response) {
     try {
