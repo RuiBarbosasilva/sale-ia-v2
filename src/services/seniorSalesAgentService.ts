@@ -40,7 +40,7 @@ async function init() {
     CREATE TABLE IF NOT EXISTS "SalesAction" (
       "id" TEXT PRIMARY KEY NOT NULL, "conversationId" TEXT NOT NULL, "type" TEXT NOT NULL,
       "title" TEXT NOT NULL, "payload" TEXT, "requiresApproval" INTEGER NOT NULL DEFAULT 1,
-      "status" TEXT NOT NULL DEFAULT 'PENDING_APPROVAL', "approvedAt" DATETIME, "sentAt" DATETIME, "decisionNote" TEXT, "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      "status" TEXT NOT NULL DEFAULT 'PENDING_APPROVAL', "approvedAt" DATETIME, "sentAt" DATETIME, "decisionNote" TEXT, "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
     CREATE TABLE IF NOT EXISTS "SalesObjection" (
       "id" TEXT PRIMARY KEY NOT NULL, "conversationId" TEXT NOT NULL, "type" TEXT NOT NULL,
@@ -51,6 +51,8 @@ async function init() {
   await (prisma as any).$executeRawUnsafe('ALTER TABLE "SalesAction" ADD COLUMN "approvedAt" DATETIME').catch(()=>{});
   await (prisma as any).$executeRawUnsafe('ALTER TABLE "SalesAction" ADD COLUMN "sentAt" DATETIME').catch(()=>{});
   await (prisma as any).$executeRawUnsafe('ALTER TABLE "SalesAction" ADD COLUMN "decisionNote" TEXT').catch(()=>{});
+  await (prisma as any).$executeRawUnsafe('ALTER TABLE "SalesAction" ADD COLUMN "updatedAt" DATETIME').catch(()=>{});
+  await (prisma as any).$executeRawUnsafe('UPDATE "SalesAction" SET "updatedAt" = COALESCE("updatedAt", "createdAt") WHERE "updatedAt" IS NULL');
   initialized = true;
 }
 function id(){ return crypto.randomUUID(); }
