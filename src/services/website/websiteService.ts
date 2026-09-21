@@ -599,7 +599,7 @@ export class WebsiteService {
     console.log('[Pipeline] Imagens: ' + imageResult.metadata.length + ' assets | providers: ' + [...new Set(imageResult.metadata.map((m: any) => m.provider))].join(', '));
 
     let html = websiteCompiler.compileProfessional(businessName, city, phone, designSystem, content, assets);
-    const assetsSummary = websiteImageService.analyzeAssetsMetadata(imageResult.metadata);
+    let assetsSummary = websiteImageService.analyzeAssetsMetadata(imageResult.metadata);
     let qualityReview = await websiteQualityService.review(html, prd, designSystem, assetsSummary);
     let improvementCycles = 0;
     const MAX_CYCLES = 2;
