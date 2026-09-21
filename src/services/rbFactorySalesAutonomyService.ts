@@ -105,8 +105,15 @@ export const rbFactorySalesAutonomyService = {
     if(action.status==='SENDING'){
       const stale=(await (prisma as any).$queryRawUnsafe('SELECT id FROM "SalesAction" WHERE id=? AND status=\'SENDING\' AND datetime(updatedAt)<=datetime(\'now\',\'-10 minutes\') LIMIT 1',actionId))[0];
       if(!stale) throw new Error('SALES_ACTION_SEND_IN_PROGRESS');
-      await (prisma as any).$executeRawUnsafe('UPDATE "SalesAction" SET status=\'APPROVED\',decisionNote=\'RECOVERED_STALE_SENDING\',updatedAt=CURRENT_TIMESTAMP WHERE id=? AND status=\'SENDING\'',actionId);
-      action.status='APPROVED';
+
+      // The provider may have accepted the message even if our request timed out.
+      // Never automatically resend an uncertain external side effect: doing so can
+      // create duplicate WhatsApp messages. Move it to explicit operator review.
+      await (prisma as any).$executeRawUnsafe(
+        'UPDATE "SalesAction" SET status=\'SEND_REVIEW\',decisionNote=\'SEND_RESULT_UNKNOWN_PROVIDER_MAY_HAVE_ACCEPTED\',updatedAt=CURRENT_TIMESTAMP WHERE id=? AND status=\'SENDING\'',
+        actionId
+      );
+      throw new Error('SALES_ACTION_SEND_RESULT_UNKNOWN_REVIEW_REQUIRED');
     }
     if(action.status!=='PENDING_APPROVAL' && action.status!=='APPROVED') throw new Error('SALES_ACTION_NOT_SENDABLE');
     if(!whatsappAutoSendEnabled()) throw new Error('WHATSAPP_AUTOSEND_NOT_CONFIGURED');
