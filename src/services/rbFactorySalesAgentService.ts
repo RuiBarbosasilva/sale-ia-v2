@@ -235,9 +235,9 @@ export const rbFactorySalesAgentService = {
     // or follow-ups while an outbound step is already pending.
     const conversation=await this.ensureConversation(targetProspectId,'WHATSAPP');
     const conversationId=conversation.conversation.id;
-    const pending=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE conversationId=? AND status IN ('PENDING_APPROVAL','APPROVED') ORDER BY createdAt DESC LIMIT 1',conversationId);
+    const pending=await (prisma as any).$queryRawUnsafe(`SELECT * FROM "SalesAction" WHERE conversationId=? AND status IN ('PENDING_APPROVAL','APPROVED') ORDER BY createdAt DESC LIMIT 1`,conversationId);
     if(pending[0]) return {available:true,created:false,item,conversationId,action:pending[0],reason:'EXISTING_ACTION'};
-    const pendingFollow=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesFollowUp" WHERE conversationId=? AND status='PENDING' ORDER BY scheduledAt ASC LIMIT 1',conversationId);
+    const pendingFollow=await (prisma as any).$queryRawUnsafe(`SELECT * FROM "SalesFollowUp" WHERE conversationId=? AND status='PENDING' ORDER BY scheduledAt ASC LIMIT 1`,conversationId);
     if(pendingFollow[0]) return {available:true,created:false,item,conversationId,followUp:pendingFollow[0],reason:'EXISTING_FOLLOW_UP'};
 
     if(['PREPARE_DEMO','PREPARE_PROPOSAL','SEND_DEMO','SEND_PROPOSAL','ASK_FOR_CLOSE','INVESTIGATE_OBJECTION','DISCOVER_NEED','DISCOVER_DECISION_MAKER'].includes(nextAction)){
