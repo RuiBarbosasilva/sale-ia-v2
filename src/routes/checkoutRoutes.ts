@@ -1,5 +1,6 @@
 ﻿import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -59,7 +60,7 @@ router.get('/pix/:orderId/status', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/pix/:orderId/simulate-payment', async (req: Request, res: Response) => {
+router.post('/pix/:orderId/simulate-payment', adminAuthorization, async (req: Request, res: Response) => {
   try {
     await prisma.pixPayment.update({
       where: { orderId: req.params.orderId },
