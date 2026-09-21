@@ -49,26 +49,20 @@ router.get('/demo/:id', async (req: Request, res: Response) => {
   } catch (e: any) { res.status(500).json({ error: e.message }); }
 });
 
-router.post('/prospects/:id/proposal', adminAuthorization, async (req: Request, res: Response) => {
-  try {
-    const p = await prisma.websiteProspect.findUnique({ where: { id: req.params.id } });
-    if (!p) return res.status(404).json({ error: 'Prospect nao encontrado' });
-    const content = `PROPOSTA COMERCIAL\n\nPara: ${p.companyName}\nSegmento: ${p.segment}\n\nPROJETO: Criacao de Website Profissional\n\nINCLUI:\n- Design personalizado e responsivo\n- Otimizacao para mobile\n- Integracao com WhatsApp\n- Formulario de contato\n- SEO basico\n- Hospedagem por 1 ano\n\nINVESTIMENTO: A consultar\n\nPrazo: 15 dias uteis`;
-    const proposal = await prisma.websiteProposal.create({ data: { prospectId: p.id, content, status: 'DRAFT' } });
-    await prisma.websiteProspect.update({ where: { id: p.id }, data: { status: 'PROPOSAL_SENT' } });
-    res.json({ success: true, proposal });
-  } catch (e: any) { res.status(500).json({ error: e.message }); }
+router.post('/prospects/:id/proposal', adminAuthorization, async (_req: Request, res: Response) => {
+  return res.status(410).json({
+    success: false,
+    error: 'LEGACY_COMMERCIAL_FLOW_DISABLED',
+    message: 'Use o pipeline RB Factory Sites em /api/rb-factory-sales para gerar propostas com snapshot comercial, demo aprovada e regras de idempotencia.'
+  });
 });
 
-router.post('/prospects/:id/convert-lead', adminAuthorization, async (req: Request, res: Response) => {
-  try {
-    const p = await prisma.websiteProspect.findUnique({ where: { id: req.params.id } });
-    if (!p) return res.status(404).json({ error: 'Prospect nao encontrado' });
-    if (!p.phone) return res.status(400).json({ error: 'Prospect precisa de telefone' });
-    const lead = await prisma.lead.create({ data: { name: p.companyName, phone: p.phone, email: p.email || undefined, status: 'NEW_LEAD', stage: 'PROSPECTADO', score: p.score } });
-    await prisma.websiteProspect.update({ where: { id: p.id }, data: { linkedLeadId: lead.id, status: 'NEGOCIACAO' } });
-    res.json({ success: true, lead });
-  } catch (e: any) { res.status(500).json({ error: e.message }); }
+router.post('/prospects/:id/convert-lead', adminAuthorization, async (_req: Request, res: Response) => {
+  return res.status(410).json({
+    success: false,
+    error: 'LEGACY_COMMERCIAL_FLOW_DISABLED',
+    message: 'A conversao comercial deve ocorrer pelo pipeline RB Factory Sites, que controla Lead, proposta, aceite e projeto de forma atomica.'
+  });
 });
 
 router.get('/prospects', async (req: Request, res: Response) => {
