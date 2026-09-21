@@ -1,4 +1,31 @@
--- RB Factory Sites: database-level idempotency for pending seller follow-ups/actions
+-- RB Factory Sites: database-level idempotency for pending seller work.
+-- These tables are initialized by the seller service at runtime, but fresh
+-- databases must contain them before this migration creates the guards.
+
+CREATE TABLE IF NOT EXISTS "SalesFollowUp" (
+  "id" TEXT PRIMARY KEY NOT NULL,
+  "conversationId" TEXT NOT NULL,
+  "scheduledAt" DATETIME NOT NULL,
+  "reason" TEXT NOT NULL,
+  "status" TEXT NOT NULL DEFAULT 'PENDING',
+  "draft" TEXT,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS "SalesAction" (
+  "id" TEXT PRIMARY KEY NOT NULL,
+  "conversationId" TEXT NOT NULL,
+  "type" TEXT NOT NULL,
+  "title" TEXT NOT NULL,
+  "payload" TEXT,
+  "requiresApproval" INTEGER NOT NULL DEFAULT 1,
+  "status" TEXT NOT NULL DEFAULT 'PENDING_APPROVAL',
+  "approvedAt" DATETIME,
+  "sentAt" DATETIME,
+  "decisionNote" TEXT,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
 DELETE FROM "SalesFollowUp"
 WHERE "id" IN (
