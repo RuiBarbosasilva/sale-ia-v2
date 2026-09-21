@@ -110,6 +110,22 @@ export class ProposalGeneratorService {
         ? `Manutenção/serviços mensais: ${brl(plan.monthlyPrice)}`
         : 'Manutenção/serviços mensais: não incluídos';
 
+    const proposalSnapshot = {
+      version: 1,
+      planId: plan.id,
+      planCode: plan.code,
+      planName: plan.name,
+      projectPrice: Number(plan.projectPrice || 0),
+      monthlyPrice: Number(plan.monthlyPrice || 0),
+      demoVersion: latestDemo.version,
+      qualityScore,
+      paymentTerms: '50% na aprovação + 50% na publicação',
+      monthlyStartRule: 'A mensalidade começa somente após a publicação do site',
+      generatedAt: new Date().toISOString(),
+    };
+
+    const proposalSnapshotMarker = `<!-- RB_FACTORY_PROPOSAL_SNAPSHOT:${Buffer.from(JSON.stringify(proposalSnapshot), 'utf8').toString('base64')} -->`;
+
     const proposalContent = `PROPOSTA COMERCIAL — RB FACTORY SITES
 
 Para: ${businessName}
