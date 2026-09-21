@@ -30,46 +30,20 @@ async function withCycleProspectLock<T>(prospectId:string, work:()=>Promise<T>):
 
 async function init(){
   if(initialized) return;
-  await (prisma as any).$executeRawUnsafe(`
-    CREATE TABLE IF NOT EXISTS "RbFactorySalesAutonomyRun" (
-      "id" TEXT PRIMARY KEY NOT NULL,
-      "prospectId" TEXT,
-      "conversationId" TEXT,
-      "actionId" TEXT,
-      "action" TEXT NOT NULL,
-      "status" TEXT NOT NULL,
-      "reason" TEXT,
-      "metadata" TEXT,
-      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE INDEX IF NOT EXISTS "idx_RbFactorySalesAutonomyRun_prospect" ON "RbFactorySalesAutonomyRun"("prospectId");
-    CREATE INDEX IF NOT EXISTS "idx_RbFactorySalesAutonomyRun_created" ON "RbFactorySalesAutonomyRun"("createdAt");
-    CREATE TABLE IF NOT EXISTS "RbFactorySalesAutonomyControl" (
-      "id" TEXT PRIMARY KEY NOT NULL,
-      "status" TEXT NOT NULL DEFAULT 'STOPPED',
-      "config" TEXT,
-      "startedAt" DATETIME,
-      "stoppedAt" DATETIME,
-      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
-    INSERT OR IGNORE INTO "RbFactorySalesAutonomyControl" ("id","status") VALUES ('singleton','STOPPED');
-    CREATE TABLE IF NOT EXISTS "RbFactorySalesHumanAlert" (
-      "id" TEXT PRIMARY KEY NOT NULL,
-      "prospectId" TEXT,
-      "conversationId" TEXT,
-      "actionId" TEXT,
-      "type" TEXT NOT NULL,
-      "status" TEXT NOT NULL DEFAULT 'OPEN',
-      "reason" TEXT,
-      "message" TEXT,
-      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      "acknowledgedAt" DATETIME
-    );
-    CREATE INDEX IF NOT EXISTS "idx_RbFactorySalesHumanAlert_status" ON "RbFactorySalesHumanAlert"("status");
-    CREATE INDEX IF NOT EXISTS "idx_RbFactorySalesHumanAlert_prospect" ON "RbFactorySalesHumanAlert"("prospectId");
-    DELETE FROM "RbFactorySalesAutonomyRun" WHERE "createdAt" < DATETIME('now', '-90 days');
-    DELETE FROM "RbFactorySalesHumanAlert" WHERE "createdAt" < DATETIME('now', '-90 days');
-  `);
+  const statements=[
+    `CREATE TABLE IF NOT EXISTS "RbFactorySalesAutonomyRun" ("id" TEXT PRIMARY KEY NOT NULL,"prospectId" TEXT,"conversationId" TEXT,"actionId" TEXT,"action" TEXT NOT NULL,"status" TEXT NOT NULL,"reason" TEXT,"metadata" TEXT,"createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+    `CREATE INDEX IF NOT EXISTS "idx_RbFactorySalesAutonomyRun_prospect" ON "RbFactorySalesAutonomyRun"("prospectId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_RbFactorySalesAutonomyRun_created" ON "RbFactorySalesAutonomyRun"("createdAt")`,
+    `CREATE TABLE IF NOT EXISTS "RbFactorySalesAutonomyControl" ("id" TEXT PRIMARY KEY NOT NULL,"status" TEXT NOT NULL DEFAULT 'STOPPED',"config" TEXT,"startedAt" DATETIME,"stoppedAt" DATETIME,"updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+    `CREATE INDEX IF NOT EXISTS "idx_RbFactorySalesAutonomyControl_status" ON "RbFactorySalesAutonomyControl"("status")`,
+    `INSERT OR IGNORE INTO "RbFactorySalesAutonomyControl" ("id","status") VALUES ('singleton','STOPPED')`,
+    `CREATE TABLE IF NOT EXISTS "RbFactorySalesHumanAlert" ("id" TEXT PRIMARY KEY NOT NULL,"prospectId" TEXT,"conversationId" TEXT,"actionId" TEXT,"type" TEXT NOT NULL,"status" TEXT NOT NULL DEFAULT 'OPEN',"reason" TEXT,"message" TEXT,"createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"acknowledgedAt" DATETIME)`,
+    `CREATE INDEX IF NOT EXISTS "idx_RbFactorySalesHumanAlert_status" ON "RbFactorySalesHumanAlert"("status")`,
+    `CREATE INDEX IF NOT EXISTS "idx_RbFactorySalesHumanAlert_prospect" ON "RbFactorySalesHumanAlert"("prospectId")`,
+    `DELETE FROM "RbFactorySalesAutonomyRun" WHERE "createdAt" < DATETIME('now', '-90 days')`,
+    `DELETE FROM "RbFactorySalesHumanAlert" WHERE "createdAt" < DATETIME('now', '-90 days')`
+  ];
+  for(const sql of statements) await (prisma as any).$executeRawUnsafe(sql);
   initialized=true;
 }
 
