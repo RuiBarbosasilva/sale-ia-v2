@@ -203,7 +203,10 @@ export const rbFactorySalesService={
         if(!demo || demo.prospectId!==current.prospectId || !['READY','APPROVED'].includes(demo.status)) throw new Error('DEMO_NOT_READY_FOR_PIPELINE');
       }
       const proposal=stage!=='DEMO_READY' && stage!=='DISCOVERED' && stage!=='AUDITED' && stage!=='LOST'
-        ? await prisma.websiteProposal.findFirst({where:{prospectId:current.prospectId},orderBy:{id:'desc'}}) : null;
+        ? (current.proposalId
+          ? await prisma.websiteProposal.findUnique({where:{id:current.proposalId}})
+          : null)
+        : null;
       if(stage==='PROPOSAL_READY'){
         if(!proposal || !['READY','SENT'].includes(proposal.status)) throw new Error('WEBSITE_PROPOSAL_NOT_READY');
         if(!current.demoId || current.proposalId!==proposal.id) throw new Error('WEBSITE_PROPOSAL_NOT_READY');
