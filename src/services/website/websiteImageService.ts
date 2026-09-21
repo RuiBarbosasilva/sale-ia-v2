@@ -94,7 +94,7 @@ function scoreImageCandidate(candidate: Candidate, query: string, usage: string,
     ...query.toLowerCase().split(/\s+/),
     ...usage.toLowerCase().split(/\s+/)
   ]
-    .map(term => term.replace(/[^a-z0-9Ã¡Ã Ã¢Ã£Ã©ÃªÃ­Ã³Ã´ÃµÃºÃ§Ã¼-]/gi, '').trim())
+    .map(term => term.replace(/[^a-z0-9À-ÿ-]/gi, '').trim())
     .filter(term => term.length >= 4);
 
   const uniqueTerms = [...new Set(terms)];
@@ -391,8 +391,8 @@ const providers = this.imageProviders
   }
 
   /**
-   * ReconstrÃ³i o objeto assets (hero/gallery/services/logo) a partir do metadata salvo.
-   * Usado pelo regenerateDemo para PRESERVAR imagens entre versÃµes.
+   * Reconstrói o objeto assets (hero/gallery/services/logo) a partir do metadata salvo.
+   * Usado pelo regenerateDemo para PRESERVAR imagens entre versões.
    */
   rebuildAssets(metadata: any[]): any {
     const assets: any = { hero: null, gallery: [], services: {}, logo: null, galleryTitle: 'Galeria', galleryLabel: 'galeria' };
