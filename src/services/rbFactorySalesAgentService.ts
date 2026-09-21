@@ -186,8 +186,10 @@ export const rbFactorySalesAgentService = {
     }
     return {executed:false,action:'WAIT',reason:'NO_EXECUTABLE_COMMERCIAL_ACTION',nextAction};
   },
-  async prepareNextSellerAction(){
-    const queue=await this.sellerQueue(1);
+  async prepareNextSellerAction(prospectId?:string){
+    const queue=prospectId
+      ? (await this.sellerQueue(50)).filter((candidate:any)=>String(candidate.prospectId)===String(prospectId)).slice(0,1)
+      : await this.sellerQueue(1);
     const item=queue[0];
     if(!item) return {available:false,created:false,nextAction:null};
     const prospectId=String(item.prospectId);
