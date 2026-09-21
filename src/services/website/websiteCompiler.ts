@@ -679,7 +679,13 @@ const testimonials = Array.isArray(content.testimonials) ? content.testimonials 
                 expertise: 'Especialidades'
               };
 
-              const id = type
+              const explicitId = String((section as any).id || '').trim();
+              const titleOrVariant = String((section as any).title || (section as any).variant || '').trim();
+              const baseId = explicitId || type;
+              const id = (baseId + (explicitId || !titleOrVariant ? '' : '-' + titleOrVariant))
+                .normalize('NFD')
+                .replace(/[\\u0300-\\u036f]/g, '')
+                .toLowerCase()
                 .replace(/[^a-z0-9]+/g, '-')
                 .replace(/^-+|-+$/g, '');
 
