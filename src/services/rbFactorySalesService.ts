@@ -54,6 +54,31 @@ async function ensurePipelineUnlocked(prospectId:string){
   return (await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE id=?',values[0]))[0];
 }
 
+async function syncPipelineWon(prospectId:string, proposalId:string){
+  await init();
+  let lastError: unknown = null;
+  for(let attempt=0; attempt<3; attempt++){
+    try{
+      await (prisma as any).$executeRawUnsafe(
+        `UPDATE "RbFactorySalesPipeline" SET stage='WON',nextAction='PREPARE_PROJECT',proposalId=?,updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,
+        proposalId,
+        prospectId
+      );
+      const rows=await (prisma as any).$queryRawUnsafe(
+        'SELECT stage,proposalId FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',
+        prospectId
+      );
+      const row=rows[0];
+      if(row?.stage==='WON' && row.proposalId===proposalId) return;
+      lastError=new Error('PIPELINE_WON_SYNC_NOT_CONFIRMED');
+    }catch(error){
+      lastError=error;
+    }
+    if(attempt<2) await new Promise(resolve=>setTimeout(resolve,50*(attempt+1)));
+  }
+  throw new Error('COMMERCIAL_ACCEPTED_PIPELINE_SYNC_FAILED: '+(lastError instanceof Error ? lastError.message : 'pipeline state could not be confirmed'));
+}
+
 async function withPipelineLock<T>(prospectId:string, work:()=>Promise<T>):Promise<T>{
   const previous=pipelineLocks.get(prospectId)||Promise.resolve();
   let release!:()=>void;
@@ -180,7 +205,9 @@ export const rbFactorySalesService={
     if(proposal.prospectId !== prospectId) throw new Error('INVALID_COMMERCIAL_STATE');
     if(!['SENT','ACCEPTED'].includes(proposal.status)) throw new Error('WEBSITE_PROPOSAL_NOT_ACCEPTABLE');
     const result=await websiteCommercialService.acceptProposal(proposal.id,domainName);
-    await (prisma as any).$executeRawUnsafe(`UPDATE "RbFactorySalesPipeline" SET stage='WON',nextAction='PREPARE_PROJECT',proposalId=?,updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,proposal.id,prospectId);
+    // O aceite comercial já ocorreu em transação própria; confirme o espelhamento
+    // do pipeline com retry e verificação antes de declarar o fechamento completo.
+    await syncPipelineWon(prospectId,proposal.id);
     await rbFactorySalesAgentService.closeSellerForProspect(prospectId,'WON');
     return result;
     });
