@@ -27,7 +27,7 @@ export const rbFactoryWhatsAppController = {
 
       let sent=false;
       let sendResult:any=null;
-      const action=result?.result?.action || result?.result?.salesAction || null;
+      const action=result?.result?.action || null;
       if(action?.id && process.env.RB_FACTORY_SALES_MODE==='AUTONOMOUS' && process.env.RB_FACTORY_WHATSAPP_AUTOSEND==='true' && process.env.RB_FACTORY_WHATSAPP_OUTREACH_AUTHORIZED==='true'){
         try{
           sendResult=await rbFactorySalesAutonomyService.sendAction(action.id);
