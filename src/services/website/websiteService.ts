@@ -563,7 +563,7 @@ export class WebsiteService {
       // O índice único por prospectId protege contra duas preparações simultâneas.
       // Se outra requisição venceu a corrida, reutilizamos o projeto vencedor.
       if (error?.code === 'P2002') {
-        const winner = await prisma.websiteProject.findUnique({
+        const winner = await prisma.websiteProject.findFirst({
           where: { prospectId: demo.prospectId }
         });
         if (winner) {
