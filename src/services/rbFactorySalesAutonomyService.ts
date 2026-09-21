@@ -152,8 +152,13 @@ export const rbFactorySalesAutonomyService = {
             await websiteEnrichmentService.enrichProspect(p.id);
             await websiteOpportunityScoringService.calculateScore(p.id);
             const fresh=await prisma.websiteProspect.findUnique({where:{id:p.id}});
-            if(fresh?.email && fresh?.demoStatus!=='READY'){
+            if(fresh?.demoStatus!=='READY' && fresh?.demoStatus!=='APPROVED'){
               try{ await websiteDemoFactoryService.generateDemoForProspect(p.id,{useAI:true}); }catch{}
+            }
+            const afterDemo=await prisma.websiteProspect.findUnique({where:{id:p.id}});
+            if(afterDemo?.email && process.env.RB_FACTORY_EMAIL_AUTOSEND==='true'){
+              try{ const prepared=await websiteOutreachService.prepareOutreach(p.id); if(prepared?.outreachId) await websiteOutreachService.sendOutreach(p.id); }catch{}
+            }
             }
           }catch{}
         }
@@ -297,9 +302,19 @@ export const rbFactorySalesAutonomyService = {
             continue;
           }
 
+          if(whatsappAutoSendEnabled()){
+            try{
+              const sent=await this.sendAction(action.id);
+              result.items.push({prospectId:item.prospectId,status:'SENT',actionId:action.id,channel:'WHATSAPP',sent:true});
+              result.prepared++;
+              continue;
+            }catch(sendError:any){
+              await audit({prospectId:item.prospectId,conversationId,actionId:action.id,action:'OUTBOUND',status:'SEND_BLOCKED',reason:String(sendError?.message||sendError)});
+            }
+          }
           await audit({prospectId:item.prospectId,conversationId,actionId:action.id,action:'OUTBOUND',status:'PREPARED',reason:'AUTONOMY_ENGINE'});
           result.prepared++;
-          result.items.push({prospectId:item.prospectId,status:'PREPARED_ACTION',actionId:action.id,requiresApproval:true});
+          result.items.push({prospectId:item.prospectId,status:'PREPARED_ACTION',actionId:action.id,requiresApproval:!whatsappAutoSendEnabled(),channel:'WHATSAPP'});
           continue;
         }
 
