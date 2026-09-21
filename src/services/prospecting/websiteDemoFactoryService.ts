@@ -211,13 +211,15 @@ export class WebsiteDemoFactoryService {
 
       const result = await this.generateDemoForProspect(job.prospectId);
 
+      const approved = result.qualityRecommendation === 'approve' && Number(result.qualityScore || 0) >= 7.5;
       await prisma.websiteDemoJob.update({
         where: { id: jobId },
         data: {
-          status: 'READY',
-          currentStage: 'Concluido',
-          progress: 100,
+          status: approved ? 'READY' : 'FAILED',
+          currentStage: approved ? 'Concluido' : 'Aguardando melhoria de qualidade',
+          progress: approved ? 100 : 90,
           demoId: result.demoId,
+          error: approved ? null : 'DEMO_NEEDS_REVIEW',
           completedAt: new Date(),
         },
       });
