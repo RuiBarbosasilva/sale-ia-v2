@@ -1,9 +1,16 @@
 import { Request, Response } from 'express';
+import crypto from 'crypto';
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
 import { rbFactorySalesAgentService } from '../services/rbFactorySalesAgentService';
 import { rbFactorySalesAutonomyService } from '../services/rbFactorySalesAutonomyService';
 
 function normalizePhone(v:any){ return String(v||'').replace(/\D/g,''); }
+function webhookEventKey(req:Request,phone:string,message:string){
+  const body:any=req.body||{};
+  const explicit=body.eventId||body.eventID||body.messageId||body.messageID||body.key?.id||body.data?.key?.id||body.data?.messageId||body.data?.eventId;
+  if(explicit) return 'provider:'+String(explicit);
+  return 'content:'+crypto.createHash('sha256').update(JSON.stringify({phone,message})).digest('hex');
+}
 
 export const rbFactoryWhatsAppController = {
   async webhook(req:Request,res:Response){
@@ -15,8 +22,15 @@ export const rbFactoryWhatsAppController = {
       }
       const phone=normalizePhone(req.body?.phone || req.body?.from || req.body?.sender);
       const message=String(req.body?.message || req.body?.text || req.body?.body || '').trim();
+      const eventKey=webhookEventKey(req,phone,message);
       const name=req.body?.name || req.body?.pushName || null;
       if(!phone || !message) return res.status(400).json({success:false,error:'PHONE_AND_MESSAGE_REQUIRED'});
+      await (prisma as any).$executeRawUnsafe('CREATE TABLE IF NOT EXISTS "RbFactoryWhatsAppEvent" ("eventKey" TEXT PRIMARY KEY NOT NULL, "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)');
+      try{
+        await (prisma as any).$executeRawUnsafe('INSERT INTO "RbFactoryWhatsAppEvent" ("eventKey") VALUES (?)',eventKey);
+      }catch{
+        return res.json({success:true,handled:true,deduplicated:true,eventKey});
+      }
 
       const prospects=await (prisma as any).$queryRawUnsafe(
         'SELECT id FROM "WebsiteProspect" WHERE REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(phone,\'\'),\'-\',\'\'),\'(\',\'\'),\')\',\'\'),\' \',\'\'),\'+\',\'\') LIKE ? LIMIT 5',
