@@ -98,7 +98,7 @@ export const rbFactorySalesAgentService = {
       await this.syncPipelineAfterResponse(prospectId,result,message);
       const explicitNoInterest=/(não tenho interesse|nao tenho interesse|não quero|nao quero|não me interessa|nao me interessa|pare de|pode parar|retire meu contato)/i.test(message);
       const terminal=explicitNoInterest || String(result?.nextBestAction||'')==='LOST';
-      const followUp=terminal ? {reused:false,followUp:null,skipped:true,reason:'CUSTOMER_NOT_INTERESTED'} : await seniorSalesAgentService.scheduleRecommendedFollowUp(conversationId,result);
+      const escalated=String(result?.nextBestAction||'')==='ESCALATE_HUMAN_NEGOTIATION' || Boolean(result?.escalationRequired);\n       const followUp=(terminal || escalated) ? {reused:false,followUp:null,skipped:true,reason:terminal?'CUSTOMER_NOT_INTERESTED':'HUMAN_REVIEW_REQUIRED'} : await seniorSalesAgentService.scheduleRecommendedFollowUp(conversationId,result);
       const response={result,followUp,commercialContext:context};
       if(eventKey){
         await (prisma as any).$executeRawUnsafe('UPDATE "RbFactorySalesInboundEvent" SET "status"=\'COMPLETED\',"result"=? WHERE eventKey=?',JSON.stringify(response),eventKey);
