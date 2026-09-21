@@ -328,6 +328,7 @@ model WebsiteProject {
   publishedUrl    String?
   deploymentId    String?
   deploymentStatus String? @default("NOT_DEPLOYED") // NOT_DEPLOYED, DEPLOYING, READY, FAILED
+  deploymentStartedAt DateTime?
 
   @@unique([prospectId])
   @@index([status])
