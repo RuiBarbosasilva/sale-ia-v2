@@ -212,7 +212,7 @@ const providers = this.imageProviders
         try {
            const candidates = await fn(variant);
            const validCandidates = candidates.filter(cand => this.passesQC(cand, slot, usedUrls));
-           const rankedCandidates = rankImageCandidates(validCandidates, variant, usedUrls);
+           const rankedCandidates = rankImageCandidates(validCandidates, variant, usage, slot);
 
            for (const cand of rankedCandidates) {
              const availability = await this.validateImageAsset(cand);
