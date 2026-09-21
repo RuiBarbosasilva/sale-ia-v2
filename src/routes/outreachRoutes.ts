@@ -1,11 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { outreachService } from '../services/outreachService';
+import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
 const prisma = new PrismaClient();
 
-router.post('/send', async (req: Request, res: Response) => {
+router.post('/send', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const { leadIds, creativeText, channel } = req.body;
     
