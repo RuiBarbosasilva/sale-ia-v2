@@ -506,27 +506,113 @@ export class WebsiteService {
       throw new Error('VERCEL_TOKEN_NOT_CONFIGURED');
     }
 
-    // Se o processo caiu durante um deployment, o estado DEPLOYING não pode
-    // bloquear o projeto para sempre. Só recuperamos operações sem timestamp
-    // de início conhecido (legado) nunca automaticamente; estados modernos
-    // são recuperáveis apenas após 15 minutos, tempo muito acima do polling
-    // máximo do provider, evitando liberar um deployment ainda em andamento.
+    // Recuperação segura de um deployment abandonado: nunca liberamos um
+    // DEPLOYING antigo apenas pelo relógio, pois o deployment externo pode
+    // continuar vivo. Se já temos o deploymentId, consultamos a Vercel e
+    // reconciliamos o estado real antes de permitir uma nova tentativa.
     if (project.deploymentStatus === 'DEPLOYING' && project.deploymentStartedAt) {
       const cutoff = new Date(Date.now() - DEPLOYMENT_RECOVERY_TIMEOUT_MS);
       if (project.deploymentStartedAt < cutoff) {
-        await prisma.websiteProject.updateMany({
-          where: {
-            id: projectId,
-            status: 'CODING',
-            deploymentStatus: 'DEPLOYING',
-            deploymentStartedAt: project.deploymentStartedAt
-          },
-          data: {
-            deploymentStatus: 'FAILED',
-            status: 'REVIEW',
-            deploymentStartedAt: null
+        if (!project.deploymentId) {
+          throw new Error('DEPLOYMENT_RECOVERY_REQUIRED');
+        }
+
+        const recovered = await vercelDeploymentProvider.getDeployment(project.deploymentId);
+
+        if (!recovered) {
+          const released = await prisma.websiteProject.updateMany({
+            where: {
+              id: projectId,
+              status: 'CODING',
+              deploymentStatus: 'DEPLOYING',
+              deploymentStartedAt: project.deploymentStartedAt,
+              deploymentId: project.deploymentId
+            },
+            data: {
+              deploymentStatus: 'FAILED',
+              status: 'REVIEW',
+              deploymentStartedAt: null
+            }
+          });
+          if (released.count === 0) {
+            const current = await prisma.websiteProject.findUnique({ where: { id: projectId } });
+            if (current?.status === 'PUBLISHED' && current.publishedUrl) return current;
           }
-        });
+        } else if (recovered.state === 'READY' && recovered.verified && recovered.url) {
+          const publishedAt = new Date();
+          const reconciled = await prisma.websiteProject.updateMany({
+            where: {
+              id: projectId,
+              status: 'CODING',
+              deploymentStatus: 'DEPLOYING',
+              deploymentStartedAt: project.deploymentStartedAt,
+              deploymentId: project.deploymentId
+            },
+            data: {
+              status: 'PUBLISHED',
+              hostingProvider: recovered.provider,
+              deploymentId: recovered.deploymentId,
+              deploymentStatus: 'READY',
+              deploymentStartedAt: null,
+              publishedUrl: recovered.url,
+              publishedAt
+            }
+          });
+          if (reconciled.count > 0) {
+            try {
+              await websiteCommercialService.activateSubscriptionAfterPublication(
+                project.prospectId,
+                publishedAt
+              );
+              const existingEvent = await prisma.websiteProspectEvent.findFirst({
+                where: {
+                  prospectId: project.prospectId,
+                  type: 'PROJECT_PUBLISHED',
+                  metadata: { contains: project.id }
+                }
+              });
+              if (!existingEvent) {
+                await prisma.websiteProspectEvent.create({
+                  data: {
+                    prospectId: project.prospectId,
+                    type: 'PROJECT_PUBLISHED',
+                    description: 'Website publicado e reconciliado automaticamente',
+                    metadata: JSON.stringify({
+                      projectId: project.id,
+                      provider: recovered.provider,
+                      deploymentId: recovered.deploymentId,
+                      publishedUrl: recovered.url,
+                      demoVersion: project.currentVersion,
+                      verified: true,
+                      reconciled: true
+                    })
+                  }
+                });
+              }
+            } catch (postRecoveryError: any) {
+              console.error('[WebsiteService] reconciliação pós-recovery falhou:', postRecoveryError?.message || postRecoveryError);
+            }
+          }
+          const current = await prisma.websiteProject.findUnique({ where: { id: projectId } });
+          if (current?.status === 'PUBLISHED' && current.publishedUrl) return current;
+        } else if (['ERROR', 'CANCELED', 'CANCELLED'].includes(recovered.state)) {
+          await prisma.websiteProject.updateMany({
+            where: {
+              id: projectId,
+              status: 'CODING',
+              deploymentStatus: 'DEPLOYING',
+              deploymentStartedAt: project.deploymentStartedAt,
+              deploymentId: project.deploymentId
+            },
+            data: {
+              deploymentStatus: 'FAILED',
+              status: 'REVIEW',
+              deploymentStartedAt: null
+            }
+          });
+        } else {
+          throw new Error('DEPLOYMENT_RECOVERY_PENDING');
+        }
       }
     }
 
@@ -585,6 +671,41 @@ export class WebsiteService {
     }
 
     const publishedAt = new Date();
+
+    // Persistimos o deploymentId imediatamente após o retorno do provedor.
+    // Assim, se a gravação final falhar ou o processo reiniciar, a próxima
+    // execução consegue consultar a Vercel e reconciliar o deployment real.
+    let deploymentIdPersisted = false;
+    let lastDeploymentIdPersistenceError: any = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const persisted = await prisma.websiteProject.updateMany({
+          where: {
+            id: projectId,
+            status: 'CODING',
+            deploymentStatus: 'DEPLOYING'
+          },
+          data: {
+            deploymentId: deployment.deploymentId,
+            hostingProvider: deployment.provider
+          }
+        });
+        if (persisted.count === 1) {
+          deploymentIdPersisted = true;
+          break;
+        }
+      } catch (error: any) {
+        lastDeploymentIdPersistenceError = error;
+      }
+      if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 250 * (attempt + 1)));
+    }
+
+    if (!deploymentIdPersisted) {
+      throw new Error(
+        'PUBLICATION_STATE_SYNC_FAILED:' +
+        (lastDeploymentIdPersistenceError?.message || 'DEPLOYMENT_ID_PERSISTENCE_FAILED')
+      );
+    }
 
     // A Vercel deployment that already reached READY is an external fact.
     // Persist that fact with bounded retries so a transient DB failure does
