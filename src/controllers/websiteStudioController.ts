@@ -454,6 +454,33 @@ export const websiteStudioController = {
     }
   },
 
+  async publishProject(req: Request, res: Response) {
+    try {
+      const { projectId, provider } = req.body || {};
+      if (!projectId) {
+        return res.status(400).json({ success: false, error: 'projectId é obrigatório' });
+      }
+
+      const project = await websiteService.publishProject(
+        String(projectId),
+        String(provider || 'VERCEL')
+      );
+
+      res.json({
+        success: true,
+        project,
+        publicationStatus: project.deploymentStatus === 'READY' ? 'PUBLISHED' : project.deploymentStatus
+      });
+    } catch (e: any) {
+      const message = e?.message || 'Erro ao publicar projeto';
+      const statusCode =
+        ['WEBSITE_PROJECT_NOT_FOUND', 'APPROVED_DEMO_VERSION_NOT_FOUND'].includes(message) ? 404 :
+        ['PROPOSAL_NOT_ACCEPTED', 'DEMO_QUALITY_GATE_FAILED', 'VERCEL_TOKEN_NOT_CONFIGURED', 'DEPLOYMENT_PROVIDER_NOT_SUPPORTED'].includes(message) ? 400 :
+        502;
+      res.status(statusCode).json({ success: false, error: message });
+    }
+  },
+
   async markProjectPublished(req: Request, res: Response) {
     try {
       const { projectId, domainName, hostingProvider, sourceCodeRepo } = req.body || {};
