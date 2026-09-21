@@ -71,6 +71,41 @@ export class WebsiteCommercialService {
 
     if (!proposal) throw new Error('WEBSITE_PROPOSAL_NOT_FOUND');
 
+    // Idempotência: uma proposta já aceita não deve criar outro Lead/Projeto.
+    if (proposal.status === 'ACCEPTED') {
+      const existingProject = await prisma.websiteProject.findFirst({
+        where: { prospectId: proposal.prospectId },
+      });
+
+      if (!existingProject) {
+        throw new Error('WEBSITE_PROJECT_NOT_FOUND_FOR_ACCEPTED_PROPOSAL');
+      }
+
+      if (domainName && !existingProject.domainName) {
+        await prisma.websiteProject.update({
+          where: { id: existingProject.id },
+          data: { domainName },
+        });
+      }
+
+      const currentProject = domainName && !existingProject.domainName
+        ? await prisma.websiteProject.findUnique({ where: { id: existingProject.id } })
+        : existingProject;
+
+      const existingLead = proposal.prospect.linkedLeadId
+        ? await prisma.lead.findUnique({ where: { id: proposal.prospect.linkedLeadId } })
+        : null;
+
+      return {
+        success: true,
+        idempotent: true,
+        proposal: proposal.id,
+        lead: existingLead,
+        project: currentProject,
+        subscription: null,
+      };
+    }
+
     const prospect = proposal.prospect;
     if (!prospect) throw new Error('WEBSITE_PROSPECT_NOT_FOUND');
 
