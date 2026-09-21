@@ -50,8 +50,8 @@ app.use((req, res, next) => {
 
 // RB Factory Sites é a porta de entrada única do sistema web local.
 // O dashboard antigo continua disponível em /dashboard, mas a raiz abre a Factory.
-app.get('/', (_req, res) => res.redirect(302, '/site-factory.html'));
-app.get('/site-factory.html', (_req, res) => res.sendFile('site-factory.html', { root: 'public' }));
+app.get('/', (_req, res) => res.sendFile('site-factory.html', { root: 'public' }));
+app.get('/site-factory.html', (_req, res) => res.redirect(302, '/'));
 
 app.use(express.static('public'));
 app.get('/affiliates', (_req, res) => res.sendFile('affiliates/index.html', { root: 'public' }));
