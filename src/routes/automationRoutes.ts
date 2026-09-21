@@ -7,7 +7,7 @@ const router = Router();
 const prisma = new PrismaClient();
 
 // Listar todas as campanhas com estatísticas
-router.get('/campaigns', async (req: Request, res: Response) => {
+router.get('/campaigns', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const campaigns = await prisma.campaign.findMany({
       orderBy: { createdAt: 'desc' },
@@ -24,7 +24,7 @@ router.get('/campaigns', async (req: Request, res: Response) => {
 });
 
 // Obter estatísticas da fila de jobs (BullMQ)
-router.get('/queue-stats', async (req: Request, res: Response) => {
+router.get('/queue-stats', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const campaignJobs = await campaignQueue.getJobCounts();
     const followUpJobs = await followUpQueue.getJobCounts();
@@ -83,7 +83,7 @@ router.post('/campaigns/:id/pause', adminAuthorization, async (req: Request, res
 });
 
 // Logs recentes de automação (mensagens do sistema)
-router.get('/logs', async (req: Request, res: Response) => {
+router.get('/logs', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const logs = await prisma.message.findMany({
       where: { sender: 'SYSTEM' },
