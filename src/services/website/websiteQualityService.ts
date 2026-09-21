@@ -129,6 +129,10 @@ Regras criticas:
         imgCrit.score = Math.min(imgCrit.score, 4);
         imgCrit.feedback = 'Uma ou mais imagens do demo nao passaram na validacao';
       }
+      if (assets.placeholderCount > 0) {
+        imgCrit.score = Math.min(imgCrit.score, 5);
+        issues.push('Existem imagens placeholder no demo');
+      }
       if (issues.length > 0) r.criticalIssues = [...(r.criticalIssues || []), ...issues];
     }
     // SEO: meta tags obrigatorias
@@ -137,8 +141,19 @@ Regras criticas:
       if (!html.includes('<title>')) seoCrit.score = Math.min(seoCrit.score, 3);
       if (!html.includes('meta name="description"')) seoCrit.score = Math.min(seoCrit.score, 4);
     }
+    // Recalcular a nota depois das regras locais: a IA nao pode manter uma
+    // media artificialmente alta apos uma regra estrutural reduzir criterios.
+    r.overallScore = Math.round(
+      (r.criteria.length ? r.criteria.reduce((sum, criterion) => sum + criterion.score, 0) / r.criteria.length : 0) * 10
+    ) / 10;
     if ((r.criticalIssues || []).length > 0) {
       r.recommendation = 'improve';
+    } else if (r.overallScore >= this.MIN_SCORE) {
+      r.recommendation = 'approve';
+    } else if (r.overallScore >= this.CRITICAL_THRESHOLD) {
+      r.recommendation = 'improve';
+    } else {
+      r.recommendation = 'regenerate';
     }
     return r;
   }
