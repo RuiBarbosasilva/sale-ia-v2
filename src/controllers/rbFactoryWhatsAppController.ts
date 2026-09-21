@@ -8,6 +8,11 @@ function normalizePhone(v:any){ return String(v||'').replace(/\D/g,''); }
 export const rbFactoryWhatsAppController = {
   async webhook(req:Request,res:Response){
     try{
+      const configuredSecret=String(process.env.RB_FACTORY_WHATSAPP_WEBHOOK_SECRET||'').trim();
+      if(configuredSecret){
+        const provided=String(req.header('x-rb-factory-webhook-secret')||req.header('x-webhook-secret')||'').trim();
+        if(!provided || provided!==configuredSecret) return res.status(401).json({success:false,error:'WEBHOOK_UNAUTHORIZED'});
+      }
       const phone=normalizePhone(req.body?.phone || req.body?.from || req.body?.sender);
       const message=String(req.body?.message || req.body?.text || req.body?.body || '').trim();
       const name=req.body?.name || req.body?.pushName || null;
