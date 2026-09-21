@@ -511,8 +511,36 @@ export class WebsiteService {
         );
         if (aiContent) {
           content = { ...content, ...aiContent };
-          html = websiteCompiler.compileProfessional(businessName, city, phone, designSystem, content, assets);
-          qualityReview = await websiteQualityService.review(html, prd, designSystem, assetsSummary);
+          // Se a falha envolve imagens/assets, reacquire antes de reavaliar.
+          // Isso evita que o loop apenas reescreva texto enquanto mantém placeholders.
+          const imageIssues = (qualityReview.criticalIssues || []).some((issue: string) =>
+            /imagem|hero|placeholder|asset|foto/i.test(issue)
+          ) || assetsSummary.placeholderCount > 0 || !assetsSummary.hasHero;
+          let cycleAssets = assets;
+          let cycleAssetsSummary = assetsSummary;
+          if (imageIssues) {
+            try {
+              const repaired = await websiteImageService.acquireAssets(
+                { ...briefing, businessName, category, city },
+                prd,
+                designSystem
+              );
+              cycleAssets = repaired.assets;
+              cycleAssetsSummary = websiteImageService.analyzeAssetsMetadata(repaired.metadata);
+              content = {
+                ...content,
+                services: (content.services || []).map((s: any) => ({
+                  ...s,
+                  image: (cycleAssets.services || {})[s.title] || null
+                }))
+              };
+              assetsSummary = cycleAssetsSummary;
+            } catch (imageError: any) {
+              console.warn('[Pipeline] Reparacao de imagens falhou:', imageError?.message);
+            }
+          }
+          html = websiteCompiler.compileProfessional(businessName, city, phone, designSystem, content, cycleAssets);
+          qualityReview = await websiteQualityService.review(html, prd, designSystem, cycleAssetsSummary);
         } else { break; }
       } catch (e: any) {
         console.error('[Pipeline] Melhoria falhou:', e?.message);
