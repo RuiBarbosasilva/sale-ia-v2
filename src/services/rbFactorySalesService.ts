@@ -26,6 +26,37 @@ async function init(){
       "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
   `);
+  // Repair legacy duplicates before enforcing the one-pipeline-per-prospect invariant.
+  // Keep the most advanced pipeline state; use the newest row as the tiebreaker.
+  await (prisma as any).$executeRawUnsafe(`
+    DELETE FROM "RbFactorySalesPipeline"
+    WHERE "id" IN (
+      SELECT "id" FROM (
+        SELECT
+          "id",
+          ROW_NUMBER() OVER (
+            PARTITION BY "prospectId"
+            ORDER BY
+              CASE "stage"
+                WHEN 'WON' THEN 0
+                WHEN 'NEGOTIATION' THEN 1
+                WHEN 'PROPOSAL_READY' THEN 2
+                WHEN 'CONTACTED' THEN 3
+                WHEN 'DEMO_READY' THEN 4
+                WHEN 'AUDITED' THEN 5
+                WHEN 'DISCOVERED' THEN 6
+                WHEN 'LOST' THEN 7
+                ELSE 8
+              END,
+              "updatedAt" DESC,
+              "createdAt" DESC,
+              "id" DESC
+          ) AS rn
+        FROM "RbFactorySalesPipeline"
+      )
+      WHERE rn > 1
+    )
+  `);
   await (prisma as any).$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "RbFactorySalesPipeline_prospectId_unique" ON "RbFactorySalesPipeline"("prospectId")`);
   initialized=true;
 }
