@@ -102,6 +102,7 @@ export const rbFactorySalesService={
   },
 
   async buildProposal(prospectId:string,planCode?:string,planId?:string){
+    return withPipelineLock(prospectId, async()=>{
     await init();
     const pipeline = await this.createFromProspect(prospectId);
     if (!['DEMO_READY', 'PROPOSAL_READY', 'CONTACTED', 'NEGOTIATION'].includes(pipeline.stage)) {
@@ -133,9 +134,11 @@ export const rbFactorySalesService={
     await (prisma as any).$executeRawUnsafe(`UPDATE "RbFactorySalesPipeline" SET stage='PROPOSAL_READY',proposalId=?,nextAction='CONTACT_PROSPECT',updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,proposal.id,prospectId);
     const salesAgent=await rbFactorySalesAgentService.prepareProposalApproach(prospectId,'WHATSAPP');
     return {...proposal,salesAgent};
+    });
   },
 
   async sendProposal(prospectId:string){
+    return withPipelineLock(prospectId, async()=>{
     await init();
     const pipelineRows = await (prisma as any).$queryRawUnsafe(
       'SELECT * FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',
@@ -161,9 +164,11 @@ export const rbFactorySalesService={
     const salesAgent=await rbFactorySalesAgentService.ensureConversation(prospectId,'WHATSAPP');
     const followUp=await rbFactorySalesAgentService.prepareProposalApproach(prospectId,'WHATSAPP');
     return {...updated,salesAgent:{conversationId:salesAgent.conversation.id,reused:salesAgent.reused,proposalApproach:followUp.draft}};
+    });
   },
 
   async convertToLead(prospectId:string){
+    return withPipelineLock(prospectId, async()=>{
     await init();
     const prospect=await prisma.websiteProspect.findUnique({where:{id:prospectId}});
     if(!prospect) throw new Error('WEBSITE_PROSPECT_NOT_FOUND');
@@ -218,9 +223,11 @@ export const rbFactorySalesService={
       prospectId
     );
     return lead;
+    });
   },
 
   async acceptProposal(prospectId:string,domainName?:string){
+    return withPipelineLock(prospectId, async()=>{
     await init();
 
     const proposal=await prisma.websiteProposal.findFirst({
@@ -253,6 +260,7 @@ export const rbFactorySalesService={
     await rbFactorySalesAgentService.closeSellerForProspect(prospectId,'WON');
 
     return result;
+    });
   },
 
   async updateStage(idv:string,stage:string,nextAction?:string,notes?:string){
