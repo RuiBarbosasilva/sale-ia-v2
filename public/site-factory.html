@@ -1,211 +1,233 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Site Factory - SALE-IA-V2</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; color: #333; }
-    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
-    header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; border-radius: 10px; margin-bottom: 2rem; }
-    header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
-    .nav { display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
-    .nav button { padding: 0.75rem 1.5rem; border: none; border-radius: 8px; background: white; color: #667eea; cursor: pointer; font-weight: 600; }
-    .nav button.active { background: #667eea; color: white; }
-    .section { display: none; }
-    .section.active { display: block; }
-    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-    .stat { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 10px; }
-    .stat-value { font-size: 2rem; font-weight: bold; }
-    .stat-label { font-size: 0.875rem; opacity: 0.9; }
-    .card { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 2rem; }
-    .card h2 { color: #667eea; margin-bottom: 1.5rem; }
-    .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin: 0.25rem; }
-    .btn-primary { background: #667eea; color: white; }
-    .btn-success { background: #10b981; color: white; }
-    .btn-warning { background: #f59e0b; color: white; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
-    .template-card { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); transition: transform 0.3s; }
-    .template-card:hover { transform: translateY(-5px); }
-    .template-card img { width: 100%; height: 200px; object-fit: cover; }
-    .template-card .content { padding: 1rem; }
-    .template-card h3 { color: #667eea; margin-bottom: 0.5rem; }
-    .template-card .price { font-size: 1.5rem; font-weight: bold; color: #10b981; margin: 0.5rem 0; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
-    th { background: #f9fafb; font-weight: 600; }
-    .badge { padding: 0.375rem 0.875rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
-    .badge-success { background: #d1fae5; color: #065f46; }
-    .badge-warning { background: #fef3c7; color: #92400e; }
-    .badge-info { background: #dbeafe; color: #1e40af; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="RB Factory Sites — central de prospecção, demos e vendas de sites profissionais.">
+<title>RB Factory Sites — Dashboard</title>
+<style>
+:root{--bg:#f6f7f9;--surface:#fff;--ink:#101318;--muted:#68707d;--line:#e5e7eb;--soft:#f0f2f5;--accent:#111827;--ok:#087f5b;--warn:#a15c00;--danger:#b42318}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}button,a{font:inherit}a{text-decoration:none;color:inherit}
+.shell{min-height:100vh;display:grid;grid-template-columns:250px 1fr}.side{position:sticky;top:0;height:100vh;background:#101318;color:#fff;padding:22px 15px;display:flex;flex-direction:column}.brand{display:flex;gap:11px;align-items:center;padding:5px 8px 28px}.mark{width:38px;height:38px;border-radius:12px;background:#fff;color:#101318;display:grid;place-items:center;font-weight:950}.brand strong{display:block;font-size:15px;letter-spacing:-.03em}.brand small{display:block;color:#9da4ae;font-size:9px;text-transform:uppercase;letter-spacing:.14em;margin-top:3px}.nav-label{font-size:9px;color:#737b86;text-transform:uppercase;letter-spacing:.15em;font-weight:800;padding:12px 9px 6px}.nav{display:grid;gap:4px}.nav a{padding:10px 11px;border-radius:10px;color:#b8bec7;font-size:12px;font-weight:700}.nav a:hover,.nav a.active{background:#1d2229;color:#fff}.side-bottom{margin-top:auto;border:1px solid #2a3038;border-radius:14px;padding:12px}.side-bottom b{font-size:11px}.side-bottom p{margin:6px 0 0;color:#89919c;font-size:10px;line-height:1.5}.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#27ae78;margin-right:7px}
+main{min-width:0;padding:28px 34px 55px}.top{display:flex;justify-content:space-between;gap:15px;align-items:center;margin-bottom:26px}.crumb{font-size:11px;color:#8a919c}.crumb b{color:var(--ink)}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:9px 13px;font-size:11px;font-weight:800;cursor:pointer}.btn:hover{border-color:#c6cbd2;transform:translateY(-1px)}.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}.btn.ghost{background:transparent}
+.hero{display:flex;justify-content:space-between;gap:30px;align-items:flex-end;margin-bottom:24px}.hero h1{font-size:38px;line-height:1.05;letter-spacing:-.055em;margin:0 0 9px}.hero p{max-width:690px;color:var(--muted);font-size:13px;line-height:1.6;margin:0}.timestamp{font-size:10px;color:#9299a3;white-space:nowrap}
+.seller-command{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:18px 20px;margin-bottom:16px;border:2px solid #111827;background:#fff}
+.seller-command-main{display:flex;align-items:center;gap:13px;min-width:0}.seller-command-icon{width:44px;height:44px;border-radius:13px;background:#101318;color:#fff;display:grid;place-items:center;font-size:21px;flex:0 0 auto}.seller-command-label{font-size:9px;font-weight:900;letter-spacing:.16em;color:#6b7280}.seller-command h2{margin:3px 0 4px;font-size:17px;letter-spacing:-.03em}.seller-command p{margin:0;color:#6b7280;font-size:11px}.seller-command-actions{display:flex;align-items:center;gap:10px;flex:0 0 auto}.seller-command-status{font-size:10px;font-weight:900;letter-spacing:.08em;color:#68707d}.seller-on{background:#087f5b!important;color:#fff!important;border-color:#087f5b!important}.seller-off{background:#b42318!important;color:#fff!important;border-color:#b42318!important}
+@media(max-width:760px){.seller-command{align-items:flex-start;flex-direction:column}.seller-command-actions{width:100%;justify-content:space-between}.seller-command-actions .btn{flex:1}.seller-command-status{white-space:nowrap}}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}.kpi{background:var(--surface);border:1px solid var(--line);border-radius:17px;padding:17px;min-width:0}.kpi-label{font-size:9px;color:#818995;text-transform:uppercase;letter-spacing:.1em;font-weight:850}.kpi-value{font-size:27px;font-weight:900;letter-spacing:-.045em;margin:10px 0 4px}.kpi-note{font-size:10px;color:#9299a3}
+.layout{display:grid;grid-template-columns:1.5fr 1fr;gap:16px}.panel{background:var(--surface);border:1px solid var(--line);border-radius:19px;padding:19px;margin-bottom:16px}.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}.panel h2{font-size:15px;letter-spacing:-.025em;margin:0}.panel-head span{font-size:9px;color:#9299a3;text-transform:uppercase;letter-spacing:.09em;font-weight:800}
+.actions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.action{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fff;transition:.16s}.action:hover{transform:translateY(-2px);box-shadow:0 8px 24px #1013180c}.action .icon{width:34px;height:34px;border-radius:10px;background:var(--soft);display:grid;place-items:center;font-weight:900;margin-bottom:10px}.action strong{display:block;font-size:12px}.action span{display:block;color:#858d98;font-size:10px;line-height:1.45;margin-top:4px}.tag{display:inline-block;margin-top:9px;border-radius:999px;padding:4px 7px;background:var(--soft);font-size:8px;font-weight:850;text-transform:uppercase;letter-spacing:.07em}.tag.ok{background:#eaf7f1;color:var(--ok)}
+.pipeline{display:grid;gap:10px}.stage{display:grid;grid-template-columns:110px 1fr 34px;gap:9px;align-items:center}.stage-name{font-size:10px;color:#69717c;font-weight:700}.bar{height:8px;background:#eef0f3;border-radius:99px;overflow:hidden}.fill{height:100%;background:#15191f;border-radius:99px;transition:width .25s}.count{font-size:10px;font-weight:900;text-align:right}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:13px}table{width:100%;border-collapse:collapse;min-width:620px}th,td{text-align:left;padding:11px 12px;border-bottom:1px solid #eef0f2;font-size:10px}th{background:#fafbfc;color:#747c87;font-size:9px;text-transform:uppercase;letter-spacing:.07em}tr:last-child td{border-bottom:0}.badge{display:inline-block;border-radius:999px;padding:4px 7px;background:#f0f2f5;color:#626a75;font-size:8px;font-weight:850}.badge.ok{background:#eaf7f1;color:var(--ok)}
+.empty{padding:24px;text-align:center;color:#9299a3;font-size:11px}.status-line{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #f0f1f3}.status-line:last-child{border-bottom:0}.status-line b{font-size:10px}.status-line span{font-size:10px;color:#8b929c;text-align:right}.notice{padding:12px 13px;border-radius:12px;background:#f7f8fa;color:#6d7580;font-size:10px;line-height:1.55;margin-top:12px}
+.toast{position:fixed;right:18px;bottom:18px;background:#111318;color:#fff;border-radius:11px;padding:11px 14px;font-size:10px;display:none;box-shadow:0 12px 35px #0003}
+@media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.layout{grid-template-columns:1fr}}@media(max-width:800px){.shell{display:block}.side{position:static;height:auto;padding:14px}.nav{display:flex;overflow:auto}.nav-label,.side-bottom{display:none}.brand{padding-bottom:13px}.nav a{white-space:nowrap}.top,.hero{display:block}.actions{margin-top:12px}.kpis{grid-template-columns:repeat(2,1fr)}main{padding:20px}.actions-grid{grid-template-columns:1fr 1fr}}@media(max-width:520px){.kpis{grid-template-columns:1fr}.actions-grid{grid-template-columns:1fr}.hero h1{font-size:31px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+.prospect-modal{position:fixed;inset:0;background:#0008;display:none;place-items:center;z-index:1000;padding:18px}.prospect-modal.open{display:grid}.prospect-dialog{width:min(720px,100%);max-height:90vh;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:0 24px 80px #0004}.prospect-dialog h2{margin:0 0 6px;font-size:20px;letter-spacing:-.035em}.prospect-dialog p{margin:0 0 18px;color:var(--muted);font-size:11px;line-height:1.5}.prospect-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}.prospect-field label{display:block;font-size:9px;font-weight:850;text-transform:uppercase;letter-spacing:.08em;color:#727a85;margin-bottom:6px}.prospect-field input,.prospect-field select{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 11px;font-size:12px;background:#fff}.prospect-field.full{grid-column:1/-1}.prospect-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}.prospect-result{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:12px;background:#f8f9fb;font-size:10px;line-height:1.55;display:none}.prospect-result.show{display:block}.prospect-result.ok{border-color:#b7e4d0;background:#f1fbf6}.prospect-result.err{border-color:#f1b7b2;background:#fff5f4}@media(max-width:600px){.prospect-form{grid-template-columns:1fr}.prospect-field.full{grid-column:auto}}
+</style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â Site Factory</h1>
-      <p>MÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡quina de CriaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o e Venda de Sites</p>
-    </header>
+<div class="shell">
+<aside class="side">
+  <div class="brand"><div class="mark">RB</div><div><strong>RB Factory Sites</strong><small>sales system</small></div></div>
+  <div class="nav-label">Operação</div>
+  <nav class="nav">
+    <a class="active" href="/site-factory.html">⌂ Dashboard</a>
+    <a href="/site-factory-studio.html">✦ Studio</a>
+    <a href="/rb-factory-benchmark">▦ Biblioteca de referências</a>
+    <a href="#prospects" onclick="openProspects();return false">◌ Prospects</a>
+    <a href="#demos" onclick="openDemos();return false">◈ Demos</a>
+  </nav>
+  <div class="nav-label">Central</div>
+  <nav class="nav">
+    <a href="/dashboard">← SALE-IA Central</a>
+  </nav>
+  <div class="side-bottom"><b><span class="dot"></span>Factory operacional</b><p>Prospecção → auditoria → demo → proposta → venda → publicação.</p></div>
+</aside>
+<main>
+  <div class="top"><div class="crumb">SALE-IA / <b>RB Factory Sites</b></div><div class="actions"><button class="btn" onclick="setAdminKey()">🔐 Chave</button><button class="btn" onclick="startProspecting()">⌕ Prospectar</button><button class="btn primary" id="sellerToggle" onclick="toggleSeller()">▶ Vendedor IA</button><button class="btn" onclick="refreshAll()">↻ Atualizar</button><a class="btn primary" href="/site-factory-studio.html">Abrir Studio</a></div></div>
+  <section class="hero"><div><h1>Transforme negócios locais em sites que vendem.</h1><p>Central operacional para encontrar prospects, auditar presença digital, gerar demos premium, acompanhar propostas e preparar a conversão em cliente.</p></div><div class="timestamp" id="updated">—</div></section>
+  <section class="seller-command panel" id="sellerCommand" aria-live="polite">
+    <div class="seller-command-main">
+      <div class="seller-command-icon">🤖</div>
+      <div><div class="seller-command-label">VENDEDOR IA</div><h2 id="sellerCommandTitle">Vendedor IA está DESLIGADO</h2><p id="sellerCommandText">Clique em LIGAR para iniciar o trabalho comercial persistente da Factory.</p></div>
+    </div>
+    <div class="seller-command-actions"><span class="seller-command-status" id="sellerCommandStatus">● DESLIGADO</span><button class="btn seller-on" id="sellerCommandToggle" onclick="toggleSeller()">▶ LIGAR VENDEDOR IA</button></div>
+  </section>
 
-    <nav class="nav">
-      <button onclick="showSection('overview')" id="btn-overview" class="active">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€¦Ã‚Â  VisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o Geral</button>
-      <button onclick="showSection('templates')" id="btn-templates">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€šÃ‚Â¦ Modelos</button>
-      <button onclick="showSection('categories')" id="btn-categories">ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Categorias</button>
-      <button onclick="showSection('prospects')" id="btn-prospects">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€šÃ‚Â¥ Prospects</button>
-      <button onclick="showSection('demos')" id="btn-demos">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â½Ãƒâ€šÃ‚Â¨ Demos</button>
-      <button onclick="showSection('proposals')" id="btn-proposals"> Propostas</button>
-    </nav>
+  <section class="kpis">
+    <div class="kpi"><div class="kpi-label">Prospects</div><div class="kpi-value" id="kProspects">—</div><div class="kpi-note">empresas na base</div></div>
+    <div class="kpi"><div class="kpi-label">Demos prontas</div><div class="kpi-value" id="kDemos">—</div><div class="kpi-note">aprovadas para venda</div></div>
+    <div class="kpi"><div class="kpi-label">Propostas</div><div class="kpi-value" id="kProposals">—</div><div class="kpi-note">geradas</div></div>
+    <div class="kpi"><div class="kpi-label">Vendas</div><div class="kpi-value" id="kSales">—</div><div class="kpi-note">propostas aceitas</div></div>
+    <div class="kpi"><div class="kpi-label">Modelos ativos</div><div class="kpi-value" id="kModels">—</div><div class="kpi-note">biblioteca de base</div></div>
+  </section>
 
-    <section id="overview" class="section active">
-      <div class="stats" id="statsGrid"></div>
-      <div class="card"><h2>ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€¹Ã¢â‚¬Â  Resumo</h2><div id="overviewContent"></div></div>
-    </section>
-
-    <section id="templates" class="section">
-      <div class="card">
-        <h2>ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€šÃ‚Â¦ Biblioteca de Modelos</h2>
-        <button onclick="loadTemplates()" class="btn btn-primary"> Atualizar</button>
-        <div id="templatesGrid" class="grid" style="margin-top:1rem"></div>
+  <section class="layout">
+    <div>
+      <div class="panel">
+        <div class="panel-head"><h2>Comando rápido</h2><span>próxima ação</span></div>
+        <div class="actions-grid">
+          <a class="action" href="/site-factory-studio.html"><div class="icon">✦</div><strong>Criar uma demo</strong><span>Escolha um prospect e gere uma experiência profissional.</span><span class="tag ok">Studio</span></a>
+          <a class="action" href="/rb-factory-benchmark"><div class="icon">▦</div><strong>Explorar referências</strong><span>Estude padrões de composição, UX e direção visual.</span><span class="tag">Biblioteca</span></a>
+          <button class="action" type="button" onclick="openProspects()" style="text-align:left;cursor:pointer"><div class="icon">◌</div><strong>Ver prospects</strong><span>Abra a tela operacional de prospects sem sair do dashboard.</span><span class="tag">Leads</span></button>
+        </div>
       </div>
-    </section>
 
-    <section id="categories" class="section">
-      <div class="card">
-        <h2>ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚Â·ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Categorias</h2>
-        <button onclick="loadCategories()" class="btn btn-primary">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ Atualizar</button>
-        <div id="categoriesList" style="margin-top:1rem"></div>
+      <div class="panel">
+        <div class="panel-head"><h2>Funil RB Factory</h2><span>base atual</span></div>
+        <div class="pipeline" id="pipeline"><div class="empty">Carregando funil…</div></div>
+        <div class="notice">A Factory separa geração de demo da aprovação comercial. Uma demo só deve avançar quando passar pelos critérios de qualidade definidos no pipeline profissional.</div>
       </div>
-    </section>
 
-    <section id="prospects" class="section">
-      <div class="card">
-        <h2> Prospects</h2>
-        <button onclick="loadProspects()" class="btn btn-primary">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ Atualizar</button>
-        <div id="prospectsList" style="margin-top:1rem"></div>
+      <div class="panel">
+        <div class="panel-head"><h2>Prospects recentes</h2><span id="prospectState">sincronizando</span></div>
+        <div class="table-wrap" id="prospectsTable"><div class="empty">Carregando…</div></div>
       </div>
-    </section>
+    </div>
 
-    <section id="demos" class="section">
-      <div class="card">
-        <h2>ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â½Ãƒâ€šÃ‚Â¨ Demos Geradas</h2>
-        <button onclick="loadDemos()" class="btn btn-primary">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ Atualizar</button>
-        <div id="demosList" style="margin-top:1rem"></div>
+    <div>
+      <div class="panel">
+        <div class="panel-head"><h2>Vendedor IA</h2><span id="sellerStatus">PARADO</span></div><div id="sellerControlBox" class="notice" style="margin:0 0 12px">O vendedor está parado. Ao iniciar, a Factory prospecta, qualifica oportunidades e prepara contatos pelos canais configurados.</div><div class="actions" style="margin-bottom:12px"><button class="btn primary" id="sellerStart" onclick="toggleSeller()">▶ Iniciar vendedor</button><button class="btn" id="sellerStop" onclick="stopSeller()">■ Parar vendedor</button></div><div class="status-line"><b>Último ciclo</b><span id="sellerLastCycle">—</span></div><div class="status-line"><b>Alertas</b><span id="sellerAlerts">—</span></div><div class="panel-head" style="margin-top:18px"><h2>Estado da Factory</h2><span>agora</span></div><div id="prospectingBox" class="notice" style="margin:0 0 12px">Use “Prospectar” para abrir o fluxo de descoberta de novos negócios.</div>
+        <div class="status-line"><b>Pesquisa de prospects</b><span id="sProspects">—</span></div>
+        <div class="status-line"><b>Geração profissional</b><span id="sDemos">—</span></div>
+        <div class="status-line"><b>Qualidade / imagens</b><span>Gate ativo</span></div>
+        <div class="status-line"><b>WhatsApp</b><span>Contato real, sem invenção</span></div>
+        <div class="status-line"><b>Responsividade</b><span>Desktop + mobile</span></div>
+        <div class="status-line"><b>Performance</b><span>lazy + dimensões de imagem</span></div>
       </div>
-    </section>
+      <div class="panel">
+        <div class="panel-head"><h2>Demos recentes</h2><span>READY</span></div>
+        <div class="table-wrap" id="demosTable"><div class="empty">Carregando…</div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Próximo passo</h2><span>venda</span></div>
+        <p style="font-size:11px;color:#707883;line-height:1.6;margin:0">Use o Studio para selecionar um prospect, gerar a demo e revisar o resultado. Depois, avance para proposta e publicação somente quando os dados comerciais e a qualidade estiverem confirmados.</p>
+        <div class="actions" style="margin-top:13px"><a class="btn primary" href="/site-factory-studio.html">Abrir Studio</a><a class="btn" href="/dashboard">Central legada</a></div>
+      </div>
+    </div>
+  </section>
+  <div style="text-align:center;color:#a0a6af;font-size:9px;margin-top:24px">RB FACTORY SITES · SALE-IA-V2 · dashboard operacional</div>
+</main>
+</div>
 
-    <section id="proposals" class="section">
-      <div class="card">
-        <h2>ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ Propostas</h2>
-        <button onclick="loadProposals()" class="btn btn-primary">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ Atualizar</button>
-        <div id="proposalsList" style="margin-top:1rem"></div>
-      </div>
-    </section>
+<div class="prospect-modal" id="prospectModal" role="dialog" aria-modal="true" aria-labelledby="prospectTitle">
+  <div class="prospect-dialog">
+    <h2 id="prospectTitle">Prospectar novos negócios</h2>
+    <p>Pesquise empresas por cidade e nicho. O resultado entra na base da RB Factory para auditoria, score e geração de demo.</p>
+    <form class="prospect-form" id="prospectForm" onsubmit="runProspecting(event)">
+      <div class="prospect-field"><label for="pfCity">Cidade *</label><input id="pfCity" value="Poços de Caldas" required></div>
+      <div class="prospect-field"><label for="pfState">Estado</label><input id="pfState" value="MG" maxlength="2"></div>
+      <div class="prospect-field"><label for="pfNiche">Nicho *</label><input id="pfNiche" placeholder="ex.: hamburgueria, clínica, advogado" required></div>
+      <div class="prospect-field"><label for="pfSubniche">Subnicho</label><input id="pfSubniche" placeholder="opcional"></div>
+      <div class="prospect-field"><label for="pfMax">Máximo de resultados</label><select id="pfMax"><option>5</option><option selected>10</option><option>20</option><option>50</option></select></div>
+      <div class="prospect-field"><label>Modo</label><input value="Pesquisa + qualificação + auditoria" disabled></div>
+      <div class="prospect-field full"><div class="prospect-result" id="prospectResult" aria-live="polite"></div></div>
+      <div class="prospect-actions"><button type="button" class="btn" onclick="closeProspecting()">Cancelar</button><button class="btn primary" id="prospectSubmit">Pesquisar agora</button></div>
+    </form>
   </div>
+</div>
+<div class="toast" id="toast"></div><div class="prospect-modal" id="prospectsBrowser" role="dialog" aria-modal="true" aria-labelledby="prospectsBrowserTitle">
+  <div class="prospect-dialog">
+    <h2 id="prospectsBrowserTitle">Prospects RB Factory</h2>
+    <p>Lista operacional dos prospects. As ações usam a mesma autenticação administrativa do dashboard.</p>
+    <div class="actions" style="margin-bottom:12px"><button class="btn" onclick="loadProspectBrowser()">↻ Atualizar lista</button><button class="btn" onclick="closeProspects()">Fechar</button></div>
+    <div class="table-wrap" id="prospectBrowserTable"><div class="empty">Carregando…</div></div>
+  </div>
+</div>
+<script>
+const API='/api';
+const $=id=>document.getElementById(id);
+function key(){return sessionStorage.getItem('saleIaAdminKey')||''}
+function setAdminKey(){const v=prompt('Chave administrativa do SALE-IA:',key());if(v!==null){if(v.trim())sessionStorage.setItem('saleIaAdminKey',v.trim());else sessionStorage.removeItem('saleIaAdminKey');refreshAll()}}
+function startProspecting(){$('prospectModal').classList.add('open');$('pfNiche').focus()}function closeProspecting(){$('prospectModal').classList.remove('open')}async function runProspecting(ev){ev.preventDefault();const btn=$('prospectSubmit'),out=$('prospectResult');btn.disabled=true;btn.textContent='Pesquisando…';out.className='prospect-result show';out.textContent='Consultando a base de prospecção…';try{const payload={city:$('pfCity').value.trim(),state:$('pfState').value.trim().toUpperCase(),niche:$('pfNiche').value.trim(),subniche:$('pfSubniche').value.trim()||undefined,maxResults:Number($('pfMax').value)};const k=key();const headers={'Content-Type':'application/json'};if(k)headers['x-sale-ia-admin-key']=k;const r=await adminFetch(API+'/websites/prospecting/search',{method:'POST',headers,body:JSON.stringify(payload)});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||('HTTP '+r.status));out.className='prospect-result show ok';out.innerHTML='<b>Pesquisa concluída.</b><br>Encontrados: '+esc(d.totalFound??0)+' · Qualificados: '+esc(d.totalQualified??0)+' · Criados: '+esc(d.totalCreated??0)+' · Auditados: '+esc(d.totalAudited??0);toast('Prospecção concluída');await refreshAll()}catch(e){out.className='prospect-result show err';out.textContent='Não foi possível concluir: '+e.message;toast('Falha na prospecção')}finally{btn.disabled=false;btn.textContent='Pesquisar agora'}}document.addEventListener('keydown',e=>{if(e.key==='Escape')closeProspecting()});
+let authPrompt=null;
+async function requestAdminKey(force=false){
+  if(!force && key()) return key();
+  if(authPrompt) return authPrompt;
+  authPrompt=(async()=>{
+    const v=prompt('Informe a Chave Administrativa do SALE-IA para operar a Factory:', key());
+    if(v!==null && v.trim()) sessionStorage.setItem('saleIaAdminKey',v.trim());
+    else if(force) sessionStorage.removeItem('saleIaAdminKey');
+    return key();
+  })();
+  try{return await authPrompt}finally{authPrompt=null}
+}
+async function get(path){
+  let k=key();
+  let headers={};if(k)headers['x-sale-ia-admin-key']=k;
+  let r=await fetch(API+path,{headers});
+  if(r.status===401){k=await requestAdminKey(true);if(k){headers={'x-sale-ia-admin-key':k};r=await fetch(API+path,{headers})}}
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  return r.json()
+}
+async function adminFetch(path,options={}){
+  const baseHeaders=Object.assign({},options.headers||{});
+  let k=key();if(k)baseHeaders['x-sale-ia-admin-key']=k;
+  let r=await fetch(path,{...options,headers:baseHeaders});
+  if(r.status===401){
+    k=await requestAdminKey(true);
+    if(k){baseHeaders['x-sale-ia-admin-key']=k;r=await fetch(path,{...options,headers:baseHeaders})}
+  }
+  return r
+}
+function openProspects(){ $('prospectsBrowser').classList.add('open'); loadProspectBrowser(); }
+function openDemos(){ document.getElementById('demosTable').scrollIntoView({behavior:'smooth',block:'center'}); }
+function setAdminKey(){const v=prompt('Chave administrativa do SALE-IA:',key());if(v!==null){if(v.trim())sessionStorage.setItem('saleIaAdminKey',v.trim());else sessionStorage.removeItem('saleIaAdminKey');refreshAll()}}
+function closeProspects(){ $('prospectsBrowser').classList.remove('open'); }
+function openDemos(){ document.getElementById('demosTable').scrollIntoView({behavior:'smooth',block:'center'}); }
+async function loadProspectBrowser(){
+  const box=$('prospectBrowserTable');box.innerHTML='<div class="empty">Carregando…</div>';
+  try{
+    const d=await get('/websites/prospecting/prospects?limit=50');const rows=d.prospects||[];
+    box.innerHTML=rows.length?'<table><thead><tr><th>Empresa</th><th>Cidade</th><th>Segmento</th><th>Score</th><th>Oportunidade</th><th>Ação</th></tr></thead><tbody>'+rows.map(p=>'<tr><td><b>'+esc(p.companyName||'—')+'</b><br><span style="color:#9299a3">'+esc(p.phone||p.whatsapp||'')+'</span></td><td>'+esc(p.city||'—')+'</td><td>'+esc(p.segment||p.category||'—')+'</td><td>'+esc(p.websiteOpportunityScore??p.websiteScore??p.score??'—')+'</td><td><span class="badge">'+esc(p.websiteOpportunityStatus||p.status||'—')+'</span></td><td><button class="btn" style="padding:6px 8px;font-size:9px" onclick="processProspectFromBrowser(\''+esc(p.id)+'\')">⚙ Processar</button></td></tr>').join('')+'</tbody></table>':'<div class="empty">Nenhum prospect encontrado.</div>';
+  }catch(e){box.innerHTML='<div class="empty">Falha ao carregar prospects: '+esc(e.message)+'</div>'}
+}
+async function processProspectFromBrowser(id){closeProspects();await processProspect(id)}
 
-  <script>
-    const API = '/api';
-    
-    function showSection(section) {
-      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-      document.getElementById(section).classList.add('active');
-      document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
-      document.getElementById('btn-' + section).classList.add('active');
-      
-      if (section === 'overview') loadOverview();
-      if (section === 'templates') loadTemplates();
-      if (section === 'categories') loadCategories();
-      if (section === 'prospects') loadProspects();
-      if (section === 'demos') loadDemos();
-      if (section === 'proposals') loadProposals();
-    }
+function toast(msg){const el=$('toast');el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',2400)}
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+async function overview(){
+  try{
+    const d=(await get('/site-factory-dashboard/overview')).data;
+    $('kProspects').textContent=d.totalProspects??0;$('kDemos').textContent=d.totalDemos??0;$('kProposals').textContent=d.totalProposals??0;$('kSales').textContent=d.totalSales??0;$('kModels').textContent=d.totalModels??0;
+    $('sProspects').textContent=(d.totalProspects??0)+' cadastrados';$('sDemos').textContent=(d.totalDemos??0)+' prontos';
+  }catch(e){$('sProspects').textContent='API indisponível';$('sDemos').textContent='verifique a chave';}
+}
+async function prospects(){
+  try{
+    const d=await get('/websites/prospecting/prospects?limit=50');const rows=d.prospects||[];
+    $('prospectState').textContent=rows.length+' encontrados';
+    $('pipeline').innerHTML=['DISCOVERED','AUDITED','DEMO_READY','PROPOSAL_READY','CONTACTED','NEGOTIATION','WON'].map(stage=>{
+      const n=rows.filter(x=>String(x.stage||x.status||'').toUpperCase()===stage).length;const pct=rows.length?Math.max(3,Math.round(n/rows.length*100)):3;
+      return '<div class="stage"><span class="stage-name">'+stage.replaceAll('_',' ')+'</span><div class="bar"><div class="fill" style="width:'+pct+'%"></div></div><span class="count">'+n+'</span></div>'
+    }).join('');
+    const recent=rows.slice(0,8);
+    $('prospectsTable').innerHTML=recent.length?'<table><thead><tr><th>Empresa</th><th>Cidade</th><th>Segmento</th><th>Score</th><th>Status</th><th>Ações</th></tr></thead><tbody>'+recent.map(p=>'<tr><td><b>'+esc(p.companyName||'—')+'</b></td><td>'+esc(p.city||'—')+'</td><td>'+esc(p.segment||p.category||'—')+'</td><td>'+esc(p.websiteScore??p.score??'—')+'</td><td><span class="badge">'+esc(p.websiteOpportunityStatus||p.stage||p.status||'—')+'</span></td><td><button class="btn" style="padding:6px 8px;font-size:9px" onclick="processProspect(\''+esc(p.id)+'\')">⚙ Processar</button></td></tr>').join('')+'</tbody></table>':'<div class="empty">Nenhum prospect encontrado.</div>';
+  }catch(e){$('prospectState').textContent='indisponível';$('prospectsTable').innerHTML='<div class="empty">Não foi possível carregar os prospects.</div>'}
+}
+async function processProspect(id){const headers={'Content-Type':'application/json'};const k=key();if(k)headers['x-sale-ia-admin-key']=k;try{for(const step of ['enrich','audit','score']){const r=await adminFetch(API+'/websites/prospecting/prospects/'+encodeURIComponent(id)+'/'+step,{method:'POST',headers});if(!r.ok)throw new Error(step+' HTTP '+r.status)}const r=await adminFetch(API+'/websites/prospecting/prospects/'+encodeURIComponent(id)+'/generate-demo',{method:'POST',headers,body:JSON.stringify({useAI:true})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||('demo HTTP '+r.status));toast('Demo enviada para geração');await refreshAll()}catch(e){toast('Falha: '+e.message)}}
+async function demos(){
+  try{
+    const d=await get('/websites/demos');const rows=d.demos||[];
+    $('demosTable').innerHTML=rows.slice(0,7).length?'<table><thead><tr><th>Empresa</th><th>Versão</th><th>Status</th><th>Ações</th></tr></thead><tbody>'+rows.slice(0,7).map(x=>'<tr><td>'+esc(x.prospect?.companyName||'—')+'</td><td>v'+esc(x.version||'—')+'</td><td><span class="badge ok">'+esc(x.status||'—')+'</span></td><td><a class="btn" style="padding:6px 8px;font-size:9px" target="_blank" rel="noopener noreferrer" href="'+API+'/websites/studio/demos/'+encodeURIComponent(x.id)+'/html">Abrir</a> '+(String(x.status||'').toUpperCase()==='READY'?'<button class="btn primary" style="padding:6px 8px;font-size:9px" onclick="approveDemo(\''+esc(x.id)+'\')">Aprovar</button>':'')+' <button class="btn" style="padding:6px 8px;font-size:9px" onclick="prepareProposal(\''+esc(x.prospectId||x.prospect?.id||'')+'\')">Proposta</button> <button class="btn" style="padding:6px 8px;font-size:9px" onclick="sendCommercialProposal(\''+esc(x.prospectId||x.prospect?.id||'')+'\')">Enviar</button> '+(String(x.status||'').toUpperCase()==='APPROVED'?'<button class="btn" style="padding:6px 8px;font-size:9px" onclick="registerClientAcceptance(\''+esc(x.prospectId||x.prospect?.id||'')+'\')">Registrar aceite</button>':'')+(String(x.status||'').toUpperCase()==='APPROVED'?'<button class="btn primary" style="padding:6px 8px;font-size:9px" onclick="prepareCommercialPublication(\''+esc(x.id)+'\')">Publicar</button>':'')</td></tr>').join('')+'</tbody></table>':'<div class="empty">Nenhuma demo pronta.</div>';
+  }catch(e){$('demosTable').innerHTML='<div class="empty">Não foi possível carregar as demos.</div>'}
+}
+async function approveDemo(id){const headers={'Content-Type':'application/json'};const k=key();if(k)headers['x-sale-ia-admin-key']=k;try{const r=await adminFetch(API+'/websites/studio/demos/'+encodeURIComponent(id)+'/approve',{method:'POST',headers});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||('HTTP '+r.status));toast('Demo aprovada');await refreshAll()}catch(e){toast('Não aprovada: '+e.message)}}
+async function prepareProposal(prospectId){const headers={'Content-Type':'application/json'};const k=key();if(k)headers['x-sale-ia-admin-key']=k;try{let r=await adminFetch(API+'/rb-factory-sales/pipeline/prospect/'+encodeURIComponent(prospectId),{method:'POST',headers});if(!r.ok)throw new Error('pipeline HTTP '+r.status);r=await adminFetch(API+'/rb-factory-sales/pipeline/prospect/'+encodeURIComponent(prospectId)+'/proposal',{method:'POST',headers,body:JSON.stringify({})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||('proposal HTTP '+r.status));toast('Proposta criada');await refreshAll()}catch(e){toast('Falha na proposta: '+e.message)}}
+async function sendCommercialProposal(prospectId){const headers={'Content-Type':'application/json'};const k=key();if(k)headers['x-sale-ia-admin-key']=k;try{const r=await adminFetch(API+'/rb-factory-sales/pipeline/prospect/'+encodeURIComponent(prospectId)+'/proposal/send',{method:'POST',headers});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||('HTTP '+r.status));toast('Proposta marcada como enviada');await refreshAll()}catch(e){toast('Falha ao enviar: '+e.message)}}
+async function registerClientAcceptance(prospectId){const domainName=prompt('Domínio do cliente (opcional):','');if(domainName===null)return;if(!confirm('Confirme: o cliente realmente aceitou a proposta comercial?'))return;const headers={'Content-Type':'application/json'};const k=key();if(k)headers['x-sale-ia-admin-key']=k;try{const r=await adminFetch(API+'/rb-factory-sales/pipeline/prospect/'+encodeURIComponent(prospectId)+'/proposal/accept',{method:'POST',headers,body:JSON.stringify({domainName:domainName.trim()||undefined})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||('HTTP '+r.status));toast('Aceite registrado; projeto criado');await refreshAll()}catch(e){toast('Aceite não registrado: '+e.message)}}
+async function prepareCommercialPublication(demoId){const headers={'Content-Type':'application/json'};const k=key();if(k)headers['x-sale-ia-admin-key']=k;try{const r=await adminFetch('/api/websites/studio/projects/prepare',{method:'POST',headers,body:JSON.stringify({demoId})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||('HTTP '+r.status));const projectId=d.project?.id;if(!projectId)throw new Error('Projeto preparado sem projectId');toast('Projeto preparado');if(confirm('Projeto preparado. Deseja publicar agora no Vercel?')){const pr=await adminFetch('/api/websites/studio/projects/publish',{method:'POST',headers,body:JSON.stringify({projectId,provider:'VERCEL'})});const pd=await pr.json();if(!pr.ok||!pd.success)throw new Error(pd.error||('publish HTTP '+pr.status));toast('Site publicado: '+(pd.project?.publishedUrl||'URL verificada'))}await refreshAll()}catch(e){toast('Publicação não concluída: '+e.message)}}
+async function publishCommercialProject(projectId){const headers={'Content-Type':'application/json'};const k=key();if(k)headers['x-sale-ia-admin-key']=k;try{const r=await adminFetch('/api/websites/studio/projects/publish',{method:'POST',headers,body:JSON.stringify({projectId,provider:'VERCEL'})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||('HTTP '+r.status));toast('Site publicado: '+(d.project?.publishedUrl||'URL verificada'));await refreshAll()}catch(e){toast('Publicação não concluída: '+e.message)}}
 
-    async function loadOverview() {
-      try {
-        const res = await fetch(API + '/site-factory-dashboard/overview');
-        const data = await res.json();
-        if (data.success) {
-          const d = data.data;
-          document.getElementById('statsGrid').innerHTML = `
-            <div class="stat"><div class="stat-value">${d.totalModels}</div><div class="stat-label">Modelos</div></div>
-            <div class="stat" style="background:linear-gradient(135deg,#10b981,#059669)"><div class="stat-value">${d.totalProspects}</div><div class="stat-label">Prospects</div></div>
-            <div class="stat" style="background:linear-gradient(135deg,#f59e0b,#d97706)"><div class="stat-value">${d.totalDemos}</div><div class="stat-label">Demos</div></div>
-            <div class="stat" style="background:linear-gradient(135deg,#ef4444,#dc2626)"><div class="stat-value">R$${d.revenue.toFixed(2)}</div><div class="stat-label">Receita</div></div>
-          `;
-        }
-      } catch (err) { console.error('Erro:', err); }
-    }
-
-    async function loadTemplates() {
-      try {
-        const res = await fetch(API + '/templates');
-        const data = await res.json();
-        const templates = data.templates || [];
-        let html = '';
-        templates.forEach(t => {
-          html += `<div class="template-card">
-            <img src="${t.thumbnailUrl || 'https://via.placeholder.com/300x200'}" alt="${t.name}">
-            <div class="content">
-              <h3>${t.name}</h3>
-              <p>${t.category?.name || 'Sem categoria'}</p>
-              <div class="price">R$${t.price.toFixed(2)}</div>
-              <button class="btn btn-primary" onclick="window.open('${t.demoUrl}', '_blank')">Ver Demo</button>
-              <button class="btn btn-success">Usar Modelo</button>
-            </div>
-          </div>`;
-        });
-        document.getElementById('templatesGrid').innerHTML = html || '<p>Nenhum modelo encontrado</p>';
-      } catch (err) { console.error('Erro:', err); }
-    }
-
-    async function loadCategories() {
-      try {
-        const res = await fetch(API + '/categories');
-        const data = await res.json();
-        const categories = data.categories || [];
-        let html = '<table><thead><tr><th>Nome</th><th>Slug</th><th>Templates</th><th>Status</th></tr></thead><tbody>';
-        categories.forEach(c => {
-          html += '<tr><td>' + c.name + '</td><td>' + c.slug + '</td><td>' + (c._count?.templates || 0) + '</td><td><span class="badge badge-success">Ativo</span></td></tr>';
-        });
-        html += '</tbody></table>';
-        document.getElementById('categoriesList').innerHTML = html;
-      } catch (err) { console.error('Erro:', err); }
-    }
-
-    async function loadProspects() {
-      try {
-        const res = await fetch(API + '/site-sales/prospects');
-        const data = await res.json();
-        const prospects = data.prospects || [];
-        let html = '<table><thead><tr><th>Empresa</th><th>Cidade</th><th>Score</th><th>Status</th></tr></thead><tbody>';
-        prospects.forEach(p => {
-          html += '<tr><td>' + (p.companyName || 'N/A') + '</td><td>' + (p.city || 'N/A') + '</td><td>' + (p.score || 0) + '</td><td><span class="badge badge-info">' + (p.status || 'N/A') + '</span></td></tr>';
-        });
-        html += '</tbody></table>';
-        document.getElementById('prospectsList').innerHTML = html;
-      } catch (err) { console.error('Erro:', err); }
-    }
-
-    async function loadDemos() {
-      try {
-        const res = await fetch(API + '/websites/demos');
-        const data = await res.json();
-        const demos = data.demos || [];
-        let html = '<table><thead><tr><th>Empresa</th><th>VersÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o</th><th>Status</th><th>AÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes</th></tr></thead><tbody>';
-        demos.forEach(d => {
-          html += '<tr><td>' + (d.prospect?.companyName || 'N/A') + '</td><td>v' + d.version + '</td><td><span class="badge badge-success">' + d.status + '</span></td><td><button class="btn btn-primary" onclick="window.open(\'/api/websites/demo/' + d.id + '\', \'_blank\')">Ver</button></td></tr>';
-        });
-        html += '</tbody></table>';
-        document.getElementById('demosList').innerHTML = html;
-      } catch (err) { console.error('Erro:', err); }
-    }
-
-    async function loadProposals() {
-      document.getElementById('proposalsList').innerHTML = '<p>Em desenvolvimento...</p>';
-    }
-
-    window.onload = function() { loadOverview(); };
-  </script>
+async function sellerStatus(){try{const d=await get('/rb-factory-sales-autonomy/status');const h=await get('/rb-factory-sales-autonomy/history?limit=20');const a=await get('/rb-factory-sales-autonomy/alerts?limit=10');const s=d.result||{};const running=s.status==='RUNNING';$('sellerStatus').textContent=running?'TRABALHANDO':'PARADO';$('sellerStatus').style.color=running?'var(--ok)':'var(--muted)';$('sellerToggle').textContent=running?'■ DESLIGAR VENDEDOR IA':'▶ VENDEDOR IA';$('sellerCommandTitle').textContent=running?'Vendedor IA está LIGADO':'Vendedor IA está DESLIGADO';$('sellerCommandText').textContent=running?'O vendedor está trabalhando a fila comercial e continuará ativo até você desligá-lo.':'Clique em LIGAR para iniciar o trabalho comercial persistente da Factory.';$('sellerCommandStatus').textContent=running?'● LIGADO':'● DESLIGADO';$('sellerCommandStatus').style.color=running?'var(--ok)':'var(--muted)';$('sellerCommandToggle').textContent=running?'■ DESLIGAR VENDEDOR IA':'▶ LIGAR VENDEDOR IA';$('sellerCommandToggle').className=running?'btn seller-off':'btn seller-on';$('sellerStart').style.display=running?'none':'inline-block';$('sellerStop').style.display=running?'inline-block':'none';$('sellerControlBox').textContent=running?'Vendedor ativo: prospectando, qualificando e trabalhando a fila comercial.':'O vendedor está parado. Ao iniciar, a Factory prospecta, qualifica oportunidades e prepara contatos pelos canais configurados.';const runs=Array.isArray(h.runs)?h.runs:[];const alerts=Array.isArray(a.alerts)?a.alerts:[];$('sellerAlerts').innerHTML=alerts.length?alerts.map(x=>'<div style="margin:6px 0"><b>⚠ Negociação requer Rui</b> — '+String(x.message||x.reason||'Intervenção necessária').replace(/[<>&"]/g,m=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[m]))+' <button class="btn" onclick="ackSellerAlert(\\''+x.id+'\\')">Assumir</button> <button class="btn primary" onclick="resolveSellerAlert(\\''+x.id+'\\')">Resolver e retomar</button></div>').join(''):'Nenhum alerta humano aberto';$('sellerLastCycle').textContent=runs[0]?.createdAt?new Date(runs[0].createdAt).toLocaleString('pt-BR'):'—';}catch(e){$('sellerStatus').textContent='INDISPONÍVEL';$('sellerAlerts').textContent='Não foi possível consultar os alertas'}}
+async function ackSellerAlert(id){try{const headers={'Content-Type':'application/json'};const k=key();if(k)headers['x-sale-ia-admin-key']=k;const r=await adminFetch(API+'/rb-factory-sales-autonomy/alerts/'+encodeURIComponent(id)+'/acknowledge',{method:'POST',headers});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||('HTTP '+r.status));toast('Alerta marcado como visto');await sellerStatus();}catch(e){toast('Não foi possível marcar o alerta: '+e.message)}}
+async function resolveSellerAlert(id){if(!confirm('Confirma que a negociação foi resolvida e que o Vendedor IA pode retomar este prospect?'))return;try{const headers={'Content-Type':'application/json'};const k=key();if(k)headers['x-sale-ia-admin-key']=k;const r=await adminFetch(API+'/rb-factory-sales-autonomy/alerts/'+encodeURIComponent(id)+'/resolve',{method:'POST',headers});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||('HTTP '+r.status));toast('Negociação resolvida; vendedor liberado');await sellerStatus();}catch(e){toast('Não foi possível retomar: '+e.message)}}
+async function toggleSeller(){try{const d=await get('/rb-factory-sales-autonomy/status');if(d.result?.status==='RUNNING')return stopSeller();const payload={city:'Poços de Caldas',state:'MG',niches:['clínicas','hamburguerias','restaurantes','advogados','odontologia'],maxResults:10,batchSize:10};const headers={'Content-Type':'application/json'};const k=key();if(k)headers['x-sale-ia-admin-key']=k;const r=await adminFetch(API+'/rb-factory-sales-autonomy/start',{method:'POST',headers,body:JSON.stringify(payload)});const x=await r.json();if(!r.ok||!x.success)throw new Error(x.error||('HTTP '+r.status));toast('Vendedor IA iniciado');await sellerStatus();}catch(e){toast('Não foi possível iniciar: '+e.message)}}
+async function stopSeller(){try{const headers={'Content-Type':'application/json'};const k=key();if(k)headers['x-sale-ia-admin-key']=k;const r=await adminFetch(API+'/rb-factory-sales-autonomy/stop',{method:'POST',headers});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||('HTTP '+r.status));toast('Vendedor IA parado');await sellerStatus();}catch(e){toast('Não foi possível parar: '+e.message)}}
+async function refreshAll(){ $('updated').textContent='Atualizando…'; await Promise.all([overview(),prospects(),demos(),sellerStatus()]); $('updated').textContent='Atualizado em '+new Date().toLocaleString('pt-BR'); toast('Dashboard atualizado');}
+refreshAll();setInterval(refreshAll,60000);
+</script>
 </body>
 </html>
-}
