@@ -10,6 +10,7 @@ type ProposalSnapshot = {
   planName: string;
   projectPrice: number;
   monthlyPrice: number;
+  demoId: string;
   demoVersion: number;
   qualityScore: number;
   paymentTerms: string;
@@ -28,7 +29,7 @@ function readProposalSnapshot(content?: string | null): ProposalSnapshot | null 
   try {
     const json = Buffer.from(content.slice(payloadStart, end), 'base64').toString('utf8');
     const parsed = JSON.parse(json) as Partial<ProposalSnapshot>;
-    if (!parsed.planId || !parsed.planCode || !parsed.demoVersion) return null;
+    if (!parsed.planId || !parsed.planCode || !parsed.demoId || !parsed.demoVersion) return null;
     return {
       version: Number(parsed.version || 1),
       planId: String(parsed.planId),
@@ -36,6 +37,7 @@ function readProposalSnapshot(content?: string | null): ProposalSnapshot | null 
       planName: String(parsed.planName || parsed.planCode),
       projectPrice: Number(parsed.projectPrice || 0),
       monthlyPrice: Number(parsed.monthlyPrice || 0),
+      demoId: String(parsed.demoId),
       demoVersion: Number(parsed.demoVersion),
       qualityScore: Number(parsed.qualityScore || 0),
       paymentTerms: String(parsed.paymentTerms || ''),
@@ -162,7 +164,10 @@ export class WebsiteCommercialService {
     }
 
     const approvedDemo = prospect.demos.find(
-      d => d.version === snapshot.demoVersion && ['APPROVED', 'READY'].includes(d.status)
+      d =>
+        d.id === snapshot.demoId &&
+        d.version === snapshot.demoVersion &&
+        ['APPROVED', 'READY'].includes(d.status)
     );
 
     if (!approvedDemo) {
@@ -170,7 +175,7 @@ export class WebsiteCommercialService {
     }
 
     const acceptedPlan = await prisma.websitePlan.findFirst({
-      where: { id: snapshot.planId, code: snapshot.planCode, active: true },
+      where: { id: snapshot.planId, code: snapshot.planCode },
     });
 
     if (!acceptedPlan) {
@@ -261,6 +266,7 @@ export class WebsiteCommercialService {
 
       const monthlyPrice = snapshot.monthlyPrice;
 
+      // A mensalidade não nasce no aceite. Ela só é ativada após publicação real.
       const subscription = null;
 
       await tx.websiteProspect.update({
