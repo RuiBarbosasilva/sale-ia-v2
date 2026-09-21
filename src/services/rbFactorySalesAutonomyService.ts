@@ -1,11 +1,11 @@
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
 import { rbFactorySalesAgentService } from './rbFactorySalesAgentService';
 import { whatsappService } from './whatsappService';
-import { websiteProspectorService } from './services/prospecting/websiteProspectorService';
-import { websiteEnrichmentService } from './services/prospecting/websiteEnrichmentService';
-import { websiteOpportunityScoringService } from './services/prospecting/websiteOpportunityScoringService';
-import { websiteDemoFactoryService } from './services/prospecting/websiteDemoFactoryService';
-import { websiteOutreachService } from './services/prospecting/websiteOutreachService';
+import { websiteProspectorService } from './prospecting/websiteProspectorService';
+import { websiteEnrichmentService } from './prospecting/websiteEnrichmentService';
+import { websiteOpportunityScoringService } from './prospecting/websiteOpportunityScoringService';
+import { websiteDemoFactoryService } from './prospecting/websiteDemoFactoryService';
+import { websiteOutreachService } from './prospecting/websiteOutreachService';
 import { RB_FACTORY_SALES_AUTONOMY, RbFactorySalesAutonomyMode } from '../config/rbFactorySalesAutonomy';
 
 let initialized = false;
