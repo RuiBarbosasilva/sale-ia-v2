@@ -417,6 +417,43 @@ export class WebsiteService {
     if (!project) throw new Error('WEBSITE_PROJECT_NOT_FOUND');
 
     if (project.status === 'PUBLISHED' && project.publishedUrl) {
+      // Publicação já confirmada: uma nova chamada também funciona como
+      // reconciliação pós-publicação (ex.: mensalidade/evento falhou antes).
+      try {
+        await websiteCommercialService.activateSubscriptionAfterPublication(
+          project.prospectId,
+          project.publishedAt || new Date()
+        );
+
+        const existingEvent = await prisma.websiteProspectEvent.findFirst({
+          where: {
+            prospectId: project.prospectId,
+            type: 'PROJECT_PUBLISHED',
+            metadata: { contains: project.id }
+          }
+        });
+
+        if (!existingEvent) {
+          await prisma.websiteProspectEvent.create({
+            data: {
+              prospectId: project.prospectId,
+              type: 'PROJECT_PUBLISHED',
+              description: 'Website publicado e verificado automaticamente',
+              metadata: JSON.stringify({
+                projectId: project.id,
+                provider: project.hostingProvider,
+                deploymentId: project.deploymentId,
+                publishedUrl: project.publishedUrl,
+                demoVersion: project.currentVersion,
+                verified: true,
+                reconciled: true
+              })
+            }
+          });
+        }
+      } catch (postPublishError: any) {
+        console.error('[WebsiteService] reconciliação pós-publicação falhou:', postPublishError?.message || postPublishError);
+      }
       return project;
     }
 
