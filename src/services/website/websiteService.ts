@@ -524,7 +524,8 @@ export class WebsiteService {
         data: {
           domainName: domainName || existing.domainName,
           status: existing.status === 'PUBLISHED' ? existing.status : 'PLANNING',
-          currentVersion: demo.version
+          currentVersion: demo.version,
+          deploymentStatus: existing.deploymentStatus || 'NOT_DEPLOYED'
         }
       });
     }
@@ -533,7 +534,8 @@ export class WebsiteService {
         prospectId: demo.prospectId,
         status: 'PLANNING',
         domainName: domainName || null,
-        currentVersion: demo.version
+        currentVersion: demo.version,
+        deploymentStatus: 'NOT_DEPLOYED'
       }
     });
   }
