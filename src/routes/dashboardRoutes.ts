@@ -11,11 +11,9 @@ import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
 
-router.use(adminAuthorization);
+router.get('/mercadolivre', adminAuthorization,, getMercadoLivreDashboard);
 
-router.get('/mercadolivre', getMercadoLivreDashboard);
-
-router.get('/overview', async (_req, res) => {
+router.get('/overview', adminAuthorization, async (_req, res) => {
   try {
     const metrics = await fetchMLMetrics();
 
@@ -47,7 +45,7 @@ router.get('/overview', async (_req, res) => {
   }
 });
 
-router.get('/operations', async (_req, res) => {
+router.get('/operations', adminAuthorization, async (_req, res) => {
   const safe = async <T>(label:string, fn:()=>Promise<T>, fallback:T):Promise<T> => {
     try { return await fn(); }
     catch (error) {
