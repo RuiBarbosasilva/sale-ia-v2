@@ -139,16 +139,17 @@ async function overview(){
 }
 async function prospects(){
   try{
-    const d=await get('/site-sales/prospects');const rows=d.prospects||[];
+    const d=await get('/websites/prospecting/prospects?limit=50');const rows=d.prospects||[];
     $('prospectState').textContent=rows.length+' encontrados';
     $('pipeline').innerHTML=['DISCOVERED','AUDITED','DEMO_READY','PROPOSAL_READY','CONTACTED','NEGOTIATION','WON'].map(stage=>{
       const n=rows.filter(x=>String(x.stage||x.status||'').toUpperCase()===stage).length;const pct=rows.length?Math.max(3,Math.round(n/rows.length*100)):3;
       return '<div class="stage"><span class="stage-name">'+stage.replaceAll('_',' ')+'</span><div class="bar"><div class="fill" style="width:'+pct+'%"></div></div><span class="count">'+n+'</span></div>'
     }).join('');
     const recent=rows.slice(0,8);
-    $('prospectsTable').innerHTML=recent.length?'<table><thead><tr><th>Empresa</th><th>Cidade</th><th>Segmento</th><th>Score</th><th>Status</th></tr></thead><tbody>'+recent.map(p=>'<tr><td><b>'+esc(p.companyName||'—')+'</b></td><td>'+esc(p.city||'—')+'</td><td>'+esc(p.segment||p.category||'—')+'</td><td>'+esc(p.websiteScore??p.score??'—')+'</td><td><span class="badge">'+esc(p.stage||p.status||'—')+'</span></td></tr>').join('')+'</tbody></table>':'<div class="empty">Nenhum prospect encontrado.</div>';
+    $('prospectsTable').innerHTML=recent.length?'<table><thead><tr><th>Empresa</th><th>Cidade</th><th>Segmento</th><th>Score</th><th>Status</th><th>Ações</th></tr></thead><tbody>'+recent.map(p=>'<tr><td><b>'+esc(p.companyName||'—')+'</b></td><td>'+esc(p.city||'—')+'</td><td>'+esc(p.segment||p.category||'—')+'</td><td>'+esc(p.websiteScore??p.score??'—')+'</td><td><span class="badge">'+esc(p.websiteOpportunityStatus||p.stage||p.status||'—')+'</span></td><td><button class="btn" style="padding:6px 8px;font-size:9px" onclick="processProspect(\''+esc(p.id)+'\')">⚙ Processar</button></td></tr>').join('')+'</tbody></table>':'<div class="empty">Nenhum prospect encontrado.</div>';
   }catch(e){$('prospectState').textContent='indisponível';$('prospectsTable').innerHTML='<div class="empty">Não foi possível carregar os prospects.</div>'}
 }
+async function processProspect(id){const headers={'Content-Type':'application/json'};const k=key();if(k)headers['x-sale-ia-admin-key']=k;try{for(const step of ['enrich','audit','score']){const r=await fetch(API+'/websites/prospecting/prospects/'+encodeURIComponent(id)+'/'+step,{method:'POST',headers});if(!r.ok)throw new Error(step+' HTTP '+r.status)}const r=await fetch(API+'/websites/prospecting/prospects/'+encodeURIComponent(id)+'/generate-demo',{method:'POST',headers,body:JSON.stringify({useAI:true})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||('demo HTTP '+r.status));toast('Demo enviada para geração');await refreshAll()}catch(e){toast('Falha: '+e.message)}}
 async function demos(){
   try{
     const d=await get('/websites/demos');const rows=d.demos||[];
