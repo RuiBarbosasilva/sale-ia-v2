@@ -327,7 +327,7 @@ model WebsiteProject {
   publishedAt     DateTime?
   publishedUrl    String?
   deploymentId    String?
-  deploymentStatus String? // NOT_DEPLOYED, DEPLOYING, READY, FAILED
+  deploymentStatus String? @default("NOT_DEPLOYED") // NOT_DEPLOYED, DEPLOYING, READY, FAILED
 
   @@index([status])
   @@index([deploymentStatus])
