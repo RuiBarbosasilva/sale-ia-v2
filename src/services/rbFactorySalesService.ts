@@ -144,16 +144,31 @@ export const rbFactorySalesService={
     if(email) conditions.push({email});
     let lead=conditions.length ? await prisma.lead.findFirst({where:{OR:conditions}}) : null;
     if(!lead){
-      lead=await prisma.lead.create({
-        data:{
-          name:prospect.contactPerson||prospect.companyName,
-          phone,email,
-          status:'NEW_LEAD',
-          stage:'NEGOTIATION',
-          score:prospect.score||prospect.websiteScore||0
-        }
-      });
-    } else {
+      try {
+        lead=await prisma.lead.create({
+          data:{
+            name:prospect.contactPerson||prospect.companyName,
+            phone,email,
+            status:'NEW_LEAD',
+            stage:'NEGOTIATION',
+            score:prospect.score||prospect.websiteScore||0
+          }
+        });
+      } catch (error:any) {
+        // phone/email are UNIQUE on Lead. A concurrent conversion may have
+        // created the lead between the lookup and create; reuse that winner.
+        if (error?.code !== 'P2002') throw error;
+        const conflictConditions:any[]=[];
+        if(phone) conflictConditions.push({phone});
+        if(email) conflictConditions.push({email});
+        lead=conflictConditions.length
+          ? await prisma.lead.findFirst({where:{OR:conflictConditions}})
+          : null;
+        if(!lead) throw error;
+      }
+    }
+
+    if (lead) {
       lead=await prisma.lead.update({
         where:{id:lead.id},
         data:{
