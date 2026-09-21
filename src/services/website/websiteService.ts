@@ -401,7 +401,7 @@ export class WebsiteService {
 
     const acceptedProposal = await prisma.websiteProposal.findFirst({
       where: { prospectId: project.prospectId, status: 'ACCEPTED' },
-      orderBy: { id: 'desc' }
+      orderBy: { acceptedAt: 'desc' }
     });
     if (!acceptedProposal) throw new Error('PROPOSAL_NOT_ACCEPTED');
 
@@ -549,15 +549,37 @@ export class WebsiteService {
         }
       });
     }
-    return prisma.websiteProject.create({
-      data: {
-        prospectId: demo.prospectId,
-        status: 'PLANNING',
-        domainName: domainName || null,
-        currentVersion: demo.version,
-        deploymentStatus: 'NOT_DEPLOYED'
+    try {
+      return await prisma.websiteProject.create({
+        data: {
+          prospectId: demo.prospectId,
+          status: 'PLANNING',
+          domainName: domainName || null,
+          currentVersion: demo.version,
+          deploymentStatus: 'NOT_DEPLOYED'
+        }
+      });
+    } catch (error: any) {
+      // O índice único por prospectId protege contra duas preparações simultâneas.
+      // Se outra requisição venceu a corrida, reutilizamos o projeto vencedor.
+      if (error?.code === 'P2002') {
+        const winner = await prisma.websiteProject.findUnique({
+          where: { prospectId: demo.prospectId }
+        });
+        if (winner) {
+          return prisma.websiteProject.update({
+            where: { id: winner.id },
+            data: {
+              domainName: domainName || winner.domainName,
+              status: winner.status === 'PUBLISHED' ? winner.status : 'PLANNING',
+              currentVersion: demo.version,
+              deploymentStatus: winner.deploymentStatus || 'NOT_DEPLOYED'
+            }
+          });
+        }
       }
-    });
+      throw error;
+    }
   }
 
   async markProjectPublished(
