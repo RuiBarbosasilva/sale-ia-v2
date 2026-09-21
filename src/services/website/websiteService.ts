@@ -489,8 +489,9 @@ export class WebsiteService {
       throw new Error('DEPLOYMENT_ALREADY_IN_PROGRESS');
     }
 
+    let deployment;
     try {
-      const deployment = await vercelDeploymentProvider.deploy({
+      deployment = await vercelDeploymentProvider.deploy({
         projectName: project.prospect.companyName,
         html: demo.sourceCode || '',
         target: 'production',
@@ -500,21 +501,43 @@ export class WebsiteService {
           demoVersion: String(demo.version)
         }
       });
-
-      const publishedAt = new Date();
-
-      const published = await prisma.websiteProject.update({
+    } catch (error: any) {
+      await prisma.websiteProject.update({
         where: { id: projectId },
         data: {
-          status: 'PUBLISHED',
-          hostingProvider: deployment.provider,
-          deploymentId: deployment.deploymentId,
-          deploymentStatus: 'READY',
-          publishedUrl: deployment.url,
-          publishedAt
+          deploymentStatus: 'FAILED',
+          status: 'REVIEW'
         }
-      });
+      }).catch(() => undefined);
+      throw error;
+    }
 
+    if (!deployment?.verified || !deployment?.url) {
+      await prisma.websiteProject.update({
+        where: { id: projectId },
+        data: { deploymentStatus: 'FAILED', status: 'REVIEW' }
+      }).catch(() => undefined);
+      throw new Error('DEPLOYMENT_URL_NOT_VERIFIED');
+    }
+
+    const publishedAt = new Date();
+
+    const published = await prisma.websiteProject.update({
+      where: { id: projectId },
+      data: {
+        status: 'PUBLISHED',
+        hostingProvider: deployment.provider,
+        deploymentId: deployment.deploymentId,
+        deploymentStatus: 'READY',
+        publishedUrl: deployment.url,
+        publishedAt
+      }
+    });
+
+    // A publicação é um fato externo já confirmado pelo provedor. Falhas
+    // posteriores (assinatura/evento) não podem transformar um site publicado
+    // em REVIEW nem apagar o estado real de publicação.
+    try {
       await websiteCommercialService.activateSubscriptionAfterPublication(
         project.prospectId,
         publishedAt
@@ -535,18 +558,11 @@ export class WebsiteService {
           })
         }
       });
-
-      return published;
-    } catch (error: any) {
-      await prisma.websiteProject.update({
-        where: { id: projectId },
-        data: {
-          deploymentStatus: 'FAILED',
-          status: 'REVIEW'
-        }
-      }).catch(() => undefined);
-      throw error;
+    } catch (postPublishError: any) {
+      console.error('[WebsiteService] pós-publicação falhou sem reverter PUBLISHED:', postPublishError?.message || postPublishError);
     }
+
+    return published;
   }
 
   async preparePublication(demoId: string, domainName?: string) {
