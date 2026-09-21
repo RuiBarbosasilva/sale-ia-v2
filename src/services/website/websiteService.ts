@@ -9,6 +9,27 @@ import { vercelDeploymentProvider } from '../deployment/vercelDeploymentProvider
 import { websiteCommercialService } from '../websiteCommercialService';
 
 const prisma = new PrismaClient();
+const PROPOSAL_SNAPSHOT_PREFIX = '<!-- RB_FACTORY_PROPOSAL_SNAPSHOT:';
+const PROPOSAL_SNAPSHOT_SUFFIX = ' -->';
+
+function readCommercialSnapshot(content?: string | null): { demoId: string; demoVersion: number } | null {
+  if (!content) return null;
+  const start = content.indexOf(PROPOSAL_SNAPSHOT_PREFIX);
+  if (start < 0) return null;
+  const payloadStart = start + PROPOSAL_SNAPSHOT_PREFIX.length;
+  const end = content.indexOf(PROPOSAL_SNAPSHOT_SUFFIX, payloadStart);
+  if (end < 0) return null;
+  try {
+    const parsed = JSON.parse(
+      Buffer.from(content.slice(payloadStart, end), 'base64').toString('utf8')
+    );
+    if (!parsed?.demoId || !parsed?.demoVersion) return null;
+    return { demoId: String(parsed.demoId), demoVersion: Number(parsed.demoVersion) };
+  } catch {
+    return null;
+  }
+}
+
 
 export class WebsiteService {
   private async validateGeneratedAssets(assets: any): Promise<{ valid: boolean; issues: string[] }> {
@@ -405,14 +426,22 @@ export class WebsiteService {
     });
     if (!acceptedProposal) throw new Error('PROPOSAL_NOT_ACCEPTED');
 
+    const commercialSnapshot = readCommercialSnapshot(acceptedProposal.content);
+    if (!commercialSnapshot) throw new Error('PROPOSAL_SNAPSHOT_MISSING');
+
     const demo = await prisma.websiteDemo.findFirst({
       where: {
+        id: commercialSnapshot.demoId,
         prospectId: project.prospectId,
-        version: project.currentVersion,
+        version: commercialSnapshot.demoVersion,
         status: { in: ['READY', 'APPROVED'] }
       }
     });
     if (!demo) throw new Error('APPROVED_DEMO_VERSION_NOT_FOUND');
+
+    if (project.currentVersion !== demo.version) {
+      throw new Error('APPROVED_DEMO_VERSION_MISMATCH');
+    }
 
     let previewData: any = {};
     try { previewData = JSON.parse(demo.previewData || '{}'); } catch {}
@@ -527,14 +556,23 @@ export class WebsiteService {
       throw new Error('DEMO_NOT_PUBLISHABLE');
     }
 
-    // Regra comercial da Factory: projeto só nasce depois que uma proposta
-    // foi efetivamente aceita. Aprovar a demo é apenas aprovação técnica.
+    // Regra comercial da Factory: a publicação deve usar exatamente a demo
+    // que foi vinculada à proposta aceita, nunca uma versão posterior.
     const acceptedProposal = await prisma.websiteProposal.findFirst({
       where: { prospectId: demo.prospectId, status: 'ACCEPTED' },
-      orderBy: { id: 'desc' }
+      orderBy: { acceptedAt: 'desc' }
     });
     if (!acceptedProposal) {
       throw new Error('PROPOSAL_NOT_ACCEPTED');
+    }
+
+    const commercialSnapshot = readCommercialSnapshot(acceptedProposal.content);
+    if (
+      !commercialSnapshot ||
+      commercialSnapshot.demoId !== demo.id ||
+      commercialSnapshot.demoVersion !== demo.version
+    ) {
+      throw new Error('APPROVED_DEMO_VERSION_MISMATCH');
     }
 
     const existing = await prisma.websiteProject.findFirst({ where: { prospectId: demo.prospectId } });
@@ -544,7 +582,7 @@ export class WebsiteService {
         data: {
           domainName: domainName || existing.domainName,
           status: existing.status === 'PUBLISHED' ? existing.status : 'PLANNING',
-          currentVersion: demo.version,
+          currentVersion: existing.currentVersion,
           deploymentStatus: existing.deploymentStatus || 'NOT_DEPLOYED'
         }
       });
@@ -572,7 +610,7 @@ export class WebsiteService {
             data: {
               domainName: domainName || winner.domainName,
               status: winner.status === 'PUBLISHED' ? winner.status : 'PLANNING',
-              currentVersion: demo.version,
+              currentVersion: winner.currentVersion,
               deploymentStatus: winner.deploymentStatus || 'NOT_DEPLOYED'
             }
           });
