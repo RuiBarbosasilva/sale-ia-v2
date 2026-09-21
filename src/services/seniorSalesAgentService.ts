@@ -234,8 +234,14 @@ export const seniorSalesAgentService = {
     const rows=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE id=? LIMIT 1',actionId);
     const action=rows[0];
     if(!action) throw new Error('SALES_ACTION_NOT_FOUND');
-    if(action.status!=='PENDING_APPROVAL') throw new Error('SALES_ACTION_NOT_PENDING');
-    await (prisma as any).$executeRawUnsafe('UPDATE "SalesAction" SET status=\'APPROVED\' WHERE id=?',actionId);
+    if(action.status!=='PENDING_APPROVAL' && action.status!=='SEND_REVIEW') throw new Error('SALES_ACTION_NOT_PENDING');
+    const decisionNote = action.status==='SEND_REVIEW'
+      ? 'EXPLICIT_RETRY_AFTER_SEND_REVIEW'
+      : 'APPROVED_BY_OPERATOR';
+    await (prisma as any).$executeRawUnsafe(
+      'UPDATE "SalesAction" SET status=\'APPROVED\',approvedAt=CURRENT_TIMESTAMP,updatedAt=CURRENT_TIMESTAMP,decisionNote=? WHERE id=?',
+      decisionNote, actionId
+    );
     return (await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE id=?',actionId))[0];
   },
   async markActionSent(actionId:string,metadata?:any){
