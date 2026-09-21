@@ -434,6 +434,24 @@ export const websiteStudioController = {
         return res.status(404).json({ success: false, error: 'Demo não encontrada' });
       }
 
+      let previewData: any = {};
+      try { previewData = JSON.parse(demo.previewData || '{}'); } catch {}
+      const qualityReview = previewData.qualityReview;
+      if (
+        !qualityReview ||
+        qualityReview.recommendation !== 'approve' ||
+        Number(qualityReview.overallScore || 0) < 7.5 ||
+        (qualityReview.criticalIssues || []).length > 0
+      ) {
+        return res.status(409).json({
+          success: false,
+          error: 'DEMO_QUALITY_GATE_FAILED',
+          qualityScore: Number(qualityReview?.overallScore || 0),
+          recommendation: qualityReview?.recommendation || null,
+          criticalIssues: qualityReview?.criticalIssues || []
+        });
+      }
+
       const approvedDemo = await prisma.websiteDemo.update({
         where: { id },
         data: { status: 'APPROVED' },
