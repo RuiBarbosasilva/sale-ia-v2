@@ -107,7 +107,29 @@ export const rbFactorySalesService={
     if (!['DEMO_READY', 'PROPOSAL_READY', 'CONTACTED', 'NEGOTIATION'].includes(pipeline.stage)) {
       throw new Error('DEMO_NOT_READY_FOR_PROPOSAL');
     }
-    const proposal=await proposalGeneratorService.generateProposal(prospectId,{planCode,planId});
+    if (!pipeline.demoId) {
+      throw new Error('DEMO_NOT_READY_FOR_PROPOSAL');
+    }
+
+    const selectedDemo = await prisma.websiteDemo.findUnique({
+      where: { id: pipeline.demoId },
+      select: { id: true, prospectId: true, version: true, status: true },
+    });
+
+    if (
+      !selectedDemo ||
+      selectedDemo.prospectId !== prospectId ||
+      !['READY', 'APPROVED'].includes(selectedDemo.status)
+    ) {
+      throw new Error('DEMO_NOT_READY_FOR_PROPOSAL');
+    }
+
+    const proposal=await proposalGeneratorService.generateProposal(prospectId,{
+      planCode,
+      planId,
+      demoId: selectedDemo.id,
+      demoVersion: selectedDemo.version,
+    });
     await (prisma as any).$executeRawUnsafe(`UPDATE "RbFactorySalesPipeline" SET stage='PROPOSAL_READY',proposalId=?,nextAction='CONTACT_PROSPECT',updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,proposal.id,prospectId);
     const salesAgent=await rbFactorySalesAgentService.prepareProposalApproach(prospectId,'WHATSAPP');
     return {...proposal,salesAgent};
