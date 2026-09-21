@@ -8,6 +8,17 @@ let initialized = false;
 function id(){ return crypto.randomUUID(); }
 function safeLimit(value:any, fallback=10){ const n=Number(value); return Number.isFinite(n) ? Math.min(50,Math.max(1,n)) : fallback; }
 
+const cycleProspectLocks = new Map<string, Promise<void>>();
+
+async function withCycleProspectLock<T>(prospectId:string, work:()=>Promise<T>):Promise<T>{
+  const previous=cycleProspectLocks.get(prospectId)||Promise.resolve();
+  let release!:()=>void;
+  const current=new Promise<void>(resolve=>{release=resolve;});
+  cycleProspectLocks.set(prospectId,current);
+  await previous;
+  try{return await work();}finally{release();if(cycleProspectLocks.get(prospectId)===current) cycleProspectLocks.delete(prospectId);}
+}
+
 async function init(){
   if(initialized) return;
   await (prisma as any).$executeRawUnsafe(`
@@ -133,8 +144,13 @@ export const rbFactorySalesAutonomyService = {
     for(const item of queue){
       if(result.processed>=max) break;
       result.processed++;
+      const cycleProspectId=String(item.prospectId);
+      if(cycleProspectLocks.has(cycleProspectId)){
+        result.items.push({prospectId:item.prospectId,status:'WAITING',reason:'PROSPECT_CYCLE_IN_PROGRESS'});
+        continue;
+      }
       try{
-        const prepared=await rbFactorySalesAgentService.prepareNextSellerAction(String(item.prospectId));
+        const prepared=await withCycleProspectLock(cycleProspectId, async()=>rbFactorySalesAgentService.prepareNextSellerAction(cycleProspectId));
         if(!prepared?.available){
           result.items.push({prospectId:item.prospectId,status:'WAITING',reason:'NO_ACTION'});
           continue;
