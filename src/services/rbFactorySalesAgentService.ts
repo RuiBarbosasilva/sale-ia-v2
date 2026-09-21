@@ -10,9 +10,18 @@ export const rbFactorySalesAgentService = {
     const lead=prospect.linkedLeadId ? await prisma.lead.findUnique({where:{id:prospect.linkedLeadId}}) : null;
     const pipelineRows=await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',prospectId);
     const pipeline=pipelineRows[0]||null;
+    let demoQualityScore: number | null = null;
+    if (demo?.previewData) {
+      try {
+        const preview = JSON.parse(demo.previewData);
+        demoQualityScore = Number.isFinite(Number(preview?.qualityReview?.overallScore))
+          ? Number(preview.qualityReview.overallScore)
+          : null;
+      } catch {}
+    }
     return {
       source:'RB_FACTORY_SITES', prospect:{id:prospect.id,companyName:prospect.companyName,segment:prospect.segment,city:prospect.city,state:prospect.state,phone:prospect.phone,email:prospect.email,currentWebsite:prospect.currentWebsite,websiteOpportunityStatus:prospect.websiteOpportunityStatus,websiteOpportunityScore:prospect.websiteOpportunityScore,priority:prospect.priority,status:prospect.status},
-      demo:demo?{id:demo.id,version:demo.version,status:demo.status,qualityScore:demo.qualityScore}:null,
+      demo:demo?{id:demo.id,version:demo.version,status:demo.status,qualityScore:demoQualityScore}:null,
       proposal:proposal?{id:proposal.id,status:proposal.status,content:proposal.content}:null,
       lead:lead?{id:lead.id,name:lead.name,stage:lead.stage,status:lead.status,score:lead.score}:null,
       pipeline:pipeline?{id:pipeline.id,stage:pipeline.stage,nextAction:pipeline.nextAction,priority:pipeline.priority}:null,
