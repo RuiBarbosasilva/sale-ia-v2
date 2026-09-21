@@ -1,6 +1,17 @@
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
 import { seniorSalesAgentService } from './seniorSalesAgentService';
 
+const prospectLocks = new Map<string, Promise<void>>();
+
+async function withProspectLock<T>(prospectId:string, work:()=>Promise<T>):Promise<T>{
+  const previous=prospectLocks.get(prospectId)||Promise.resolve();
+  let release!:()=>void;
+  const current=new Promise<void>(resolve=>{release=resolve;});
+  prospectLocks.set(prospectId,current);
+  await previous;
+  try{return await work();}finally{release();if(prospectLocks.get(prospectId)===current)prospectLocks.delete(prospectId);}
+}
+
 export const rbFactorySalesAgentService = {
   async context(prospectId:string){
     const prospect=await prisma.websiteProspect.findUnique({where:{id:prospectId}});
@@ -30,10 +41,13 @@ export const rbFactorySalesAgentService = {
   },
   async ensureConversation(prospectId:string,channel='WHATSAPP'){
     const context=await this.context(prospectId);
+    return withProspectLock(prospectId+':'+channel, async()=>{
+
     const rows=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesConversation" WHERE channel=? AND context LIKE ? ORDER BY createdAt DESC LIMIT 1',channel,`%"id":"${prospectId}"%`);
     if(rows[0]) return {conversation:await seniorSalesAgentService.getConversation(rows[0].id),commercialContext:context,reused:true};
     const c=await seniorSalesAgentService.createConversation({channel,leadId:context.lead?.id||null,context});
     return {conversation:c,commercialContext:context,reused:false};
+    });
   },
   async createConversation(prospectId:string,channel='WHATSAPP'){
     return this.ensureConversation(prospectId,channel);
