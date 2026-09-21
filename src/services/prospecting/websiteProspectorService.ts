@@ -764,12 +764,14 @@ export class WebsiteProspectorService {
 
               await businessProspectingManager.enrichBusinessesWithDetails([business]);
 
-              // Garantia: cidade/estado da pesquisa permanecem
-              // quando o Google não retornar esses componentes.
+              // A cidade/estado explicitamente solicitados são a referência
+              // comercial da pesquisa. Se o cliente/provider já trouxe U+FFFD,
+              // nunca persistimos o caractere de substituição.
               business.city =
-                request.city ||
-                business.city ||
-                request.region;
+                this.preferValidCity(
+                  request.city,
+                  this.preferValidCity(business.city, request.region)
+                );
 
               business.state =
                 request.state ||
@@ -838,9 +840,10 @@ export class WebsiteProspectorService {
                       niche,
 
                     city:
-                      request.city ||
-                      business.city ||
-                      existing.city,
+                      this.preferValidCity(
+                        request.city,
+                        this.preferValidCity(business.city, existing.city)
+                      ),
 
                     state:
                       request.state ||
@@ -989,9 +992,10 @@ export class WebsiteProspectorService {
                       niche,
 
                     city:
-                      request.city ||
-                      business.city ||
-                      request.region,
+                      this.preferValidCity(
+                        request.city,
+                        this.preferValidCity(business.city, request.region)
+                      ),
 
                     state:
                       request.state ||
