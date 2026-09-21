@@ -53,7 +53,7 @@ app.get('/affiliates/admin', (_req, res) => res.sendFile('affiliates/admin.html'
 app.get('/affiliates/intelligence', (_req, res) => res.sendFile('affiliates/intelligence.html', { root: 'public' }));
 app.get('/editorial', (_req, res) => res.sendFile('editorial/index.html', { root: 'public' }));
 app.get('/sales', (_req, res) => res.sendFile('sales/index.html', { root: 'public' }));
-app.get('/dashboard', (_req, res) => res.sendFile('dashboard/index.html', { root: 'public' }));
+app.get(['/dashboard', '/dashboard/'], (_req, res) => res.sendFile('dashboard/index.html', { root: 'public' }));
 app.get('/rb-factory-benchmark', (_req, res) => res.sendFile('rb-factory-benchmark/index.html', { root: 'public' }));
 app.use('/generated-images', express.static('storage/generated-images'));
 
