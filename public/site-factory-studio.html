@@ -484,6 +484,7 @@ async function approveDemo() {
   } catch (e) { toast('Erro: ' + e.message, 'err'); }
 }
 async function preparePublish() {
+  if (!state.selectedDemoId) return toast('Selecione uma demo primeiro', 'err');
   const domain = prompt('Domínio desejado (opcional):', '') || undefined;
   try {
     const res = await authFetch(API + '/projects/prepare', {
@@ -491,17 +492,31 @@ async function preparePublish() {
       body: JSON.stringify({ demoId: state.selectedDemoId, domainName: domain })
     });
     const data = await res.json();
-    if (!data.success) throw new Error(data.error);
+    if (!res.ok || !data.success) throw new Error(data.error || ('HTTP ' + res.status));
+    const projectId = data.project?.id;
+    if (!projectId) throw new Error('Projeto preparado sem projectId');
     const panel = document.getElementById('pubPanel');
     panel.classList.remove('hidden');
-    panel.innerHTML = `<b>🚀 Projeto pronto para publicação</b> (status real: READY_TO_PUBLISH — o deploy automático requer integração futura com Vercel/Netlify).<br><br>
-      <b>Publicação manual via ZIP:</b><br>
-      • <b>Vercel:</b> ${data.instructions.vercel.join(' → ')}<br>
-      • <b>Netlify:</b> ${data.instructions.netlify.join(' → ')}<br>
-      • <b>Host próprio:</b> ${data.instructions.hosting.join(' → ')}<br><br>
-      Use o botão <b>Exportar ZIP</b> e arraste para o provedor escolhido.`;
-    toast('Projeto de publicação criado', 'ok');
-  } catch (e) { toast('Erro: ' + e.message, 'err'); }
+    panel.innerHTML = '<b>🚀 Projeto preparado para publicação.</b><br><small>O deploy real só ocorre após aceite comercial e com VERCEL_TOKEN configurado.</small>';
+    if (!confirm('Projeto preparado. Deseja publicar agora no Vercel?')) {
+      toast('Projeto preparado; publicação ficou pendente', 'ok');
+      return;
+    }
+    const publish = await authFetch(API + '/projects/publish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectId, provider: 'VERCEL' })
+    });
+    const published = await publish.json();
+    if (!publish.ok || !published.success) {
+      throw new Error(published.error || ('publish HTTP ' + publish.status));
+    }
+    const url = published.project?.publishedUrl;
+    panel.innerHTML = '<b>✅ Site publicado com sucesso.</b>' + (url ? ' <a href="' + url + '" target="_blank" rel="noopener noreferrer">Abrir site publicado</a>' : '');
+    toast('Site publicado com URL verificada', 'ok');
+  } catch (e) {
+    toast('Publicação não concluída: ' + e.message, 'err');
+  }
 }
 
 async function loadAssets(demoId) {
