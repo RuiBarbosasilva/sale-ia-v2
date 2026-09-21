@@ -74,6 +74,14 @@ IMPORTANTE:
 - NAO invente informacoes especificas que nao estejam no briefing ou pesquisa.
 - Priorize clareza, confianca, experiencia mobile e conversao.
 - O resultado deve parecer criado especificamente para este negocio por uma agencia digital profissional.
+- Use a pesquisa de design como repertorio de padrões: hierarquia, composição, navegação, uso de espaço, tipografia, contraste, fotografia, microinterações e CTA. NÃO copie identidade, textos, layout ou componentes proprietários de nenhum site de referência.
+- Crie uma direção de arte premium com 1 ideia visual central, 1 hierarquia de CTA e 1 sistema de componentes coerente.
+- O hero deve comunicar negócio + benefício + ação em poucos segundos.
+- Planeje uma jornada clara: descoberta → confiança → valor → prova legítima → ação.
+- Evite aparência de template: varie grid, ritmo vertical, proporção de mídia, alinhamentos e tratamento das seções conforme o segmento.
+- Mobile-first: priorize leitura, toque, velocidade, imagens responsivas e CTA acessível.
+- Performance: evite dependências e efeitos desnecessários; imagens e fontes devem ser usadas com parcimônia.
+- Acessibilidade: contraste, foco, HTML semântico, alt text e navegação por teclado devem ser considerados desde o design.
 
 FORMATO JSON:
 {
