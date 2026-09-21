@@ -132,11 +132,11 @@ export class WebsiteSectionRenderer {
       '';
 
     return `
-<section id="hero" class="wf-section wf-hero wf-hero-${this.variant(section)}">
+<section id="hero" class="wf-section wf-hero wf-hero-${this.variant(section)}" aria-labelledby="hero-title">
   <div class="wf-container wf-hero-content">
     <div class="wf-hero-copy">
       <span class="wf-eyebrow">${this.esc(context.businessName)}</span>
-      <h1>${this.esc(title)}</h1>
+      <h1 id="hero-title">${this.esc(title)}</h1>
       ${subtitle ? `<p>${this.esc(subtitle)}</p>` : ''}
       <div class="wf-actions">
         <a class="wf-btn wf-btn-primary" href="${this.esc(c.whatsappLink || '#')}" target="_blank" rel="noopener noreferrer" aria-label="${this.esc(cta)} pelo WhatsApp">${this.esc(cta)}</a>
