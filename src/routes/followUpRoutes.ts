@@ -1,12 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { followUpService, responseDetectionService } from '../services/followUpService';
+import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
 const prisma = new PrismaClient();
 
 // Executar o Job de Follow-up (Simula o agendador diário)
-router.post('/run-job', async (req: Request, res: Response) => {
+router.post('/run-job', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const result = await followUpService.executePendingFollowUps();
     return res.json({ success: true, message: 'Job de follow-up executado', result });
@@ -16,7 +17,7 @@ router.post('/run-job', async (req: Request, res: Response) => {
 });
 
 // Agendar follow-up manual para um lead
-router.post('/schedule/:leadId', async (req: Request, res: Response) => {
+router.post('/schedule/:leadId', adminAuthorization, async (req: Request, res: Response) => {
   try {
     await followUpService.scheduleFollowUps(req.params.leadId);
     return res.json({ success: true, message: 'Follow-ups agendados para 3, 7 e 14 dias' });
@@ -26,7 +27,7 @@ router.post('/schedule/:leadId', async (req: Request, res: Response) => {
 });
 
 // Testar detecção de resposta (IA simples por palavras-chave)
-router.post('/analyze-response', async (req: Request, res: Response) => {
+router.post('/analyze-response', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const { text } = req.body;
     if (!text) return res.status(400).json({ error: 'Texto e obrigatorio' });
