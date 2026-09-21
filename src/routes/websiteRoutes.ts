@@ -32,8 +32,8 @@ router.post('/studio/demos/:id/improve', adminAuthorization, websiteStudioContro
 router.get('/studio/history/:prospectId', websiteStudioController.getHistory);
 router.get('/studio/demos/:id/details', websiteStudioController.getDemoDetails);
 router.post('/studio/demos/:id/rollback', adminAuthorization, websiteStudioController.rollbackTo);
-router.post('/studio/projects/prepare', websiteStudioController.preparePublication, adminAuthorization);
-router.post('/studio/projects/publish', websiteStudioController.publishProject, adminAuthorization);
+router.post('/studio/projects/prepare', adminAuthorization, websiteStudioController.preparePublication);
+router.post('/studio/projects/publish', adminAuthorization, websiteStudioController.publishProject);
 export default router;
 
 
