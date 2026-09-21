@@ -69,6 +69,25 @@ function stage(text:string,score:number){
   return 'QUALIFYING';
 }
 
+
+function decisionPolicy(input:any){
+  const score=Number(input.intentScore||0), temp=String(input.temperature||'COLD');
+  const objection=input.objection?String(input.objection):null;
+  const explicitNoInterest=/(não tenho interesse|nao tenho interesse|não quero|nao quero|não me interessa|nao me interessa|pare de|pode parar|retire meu contato)/i.test(String(input.message||''));
+  const asksDemo=/(demo|demonstração|demonstracao|ver o site|link|mostrar)/i.test(String(input.message||''));
+  const asksProposal=/(proposta|orçamento|orcamento|valor|preço|preco|condições|condicoes)/i.test(String(input.message||''));
+  const ready=/(fechar|contratar|vamos fazer|pode fazer|quero contratar|como pago|pagamento)/i.test(String(input.message||''));
+  if(explicitNoInterest) return {action:'STOP_OUTREACH',autonomyAllowed:false,escalationRequired:false,reason:'EXPLICIT_OPT_OUT',confidence:99};
+  if(objection==='AUTHORITY') return {action:'DISCOVER_DECISION_MAKER',autonomyAllowed:true,escalationRequired:false,reason:'DECISION_AUTHORITY_UNCLEAR',confidence:94};
+  if(objection==='PRICE' && ready) return {action:'ESCALATE_HUMAN_NEGOTIATION',autonomyAllowed:false,escalationRequired:true,reason:'PRICE_NEGOTIATION_NEAR_CLOSE',confidence:96};
+  if(objection && objection!=='NEED') return {action:'INVESTIGATE_OBJECTION',autonomyAllowed:true,escalationRequired:false,reason:'OBJECTION_DETECTED',confidence:95};
+  if(ready || score>=75 || temp==='VERY_HOT') return {action:'ASK_FOR_CLOSE',autonomyAllowed:true,escalationRequired:false,reason:'HIGH_PURCHASE_INTENT',confidence:95};
+  if(asksProposal) return {action:'PREPARE_PROPOSAL',autonomyAllowed:true,escalationRequired:false,reason:'PROPOSAL_SIGNAL',confidence:93};
+  if(asksDemo) return {action:'PREPARE_DEMO',autonomyAllowed:true,escalationRequired:false,reason:'DEMO_SIGNAL',confidence:92};
+  if(score>=45 || temp==='HOT') return {action:'DISCOVER_NEED',autonomyAllowed:true,escalationRequired:false,reason:'QUALIFIED_INTEREST',confidence:88};
+  return {action:'FOLLOW_UP',autonomyAllowed:true,escalationRequired:false,reason:'CONTINUE_DISCOVERY',confidence:82};
+}
+
 async function aiReply(context:string){
   if(!ai) return null;
   try {
@@ -100,12 +119,15 @@ export const seniorSalesAgentService = {
     const context=JSON.stringify({conversation:c,messages:c.messages.slice(-12),commercialContext,customerMessage:customer,detectedIntent:localIntent,detectedObjection:obj,salesPsychology:RB_FACTORY_SALES_PSYCHOLOGY});
     const ai=await aiReply(context);
     const reply=ai?.reply || this.fallback(customer,obj,localIntent);
-    const next=ai?.nextBestAction || (localIntent>=60?'ASK_FOR_CLOSE':obj?'INVESTIGATE_OBJECTION':'DISCOVER_NEED');
-    const confidence=Number(ai?.confidence||65);
+    const policy=decisionPolicy({message:customer,intentScore:localIntent,temperature:temp,objection:obj});
+    const aiSuggested=String(ai?.nextBestAction||'');
+    const allowedAi=new Set(['ASK_FOR_CLOSE','INVESTIGATE_OBJECTION','DISCOVER_NEED','SEND_FIRST_APPROACH','REVIEW']);
+    const next=policy.escalationRequired ? policy.action : (allowedAi.has(aiSuggested) ? aiSuggested : policy.action);
+    const confidence=Math.min(Number(ai?.confidence||65), Number(policy.confidence||100));
     await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesConversationMessage" ("id","conversationId","role","content","intent","objection") VALUES (?,?,?,?,?,?)',id(),conversationId,'AGENT_DRAFT',reply,String(ai?.intent||localIntent),obj);
     await (prisma as any).$executeRawUnsafe('UPDATE "SalesConversation" SET "stage"=?,"temperature"=?,"intentScore"=?,"objection"=?,"lastIntent"=?,"nextBestAction"=?,"updatedAt"=CURRENT_TIMESTAMP WHERE id=?',st,temp,localIntent,obj,ai?.intent||String(localIntent),next,conversationId);
-    await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesAction" ("id","conversationId","type","title","payload") VALUES (?,?,?,?,?)',id(),conversationId,'SEND_MESSAGE','Enviar resposta comercial',JSON.stringify({reply,confidence,escalationRequired:Boolean(ai?.escalationRequired),persuasionStrategy:ai?.persuasionStrategy||null,decisionBarrier:ai?.decisionBarrier||null}));
-    return {conversationId,reply,stage:st,temperature:temp,intentScore:localIntent,objection:obj,nextBestAction:next,confidence,requiresApproval:true,escalationRequired:Boolean(ai?.escalationRequired),persuasionStrategy:ai?.persuasionStrategy||null,decisionBarrier:ai?.decisionBarrier||null};
+    await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesAction" ("id","conversationId","type","title","payload") VALUES (?,?,?,?,?)',id(),conversationId,'SEND_MESSAGE','Enviar resposta comercial',JSON.stringify({reply,confidence,escalationRequired:Boolean(ai?.escalationRequired)||policy.escalationRequired,persuasionStrategy:ai?.persuasionStrategy||null,decisionBarrier:ai?.decisionBarrier||null,decisionPolicy:policy}));
+    return {conversationId,reply,stage:st,temperature:temp,intentScore:localIntent,objection:obj,nextBestAction:next,confidence,requiresApproval:true,escalationRequired:Boolean(ai?.escalationRequired)||policy.escalationRequired,persuasionStrategy:ai?.persuasionStrategy||null,decisionBarrier:ai?.decisionBarrier||null,decisionPolicy:policy};
   },
   fallback(customer:string,obj:string|null,score:number){
     if(obj==='PRICE') return 'Entendo. Antes de falar em preço, quero evitar te indicar algo que não faça sentido. O que pesa mais para você: o valor inicial, o custo mensal ou o retorno esperado?';
