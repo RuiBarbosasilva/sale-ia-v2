@@ -199,15 +199,25 @@ export class WebsiteDemoFactoryService {
     }
 
     try {
-      await prisma.websiteDemoJob.update({
-        where: { id: jobId },
+      // Claim atômico do job: dois workers/processos não podem executar a
+      // mesma geração simultaneamente.
+      const claim = await prisma.websiteDemoJob.updateMany({
+        where: {
+          id: jobId,
+          status: { in: ['QUEUED', 'FAILED'] },
+        },
         data: {
           status: 'RESEARCHING',
           currentStage: 'Enriquecendo dados',
           progress: 10,
           startedAt: new Date(),
+          error: null,
         },
       });
+
+      if (claim.count !== 1) {
+        return;
+      }
 
       const result = await this.generateDemoForProspect(job.prospectId);
 
