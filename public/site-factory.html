@@ -41,7 +41,7 @@ main{min-width:0;padding:28px 34px 55px}.top{display:flex;justify-content:space-
   <div class="side-bottom"><b><span class="dot"></span>Factory operacional</b><p>Prospecção → auditoria → demo → proposta → venda → publicação.</p></div>
 </aside>
 <main>
-  <div class="top"><div class="crumb">SALE-IA / <b>RB Factory Sites</b></div><div class="actions"><button class="btn" onclick="setAdminKey()">🔐 Chave</button><button class="btn" onclick="refreshAll()">↻ Atualizar</button><a class="btn primary" href="/site-factory-studio.html">Abrir Studio</a></div></div>
+  <div class="top"><div class="crumb">SALE-IA / <b>RB Factory Sites</b></div><div class="actions"><button class="btn" onclick="setAdminKey()">🔐 Chave</button><button class="btn" onclick="startProspecting()">⌕ Prospectar</button><button class="btn" onclick="refreshAll()">↻ Atualizar</button><a class="btn primary" href="/site-factory-studio.html">Abrir Studio</a></div></div>
   <section class="hero"><div><h1>Transforme negócios locais em sites que vendem.</h1><p>Central operacional para encontrar prospects, auditar presença digital, gerar demos premium, acompanhar propostas e preparar a conversão em cliente.</p></div><div class="timestamp" id="updated">—</div></section>
 
   <section class="kpis">
@@ -77,7 +77,7 @@ main{min-width:0;padding:28px 34px 55px}.top{display:flex;justify-content:space-
 
     <div>
       <div class="panel">
-        <div class="panel-head"><h2>Estado da Factory</h2><span>agora</span></div>
+        <div class="panel-head"><h2>Estado da Factory</h2><span>agora</span></div><div id="prospectingBox" class="notice" style="margin:0 0 12px">Use “Prospectar” para abrir o fluxo de descoberta de novos negócios.</div>
         <div class="status-line"><b>Pesquisa de prospects</b><span id="sProspects">—</span></div>
         <div class="status-line"><b>Geração profissional</b><span id="sDemos">—</span></div>
         <div class="status-line"><b>Qualidade / imagens</b><span>Gate ativo</span></div>
@@ -104,7 +104,7 @@ main{min-width:0;padding:28px 34px 55px}.top{display:flex;justify-content:space-
 const API='/api';
 const $=id=>document.getElementById(id);
 function key(){return sessionStorage.getItem('saleIaAdminKey')||''}
-function setAdminKey(){const v=prompt('Chave administrativa do SALE-IA:',key());if(v!==null){if(v.trim())sessionStorage.setItem('saleIaAdminKey',v.trim());else sessionStorage.removeItem('saleIaAdminKey');refreshAll()}}
+function setAdminKey(){const v=prompt('Chave administrativa do SALE-IA:',key());if(v!==null){if(v.trim())sessionStorage.setItem('saleIaAdminKey',v.trim());else sessionStorage.removeItem('saleIaAdminKey');refreshAll()}}\nfunction startProspecting(){window.location.href='/site-factory-studio.html#prospecting'}
 async function get(path){
   const headers={};const k=key();if(k)headers['x-sale-ia-admin-key']=k;
   const r=await fetch(API+path,{headers});if(!r.ok)throw new Error('HTTP '+r.status);return r.json()
