@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { campaignQueue, followUpQueue } from '../config/queue';
+import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -41,7 +42,7 @@ router.get('/queue-stats', async (req: Request, res: Response) => {
 });
 
 // Iniciar uma campanha (adiciona jobs na fila)
-router.post('/campaigns/:id/start', async (req: Request, res: Response) => {
+router.post('/campaigns/:id/start', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const campaign = await prisma.campaign.update({
       where: { id: req.params.id },
@@ -68,7 +69,7 @@ router.post('/campaigns/:id/start', async (req: Request, res: Response) => {
 });
 
 // Pausar campanha
-router.post('/campaigns/:id/pause', async (req: Request, res: Response) => {
+router.post('/campaigns/:id/pause', adminAuthorization, async (req: Request, res: Response) => {
   try {
     await prisma.campaign.update({
       where: { id: req.params.id },
