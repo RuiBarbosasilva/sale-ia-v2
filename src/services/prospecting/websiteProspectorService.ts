@@ -64,8 +64,7 @@ export class WebsiteProspectorService {
       let sellerHandoffFailures = 0;
       
       for (const business of result.businesses) {
-        const enrichedBusiness = await this.enrichBusinessWithDetails(business);
-        Object.assign(business, enrichedBusiness);
+        await businessProspectingManager.enrichBusinessesWithDetails([business]);
 
         const existing = await this.findDuplicate(business);
         
@@ -745,15 +744,11 @@ export class WebsiteProspectorService {
               // ------------------------------------------------
               // ENRIQUECIMENTO ANTES DE CONSULTAR O BANCO
               // ------------------------------------------------
-              const enrichedBusiness =
-                await this.enrichBusinessWithDetails(
-                  originalBusiness
-                );
-
               const business = {
-                ...originalBusiness,
-                ...enrichedBusiness
+                ...originalBusiness
               };
+
+              await businessProspectingManager.enrichBusinessesWithDetails([business]);
 
               // Garantia: cidade/estado da pesquisa permanecem
               // quando o Google não retornar esses componentes.
