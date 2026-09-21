@@ -139,7 +139,7 @@ export class WebsiteSectionRenderer {
       <h1>${this.esc(title)}</h1>
       ${subtitle ? `<p>${this.esc(subtitle)}</p>` : ''}
       <div class="wf-actions">
-        <a class="wf-btn wf-btn-primary" href="${this.esc(c.whatsappLink || '#')}">${this.esc(cta)}</a>
+        <a class="wf-btn wf-btn-primary" href="${this.esc(c.whatsappLink || '#')}" target="_blank" rel="noopener noreferrer" aria-label="${this.esc(cta)} pelo WhatsApp">${this.esc(cta)}</a>
       </div>
     </div>
     ${
@@ -333,7 +333,7 @@ export class WebsiteSectionRenderer {
 
         return `
 <figure class="wf-gallery-item">
-  <img src="${this.esc(src)}" alt="${this.esc(alt)}" loading="lazy">
+  <img src="${this.esc(src)}" alt="${this.esc(alt)}" width="${Number(item?.width) || 800}" height="${Number(item?.height) || 600}" loading="lazy" decoding="async">
 </figure>`;
       }).join('')}
     </div>
