@@ -39,6 +39,11 @@ interface Candidate {
 const UA = 'SaleIA-SiteFactory/3.0 (image-engine; contact: dev@sale-ia.local)';
 
 const SEGMENTS: Record<string, any> = {
+  petshop: {
+    hero: 'happy dog and cat pet shop professional photography',
+    gallery: ['pet shop products food toys', 'dog grooming pet care', 'cat care pet shop', 'modern pet shop interior'],
+    galleryTitle: 'Produtos e Cuidados', galleryLabel: 'pet'
+  },
   hamburgueria: {
     hero: 'gourmet cheeseburger melted cheese dark background food photography',
     gallery: ['cheeseburger closeup sesame bun', 'crispy french fries burger meal', 'craft burger restaurant interior', 'beef patty grill flame smoke'],
@@ -73,6 +78,7 @@ const SEGMENTS: Record<string, any> = {
 
 function detectSegment(category: string): string {
   const c = (category || '').toLowerCase();
+  if (c.includes('pet shop') || c.includes('petshop') || c.includes('pet')) return 'petshop';
   if (c.includes('burguer') || c.includes('hamburguer') || c.includes('burger')) return 'hamburgueria';
   if (c.includes('clinic') || c.includes('odonto') || c.includes('dent') || c.includes('medic') || c.includes('saude')) return 'clinica';
   if (c.includes('imob') || c.includes('corret') || c.includes('real estate') || c.includes('imovel')) return 'imobiliaria';
