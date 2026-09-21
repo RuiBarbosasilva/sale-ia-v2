@@ -7,8 +7,8 @@ const router = Router();
 
 router.post('/analyze', adminAuthorization, (req, res) => websiteController.analyze(req, res));
 router.post('/generate', adminAuthorization, (req, res) => websiteController.generate(req, res));
-router.get('/demos', (req, res) => websiteController.listDemos(req, res));
-router.get('/demo/:id', (req, res) => websiteController.getDemo(req, res));
+router.get('/demos', adminAuthorization, (req, res) => websiteController.listDemos(req, res));
+router.get('/demo/:id', adminAuthorization, (req, res) => websiteController.getDemo(req, res));
 
 
 // ==========================================
