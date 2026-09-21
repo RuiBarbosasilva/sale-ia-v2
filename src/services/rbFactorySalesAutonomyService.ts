@@ -196,6 +196,8 @@ export const rbFactorySalesAutonomyService = {
 
   async sendAction(actionId:string){
     await init();
+    const runtimeControl=await controlRow();
+    if(runtimeControl?.status!=='RUNNING') throw new Error('SELLER_AUTOMATION_STOPPED');
     const rows=await (prisma as any).$queryRawUnsafe('SELECT a.*,c.context FROM "SalesAction" a JOIN "SalesConversation" c ON c.id=a.conversationId WHERE a.id=? LIMIT 1',actionId);
     const action=rows[0];
     if(!action) throw new Error('SALES_ACTION_NOT_FOUND');
