@@ -161,8 +161,9 @@ export class WebsiteDemoFactoryService {
       where: {
         status: 'RESEARCHING',
         OR: [
-          { startedAt: { lt: cutoff } },
-          { startedAt: null, updatedAt: { lt: cutoff } },
+          { leaseUntil: { lt: new Date() } },
+          { leaseUntil: null, startedAt: { lt: cutoff } },
+          { leaseUntil: null, startedAt: null, updatedAt: { lt: cutoff } },
         ],
       },
       select: { id: true },
@@ -178,6 +179,7 @@ export class WebsiteDemoFactoryService {
         currentStage: 'Recuperado apos interrupcao',
         error: null,
         startedAt: null,
+        leaseUntil: null,
         completedAt: null,
       },
     });
@@ -201,6 +203,7 @@ export class WebsiteDemoFactoryService {
     try {
       // Claim atômico do job: dois workers/processos não podem executar a
       // mesma geração simultaneamente.
+      const leaseUntil = new Date(Date.now() + 180 * 60 * 1000);
       const claim = await prisma.websiteDemoJob.updateMany({
         where: {
           id: jobId,
@@ -211,6 +214,7 @@ export class WebsiteDemoFactoryService {
           currentStage: 'Enriquecendo dados',
           progress: 10,
           startedAt: new Date(),
+          leaseUntil,
           error: null,
         },
       });
@@ -219,7 +223,19 @@ export class WebsiteDemoFactoryService {
         return;
       }
 
-      const result = await this.generateDemoForProspect(job.prospectId);
+      const heartbeat = setInterval(() => {
+        void prisma.websiteDemoJob.updateMany({
+          where: { id: jobId, status: 'RESEARCHING' },
+          data: { leaseUntil: new Date(Date.now() + 180 * 60 * 1000) },
+        }).catch(() => undefined);
+      }, 60 * 1000);
+
+      let result;
+      try {
+        result = await this.generateDemoForProspect(job.prospectId);
+      } finally {
+        clearInterval(heartbeat);
+      }
 
       const approved = result.qualityRecommendation === 'approve' && Number(result.qualityScore || 0) >= 7.5;
       await prisma.websiteDemoJob.update({
@@ -231,6 +247,7 @@ export class WebsiteDemoFactoryService {
           demoId: result.demoId,
           error: approved ? null : 'DEMO_NEEDS_REVIEW',
           completedAt: new Date(),
+          leaseUntil: null,
         },
       });
     } catch (error: any) {
