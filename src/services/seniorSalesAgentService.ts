@@ -6,6 +6,16 @@ const apiKey = process.env.GEMINI_API_KEY || '';
 const model = process.env.SALES_AI_MODEL || process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 let initialized = false;
+const salesLocks = new Map<string, Promise<void>>();
+
+async function withSalesLock<T>(key:string, work:()=>Promise<T>):Promise<T>{
+  const previous=salesLocks.get(key)||Promise.resolve();
+  let release!:()=>void;
+  const current=new Promise<void>(resolve=>{release=resolve;});
+  salesLocks.set(key,current);
+  await previous;
+  try{return await work();}finally{release();if(salesLocks.get(key)===current)salesLocks.delete(key);}
+}
 
 async function init() {
   if (initialized) return;
@@ -141,6 +151,7 @@ export const seniorSalesAgentService = {
     return 'Entendi. Para eu não te oferecer algo genérico: qual é o principal problema que você quer resolver hoje?';
   },
   async prepareInitialApproach(conversationId:string){
+    return withSalesLock('initial-approach:'+conversationId, async()=>{
     await init();
     const existing=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE conversationId=? AND type=\\'SEND_MESSAGE\\' AND title=\\'Enviar primeira abordagem comercial\\' AND status IN (\\'PENDING_APPROVAL\\',\\'APPROVED\\',\\'SENT\\') ORDER BY createdAt DESC LIMIT 1',conversationId);
     if(existing[0]) return {conversationId,reused:true,action:existing[0],requiresApproval:true,nextBestAction:'SEND_FIRST_APPROACH'};
@@ -157,6 +168,7 @@ export const seniorSalesAgentService = {
     await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesAction" ("id","conversationId","type","title","payload") VALUES (?,?,?,?,?)',id(),conversationId,'SEND_MESSAGE','Enviar primeira abordagem comercial',JSON.stringify({reply,confidence,requiresApproval:true}));
     await (prisma as any).$executeRawUnsafe('UPDATE "SalesConversation" SET "nextBestAction"=\'SEND_FIRST_APPROACH\',"updatedAt"=CURRENT_TIMESTAMP WHERE id=?',conversationId);
     return {conversationId,reply,confidence,requiresApproval:true,nextBestAction:'SEND_FIRST_APPROACH'};
+    });
   },
   async prepareProposalApproach(conversationId:string){
     await init();
@@ -305,6 +317,7 @@ export const seniorSalesAgentService = {
     return {draft:aiResult?.reply||fallback,confidence:Number(aiResult?.confidence||70),decisionBarrier:aiResult?.decisionBarrier||null};
   },
   async scheduleFollowUp(conversationId:string,input:any){
+    return withSalesLock('follow-up:'+conversationId, async()=>{
     await init();
     const when=new Date(input.scheduledAt||Date.now()+86400000);
     const reason=String(input.reason||'FOLLOW_UP');
@@ -318,6 +331,7 @@ export const seniorSalesAgentService = {
     await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesFollowUp" ("id","conversationId","scheduledAt","reason","draft") VALUES (?,?,?,?,?)',idv,conversationId,when.toISOString(),reason,draft);
     const created=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesFollowUp" WHERE id=?',idv);
     return created;
+    });
   },
   async dashboard(){ await init(); const q=async(sql:string)=>Number((await (prisma as any).$queryRawUnsafe(sql))[0]?.count||0); const [conversations,hot,pending,followups,objections]=await Promise.all([q('SELECT COUNT(*) count FROM "SalesConversation" WHERE status=\'OPEN\''),q('SELECT COUNT(*) count FROM "SalesConversation" WHERE temperature IN (\'HOT\',\'VERY_HOT\')'),q('SELECT COUNT(*) count FROM "SalesAction" WHERE status=\'PENDING_APPROVAL\''),q('SELECT COUNT(*) count FROM "SalesFollowUp" WHERE status=\'PENDING\''),q('SELECT COUNT(*) count FROM "SalesObjection" WHERE resolved=0')]); return {conversations,hotLeads:hot,pendingActions:pending,pendingFollowUps:followups,openObjections:objections,mode:'SENIOR_SALES_SUPERVISED'}; }
 };
