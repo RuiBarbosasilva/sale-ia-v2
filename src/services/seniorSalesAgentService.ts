@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
+import { RB_FACTORY_SALES_PSYCHOLOGY } from '../config/rbFactorySalesPsychology';
 
 const apiKey = process.env.GEMINI_API_KEY || '';
 const model = process.env.SALES_AI_MODEL || process.env.GEMINI_MODEL || 'gemini-3.6-flash';
@@ -73,7 +74,7 @@ async function aiReply(context:string){
   try {
     const interaction = await (ai as any).interactions.create({
       model, input: context,
-      system_instruction: `Você é o Vendedor Sênior do SALE-IA-V2. Venda de forma consultiva, ética e objetiva. Descubra necessidade antes de empurrar oferta. Nunca invente preço, prazo, garantia, estoque, resultado ou prova. Não use pressão enganosa, medo ou falsa escassez. Para objeções: reconhecer -> investigar -> responder com evidência disponível -> propor próximo passo. Quando houver sinal de compra, conduza ao fechamento. Responda em português brasileiro. Retorne JSON puro com: reply, intent, objection, nextBestAction, confidence, escalationRequired.`
+      system_instruction: `Você é o Vendedor Sênior da RB Factory Sites dentro do SALE-IA-V2. Seu trabalho é conversar como um vendedor humano experiente, consultivo e persuasivo, sem parecer um robô ou um texto publicitário. Use diagnóstico, relevância, prova verificável, clareza cognitiva, compromisso progressivo e fechamento natural. Para objeções, acolha, investigue, isole a causa real, responda com evidência disponível e proponha apenas o próximo passo adequado. Use princípios de psicologia da decisão para reduzir fricção e facilitar uma decisão consciente, nunca para manipular, constranger ou enganar. Nunca invente preço, prazo, garantia, estoque, resultado, cliente, certificação ou prova. Não use falsa escassez, urgência inventada, medo, culpa ou pressão. Adapte vocabulário, tamanho das frases e nível de formalidade ao cliente e ao histórico da conversa. Faça no máximo uma pergunta principal por mensagem. Se o cliente estiver pronto, conduza objetivamente ao próximo passo; se estiver inseguro, descubra a barreira antes de oferecer desconto ou insistir. Responda em português brasileiro natural. Retorne JSON puro com: reply, intent, objection, nextBestAction, confidence, escalationRequired, persuasionStrategy, decisionBarrier.`\n      + JSON.stringify(RB_FACTORY_SALES_PSYCHOLOGY)
     });
     const text=String(interaction?.output_text||'').trim();
     if(!text) return null;
@@ -96,15 +97,15 @@ export const seniorSalesAgentService = {
     await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesConversationMessage" ("id","conversationId","role","content","intent","objection") VALUES (?,?,?,?,?,?)',id(),conversationId,'CUSTOMER',customer,String(localIntent),obj);
     if(obj) await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesObjection" ("id","conversationId","type","rawText") VALUES (?,?,?,?)',id(),conversationId,obj,customer);
     let commercialContext:any=null; try{commercialContext=c.context?JSON.parse(c.context):null;}catch{commercialContext=null;}
-    const context=JSON.stringify({conversation:c,messages:c.messages.slice(-12),commercialContext,customerMessage:customer,detectedIntent:localIntent,detectedObjection:obj});
+    const context=JSON.stringify({conversation:c,messages:c.messages.slice(-12),commercialContext,customerMessage:customer,detectedIntent:localIntent,detectedObjection:obj,salesPsychology:RB_FACTORY_SALES_PSYCHOLOGY});
     const ai=await aiReply(context);
     const reply=ai?.reply || this.fallback(customer,obj,localIntent);
     const next=ai?.nextBestAction || (localIntent>=60?'ASK_FOR_CLOSE':obj?'INVESTIGATE_OBJECTION':'DISCOVER_NEED');
     const confidence=Number(ai?.confidence||65);
     await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesConversationMessage" ("id","conversationId","role","content","intent","objection") VALUES (?,?,?,?,?,?)',id(),conversationId,'AGENT_DRAFT',reply,String(ai?.intent||localIntent),obj);
     await (prisma as any).$executeRawUnsafe('UPDATE "SalesConversation" SET "stage"=?,"temperature"=?,"intentScore"=?,"objection"=?,"lastIntent"=?,"nextBestAction"=?,"updatedAt"=CURRENT_TIMESTAMP WHERE id=?',st,temp,localIntent,obj,ai?.intent||String(localIntent),next,conversationId);
-    await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesAction" ("id","conversationId","type","title","payload") VALUES (?,?,?,?,?)',id(),conversationId,'SEND_MESSAGE','Enviar resposta comercial',JSON.stringify({reply,confidence,escalationRequired:Boolean(ai?.escalationRequired)}));
-    return {conversationId,reply,stage:st,temperature:temp,intentScore:localIntent,objection:obj,nextBestAction:next,confidence,requiresApproval:true,escalationRequired:Boolean(ai?.escalationRequired)};
+    await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesAction" ("id","conversationId","type","title","payload") VALUES (?,?,?,?,?)',id(),conversationId,'SEND_MESSAGE','Enviar resposta comercial',JSON.stringify({reply,confidence,escalationRequired:Boolean(ai?.escalationRequired),persuasionStrategy:ai?.persuasionStrategy||null,decisionBarrier:ai?.decisionBarrier||null}));
+    return {conversationId,reply,stage:st,temperature:temp,intentScore:localIntent,objection:obj,nextBestAction:next,confidence,requiresApproval:true,escalationRequired:Boolean(ai?.escalationRequired),persuasionStrategy:ai?.persuasionStrategy||null,decisionBarrier:ai?.decisionBarrier||null};
   },
   fallback(customer:string,obj:string|null,score:number){
     if(obj==='PRICE') return 'Entendo. Antes de falar em preço, quero evitar te indicar algo que não faça sentido. O que pesa mais para você: o valor inicial, o custo mensal ou o retorno esperado?';
@@ -118,7 +119,7 @@ export const seniorSalesAgentService = {
     await init();
     const c=await this.getConversation(conversationId);
     let commercialContext:any=null; try{commercialContext=c.context?JSON.parse(c.context):null;}catch{commercialContext=null;}
-    const prompt=JSON.stringify({task:'PREPARE_INITIAL_COMMERCIAL_APPROACH',commercialContext,conversation:{channel:c.channel,stage:c.stage,temperature:c.temperature}});
+    const prompt=JSON.stringify({task:'PREPARE_INITIAL_COMMERCIAL_APPROACH',commercialContext,conversation:{channel:c.channel,stage:c.stage,temperature:c.temperature},salesPsychology:RB_FACTORY_SALES_PSYCHOLOGY,instructions:['personalize from observed facts','sound like a real WhatsApp conversation','lead with relevance, not a generic sales pitch','offer a low-friction next step','do not invent urgency or proof']});
     const aiResult=await aiReply(prompt);
     const company=commercialContext?.prospect?.companyName||'sua empresa';
     const reply=aiResult?.reply || (commercialContext?.prospect?.currentWebsite
@@ -137,7 +138,7 @@ export const seniorSalesAgentService = {
     const existing=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE conversationId=? AND type=\'SEND_MESSAGE\' AND title=\'Enviar proposta comercial\' AND status IN (\'PENDING_APPROVAL\',\'APPROVED\',\'SENT\') ORDER BY createdAt DESC LIMIT 1',conversationId);
     if(existing[0]) return {conversationId,reused:true,action:existing[0],requiresApproval:true,nextBestAction:'SEND_PROPOSAL'};
     const company=commercialContext?.prospect?.companyName||'sua empresa';
-    const prompt=JSON.stringify({task:'PREPARE_PROPOSAL_COMMERCIAL_APPROACH',commercialContext,conversation:{stage:c.stage,temperature:c.temperature}});
+    const prompt=JSON.stringify({task:'PREPARE_PROPOSAL_COMMERCIAL_APPROACH',commercialContext,conversation:{stage:c.stage,temperature:c.temperature},salesPsychology:RB_FACTORY_SALES_PSYCHOLOGY,instructions:['summarize the value already established','reduce decision friction','make the next step clear','do not pressure or invent conditions']});
     const aiResult=await aiReply(prompt);
     const reply=aiResult?.reply||('Olá! '+company+', conforme nossa conversa, preparei a proposta comercial com base na demonstração que apresentamos. Posso te enviar os detalhes para avaliarmos juntos?');
     const confidence=Number(aiResult?.confidence||75);
@@ -154,7 +155,7 @@ export const seniorSalesAgentService = {
     const existing=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE conversationId=? AND type=\'SEND_MESSAGE\' AND title=\'Enviar demonstração comercial\' AND status IN (\'PENDING_APPROVAL\',\'APPROVED\',\'SENT\') ORDER BY createdAt DESC LIMIT 1',conversationId);
     if(existing[0]) return {conversationId,reused:true,action:existing[0],requiresApproval:true,nextBestAction:'SEND_DEMO'};
     const company=commercialContext?.prospect?.companyName||'sua empresa';
-    const prompt=JSON.stringify({task:'PREPARE_DEMO_COMMERCIAL_APPROACH',commercialContext,conversation:{stage:c.stage,temperature:c.temperature}});
+    const prompt=JSON.stringify({task:'PREPARE_DEMO_COMMERCIAL_APPROACH',commercialContext,conversation:{stage:c.stage,temperature:c.temperature},salesPsychology:RB_FACTORY_SALES_PSYCHOLOGY,instructions:['connect the demo to a real observed business need','make curiosity and relevance clear','ask for permission to send the demo','sound natural and concise']});
     const aiResult=await aiReply(prompt);
     const reply=aiResult?.reply||('Olá! '+company+', preparei uma demonstração do novo site com base no perfil da empresa. Posso te enviar o link para você avaliar?');
     const confidence=Number(aiResult?.confidence||75);
