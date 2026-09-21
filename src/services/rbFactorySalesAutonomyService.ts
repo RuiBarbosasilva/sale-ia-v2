@@ -1,9 +1,17 @@
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
 import { rbFactorySalesAgentService } from './rbFactorySalesAgentService';
 import { whatsappService } from './whatsappService';
+import { websiteProspectorService } from './services/prospecting/websiteProspectorService';
+import { websiteEnrichmentService } from './services/prospecting/websiteEnrichmentService';
+import { websiteOpportunityScoringService } from './services/prospecting/websiteOpportunityScoringService';
+import { websiteDemoFactoryService } from './services/prospecting/websiteDemoFactoryService';
+import { websiteOutreachService } from './services/prospecting/websiteOutreachService';
 import { RB_FACTORY_SALES_AUTONOMY, RbFactorySalesAutonomyMode } from '../config/rbFactorySalesAutonomy';
 
 let initialized = false;
+let runtimeTimer: ReturnType<typeof setInterval> | null = null;
+let runtimeBusy = false;
+const RUNTIME_INTERVAL_MS = Math.max(60_000, Number(process.env.RB_FACTORY_SELLER_INTERVAL_MS || 300_000));
 
 function id(){ return crypto.randomUUID(); }
 function safeLimit(value:any, fallback=10){ const n=Number(value); return Number.isFinite(n) ? Math.min(50,Math.max(1,n)) : fallback; }
@@ -35,6 +43,15 @@ async function init(){
     );
     CREATE INDEX IF NOT EXISTS "idx_RbFactorySalesAutonomyRun_prospect" ON "RbFactorySalesAutonomyRun"("prospectId");
     CREATE INDEX IF NOT EXISTS "idx_RbFactorySalesAutonomyRun_created" ON "RbFactorySalesAutonomyRun"("createdAt");
+    CREATE TABLE IF NOT EXISTS "RbFactorySalesAutonomyControl" (
+      "id" TEXT PRIMARY KEY NOT NULL,
+      "status" TEXT NOT NULL DEFAULT 'STOPPED',
+      "config" TEXT,
+      "startedAt" DATETIME,
+      "stoppedAt" DATETIME,
+      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    INSERT OR IGNORE INTO "RbFactorySalesAutonomyControl" ("id","status") VALUES ('singleton','STOPPED');
     DELETE FROM "RbFactorySalesAutonomyRun" WHERE "createdAt" < DATETIME('now', '-90 days');
   `);
   initialized=true;
@@ -83,7 +100,68 @@ function shouldEscalate(action:any){
   return (RB_FACTORY_SALES_AUTONOMY.requireHumanForUncertainAI && confidence>0 && confidence<RB_FACTORY_SALES_AUTONOMY.minConfidenceForAutonomous) || risky;
 }
 
+async function controlRow(){ await init(); return (await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesAutonomyControl" WHERE id=\'singleton\' LIMIT 1'))[0]; }
+
+async function runRuntimeCycle(){
+  if(runtimeBusy) return;
+  const control=await controlRow();
+  if(control?.status!=='RUNNING') return;
+  runtimeBusy=true;
+  try{
+    const cfg=control.config?JSON.parse(control.config):{};
+    await rbFactorySalesAutonomyService.discoverAndQualify(cfg);
+    const cycle=await rbFactorySalesAutonomyService.cycle(Number(cfg.batchSize||10));
+    await audit({action:'RUNTIME_CYCLE',status:'COMPLETED',reason:'SELLER_RUNNING',metadata:{cycle}});
+  }catch(error:any){ await audit({action:'RUNTIME_CYCLE',status:'ERROR',reason:String(error?.message||error)}); }
+  finally{runtimeBusy=false;}
+}
+
+function ensureRuntimeTimer(){ if(runtimeTimer) return; runtimeTimer=setInterval(()=>void runRuntimeCycle(),RUNTIME_INTERVAL_MS); }
+
 export const rbFactorySalesAutonomyService = {
+  async start(input:any={}){
+    await init();
+    const config={
+      city:String(input.city||process.env.RB_FACTORY_SELLER_CITY||'Poços de Caldas'),
+      state:String(input.state||process.env.RB_FACTORY_SELLER_STATE||'MG').toUpperCase(),
+      niches:Array.isArray(input.niches)?input.niches.map(String).filter(Boolean):String(input.niches||process.env.RB_FACTORY_SELLER_NICHES||'clínicas,hamburguerias,restaurantes,advogados,odontologia').split(',').map((x:string)=>x.trim()).filter(Boolean),
+      maxResults:Number(input.maxResults||process.env.RB_FACTORY_SELLER_MAX_RESULTS||10),batchSize:Number(input.batchSize||process.env.RB_FACTORY_SELLER_BATCH_SIZE||10)
+    };
+    await (prisma as any).$executeRawUnsafe('UPDATE "RbFactorySalesAutonomyControl" SET status=\'RUNNING\',config=?,startedAt=CURRENT_TIMESTAMP,stoppedAt=NULL,updatedAt=CURRENT_TIMESTAMP WHERE id=\'singleton\'',JSON.stringify(config));
+    ensureRuntimeTimer();
+    void runRuntimeCycle();
+    return {status:'RUNNING',config,intervalMs:RUNTIME_INTERVAL_MS};
+  },
+  async stop(){
+    await init();
+    await (prisma as any).$executeRawUnsafe('UPDATE "RbFactorySalesAutonomyControl" SET status=\'STOPPED\',stoppedAt=CURRENT_TIMESTAMP,updatedAt=CURRENT_TIMESTAMP WHERE id=\'singleton\'');
+    return {status:'STOPPED'};
+  },
+  async status(){ const row=await controlRow(); return {status:row?.status||'STOPPED',config:row?.config?JSON.parse(row.config):{},startedAt:row?.startedAt||null,stoppedAt:row?.stoppedAt||null,runtimeIntervalMs:RUNTIME_INTERVAL_MS}; },
+  async bootstrap(){ const row=await controlRow(); ensureRuntimeTimer(); if(row?.status==='RUNNING') void runRuntimeCycle(); return this.status(); },
+  async discoverAndQualify(config:any={}){
+    const city=String(config.city||'Poços de Caldas'), state=String(config.state||'MG').toUpperCase();
+    const niches=Array.isArray(config.niches)?config.niches:[]; const maxResults=Math.min(20,Math.max(1,Number(config.maxResults||10)));
+    const results:any[]=[];
+    for(const niche of niches){
+      try{
+        const found=await websiteProspectorService.searchProspects({city,state,niche,maxResults});
+        const prospects=await websiteProspectorService.getProspects({city,state,niche,limit:maxResults,opportunityOnly:true});
+        for(const p of prospects.slice(0,maxResults)){
+          try{
+            await websiteEnrichmentService.enrichProspect(p.id);
+            await websiteOpportunityScoringService.calculateScore(p.id);
+            const fresh=await prisma.websiteProspect.findUnique({where:{id:p.id}});
+            if(fresh?.email && fresh?.demoStatus!=='READY'){
+              try{ await websiteDemoFactoryService.generateDemoForProspect(p.id,{useAI:true}); }catch{}
+            }
+          }catch{}
+        }
+        results.push({niche,found:found.totalFound,created:found.totalCreated,audited:found.totalAudited,qualified:found.totalQualified});
+      }catch(error:any){ results.push({niche,error:String(error?.message||error)}); }
+    }
+    return results;
+  },
   async config(){
     await init();
     return {
