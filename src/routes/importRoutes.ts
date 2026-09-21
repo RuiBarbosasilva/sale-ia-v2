@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import * as fs from 'fs';
 import { importLeadsFromCSV } from '../services/importService';
+import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
 
@@ -21,7 +22,7 @@ const upload = multer({
   }
 });
 
-router.post('/', upload.single('file'), async (req: Request, res: Response) => {
+router.post('/', adminAuthorization, upload.single('file'), async (req: Request, res: Response) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo enviado' });
     
