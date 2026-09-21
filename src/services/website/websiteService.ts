@@ -6,6 +6,7 @@ import { websiteCompiler } from './websiteCompiler';
 import { creatorSelector } from './creatorSelector';
 import { websiteImageService } from './websiteImageService';
 import { vercelDeploymentProvider } from '../deployment/vercelDeploymentProvider';
+import { websiteCommercialService } from '../websiteCommercialService';
 
 const prisma = new PrismaClient();
 
@@ -459,6 +460,8 @@ export class WebsiteService {
         }
       });
 
+      const publishedAt = new Date();
+
       const published = await prisma.websiteProject.update({
         where: { id: projectId },
         data: {
@@ -467,9 +470,14 @@ export class WebsiteService {
           deploymentId: deployment.deploymentId,
           deploymentStatus: 'READY',
           publishedUrl: deployment.url,
-          publishedAt: new Date()
+          publishedAt
         }
       });
+
+      await websiteCommercialService.activateSubscriptionAfterPublication(
+        project.prospectId,
+        publishedAt
+      );
 
       await prisma.websiteProspectEvent.create({
         data: {
