@@ -53,7 +53,22 @@ async function init(){
       "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
     INSERT OR IGNORE INTO "RbFactorySalesAutonomyControl" ("id","status") VALUES ('singleton','STOPPED');
+    CREATE TABLE IF NOT EXISTS "RbFactorySalesHumanAlert" (
+      "id" TEXT PRIMARY KEY NOT NULL,
+      "prospectId" TEXT,
+      "conversationId" TEXT,
+      "actionId" TEXT,
+      "type" TEXT NOT NULL,
+      "status" TEXT NOT NULL DEFAULT 'OPEN',
+      "reason" TEXT,
+      "message" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "acknowledgedAt" DATETIME
+    );
+    CREATE INDEX IF NOT EXISTS "idx_RbFactorySalesHumanAlert_status" ON "RbFactorySalesHumanAlert"("status");
+    CREATE INDEX IF NOT EXISTS "idx_RbFactorySalesHumanAlert_prospect" ON "RbFactorySalesHumanAlert"("prospectId");
     DELETE FROM "RbFactorySalesAutonomyRun" WHERE "createdAt" < DATETIME('now', '-90 days');
+    DELETE FROM "RbFactorySalesHumanAlert" WHERE "createdAt" < DATETIME('now', '-90 days');
   `);
   initialized=true;
 }
@@ -63,6 +78,22 @@ async function audit(input:any){
   const row=[id(),input.prospectId||null,input.conversationId||null,input.actionId||null,String(input.action||'UNKNOWN'),String(input.status||'BLOCKED'),input.reason||null,input.metadata?JSON.stringify(input.metadata):null];
   await (prisma as any).$executeRawUnsafe('INSERT INTO "RbFactorySalesAutonomyRun" ("id","prospectId","conversationId","actionId","action","status","reason","metadata") VALUES (?,?,?,?,?,?,?,?)',...row);
   return row[0];
+}
+
+async function createHumanAlert(input:any){
+  await init();
+  const existing=(await (prisma as any).$queryRawUnsafe(
+    'SELECT * FROM "RbFactorySalesHumanAlert" WHERE prospectId=? AND status='OPEN' AND type='NEGOTIATION_ESCALATION' ORDER BY createdAt DESC LIMIT 1',
+    input.prospectId||null
+  ))[0];
+  if(existing) return existing;
+  const alertId=id();
+  await (prisma as any).$executeRawUnsafe(
+    'INSERT INTO "RbFactorySalesHumanAlert" ("id","prospectId","conversationId","actionId","type","status","reason","message") VALUES (?,?,?,?,?,?,?,?)',
+    alertId,input.prospectId||null,input.conversationId||null,input.actionId||null,'NEGOTIATION_ESCALATION','OPEN',
+    input.reason||'HUMAN_NEGOTIATION_REQUIRED',input.message||'Vendedor IA requer intervenção humana.'
+  );
+  return (await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesHumanAlert" WHERE id=? LIMIT 1',alertId))[0];
 }
 
 function businessHours(){
@@ -138,7 +169,11 @@ export const rbFactorySalesAutonomyService = {
     await (prisma as any).$executeRawUnsafe('UPDATE "RbFactorySalesAutonomyControl" SET status=\'STOPPED\',stoppedAt=CURRENT_TIMESTAMP,updatedAt=CURRENT_TIMESTAMP WHERE id=\'singleton\'');
     return {status:'STOPPED'};
   },
-  async status(){ const row=await controlRow(); return {status:row?.status||'STOPPED',config:row?.config?JSON.parse(row.config):{},startedAt:row?.startedAt||null,stoppedAt:row?.stoppedAt||null,runtimeIntervalMs:RUNTIME_INTERVAL_MS}; },
+  async status(){
+    const row=await controlRow();
+    const alerts=await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesHumanAlert" WHERE status='OPEN' ORDER BY createdAt DESC LIMIT 20');
+    return {status:row?.status||'STOPPED',config:row?.config?JSON.parse(row.config):{},startedAt:row?.startedAt||null,stoppedAt:row?.stoppedAt||null,runtimeIntervalMs:RUNTIME_INTERVAL_MS,alerts};
+  },
   async bootstrap(){ const row=await controlRow(); ensureRuntimeTimer(); if(row?.status==='RUNNING') void runRuntimeCycle(); return this.status(); },
   async discoverAndQualify(config:any={}){
     const city=String(config.city||'Poços de Caldas'), state=String(config.state||'MG').toUpperCase();
@@ -305,9 +340,17 @@ export const rbFactorySalesAutonomyService = {
         if(action){
           const escalation=shouldEscalate(action);
           if(escalation){
-            await audit({prospectId:item.prospectId,conversationId,actionId:action.id,action:'OUTBOUND',status:'ESCALATED',reason:'HUMAN_REVIEW_REQUIRED'});
+            const payload=typeof action?.payload==='string' ? (()=>{try{return JSON.parse(action.payload)}catch{return {}}})() : (action?.payload||{});
+            const alert=await createHumanAlert({
+              prospectId:item.prospectId,
+              conversationId,
+              actionId:action.id,
+              reason:'HUMAN_REVIEW_REQUIRED',
+              message:String(payload.reply||'Negociação requer intervenção do Rui.')
+            });
+            await audit({prospectId:item.prospectId,conversationId,actionId:action.id,action:'OUTBOUND',status:'ESCALATED',reason:'HUMAN_REVIEW_REQUIRED',metadata:{alertId:alert?.id}});
             result.escalated++;
-            result.items.push({prospectId:item.prospectId,status:'ESCALATED',actionId:action.id});
+            result.items.push({prospectId:item.prospectId,status:'ESCALATED',actionId:action.id,alertId:alert?.id});
             continue;
           }
 
