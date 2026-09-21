@@ -91,7 +91,10 @@ export const rbFactorySalesService={
 
   async buildProposal(prospectId:string,planCode?:string,planId?:string){
     await init();
-    await this.createFromProspect(prospectId);
+    const pipeline = await this.createFromProspect(prospectId);
+    if (!['DEMO_READY', 'PROPOSAL_READY', 'CONTACTED', 'NEGOTIATION'].includes(pipeline.stage)) {
+      throw new Error('DEMO_NOT_READY_FOR_PROPOSAL');
+    }
     const proposal=await proposalGeneratorService.generateProposal(prospectId,{planCode,planId});
     await (prisma as any).$executeRawUnsafe(`UPDATE "RbFactorySalesPipeline" SET stage='PROPOSAL_READY',proposalId=?,nextAction='CONTACT_PROSPECT',updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,proposal.id,prospectId);
     const salesAgent=await rbFactorySalesAgentService.prepareProposalApproach(prospectId,'WHATSAPP');
@@ -100,6 +103,15 @@ export const rbFactorySalesService={
 
   async sendProposal(prospectId:string){
     await init();
+    const pipelineRows = await (prisma as any).$queryRawUnsafe(
+      'SELECT * FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',
+      prospectId
+    );
+    const pipeline = pipelineRows[0];
+    if (pipeline && !['PROPOSAL_READY', 'CONTACTED', 'NEGOTIATION'].includes(pipeline.stage)) {
+      throw new Error('PROPOSAL_NOT_READY_FOR_SENDING');
+    }
+
     const proposal=await prisma.websiteProposal.findFirst({where:{prospectId},orderBy:{id:'desc'}});
     if(!proposal) throw new Error('WEBSITE_PROPOSAL_NOT_FOUND');
     if(!['READY','SENT'].includes(proposal.status)) throw new Error('WEBSITE_PROPOSAL_NOT_READY');
@@ -168,6 +180,16 @@ export const rbFactorySalesService={
     });
 
     if(!proposal) throw new Error('WEBSITE_PROPOSAL_NOT_FOUND');
+
+    const pipelineRows = await (prisma as any).$queryRawUnsafe(
+      'SELECT * FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',
+      prospectId
+    );
+    const pipeline = pipelineRows[0];
+    if (pipeline && !['PROPOSAL_READY', 'CONTACTED', 'NEGOTIATION', 'WON'].includes(pipeline.stage)) {
+      throw new Error('INVALID_COMMERCIAL_STATE');
+    }
+
     if(!['SENT','READY','ACCEPTED'].includes(proposal.status)) {
       throw new Error('WEBSITE_PROPOSAL_NOT_ACCEPTABLE');
     }
@@ -193,17 +215,34 @@ export const rbFactorySalesService={
     const pipeline=rows[0];
     if(!pipeline) throw new Error('RB_FACTORY_PIPELINE_NOT_FOUND');
 
-    const prerequisites:any={
-      AUDITED: ['DISCOVERED','AUDITED','DEMO_READY','PROPOSAL_READY','CONTACTED','NEGOTIATION'],
-      DEMO_READY: ['AUDITED','DEMO_READY','PROPOSAL_READY','CONTACTED','NEGOTIATION'],
-      PROPOSAL_READY: ['DEMO_READY','PROPOSAL_READY','CONTACTED','NEGOTIATION'],
-      CONTACTED: ['PROPOSAL_READY','CONTACTED','NEGOTIATION'],
-      NEGOTIATION: ['CONTACTED','NEGOTIATION'],
-      WON: ['NEGOTIATION','WON'],
-      LOST: ['DISCOVERED','AUDITED','DEMO_READY','PROPOSAL_READY','CONTACTED','NEGOTIATION']
+    const transitions:any={
+      DISCOVERED: ['DISCOVERED','AUDITED','DEMO_READY','LOST'],
+      AUDITED: ['AUDITED','DEMO_READY','LOST'],
+      DEMO_READY: ['DEMO_READY','PROPOSAL_READY','LOST'],
+      PROPOSAL_READY: ['PROPOSAL_READY','CONTACTED','NEGOTIATION','LOST'],
+      CONTACTED: ['CONTACTED','NEGOTIATION','WON','LOST'],
+      NEGOTIATION: ['NEGOTIATION','WON','LOST'],
+      WON: ['WON'],
+      LOST: ['LOST']
     };
-    if(stage !== pipeline.stage && prerequisites[stage] && !prerequisites[stage].includes(pipeline.stage)) {
+    if (stage !== pipeline.stage && !transitions[pipeline.stage]?.includes(stage)) {
       throw new Error('INVALID_PIPELINE_TRANSITION');
+    }
+
+    if(stage === 'DEMO_READY') {
+      if (!pipeline.demoId) throw new Error('DEMO_NOT_READY_FOR_PIPELINE');
+      const demo = await prisma.websiteDemo.findUnique({where:{id:pipeline.demoId}});
+      if (!demo || !['READY','APPROVED'].includes(demo.status)) throw new Error('DEMO_NOT_READY_FOR_PIPELINE');
+    }
+
+    if(stage === 'PROPOSAL_READY') {
+      const proposal = await prisma.websiteProposal.findFirst({where:{prospectId:pipeline.prospectId},orderBy:{id:'desc'}});
+      if (!proposal || !['READY','SENT'].includes(proposal.status)) throw new Error('WEBSITE_PROPOSAL_NOT_READY');
+    }
+
+    if(stage === 'CONTACTED' || stage === 'NEGOTIATION') {
+      const proposal = await prisma.websiteProposal.findFirst({where:{prospectId:pipeline.prospectId},orderBy:{id:'desc'}});
+      if (!proposal || !['READY','SENT'].includes(proposal.status)) throw new Error('WEBSITE_PROPOSAL_NOT_READY');
     }
 
     if(stage === 'WON') {
