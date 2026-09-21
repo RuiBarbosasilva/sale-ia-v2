@@ -1,10 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
 const prisma = new PrismaClient();
 
-router.get('/overview', async (req: Request, res: Response) => {
+router.get('/overview', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const totalModels = await prisma.websiteTemplate.count({ where: { active: true } });
     const totalCategories = await prisma.websiteCategory.count({ where: { active: true } });
