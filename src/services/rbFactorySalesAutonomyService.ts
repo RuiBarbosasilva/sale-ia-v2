@@ -1,5 +1,6 @@
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
 import { rbFactorySalesAgentService } from './rbFactorySalesAgentService';
+import { whatsappService } from './whatsappService';
 import { RB_FACTORY_SALES_AUTONOMY, RbFactorySalesAutonomyMode } from '../config/rbFactorySalesAutonomy';
 
 let initialized = false;
@@ -51,6 +52,13 @@ async function recentOutbound(conversationId:string){
   return Date.now()-new Date(rows[0].sentAt).getTime() < RB_FACTORY_SALES_AUTONOMY.minHoursBetweenOutbound*3600000;
 }
 
+function whatsappAutoSendEnabled(){
+  return RB_FACTORY_SALES_AUTONOMY.mode==='AUTONOMOUS'
+    && process.env.RB_FACTORY_WHATSAPP_AUTOSEND === 'true'
+    && process.env.RB_FACTORY_WHATSAPP_OUTREACH_AUTHORIZED === 'true'
+    && Boolean(process.env.EVOLUTION_API_KEY);
+}
+
 function canAutonomouslyPrepare(){
   return RB_FACTORY_SALES_AUTONOMY.mode!=='SUPERVISED';
 }
@@ -75,6 +83,30 @@ export const rbFactorySalesAutonomyService = {
           ? 'prepara ações automaticamente e deixa o envio sob controle humano'
           : 'gera recomendações sem executar ações comerciais automaticamente'
     };
+  },
+
+  async sendAction(actionId:string){
+    await init();
+    const rows=await (prisma as any).$queryRawUnsafe('SELECT a.*,c.context FROM "SalesAction" a JOIN "SalesConversation" c ON c.id=a.conversationId WHERE a.id=? LIMIT 1',actionId);
+    const action=rows[0];
+    if(!action) throw new Error('SALES_ACTION_NOT_FOUND');
+    if(action.status==='SENT') return {sent:true,reused:true,action};
+    if(action.status!=='PENDING_APPROVAL' && action.status!=='APPROVED') throw new Error('SALES_ACTION_NOT_SENDABLE');
+    if(!whatsappAutoSendEnabled()) throw new Error('WHATSAPP_AUTOSEND_NOT_CONFIGURED');
+    let context:any={}; try{context=action.context?JSON.parse(action.context):{};}catch{}
+    const phone=String(context?.prospect?.phone||'').replace(/\\D/g,'');
+    const payload=action.payload?JSON.parse(action.payload):{};
+    const message=String(payload.reply||'').trim();
+    if(!phone) throw new Error('LEAD_PHONE_REQUIRED');
+    if(!message) throw new Error('SALES_MESSAGE_EMPTY');
+    if(await recentOutbound(action.conversationId)) throw new Error('SALES_OUTBOUND_COOLDOWN');
+    const exists=await whatsappService.checkNumber(phone);
+    if(!exists) throw new Error('WHATSAPP_NUMBER_NOT_AVAILABLE');
+    if(action.status==='PENDING_APPROVAL') await rbFactorySalesAgentService.approveAction(actionId);
+    const providerResult=await whatsappService.sendText(phone,message);
+    const sent=await rbFactorySalesAgentService.markActionSent(actionId,{provider:'EVOLUTION_API',providerResult});
+    await audit({prospectId:context?.prospect?.id||null,conversationId:action.conversationId,actionId,action:'OUTBOUND',status:'SENT',reason:'EVOLUTION_API'});
+    return {sent:true,reused:false,action:sent,provider:'EVOLUTION_API'};
   },
 
   async cycle(limit=10){
