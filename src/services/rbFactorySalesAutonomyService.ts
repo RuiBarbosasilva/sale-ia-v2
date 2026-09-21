@@ -102,8 +102,16 @@ export const rbFactorySalesAutonomyService = {
     const action=rows[0];
     if(!action) throw new Error('SALES_ACTION_NOT_FOUND');
     if(action.status==='SENT') return {sent:true,reused:true,action};
+    if(action.status==='SENDING'){
+      const stale=(await (prisma as any).$queryRawUnsafe('SELECT id FROM "SalesAction" WHERE id=? AND status=\'SENDING\' AND datetime(updatedAt)<=datetime(\'now\',\'-10 minutes\') LIMIT 1',actionId))[0];
+      if(!stale) throw new Error('SALES_ACTION_SEND_IN_PROGRESS');
+      await (prisma as any).$executeRawUnsafe('UPDATE "SalesAction" SET status=\'APPROVED\',decisionNote=\'RECOVERED_STALE_SENDING\',updatedAt=CURRENT_TIMESTAMP WHERE id=? AND status=\'SENDING\'',actionId);
+      action.status='APPROVED';
+    }
     if(action.status!=='PENDING_APPROVAL' && action.status!=='APPROVED') throw new Error('SALES_ACTION_NOT_SENDABLE');
     if(!whatsappAutoSendEnabled()) throw new Error('WHATSAPP_AUTOSEND_NOT_CONFIGURED');
+    const claimed=(await (prisma as any).$queryRawUnsafe('SELECT id FROM "SalesAction" WHERE id=? AND status IN (\'PENDING_APPROVAL\',\'APPROVED\') LIMIT 1',actionId))[0];
+    if(!claimed) throw new Error('SALES_ACTION_SEND_IN_PROGRESS');
     let context:any={}; try{context=action.context?JSON.parse(action.context):{};}catch{}
     const phone=String(context?.prospect?.phone||'').replace(/\D/g,'');
     const payload=action.payload?JSON.parse(action.payload):{};
@@ -111,10 +119,18 @@ export const rbFactorySalesAutonomyService = {
     if(!phone) throw new Error('LEAD_PHONE_REQUIRED');
     if(!message) throw new Error('SALES_MESSAGE_EMPTY');
     if(await recentOutbound(action.conversationId)) throw new Error('SALES_OUTBOUND_COOLDOWN');
+    const claim=await (prisma as any).$executeRawUnsafe('UPDATE "SalesAction" SET status=\'SENDING\',updatedAt=CURRENT_TIMESTAMP WHERE id=? AND status IN (\'PENDING_APPROVAL\',\'APPROVED\')',actionId);
+    if(claim!==1) throw new Error('SALES_ACTION_SEND_IN_PROGRESS');
     const exists=await whatsappService.checkNumber(phone);
     if(!exists) throw new Error('WHATSAPP_NUMBER_NOT_AVAILABLE');
     if(action.status==='PENDING_APPROVAL') await rbFactorySalesAgentService.approveAction(actionId);
-    const providerResult=await whatsappService.sendText(phone,message);
+    let providerResult:any;
+    try{
+      providerResult=await whatsappService.sendText(phone,message);
+    }catch(error){
+      await (prisma as any).$executeRawUnsafe('UPDATE "SalesAction" SET status=\'APPROVED\',decisionNote=?,updatedAt=CURRENT_TIMESTAMP WHERE id=? AND status=\'SENDING\'',String((error as any)?.message||'SEND_FAILED'),actionId);
+      throw error;
+    }
     const sent=await rbFactorySalesAgentService.markActionSent(actionId,{provider:'EVOLUTION_API',providerResult});
     await audit({prospectId:context?.prospect?.id||null,conversationId:action.conversationId,actionId,action:'OUTBOUND',status:'SENT',reason:'EVOLUTION_API'});
     return {sent:true,reused:false,action:sent,provider:'EVOLUTION_API'};
