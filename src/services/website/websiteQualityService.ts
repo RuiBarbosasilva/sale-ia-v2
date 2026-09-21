@@ -81,7 +81,10 @@ Avalie cada criterio 0-10 e retorne JSON:
     {"name":"Imagens","score":8,"feedback":"..."},
     {"name":"Consistencia","score":8,"feedback":"..."},
     {"name":"SEO","score":7,"feedback":"..."},
-    {"name":"Tecnico","score":9,"feedback":"..."}
+    {"name":"Tecnico","score":9,"feedback":"..."},
+    {"name":"Premium / Direção de Arte","score":8,"feedback":"..."},
+    {"name":"WhatsApp / Contato","score":8,"feedback":"..."},
+    {"name":"Performance","score":8,"feedback":"..."}
   ],
   "strengths":["..."],
   "weaknesses":["..."],
@@ -95,6 +98,10 @@ Regras criticas:
 - Se nao ha hero real, registre como weakness
 - Se alt coverage < 80%, critique acessibilidade
 - Seja especifico ao segmento (ex: hamburgueria precisa de fotos de produto)
+- "Premium / Direção de Arte" avalia hierarquia visual, composição, tipografia, espaçamento, consistência e aparência de agência profissional.
+- "WhatsApp / Contato" deve validar caminho de contato/WhatsApp claro quando houver telefone no briefing.
+- "Performance" deve considerar imagens, fontes externas, CSS/JS e estabilidade visual; evite peso e dependências desnecessárias.
+- NÃO aprove um site apenas porque o HTML funciona: a experiência visual e comercial precisa parecer deliberada, original e adequada ao negócio.
 - Max 3 strengths, 3 weaknesses, 3 improvements, 3 critical issues`;
   }
 
@@ -135,6 +142,46 @@ Regras criticas:
       }
       if (issues.length > 0) r.criticalIssues = [...(r.criticalIssues || []), ...issues];
     }
+    // Gates estruturais para o padrão premium da Factory.
+    const hasViewport = /<meta[^>]+name=["\x27]viewport["\x27][^>]*>/i.test(html);
+    const hasSemanticMain = /<main\b/i.test(html);
+    const hasHeading = /<h1\b/i.test(html);
+    const hasPrimaryCta = /class=["\x27][^"\x27]*(?:btn-primary|cta)[^"\x27]*["\x27]/i.test(html);
+    const hasWhatsAppLink = /https?:\/\/(?:wa\.me|api\.whatsapp\.com)\/[^"\x27\s<]+/i.test(html);
+    const hasExternalFont = /fonts\.(?:googleapis|gstatic)\.com/i.test(html);
+    const hasLazyImages = /loading=["\x27]lazy["\x27]/i.test(html);
+    const hasAltOnImages = !/<img\b/i.test(html) || /<img[^>]+alt=["\x27][^"\x27]*["\x27]/i.test(html);
+
+    const premiumCrit = r.criteria.find(c => c.name === "Premium / Direção de Arte");
+    if (premiumCrit) {
+      if (!hasHeading || !hasPrimaryCta) premiumCrit.score = Math.min(premiumCrit.score, 6);
+      if (!hasViewport) premiumCrit.score = Math.min(premiumCrit.score, 5);
+    }
+    const uxCrit = r.criteria.find(c => c.name === "UX");
+    if (uxCrit && (!hasHeading || !hasPrimaryCta)) uxCrit.score = Math.min(uxCrit.score, 6);
+    const mobileCrit = r.criteria.find(c => c.name === "Mobile");
+    if (mobileCrit && !hasViewport) mobileCrit.score = Math.min(mobileCrit.score, 4);
+    const responsiveCrit = r.criteria.find(c => c.name === "Responsividade");
+    if (responsiveCrit && !hasViewport) responsiveCrit.score = Math.min(responsiveCrit.score, 4);
+
+    const whatsappCrit = r.criteria.find(c => c.name === "WhatsApp / Contato");
+    const phoneAvailable = Boolean((prd as any)?.business?.phone || (prd as any)?.contact?.phone);
+    if (whatsappCrit) {
+      if (phoneAvailable && !hasWhatsAppLink) {
+        whatsappCrit.score = Math.min(whatsappCrit.score, 4);
+        r.criticalIssues = [...(r.criticalIssues || []), "WhatsApp/contato não encontrado no HTML"];
+      } else if (hasWhatsAppLink) whatsappCrit.score = Math.max(whatsappCrit.score, 8);
+    }
+
+    const perfCrit = r.criteria.find(c => c.name === "Performance");
+    if (perfCrit) {
+      if (hasExternalFont) perfCrit.score = Math.min(perfCrit.score, 8);
+      if (/<script\b/i.test(html) && !/\bdefer(?:=["\x27][^"\x27]*["\x27])?/i.test(html)) perfCrit.score = Math.min(perfCrit.score, 7);
+      if (/<img\b/i.test(html) && !hasLazyImages) perfCrit.score = Math.min(perfCrit.score, 8);
+    }
+    if (!hasSemanticMain) r.criticalIssues = [...(r.criticalIssues || []), "Estrutura semântica: <main> ausente"];
+    if (!hasAltOnImages) r.criticalIssues = [...(r.criticalIssues || []), "Imagens sem cobertura adequada de alt"];
+
     // SEO: meta tags obrigatorias
     const seoCrit = r.criteria.find(c => c.name === 'SEO');
     if (seoCrit) {
