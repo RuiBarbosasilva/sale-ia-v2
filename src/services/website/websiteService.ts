@@ -593,6 +593,12 @@ export class WebsiteService {
 
     const existing = await prisma.websiteProject.findFirst({ where: { prospectId: demo.prospectId } });
     if (existing) {
+      if (existing.currentVersion !== demo.version && existing.status !== 'PUBLISHED') {
+        throw new Error('APPROVED_DEMO_VERSION_MISMATCH');
+      }
+      if (existing.status === 'PUBLISHED' && existing.publishedUrl) {
+        return existing;
+      }
       return prisma.websiteProject.update({
         where: { id: existing.id },
         data: {
