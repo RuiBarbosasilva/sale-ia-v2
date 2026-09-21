@@ -94,7 +94,7 @@ export const rbFactorySalesAutonomyService = {
     if(action.status!=='PENDING_APPROVAL' && action.status!=='APPROVED') throw new Error('SALES_ACTION_NOT_SENDABLE');
     if(!whatsappAutoSendEnabled()) throw new Error('WHATSAPP_AUTOSEND_NOT_CONFIGURED');
     let context:any={}; try{context=action.context?JSON.parse(action.context):{};}catch{}
-    const phone=String(context?.prospect?.phone||'').replace(/\\D/g,'');
+    const phone=String(context?.prospect?.phone||'').replace(/\D/g,'');
     const payload=action.payload?JSON.parse(action.payload):{};
     const message=String(payload.reply||'').trim();
     if(!phone) throw new Error('LEAD_PHONE_REQUIRED');
