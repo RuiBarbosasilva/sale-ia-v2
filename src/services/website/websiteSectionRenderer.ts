@@ -139,7 +139,7 @@ export class WebsiteSectionRenderer {
       <h1 id="hero-title">${this.esc(title)}</h1>
       ${subtitle ? `<p>${this.esc(subtitle)}</p>` : ''}
       <div class="wf-actions">
-        <a class="wf-btn wf-btn-primary" href="${this.esc(c.whatsappLink || '#')}" target="_blank" rel="noopener noreferrer" aria-label="${this.esc(cta)} pelo WhatsApp">${this.esc(cta)}</a>
+        <a class="wf-btn wf-btn-primary" href="${this.esc(c.whatsappLink || '')}" target="_blank" rel="noopener noreferrer" aria-label="${this.esc(cta)} pelo WhatsApp">${this.esc(cta)}</a>
       </div>
     </div>
     ${
@@ -474,7 +474,7 @@ export class WebsiteSectionRenderer {
     </div>
     <p>${this.esc(c.contactContent || 'Entre em contato para saber mais.')}</p>
     <div class="wf-actions">
-      <a class="wf-btn wf-btn-primary" href="${this.esc(c.whatsappLink || '#')}">Entrar em contato</a>
+      <a class="wf-btn wf-btn-primary" href="${this.esc(c.whatsappLink || '')}">Entrar em contato</a>
     </div>
   </div>
 </section>`;
@@ -494,7 +494,7 @@ export class WebsiteSectionRenderer {
       <h2>${this.esc(section.title || 'Agende seu atendimento')}</h2>
     </div>
     <p>${this.esc(c.bookingContent || c.contactContent || 'Entre em contato para verificar disponibilidade.')}</p>
-    <a class="wf-btn wf-btn-primary" href="${this.esc(c.whatsappLink || '#')}">${this.esc(c.bookingCTA || c.ctaText || 'Agendar agora')}</a>
+    <a class="wf-btn wf-btn-primary" href="${this.esc(c.whatsappLink || '')}">${this.esc(c.bookingCTA || c.ctaText || 'Agendar agora')}</a>
   </div>
 </section>`;
   }
@@ -559,7 +559,7 @@ export class WebsiteSectionRenderer {
       <span class="wf-kicker">Próximo passo</span>
       <h2>${this.esc(section.title || c.ctaText || 'Vamos conversar?')}</h2>
     </div>
-    <a class="wf-btn wf-btn-primary" href="${this.esc(c.whatsappLink || '#')}">${this.esc(c.ctaText || 'Fale conosco')}</a>
+    <a class="wf-btn wf-btn-primary" href="${this.esc(c.whatsappLink || '')}">${this.esc(c.ctaText || 'Fale conosco')}</a>
   </div>
 </section>`;
   }
@@ -666,7 +666,7 @@ export class WebsiteSectionRenderer {
 <article class="wf-card">
   ${
     image
-      ? `<div class="wf-card-media"><img src="${this.esc(image)}" alt="${this.esc(titleText)}" loading="lazy"></div>`
+      ? `<div class="wf-card-media"><img src="${this.esc(image)}" alt="${this.esc(titleText)}" loading="lazy" decoding="async" width="800" height="600"></div>`
       : ''
   }
   <div class="wf-card-body">
