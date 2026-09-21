@@ -190,6 +190,8 @@ export const rbFactorySalesAgentService = {
   },
   async executeCommercialDecision(prospectId:string){
     const context=await this.context(prospectId);
+    const paused=Boolean(context?.pipeline?.notes && (()=>{try{return Boolean(JSON.parse(context.pipeline.notes)?.salesAgent?.autonomyPaused);}catch{return false;}})());
+    if(paused) return {executed:false,action:'WAIT',reason:'HUMAN_NEGOTIATION_PAUSED',prospectId};
     const pipeline=context.pipeline;
     if(!pipeline) return {executed:false,action:'WAIT',reason:'PIPELINE_NOT_FOUND'};
     if(['WON','LOST'].includes(String(pipeline.stage))) return {executed:false,action:'WAIT',reason:'TERMINAL_PIPELINE',stage:pipeline.stage};
