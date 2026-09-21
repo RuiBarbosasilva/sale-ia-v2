@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
 import { websiteDemoFactoryService } from './prospecting/websiteDemoFactoryService';
 import { websiteService } from './website/websiteService';
