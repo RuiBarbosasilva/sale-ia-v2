@@ -31,6 +31,23 @@ async function init(){
 function id(){return crypto.randomUUID();}
 const pipelineLocks = new Map<string, Promise<void>>();
 
+async function ensurePipelineUnlocked(prospectId:string){
+  await init();
+  const prospect=await prisma.websiteProspect.findUnique({where:{id:prospectId}});
+  if(!prospect) throw new Error('WEBSITE_PROSPECT_NOT_FOUND');
+  const auditScore=prospect.websiteScore ?? 0;
+  const priority=Math.min(100, Math.round((prospect.score ?? prospect.websiteScore ?? 0) + (prospect.phone ? 5 : 0)));
+  const audit={score:auditScore,status:prospect.websiteStatus || (prospect.currentWebsite ? 'UNKNOWN' : 'NO_WEBSITE'),priority:prospect.priority};
+  const existing=await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',prospectId);
+  if(existing[0]) {
+    await (prisma as any).$executeRawUnsafe('UPDATE "RbFactorySalesPipeline" SET auditScore=?,priority=?,updatedAt=CURRENT_TIMESTAMP WHERE id=?',auditScore,priority,existing[0].id);
+    return (await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE id=?',existing[0].id))[0];
+  }
+  const values=[id(),prospectId,prospect.currentWebsite?'AUDITED':'DISCOVERED',auditScore,priority,null,null,'GENERATE_DEMO','OPEN',JSON.stringify({audit,source:'official_prospecting_pipeline'})];
+  await (prisma as any).$executeRawUnsafe('INSERT INTO "RbFactorySalesPipeline" ("id","prospectId","stage","auditScore","priority","nextAction","status","notes") VALUES (?,?,?,?,?,?,?,?)',...values);
+  return (await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE id=?',values[0]))[0];
+}
+
 async function withPipelineLock<T>(prospectId:string, work:()=>Promise<T>):Promise<T>{
   const previous=pipelineLocks.get(prospectId)||Promise.resolve();
   let release!:()=>void;
@@ -47,22 +64,7 @@ export const rbFactorySalesService={
   },
 
   async createFromProspect(prospectId:string){
-    return withPipelineLock(prospectId, async()=>{
-    await init();
-    const prospect=await prisma.websiteProspect.findUnique({where:{id:prospectId}});
-    if(!prospect) throw new Error('WEBSITE_PROSPECT_NOT_FOUND');
-    const auditScore=prospect.websiteScore ?? 0;
-    const priority=Math.min(100, Math.round((prospect.score ?? prospect.websiteScore ?? 0) + (prospect.phone ? 5 : 0)));
-    const audit={score:auditScore,status:prospect.websiteStatus || (prospect.currentWebsite ? 'UNKNOWN' : 'NO_WEBSITE'),priority:prospect.priority};
-    const existing=await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',prospectId);
-    if(existing[0]) {
-      await (prisma as any).$executeRawUnsafe('UPDATE "RbFactorySalesPipeline" SET auditScore=?,priority=?,updatedAt=CURRENT_TIMESTAMP WHERE id=?',auditScore, priority, existing[0].id);
-      return (await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE id=?', existing[0].id))[0];
-    }
-    const v=[id(),prospectId,prospect.currentWebsite?'AUDITED':'DISCOVERED',auditScore,priority,null,null,'GENERATE_DEMO','OPEN',JSON.stringify({audit,source:'official_prospecting_pipeline'})];
-    await (prisma as any).$executeRawUnsafe('INSERT INTO "RbFactorySalesPipeline" ("id","prospectId","stage","auditScore","priority","nextAction","status","notes") VALUES (?,?,?,?,?,?,?,?)',...v);
-    return (await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE id=?',v[0]))[0];
-    });
+    return withPipelineLock(prospectId,()=>ensurePipelineUnlocked(prospectId));
   },
 
   async models(prospectId:string){
@@ -78,8 +80,8 @@ export const rbFactorySalesService={
   },
 
   async buildDemo(prospectId:string,options?:{niche?:string;modelIndex?:number}){
-    await this.createFromProspect(prospectId);
     return withPipelineLock(prospectId, async()=>{
+    await ensurePipelineUnlocked(prospectId);
     await init();
     const result=await websiteDemoFactoryService.generateDemoForProspect(prospectId,{useAI:true});
     const model=options?.modelIndex ? {index:options.modelIndex,niche:options.niche||null} : null;
@@ -94,8 +96,8 @@ export const rbFactorySalesService={
   },
 
   async buildProposal(prospectId:string,planCode?:string,planId?:string){
-    await this.createFromProspect(prospectId);
     return withPipelineLock(prospectId, async()=>{
+    await ensurePipelineUnlocked(prospectId);
     await init();
     const pipelineRows=await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',prospectId);
     const pipeline=pipelineRows[0];
