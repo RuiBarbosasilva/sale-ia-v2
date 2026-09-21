@@ -73,19 +73,40 @@ export const rbFactorySalesAgentService = {
     }
     return {conversation,commercialContext:context};
   },
-  async respond(prospectId:string,conversationId:string,message:string){
-    const context=await this.context(prospectId);
-    const conversation=await seniorSalesAgentService.getConversation(conversationId);
-    if(conversation.context){
-      try{if(JSON.parse(conversation.context).prospect?.id!==prospectId) throw new Error('SALES_CONVERSATION_PROSPECT_MISMATCH');}
-      catch(e:any){if(e?.message==='SALES_CONVERSATION_PROSPECT_MISMATCH') throw e;}
+  async respond(prospectId:string,conversationId:string,message:string,eventKey?:string){
+    if(eventKey){
+      await (prisma as any).$executeRawUnsafe('CREATE TABLE IF NOT EXISTS "RbFactorySalesInboundEvent" ("eventKey" TEXT PRIMARY KEY NOT NULL, "prospectId" TEXT NOT NULL, "conversationId" TEXT NOT NULL, "status" TEXT NOT NULL DEFAULT \'PROCESSING\', "result" TEXT, "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)');
+      try{
+        await (prisma as any).$executeRawUnsafe('INSERT INTO "RbFactorySalesInboundEvent" ("eventKey","prospectId","conversationId","status") VALUES (?,?,?,\'PROCESSING\')',eventKey,prospectId,conversationId);
+      }catch{
+        const existing=(await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesInboundEvent" WHERE eventKey=? LIMIT 1',eventKey))[0];
+        if(existing?.status==='COMPLETED' && existing.result){
+          try{return {...JSON.parse(existing.result),deduplicated:true};}catch{}
+        }
+        return {deduplicated:true,processing:true,prospectId,conversationId};
+      }
     }
-    const result=await seniorSalesAgentService.respond(conversationId,{message});
-    await this.syncPipelineAfterResponse(prospectId,result,message);
-    const explicitNoInterest=/(não tenho interesse|nao tenho interesse|não quero|nao quero|não me interessa|nao me interessa|pare de|pode parar|retire meu contato)/i.test(message);
-    const terminal=explicitNoInterest || String(result?.nextBestAction||'')==='LOST';
-    const followUp=terminal ? {reused:false,followUp:null,skipped:true,reason:'CUSTOMER_NOT_INTERESTED'} : await seniorSalesAgentService.scheduleRecommendedFollowUp(conversationId,result);
-    return {result,followUp,commercialContext:context};
+    try{
+      const context=await this.context(prospectId);
+      const conversation=await seniorSalesAgentService.getConversation(conversationId);
+      if(conversation.context){
+        try{if(JSON.parse(conversation.context).prospect?.id!==prospectId) throw new Error('SALES_CONVERSATION_PROSPECT_MISMATCH');}
+        catch(e:any){if(e?.message==='SALES_CONVERSATION_PROSPECT_MISMATCH') throw e;}
+      }
+      const result=await seniorSalesAgentService.respond(conversationId,{message});
+      await this.syncPipelineAfterResponse(prospectId,result,message);
+      const explicitNoInterest=/(não tenho interesse|nao tenho interesse|não quero|nao quero|não me interessa|nao me interessa|pare de|pode parar|retire meu contato)/i.test(message);
+      const terminal=explicitNoInterest || String(result?.nextBestAction||'')==='LOST';
+      const followUp=terminal ? {reused:false,followUp:null,skipped:true,reason:'CUSTOMER_NOT_INTERESTED'} : await seniorSalesAgentService.scheduleRecommendedFollowUp(conversationId,result);
+      const response={result,followUp,commercialContext:context};
+      if(eventKey){
+        await (prisma as any).$executeRawUnsafe('UPDATE "RbFactorySalesInboundEvent" SET "status"=\'COMPLETED\',"result"=? WHERE eventKey=?',JSON.stringify(response),eventKey);
+      }
+      return response;
+    }catch(error){
+      if(eventKey) await (prisma as any).$executeRawUnsafe('DELETE FROM "RbFactorySalesInboundEvent" WHERE eventKey=? AND status=\'PROCESSING\'',eventKey).catch(()=>{});
+      throw error;
+    }
   },
   async syncPipelineAfterResponse(prospectId:string,result:any,message?:string){
     const rows=await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',prospectId);
