@@ -1,12 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { emailService } from '../services/emailService';
 import { PrismaClient } from '@prisma/client';
+import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
 const prisma = new PrismaClient();
 
 // Enviar email de catálogo
-router.post('/send-catalog', async (req: Request, res: Response) => {
+router.post('/send-catalog', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const { leadId } = req.body;
     
@@ -40,7 +41,7 @@ router.post('/send-catalog', async (req: Request, res: Response) => {
 });
 
 // Enviar email de boas-vindas
-router.post('/send-welcome', async (req: Request, res: Response) => {
+router.post('/send-welcome', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const { leadId } = req.body;
     
@@ -63,7 +64,7 @@ router.post('/send-welcome', async (req: Request, res: Response) => {
 });
 
 // Enviar follow-up
-router.post('/send-followup', async (req: Request, res: Response) => {
+router.post('/send-followup', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const { leadId, productName } = req.body;
     
