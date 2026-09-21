@@ -32,7 +32,7 @@ router.get('/studio/history/:prospectId', websiteStudioController.getHistory);
 router.get('/studio/demos/:id/details', websiteStudioController.getDemoDetails);
 router.post('/studio/demos/:id/rollback', websiteStudioController.rollbackTo);
 router.post('/studio/projects/prepare', websiteStudioController.preparePublication);
-router.post('/studio/projects/publish', websiteStudioController.markProjectPublished);
+router.post('/studio/projects/publish', websiteStudioController.publishProject);
 export default router;
 
 
