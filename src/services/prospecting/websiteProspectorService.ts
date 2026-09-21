@@ -22,7 +22,15 @@ export class WebsiteProspectorService {
   }
 
 
-  private preferValidCity(primary?: string | null, fallback?: string | null): string | undefined {\n    const p = String(primary || '').trim();\n    const f = String(fallback || '').trim();\n    if (p && !p.includes('\uFFFD')) return p;\n    if (f && !f.includes('\uFFFD')) return f;\n    return p || f || undefined;\n  }\n\n  private isCommercialOpportunity(status: WebsiteOpportunityStatus): boolean {
+  private preferValidCity(primary?: string | null, fallback?: string | null): string | undefined {
+    const p = String(primary || '').trim();
+    const f = String(fallback || '').trim();
+    if (p && !p.includes('\uFFFD')) return p;
+    if (f && !f.includes('\uFFFD')) return f;
+    return p || f || undefined;
+  }
+
+  private isCommercialOpportunity(status: WebsiteOpportunityStatus): boolean {
     return [
       'NO_WEBSITE',
       'WEBSITE_OFFLINE',
