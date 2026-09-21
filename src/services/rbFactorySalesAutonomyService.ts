@@ -35,6 +35,7 @@ async function init(){
     );
     CREATE INDEX IF NOT EXISTS "idx_RbFactorySalesAutonomyRun_prospect" ON "RbFactorySalesAutonomyRun"("prospectId");
     CREATE INDEX IF NOT EXISTS "idx_RbFactorySalesAutonomyRun_created" ON "RbFactorySalesAutonomyRun"("createdAt");
+    DELETE FROM "RbFactorySalesAutonomyRun" WHERE "createdAt" < DATETIME('now', '-90 days');
   `);
   initialized=true;
 }
