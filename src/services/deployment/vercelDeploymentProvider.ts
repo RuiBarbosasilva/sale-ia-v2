@@ -113,6 +113,52 @@ export class VercelDeploymentProvider implements DeploymentProvider {
       verified
     };
   }
+  async getDeployment(deploymentId: string): Promise<DeploymentResult | null> {
+    if (!this.isConfigured()) throw new Error('VERCEL_TOKEN_NOT_CONFIGURED');
+    if (!deploymentId) return null;
+
+    let deployment: any;
+    try {
+      const response = await axios.get(
+        VERCEL_API + '/v13/deployments/' + encodeURIComponent(deploymentId),
+        { headers: this.headers(), timeout: 15000 }
+      );
+      deployment = response.data;
+    } catch (error: any) {
+      const status = error?.response?.status;
+      if (status === 404 || status === 410) return null;
+      throw error;
+    }
+
+    const state = String(
+      deployment?.readyState || deployment?.state || deployment?.status || ''
+    ).toUpperCase();
+    const rawUrl = String(deployment?.url || '');
+    const url = rawUrl ? (rawUrl.startsWith('http') ? rawUrl : 'https://' + rawUrl) : '';
+
+    let verified = false;
+    if (state === 'READY' && url) {
+      try {
+        const response = await axios.get(url, {
+          timeout: 10000,
+          maxRedirects: 5,
+          validateStatus: status => status >= 200 && status < 400
+        });
+        verified = response.status >= 200 && response.status < 400;
+      } catch {
+        verified = false;
+      }
+    }
+
+    return {
+      provider: this.name,
+      deploymentId,
+      url,
+      state,
+      verified
+    };
+  }
+
 }
 
 export const vercelDeploymentProvider = new VercelDeploymentProvider();
