@@ -153,9 +153,10 @@ async function processProspect(id){const headers={'Content-Type':'application/js
 async function demos(){
   try{
     const d=await get('/websites/demos');const rows=d.demos||[];
-    $('demosTable').innerHTML=rows.slice(0,7).length?'<table><thead><tr><th>Empresa</th><th>Versão</th><th>Status</th></tr></thead><tbody>'+rows.slice(0,7).map(x=>'<tr><td>'+esc(x.prospect?.companyName||'—')+'</td><td>v'+esc(x.version||'—')+'</td><td><span class="badge ok">'+esc(x.status||'—')+'</span></td></tr>').join('')+'</tbody></table>':'<div class="empty">Nenhuma demo pronta.</div>';
+    $('demosTable').innerHTML=rows.slice(0,7).length?'<table><thead><tr><th>Empresa</th><th>Versão</th><th>Status</th><th>Ações</th></tr></thead><tbody>'+rows.slice(0,7).map(x=>'<tr><td>'+esc(x.prospect?.companyName||'—')+'</td><td>v'+esc(x.version||'—')+'</td><td><span class="badge ok">'+esc(x.status||'—')+'</span></td><td><a class="btn" style="padding:6px 8px;font-size:9px" target="_blank" rel="noopener noreferrer" href="'+API+'/websites/studio/demos/'+encodeURIComponent(x.id)+'/html">Abrir</a> '+(String(x.status||'').toUpperCase()==='READY'?'<button class="btn primary" style="padding:6px 8px;font-size:9px" onclick="approveDemo(\''+esc(x.id)+'\')">Aprovar</button>':'')+'</td></tr>').join('')+'</tbody></table>':'<div class="empty">Nenhuma demo pronta.</div>';
   }catch(e){$('demosTable').innerHTML='<div class="empty">Não foi possível carregar as demos.</div>'}
 }
+async function approveDemo(id){const headers={'Content-Type':'application/json'};const k=key();if(k)headers['x-sale-ia-admin-key']=k;try{const r=await fetch(API+'/websites/studio/demos/'+encodeURIComponent(id)+'/approve',{method:'POST',headers});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||('HTTP '+r.status));toast('Demo aprovada');await refreshAll()}catch(e){toast('Não aprovada: '+e.message)}}
 async function refreshAll(){ $('updated').textContent='Atualizando…'; await Promise.all([overview(),prospects(),demos()]); $('updated').textContent='Atualizado em '+new Date().toLocaleString('pt-BR'); toast('Dashboard atualizado');}
 refreshAll();setInterval(refreshAll,60000);
 </script>
