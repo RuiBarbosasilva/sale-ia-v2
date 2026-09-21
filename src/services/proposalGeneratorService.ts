@@ -174,6 +174,8 @@ PRÓXIMOS PASSOS:
 
 Atenciosamente,
 RB Factory Sites
+
+${proposalSnapshotMarker}
 `;
 
     if (prospect.selectedPlanId !== plan.id) {
