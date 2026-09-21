@@ -564,7 +564,11 @@ export const websiteStudioController = {
       });
     } catch (e: any) {
       console.error('[Studio] preparePublication:', e.message);
-      res.status(500).json({ success: false, error: e.message });
+      const message = e?.message || 'Erro ao preparar publicação';
+      const status = ['Demo não encontrada'].includes(message) ? 404
+        : ['DEMO_NOT_PUBLISHABLE', 'PROPOSAL_NOT_ACCEPTED', 'PROPOSAL_SNAPSHOT_MISSING', 'APPROVED_DEMO_VERSION_MISMATCH'].includes(message) ? 409
+        : 500;
+      res.status(status).json({ success: false, error: message });
     }
   },
 
