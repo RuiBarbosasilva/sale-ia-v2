@@ -90,7 +90,7 @@ export const rbFactorySalesAgentService = {
     if(current==='CONTACTED' && nextAction==='ASK_FOR_CLOSE') nextStage='NEGOTIATION';
     if(explicitNoInterest) nextStage='LOST';
     if(current==='LOST' || current==='WON') nextStage=current;
-    const safeActions=new Set(['ASK_FOR_CLOSE','INVESTIGATE_OBJECTION','DISCOVER_NEED','SEND_FIRST_APPROACH','REVIEW']);
+    const safeActions=new Set(['ASK_FOR_CLOSE','INVESTIGATE_OBJECTION','DISCOVER_NEED','SEND_FIRST_APPROACH','REVIEW','PREPARE_DEMO','PREPARE_PROPOSAL','DISCOVER_DECISION_MAKER','FOLLOW_UP','ESCALATE_HUMAN_NEGOTIATION']);
     const normalizedAction=explicitNoInterest||nextStage==='LOST'||nextStage==='WON' ? (nextStage==='LOST'?'REVIEW':'FOLLOW_UP') : (safeActions.has(nextAction)?nextAction:'FOLLOW_UP');
     let notes:any={};
     try{notes=pipeline.notes?JSON.parse(pipeline.notes):{};}catch{notes={raw:pipeline.notes};}
@@ -160,9 +160,9 @@ export const rbFactorySalesAgentService = {
     if(pendingFollow[0]) return {available:true,created:false,item,conversationId,followUp:pendingFollow[0],reason:'EXISTING_FOLLOW_UP'};
     let draft:any;
     if(stage==='DISCOVERED'||stage==='AUDITED') draft=await seniorSalesAgentService.prepareInitialApproach(conversationId);
-    else if(stage==='DEMO_READY'||nextAction==='SEND_DEMO') draft=await seniorSalesAgentService.prepareDemoApproach(conversationId);
-    else if(stage==='PROPOSAL_READY'||nextAction==='FOLLOW_UP_PROPOSAL'||nextAction==='SEND_PROPOSAL') draft=await seniorSalesAgentService.prepareProposalApproach(conversationId);
-    else if(nextAction==='FOLLOW_UP'||nextAction==='INVESTIGATE_OBJECTION'||nextAction==='ASK_FOR_CLOSE') {
+    else if(stage==='DEMO_READY'||nextAction==='SEND_DEMO'||nextAction==='PREPARE_DEMO') draft=await seniorSalesAgentService.prepareDemoApproach(conversationId);
+    else if(stage==='PROPOSAL_READY'||nextAction==='FOLLOW_UP_PROPOSAL'||nextAction==='SEND_PROPOSAL'||nextAction==='PREPARE_PROPOSAL') draft=await seniorSalesAgentService.prepareProposalApproach(conversationId);
+    else if(nextAction==='FOLLOW_UP'||nextAction==='INVESTIGATE_OBJECTION'||nextAction==='ASK_FOR_CLOSE'||nextAction==='DISCOVER_NEED'||nextAction==='DISCOVER_DECISION_MAKER') {
       const reason=nextAction;
       const aiResult=await seniorSalesAgentService.prepareFollowUp(conversationId,reason);
       const follow=await seniorSalesAgentService.scheduleFollowUp(conversationId,{scheduledAt:new Date(),reason,draft:aiResult.draft});
