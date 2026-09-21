@@ -16,6 +16,8 @@ export const rbFactoryWhatsAppController = {
   async webhook(req:Request,res:Response){
     try{
       const configuredSecret=String(process.env.RB_FACTORY_WHATSAPP_WEBHOOK_SECRET||'').trim();
+      const isProduction=String(process.env.NODE_ENV||'').toLowerCase()==='production';
+      if(isProduction && !configuredSecret) return res.status(503).json({success:false,error:'WEBHOOK_SECRET_NOT_CONFIGURED'});
       if(configuredSecret){
         const provided=String(req.header('x-rb-factory-webhook-secret')||req.header('x-webhook-secret')||'').trim();
         if(!provided || provided!==configuredSecret) return res.status(401).json({success:false,error:'WEBHOOK_UNAUTHORIZED'});
