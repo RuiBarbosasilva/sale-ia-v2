@@ -744,7 +744,16 @@ export class WebsiteService {
   }
 }
 
-\n// Compatibility guard for the legacy generate() path. The professional pipeline\n// performs the authoritative quality gate; this helper only prevents an unknown\n// quality payload from being marked READY.\nfunction resultQualityApproved(data: any): boolean {\n  const review = data?.qualityReview;\n  return !!review && review.recommendation === 'approve' && Number(review.overallScore || 0) >= 7.5 && !(review.criticalIssues?.length);\n}\n\nexport const websiteService = new WebsiteService();
+
+// Compatibility guard for the legacy generate() path. The professional pipeline
+// performs the authoritative quality gate; this helper only prevents an unknown
+// quality payload from being marked READY.
+function resultQualityApproved(data: any): boolean {
+  const review = data?.qualityReview;
+  return !!review && review.recommendation === 'approve' && Number(review.overallScore || 0) >= 7.5 && !(review.criticalIssues?.length);
+}
+
+export const websiteService = new WebsiteService();
 
 
 
