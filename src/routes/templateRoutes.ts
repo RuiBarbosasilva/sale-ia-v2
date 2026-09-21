@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -23,7 +24,7 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const { name, categoryId, description, thumbnailUrl, demoUrl, sourceType, price, featured } = req.body;
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -36,7 +37,7 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const template = await prisma.websiteTemplate.update({
       where: { id: req.params.id },
@@ -48,7 +49,7 @@ router.put('/:id', async (req: Request, res: Response) => {
   }
 });
 
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', adminAuthorization, async (req: Request, res: Response) => {
   try {
     await prisma.websiteTemplate.update({
       where: { id: req.params.id },
