@@ -11,7 +11,8 @@ WHERE "id" IN (
         PARTITION BY "prospectId"
         ORDER BY
           CASE WHEN "status" = 'PUBLISHED' THEN 0 ELSE 1 END,
-          "createdAt" DESC,
+          CASE WHEN "publishedAt" IS NULL THEN 1 ELSE 0 END,
+          "publishedAt" DESC,
           "id" DESC
       ) AS rn
     FROM "WebsiteProject"
