@@ -498,8 +498,7 @@ export const websiteStudioController = {
       });
     } catch (e: any) {
       const message = e?.message || 'Erro ao publicar projeto';
-      const statusCode =
-        constPublicationSyncFailed = message.startsWith('PUBLICATION_STATE_SYNC_FAILED:');
+      const constPublicationSyncFailed = message.startsWith('PUBLICATION_STATE_SYNC_FAILED:');
       const statusCode =
         ['WEBSITE_PROJECT_NOT_FOUND', 'APPROVED_DEMO_VERSION_NOT_FOUND'].includes(message) ? 404 :
         [
