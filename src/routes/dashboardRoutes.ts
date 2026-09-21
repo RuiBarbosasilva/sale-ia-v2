@@ -11,7 +11,7 @@ import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
 
-router.get('/mercadolivre', adminAuthorization,, getMercadoLivreDashboard);
+router.get('/mercadolivre', adminAuthorization, getMercadoLivreDashboard);
 
 router.get('/overview', adminAuthorization, async (_req, res) => {
   try {
