@@ -1,11 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
 const prisma = new PrismaClient();
 
 // Dashboard financeiro por segmento (baseado em estoque e margem)
-router.get('/by-segment', async (req: Request, res: Response) => {
+router.get('/by-segment', adminAuthorization, async (req: Request, res: Response) => {
   try {
     // Buscar todos os produtos ativos com seus segmentos
     const products = await prisma.product.findMany({
@@ -73,7 +74,7 @@ router.get('/by-segment', async (req: Request, res: Response) => {
 });
 
 // Top produtos (ordenados por maior valor potencial em estoque)
-router.get('/top-products', async (req: Request, res: Response) => {
+router.get('/top-products', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const topProducts = await prisma.product.findMany({
       where: { active: true },
