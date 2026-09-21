@@ -5,6 +5,7 @@ const router=Router();
 router.use(adminAuthorization);
 router.get('/pipeline',rbFactorySalesController.list);
 router.get('/plans',rbFactorySalesController.plans);
+router.get('/presentation',rbFactorySalesController.presentation);
 router.post('/pipeline/prospect/:prospectId',rbFactorySalesController.create);
 router.get('/pipeline/prospect/:prospectId/models',rbFactorySalesController.models);
 router.post('/pipeline/prospect/:prospectId/demo',rbFactorySalesController.demo);
