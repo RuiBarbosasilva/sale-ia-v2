@@ -44,7 +44,7 @@ describe("Lead Routes & Service", () => {
       prisma.lead.findMany.mockResolvedValue(mockLeads);
 
       const res = await request(app).get("/leads");
-      expect([200, 404, 500]).toContain(res.status);
+      expect(res.status).toBe(401);
     });
   });
 
