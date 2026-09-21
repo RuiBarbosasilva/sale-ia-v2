@@ -57,7 +57,7 @@ async function audit(input:any){
 async function createHumanAlert(input:any){
   await init();
   const existing=(await (prisma as any).$queryRawUnsafe(
-    'SELECT * FROM "RbFactorySalesHumanAlert" WHERE prospectId=? AND status='OPEN' AND type='NEGOTIATION_ESCALATION' ORDER BY createdAt DESC LIMIT 1',
+    `SELECT * FROM "RbFactorySalesHumanAlert" WHERE prospectId=? AND status='OPEN' AND type='NEGOTIATION_ESCALATION' ORDER BY createdAt DESC LIMIT 1`,
     input.prospectId||null
   ))[0];
   if(existing) return existing;
@@ -145,7 +145,7 @@ export const rbFactorySalesAutonomyService = {
   },
   async status(){
     const row=await controlRow();
-    const alerts=await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesHumanAlert" WHERE status='OPEN' ORDER BY createdAt DESC LIMIT 20');
+    const alerts=await (prisma as any).$queryRawUnsafe(`SELECT * FROM "RbFactorySalesHumanAlert" WHERE status='OPEN' ORDER BY createdAt DESC LIMIT 20`);
     return {status:row?.status||'STOPPED',config:row?.config?JSON.parse(row.config):{},startedAt:row?.startedAt||null,stoppedAt:row?.stoppedAt||null,runtimeIntervalMs:RUNTIME_INTERVAL_MS,alerts};
   },
   async bootstrap(){ const row=await controlRow(); ensureRuntimeTimer(); if(row?.status==='RUNNING') void runRuntimeCycle(); return this.status(); },
