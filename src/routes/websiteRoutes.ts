@@ -15,7 +15,7 @@ router.get('/demo/:id', (req, res) => websiteController.getDemo(req, res));
 // SITE FACTORY STUDIO (Briefing -> Geracao -> Preview -> Export)
 // ==========================================
 router.get('/studio/prospects', websiteStudioController.listProspects);
-router.post('/studio/prospects', websiteStudioController.createProspect, adminAuthorization);
+router.post('/studio/prospects', adminAuthorization, websiteStudioController.createProspect);
 router.get('/studio/templates', websiteStudioController.listTemplates);
 router.get('/studio/briefing/:prospectId', websiteStudioController.getBriefing);
 router.get('/studio/versions/:prospectId', websiteStudioController.listVersions);
