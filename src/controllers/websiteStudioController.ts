@@ -229,6 +229,9 @@ export const websiteStudioController = {
         return res.status(404).send('Demo não encontrada');
       }
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      // O preview é carregado pelo Studio em iframe no mesmo origin.
+      // A política global DENY bloquearia o preview mesmo sendo legítimo.
+      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
       res.setHeader('Cache-Control', 'no-store');
       res.send(demo.sourceCode);
     } catch (e: any) {
