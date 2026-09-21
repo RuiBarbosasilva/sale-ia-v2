@@ -20,6 +20,8 @@ main{min-width:0;padding:28px 34px 55px}.top{display:flex;justify-content:space-
 .toast{position:fixed;right:18px;bottom:18px;background:#111318;color:#fff;border-radius:11px;padding:11px 14px;font-size:10px;display:none;box-shadow:0 12px 35px #0003}
 @media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.layout{grid-template-columns:1fr}}@media(max-width:800px){.shell{display:block}.side{position:static;height:auto;padding:14px}.nav{display:flex;overflow:auto}.nav-label,.side-bottom{display:none}.brand{padding-bottom:13px}.nav a{white-space:nowrap}.top,.hero{display:block}.actions{margin-top:12px}.kpis{grid-template-columns:repeat(2,1fr)}main{padding:20px}.actions-grid{grid-template-columns:1fr 1fr}}@media(max-width:520px){.kpis{grid-template-columns:1fr}.actions-grid{grid-template-columns:1fr}.hero h1{font-size:31px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+.prospect-modal{position:fixed;inset:0;background:#0008;display:none;place-items:center;z-index:1000;padding:18px}.prospect-modal.open{display:grid}.prospect-dialog{width:min(720px,100%);max-height:90vh;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:0 24px 80px #0004}.prospect-dialog h2{margin:0 0 6px;font-size:20px;letter-spacing:-.035em}.prospect-dialog p{margin:0 0 18px;color:var(--muted);font-size:11px;line-height:1.5}.prospect-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}.prospect-field label{display:block;font-size:9px;font-weight:850;text-transform:uppercase;letter-spacing:.08em;color:#727a85;margin-bottom:6px}.prospect-field input,.prospect-field select{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 11px;font-size:12px;background:#fff}.prospect-field.full{grid-column:1/-1}.prospect-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}.prospect-result{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:12px;background:#f8f9fb;font-size:10px;line-height:1.55;display:none}.prospect-result.show{display:block}.prospect-result.ok{border-color:#b7e4d0;background:#f1fbf6}.prospect-result.err{border-color:#f1b7b2;background:#fff5f4}@media(max-width:600px){.prospect-form{grid-template-columns:1fr}.prospect-field.full{grid-column:auto}}
 </style>
 </head>
 <body>
@@ -99,12 +101,29 @@ main{min-width:0;padding:28px 34px 55px}.top{display:flex;justify-content:space-
   <div style="text-align:center;color:#a0a6af;font-size:9px;margin-top:24px">RB FACTORY SITES · SALE-IA-V2 · dashboard operacional</div>
 </main>
 </div>
+
+<div class="prospect-modal" id="prospectModal" role="dialog" aria-modal="true" aria-labelledby="prospectTitle">
+  <div class="prospect-dialog">
+    <h2 id="prospectTitle">Prospectar novos negócios</h2>
+    <p>Pesquise empresas por cidade e nicho. O resultado entra na base da RB Factory para auditoria, score e geração de demo.</p>
+    <form class="prospect-form" id="prospectForm" onsubmit="runProspecting(event)">
+      <div class="prospect-field"><label for="pfCity">Cidade *</label><input id="pfCity" value="Poços de Caldas" required></div>
+      <div class="prospect-field"><label for="pfState">Estado</label><input id="pfState" value="MG" maxlength="2"></div>
+      <div class="prospect-field"><label for="pfNiche">Nicho *</label><input id="pfNiche" placeholder="ex.: hamburgueria, clínica, advogado" required></div>
+      <div class="prospect-field"><label for="pfSubniche">Subnicho</label><input id="pfSubniche" placeholder="opcional"></div>
+      <div class="prospect-field"><label for="pfMax">Máximo de resultados</label><select id="pfMax"><option>5</option><option selected>10</option><option>20</option><option>50</option></select></div>
+      <div class="prospect-field"><label>Modo</label><input value="Pesquisa + qualificação + auditoria" disabled></div>
+      <div class="prospect-field full"><div class="prospect-result" id="prospectResult" aria-live="polite"></div></div>
+      <div class="prospect-actions"><button type="button" class="btn" onclick="closeProspecting()">Cancelar</button><button class="btn primary" id="prospectSubmit">Pesquisar agora</button></div>
+    </form>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 <script>
 const API='/api';
 const $=id=>document.getElementById(id);
 function key(){return sessionStorage.getItem('saleIaAdminKey')||''}
-function setAdminKey(){const v=prompt('Chave administrativa do SALE-IA:',key());if(v!==null){if(v.trim())sessionStorage.setItem('saleIaAdminKey',v.trim());else sessionStorage.removeItem('saleIaAdminKey');refreshAll()}}\nfunction startProspecting(){window.location.href='/site-factory-studio.html#prospecting'}
+function setAdminKey(){const v=prompt('Chave administrativa do SALE-IA:',key());if(v!==null){if(v.trim())sessionStorage.setItem('saleIaAdminKey',v.trim());else sessionStorage.removeItem('saleIaAdminKey');refreshAll()}}\nfunction startProspecting(){$('prospectModal').classList.add('open');$('pfNiche').focus()}function closeProspecting(){$('prospectModal').classList.remove('open')}async function runProspecting(ev){ev.preventDefault();const btn=$('prospectSubmit'),out=$('prospectResult');btn.disabled=true;btn.textContent='Pesquisando…';out.className='prospect-result show';out.textContent='Consultando a base de prospecção…';try{const payload={city:$('pfCity').value.trim(),state:$('pfState').value.trim().toUpperCase(),niche:$('pfNiche').value.trim(),subniche:$('pfSubniche').value.trim()||undefined,maxResults:Number($('pfMax').value)};const k=key();const headers={'Content-Type':'application/json'};if(k)headers['x-sale-ia-admin-key']=k;const r=await fetch(API+'/websites/prospecting/search',{method:'POST',headers,body:JSON.stringify(payload)});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||('HTTP '+r.status));out.className='prospect-result show ok';out.innerHTML='<b>Pesquisa concluída.</b><br>Encontrados: '+esc(d.totalFound??0)+' · Qualificados: '+esc(d.totalQualified??0)+' · Criados: '+esc(d.totalCreated??0)+' · Auditados: '+esc(d.totalAudited??0);toast('Prospecção concluída');await refreshAll()}catch(e){out.className='prospect-result show err';out.textContent='Não foi possível concluir: '+e.message;toast('Falha na prospecção')}finally{btn.disabled=false;btn.textContent='Pesquisar agora'}}document.addEventListener('keydown',e=>{if(e.key==='Escape')closeProspecting()});
 async function get(path){
   const headers={};const k=key();if(k)headers['x-sale-ia-admin-key']=k;
   const r=await fetch(API+path,{headers});if(!r.ok)throw new Error('HTTP '+r.status);return r.json()
