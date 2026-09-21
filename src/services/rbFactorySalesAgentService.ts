@@ -76,6 +76,7 @@ export const rbFactorySalesAgentService = {
   async respond(prospectId:string,conversationId:string,message:string,eventKey?:string){
     if(eventKey){
       await (prisma as any).$executeRawUnsafe('CREATE TABLE IF NOT EXISTS "RbFactorySalesInboundEvent" ("eventKey" TEXT PRIMARY KEY NOT NULL, "prospectId" TEXT NOT NULL, "conversationId" TEXT NOT NULL, "status" TEXT NOT NULL DEFAULT \'PROCESSING\', "result" TEXT, "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)');
+      await (prisma as any).$executeRawUnsafe('DELETE FROM "RbFactorySalesInboundEvent" WHERE "createdAt" < DATETIME(\'now\', \'-90 days\')');
       try{
         await (prisma as any).$executeRawUnsafe('INSERT INTO "RbFactorySalesInboundEvent" ("eventKey","prospectId","conversationId","status") VALUES (?,?,?,\'PROCESSING\')',eventKey,prospectId,conversationId);
       }catch{
