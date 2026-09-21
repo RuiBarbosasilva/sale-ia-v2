@@ -224,11 +224,25 @@ export const seniorSalesAgentService = {
     if(['LOST','WON','REVIEW'].includes(reason)) return {reused:false,followUp:null,skipped:true,reason:'TERMINAL_OR_REVIEW'};
     const existing=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesFollowUp" WHERE conversationId=? AND status=\'PENDING\' ORDER BY scheduledAt ASC LIMIT 1',conversationId);
     if(existing[0]) return {reused:true,followUp:existing[0]};
-    const draft=reason==='ASK_FOR_CLOSE'
-      ? 'Olá! Passando para saber se conseguiu avaliar nossa proposta. Se fizer sentido para vocês, posso avançar com os próximos passos.'
+    const context=JSON.stringify({
+      task:'PREPARE_HUMAN_FOLLOW_UP',
+      conversation:{stage:c.stage,temperature:c.temperature,objection:c.objection,lastIntent:c.lastIntent},
+      result,
+      salesPsychology:RB_FACTORY_SALES_PSYCHOLOGY,
+      instructions:[
+        'continue the existing conversation instead of restarting the pitch',
+        'sound like a real salesperson who remembers what was discussed',
+        'use one relevant reason to contact the prospect',
+        'one clear question or next step',
+        'never guilt, pressure, fake urgency or pretend the prospect said something they did not say'
+      ]
+    });
+    const aiResult=await aiReply(context);
+    const draft=aiResult?.reply || (reason==='ASK_FOR_CLOSE'
+      ? 'Oi! Conseguiu olhar a proposta com calma? Se fizer sentido, posso te ajudar a deixar os próximos passos bem simples.'
       : reason==='INVESTIGATE_OBJECTION'
-        ? 'Olá! Fiquei à disposição caso tenha ficado alguma dúvida sobre a proposta ou sobre como podemos melhorar a presença digital da empresa. Posso esclarecer algum ponto?'
-        : 'Olá! Passando para acompanhar nossa conversa sobre o site da empresa. Se quiser, posso retomar a demonstração e explicar os próximos passos.';
+        ? 'Oi! Fiquei pensando no ponto que você levantou. Se quiser, me diga o que ainda está te deixando em dúvida e eu vejo isso com você.'
+        : 'Oi! Passando por aqui para retomar nossa conversa. Se ainda fizer sentido para vocês, posso te mostrar o próximo passo sem compromisso.');
     const scheduledAt=new Date(Date.now()+(reason==='ASK_FOR_CLOSE'?86400000:reason==='INVESTIGATE_OBJECTION'?2*86400000:3*86400000));
     const followUp=await this.scheduleFollowUp(conversationId,{scheduledAt,reason,draft});
     return {reused:false,followUp};
