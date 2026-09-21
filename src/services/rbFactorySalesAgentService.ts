@@ -164,12 +164,8 @@ export const rbFactorySalesAgentService = {
     else if(stage==='PROPOSAL_READY'||nextAction==='FOLLOW_UP_PROPOSAL'||nextAction==='SEND_PROPOSAL') draft=await seniorSalesAgentService.prepareProposalApproach(conversationId);
     else if(nextAction==='FOLLOW_UP'||nextAction==='INVESTIGATE_OBJECTION'||nextAction==='ASK_FOR_CLOSE') {
       const reason=nextAction;
-      const draftText=reason==='ASK_FOR_CLOSE'
-        ? 'Olá! Passando para saber se conseguiu avaliar nossa proposta. Se fizer sentido para vocês, posso avançar com os próximos passos.'
-        : reason==='INVESTIGATE_OBJECTION'
-          ? 'Olá! Fiquei à disposição caso tenha ficado alguma dúvida sobre a proposta ou sobre a demonstração. Posso esclarecer algum ponto?'
-          : 'Olá! Passando para acompanhar nossa conversa sobre o site da empresa. Se quiser, posso retomar a demonstração e explicar os próximos passos.';
-      const follow=await seniorSalesAgentService.scheduleFollowUp(conversationId,{scheduledAt:new Date(),reason,draft:draftText});
+      const aiResult=await seniorSalesAgentService.prepareFollowUp(conversationId,reason);
+      const follow=await seniorSalesAgentService.scheduleFollowUp(conversationId,{scheduledAt:new Date(),reason,draft:aiResult.draft});
       return {available:true,created:true,item,conversationId,followUp:follow,reason:'FOLLOW_UP_PREPARED'};
     }
     else return {available:true,created:false,item,conversationId,reason:'WAITING_FOR_CUSTOMER_OR_NEXT_EVENT'};
