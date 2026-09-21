@@ -5,6 +5,7 @@ import { websiteContentService } from './websiteContentService';
 import { websiteCompiler } from './websiteCompiler';
 import { creatorSelector } from './creatorSelector';
 import { websiteImageService } from './websiteImageService';
+import { vercelDeploymentProvider } from '../deployment/vercelDeploymentProvider';
 
 const prisma = new PrismaClient();
 
@@ -380,6 +381,123 @@ export class WebsiteService {
       previewUrl: `/api/websites/studio/demos/${d.id}/html`,
       exportUrl: `/api/websites/studio/demos/${d.id}/export`
     }));
+  }
+
+  /**
+   * Publicação real: só marca PUBLISHED depois de o provedor entregar
+   * uma URL acessível e verificável.
+   */
+  async publishProject(projectId: string, providerName: string = 'VERCEL') {
+    const project = await prisma.websiteProject.findUnique({
+      where: { id: projectId },
+      include: { prospect: true }
+    });
+    if (!project) throw new Error('WEBSITE_PROJECT_NOT_FOUND');
+
+    if (project.status === 'PUBLISHED' && project.publishedUrl) {
+      return project;
+    }
+
+    const acceptedProposal = await prisma.websiteProposal.findFirst({
+      where: { prospectId: project.prospectId, status: 'ACCEPTED' },
+      orderBy: { id: 'desc' }
+    });
+    if (!acceptedProposal) throw new Error('PROPOSAL_NOT_ACCEPTED');
+
+    const demo = await prisma.websiteDemo.findFirst({
+      where: {
+        prospectId: project.prospectId,
+        version: project.currentVersion,
+        status: { in: ['READY', 'APPROVED'] }
+      }
+    });
+    if (!demo) throw new Error('APPROVED_DEMO_VERSION_NOT_FOUND');
+
+    let previewData: any = {};
+    try { previewData = JSON.parse(demo.previewData || '{}'); } catch {}
+
+    const qualityReview = previewData.qualityReview;
+    if (
+      !qualityReview ||
+      qualityReview.recommendation !== 'approve' ||
+      Number(qualityReview.overallScore || 0) < 7.5 ||
+      (qualityReview.criticalIssues || []).length > 0
+    ) {
+      throw new Error('DEMO_QUALITY_GATE_FAILED');
+    }
+
+    if (providerName.toUpperCase() !== 'VERCEL') {
+      throw new Error('DEPLOYMENT_PROVIDER_NOT_SUPPORTED');
+    }
+
+    if (!vercelDeploymentProvider.isConfigured()) {
+      await prisma.websiteProject.update({
+        where: { id: projectId },
+        data: { deploymentStatus: 'FAILED' }
+      });
+      throw new Error('VERCEL_TOKEN_NOT_CONFIGURED');
+    }
+
+    await prisma.websiteProject.update({
+      where: { id: projectId },
+      data: {
+        deploymentStatus: 'DEPLOYING',
+        status: 'CODING',
+        currentVersion: demo.version
+      }
+    });
+
+    try {
+      const deployment = await vercelDeploymentProvider.deploy({
+        projectName: project.prospect.companyName,
+        html: demo.sourceCode || '',
+        target: 'production',
+        metadata: {
+          saleIaProjectId: project.id,
+          prospectId: project.prospectId,
+          demoVersion: String(demo.version)
+        }
+      });
+
+      const published = await prisma.websiteProject.update({
+        where: { id: projectId },
+        data: {
+          status: 'PUBLISHED',
+          hostingProvider: deployment.provider,
+          deploymentId: deployment.deploymentId,
+          deploymentStatus: 'READY',
+          publishedUrl: deployment.url,
+          publishedAt: new Date()
+        }
+      });
+
+      await prisma.websiteProspectEvent.create({
+        data: {
+          prospectId: project.prospectId,
+          type: 'PROJECT_PUBLISHED',
+          description: 'Website publicado e verificado automaticamente',
+          metadata: JSON.stringify({
+            projectId,
+            provider: deployment.provider,
+            deploymentId: deployment.deploymentId,
+            publishedUrl: deployment.url,
+            demoVersion: demo.version,
+            verified: deployment.verified
+          })
+        }
+      });
+
+      return published;
+    } catch (error: any) {
+      await prisma.websiteProject.update({
+        where: { id: projectId },
+        data: {
+          deploymentStatus: 'FAILED',
+          status: 'REVIEW'
+        }
+      }).catch(() => undefined);
+      throw error;
+    }
   }
 
   async preparePublication(demoId: string, domainName?: string) {
