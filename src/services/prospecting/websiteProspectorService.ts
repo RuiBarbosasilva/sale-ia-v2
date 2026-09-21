@@ -81,7 +81,7 @@ export class WebsiteProspectorService {
               category: business.category || existing.category,
               subcategory: business.subcategory || existing.subcategory,
               segment: business.category || existing.segment,
-              city: business.city || existing.city,
+              city: this.preferValidCity(business.city, existing.city),
               state: business.state || existing.state,
               country: existing.country || 'BR',
               address: business.address || existing.address,
