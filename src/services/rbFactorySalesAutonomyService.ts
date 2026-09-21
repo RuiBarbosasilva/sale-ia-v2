@@ -7,6 +7,7 @@ import { websiteOpportunityScoringService } from './prospecting/websiteOpportuni
 import { websiteDemoFactoryService } from './prospecting/websiteDemoFactoryService';
 import { websiteOutreachService } from './prospecting/websiteOutreachService';
 import { RB_FACTORY_SALES_AUTONOMY, RbFactorySalesAutonomyMode } from '../config/rbFactorySalesAutonomy';
+import { rbFactorySalesChannelsStatus } from '../config/rbFactorySalesChannels';
 
 let initialized = false;
 let runtimeTimer: ReturnType<typeof setInterval> | null = null;
@@ -183,6 +184,7 @@ export const rbFactorySalesAutonomyService = {
     await init();
     return {
       ...RB_FACTORY_SALES_AUTONOMY,
+      channels: rbFactorySalesChannelsStatus(),
       businessHoursNow: businessHours(),
       modeDescription: RB_FACTORY_SALES_AUTONOMY.mode==='AUTONOMOUS'
         ? 'prepara automaticamente e pode avançar ações de baixo risco; envio externo depende de canal autorizado'
