@@ -119,11 +119,13 @@ export const rbFactorySalesAutonomyService = {
     if(!phone) throw new Error('LEAD_PHONE_REQUIRED');
     if(!message) throw new Error('SALES_MESSAGE_EMPTY');
     if(await recentOutbound(action.conversationId)) throw new Error('SALES_OUTBOUND_COOLDOWN');
-    const claim=await (prisma as any).$executeRawUnsafe('UPDATE "SalesAction" SET status=\'SENDING\',updatedAt=CURRENT_TIMESTAMP WHERE id=? AND status IN (\'PENDING_APPROVAL\',\'APPROVED\')',actionId);
-    if(claim!==1) throw new Error('SALES_ACTION_SEND_IN_PROGRESS');
     const exists=await whatsappService.checkNumber(phone);
     if(!exists) throw new Error('WHATSAPP_NUMBER_NOT_AVAILABLE');
-    if(action.status==='PENDING_APPROVAL') await rbFactorySalesAgentService.approveAction(actionId);
+    const claim=await (prisma as any).$executeRawUnsafe('UPDATE "SalesAction" SET status=\'SENDING\',updatedAt=CURRENT_TIMESTAMP WHERE id=? AND status IN (\'PENDING_APPROVAL\',\'APPROVED\')',actionId);
+    if(claim!==1) throw new Error('SALES_ACTION_SEND_IN_PROGRESS');
+    if(action.status==='PENDING_APPROVAL'){
+      await (prisma as any).$executeRawUnsafe('UPDATE "SalesAction" SET status=\'SENDING\',updatedAt=CURRENT_TIMESTAMP WHERE id=? AND status=\'SENDING\'',actionId);
+    }
     let providerResult:any;
     try{
       providerResult=await whatsappService.sendText(phone,message);
