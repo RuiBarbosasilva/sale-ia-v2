@@ -47,6 +47,22 @@ async function ensurePipelineUnlocked(prospectId:string){
   const existing=await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',prospectId);
   if(existing[0]) {
     await (prisma as any).$executeRawUnsafe('UPDATE "RbFactorySalesPipeline" SET auditScore=?,priority=?,updatedAt=CURRENT_TIMESTAMP WHERE id=?',auditScore,priority,existing[0].id);
+    // Reconcilia um eventual aceite comercial concluído antes de o espelho do
+    // pipeline ser persistido. Isso torna uma nova tentativa auto-recuperável.
+    if(prospect.status==='WON'){
+      const acceptedProposal=await prisma.websiteProposal.findFirst({
+        where:{prospectId, status:'ACCEPTED'},
+        orderBy:{acceptedAt:'desc'}
+      });
+      const project=await prisma.websiteProject.findFirst({where:{prospectId}});
+      if(acceptedProposal && project){
+        await (prisma as any).$executeRawUnsafe(
+          'UPDATE "RbFactorySalesPipeline" SET stage=\'WON\',nextAction=\'PREPARE_PROJECT\',proposalId=?,updatedAt=CURRENT_TIMESTAMP WHERE id=?',
+          acceptedProposal.id,
+          existing[0].id
+        );
+      }
+    }
     return (await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE id=?',existing[0].id))[0];
   }
   const values=[id(),prospectId,prospect.currentWebsite?'AUDITED':'DISCOVERED',auditScore,priority,null,null,'GENERATE_DEMO','OPEN',JSON.stringify({audit,source:'official_prospecting_pipeline'})];
@@ -193,6 +209,7 @@ export const rbFactorySalesService={
 
   async acceptProposal(prospectId:string,domainName?:string){
     return withPipelineLock(prospectId, async()=>{
+    await ensurePipelineUnlocked(prospectId);
     await init();
     const pipelineRows=await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',prospectId);
     const pipeline=pipelineRows[0];
