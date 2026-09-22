@@ -185,7 +185,7 @@ export const rbFactorySalesService={
     const lead=await this.convertToLead(prospectId);
     await prisma.websiteProspect.update({where:{id:prospectId},data:{status:'ACCEPTED'}});
     await (prisma as any).$executeRawUnsafe(
-      `UPDATE "RbFactorySalesPipeline" SET stage='WON',nextAction='PREPARE_PROJECT',updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,
+      `UPDATE "RbFactorySalesPipeline" SET stage='WON',nextAction='PROJECT_READY_FOR_PUBLICATION',updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,
       prospectId
     );
     await rbFactorySalesAgentService.closeSellerForProspect(prospectId,'WON');
