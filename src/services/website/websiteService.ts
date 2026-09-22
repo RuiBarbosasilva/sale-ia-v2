@@ -210,6 +210,7 @@ export class WebsiteService {
       const tpl = await prisma.websiteTemplate.findUnique({ where: { id: templateId } });
       if (!tpl) throw new Error('Template não encontrado');
     }
+
     const businessName = customData.businessName || prospect.companyName || 'Sua Empresa';
     const category = customData.category || prospect.segment || 'negócio';
     const city = customData.city || prospect.city || 'sua cidade';
@@ -218,6 +219,7 @@ export class WebsiteService {
       ? String(customData.visualStyle)
       : creatorSelector.selectCreator(prospect.segment || '');
     const design = websiteDesignService.getDesignTokens(creatorType);
+
     let content = websiteContentService.generateContent(businessName, category, city, creatorType, phone, {
       headline: customData.headline,
       slogan: customData.slogan,
@@ -230,21 +232,93 @@ export class WebsiteService {
       tone: customData.tone,
       targetAudience: customData.targetAudience
     });
+
     let aiUsed = false;
     if (useAI) {
       try {
         const { websiteAIEnhancerService } = await import('./websiteAIEnhancerService');
-        const aiContent = await websiteAIEnhancerService.enhance({ businessName, category, city, ...customData }, content, 0);
-        if (aiContent) { content = { ...content, ...aiContent }; aiUsed = true; }
-      } catch (e: any) { console.error('[generateFromBriefing] IA falhou, usando fallback:', e?.message); }
+        const aiContent = await websiteAIEnhancerService.enhance(
+          { businessName, category, city, ...customData },
+          content,
+          0
+        );
+        if (aiContent) {
+          content = { ...content, ...aiContent };
+          aiUsed = true;
+        }
+      } catch (e: any) {
+        console.error('[generateFromBriefing] IA falhou, usando fallback:', e?.message);
+      }
     }
-    const html = websiteCompiler.compile(businessName, city, phone, design, content);
+
+    // O Studio tambem precisa usar o Image Engine. Antes desta etapa,
+    // /studio/generate compilava apenas texto e criava demos sem imagens.
+    const { websiteImageService } = await import('./websiteImageService');
+    const { websiteQualityService } = await import('./websiteQualityService');
+
+    const prd = {
+      business: {
+        businessName,
+        category,
+        city,
+        targetAudience: customData.targetAudience || 'Clientes locais',
+        objective: customData.objective || 'Presença digital profissional'
+      },
+      content: {
+        heroHeadline: content.heroHeadline,
+        services: (content.services || []).map((s: any) => ({
+          title: typeof s === 'string' ? s : s.title,
+          description: typeof s === 'string' ? '' : s.description
+        })),
+        benefits: (content.benefits || []).map((b: any) => ({
+          title: typeof b === 'string' ? b : b.title,
+          description: typeof b === 'string' ? '' : b.description
+        })),
+        faq: content.faq || []
+      },
+      design: { visualDirection: design.visualStyle || creatorType }
+    };
+
+    const imageResult = await websiteImageService.acquireAssets(
+      { ...customData, businessName, category, city, phone },
+      prd as any,
+      design as any
+    );
+
+    const assets = imageResult.assets;
+    const assetsSummary = websiteImageService.analyzeAssetsMetadata(imageResult.metadata);
+
+    content = {
+      ...content,
+      services: (content.services || []).map((s: any) => ({
+        ...s,
+        image: (assets.services || {})[typeof s === 'string' ? s : s.title] || null
+      }))
+    };
+
+    const html = websiteCompiler.compileProfessional(
+      businessName,
+      city,
+      phone,
+      design,
+      content,
+      assets
+    );
+
+    const qualityReview = await websiteQualityService.review(
+      html,
+      prd,
+      design,
+      assetsSummary
+    );
+
     const latestVersion = await prisma.websiteDemo.findFirst({
       where: { prospectId },
       orderBy: { version: 'desc' },
       select: { version: true },
     });
     const version = (latestVersion?.version || 0) + 1;
+
     const demo = await prisma.websiteDemo.create({
       data: {
         prospectId,
@@ -252,11 +326,27 @@ export class WebsiteService {
         sourceCode: html,
         status: 'READY',
         version,
-        previewData: JSON.stringify({ briefing: customData, creatorType, useAI: aiUsed, generatedAt: new Date().toISOString() })
+        previewData: JSON.stringify({
+          briefing: customData,
+          creatorType,
+          useAI: aiUsed,
+          assets: imageResult.metadata,
+          assetsSummary,
+          qualityReview,
+          prd,
+          designSystem: design,
+          pipeline: 'studio-with-image-engine',
+          generatedAt: new Date().toISOString()
+        })
       }
     });
-    await prisma.websiteProspect.update({ where: { id: prospectId }, data: { status: 'DEMO_GERADA' } });
-    return { demo, aiUsed, creatorType };
+
+    await prisma.websiteProspect.update({
+      where: { id: prospectId },
+      data: { status: 'DEMO_GERADA' }
+    });
+
+    return { demo, aiUsed, creatorType, assets: imageResult.metadata, assetsSummary, qualityReview };
   }
 
   async regenerateDemo(demoId: string, mode: 'content' | 'design' | 'full') {
