@@ -1268,3 +1268,24 @@ model EditorialMetric {
   @@index([projectId, event])
   @@index([occurredAt])
 }
+
+
+// ============================================================
+// RB FACTORY - MODELOS HTML/ZIP IMPORTADOS PELO USUARIO
+// ============================================================
+model WebsiteImportedTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  segment     String?
+  sourceType  String   @default("HTML")
+  html        String
+  archiveData Bytes?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([active])
+  @@index([segment])
+}
