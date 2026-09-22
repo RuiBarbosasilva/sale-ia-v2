@@ -126,6 +126,35 @@ export const websiteStudioController = {
     }
   },
 
+  // ---------- BIBLIOTECA DE MODELOS IMPORTADOS ----------
+  async listImportedTemplateLibrary(req: Request, res: Response) {
+    try {
+      const items = await websiteImportedTemplateService.listLibrary({
+        includeInactive: String(req.query.includeInactive || '') === 'true',
+        search: req.query.search ? String(req.query.search) : undefined,
+        segment: req.query.segment ? String(req.query.segment) : undefined,
+        favorite: String(req.query.favorite || '') === 'true' ? true : undefined
+      });
+      res.json({success:true,templates:items.map(t=>({...t,id:'imported:'+t.id,source:'IMPORTED'}))});
+    } catch(e:any) { console.error('[Studio] listImportedTemplateLibrary:',e.message); res.status(500).json({success:false,error:'Erro ao listar biblioteca de modelos'}); }
+  },
+  async updateImportedTemplate(req: Request, res: Response) {
+    try { const id=String(req.params.id).replace(/^imported:/,''); const template=await websiteImportedTemplateService.update(id,req.body||{}); res.json({success:true,template:{...template,id:'imported:'+template.id,source:'IMPORTED'}}); }
+    catch(e:any) { res.status(e.message==='Modelo importado não encontrado'?404:400).json({success:false,error:e.message}); }
+  },
+  async previewImportedTemplate(req: Request, res: Response) {
+    try { const id=String(req.params.id).replace(/^imported:/,''); const html=await websiteImportedTemplateService.preview(id,req.body||{}); res.setHeader('Content-Type','text/html; charset=utf-8'); res.setHeader('Cache-Control','no-store'); res.send(html); }
+    catch(e:any) { res.status(e.message==='Modelo importado não encontrado'?404:400).send(e.message||'Erro ao gerar prévia'); }
+  },
+  async downloadImportedTemplate(req: Request, res: Response) {
+    try { const id=String(req.params.id).replace(/^imported:/,''); const archive=await websiteImportedTemplateService.getArchive(id); res.setHeader('Content-Type','application/zip'); res.setHeader('Content-Disposition','attachment; filename="'+archive.slug+'.zip"'); res.send(archive.archiveData); }
+    catch(e:any) { res.status(404).json({success:false,error:e.message}); }
+  },
+  async deleteImportedTemplate(req: Request, res: Response) {
+    try { const id=String(req.params.id).replace(/^imported:/,''); await websiteImportedTemplateService.remove(id); res.json({success:true,id:'imported:'+id}); }
+    catch(e:any) { res.status(e.message==='Modelo importado não encontrado'?404:400).json({success:false,error:e.message}); }
+  },
+
   // ---------- BRIEFING ----------
   async getBriefing(req: Request, res: Response) {
     try {
