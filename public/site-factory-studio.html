@@ -213,7 +213,7 @@
         <button class="btn btn-warn" onclick="regenerate('full')" id="btnRegenFull" disabled>⚡ Nova Versão</button>
         <button class="btn btn-success" onclick="exportZip()" id="btnExport" disabled>📦 Exportar ZIP</button>
         <button class="btn btn-success" onclick="approveDemo()" id="btnApprove" disabled>✅ Aprovar</button>
-        <button class="btn btn-primary" onclick="preparePublish()" id="btnPublish" disabled>🚀 Publicar</button>
+        <button class="btn btn-primary" onclick="deployNetlify()" id="btnPublish" disabled>🚀 Publicar no Netlify</button>
       </div>
 
       <div id="previewWrap">
@@ -585,27 +585,34 @@ async function approveDemo() {
     await refreshVersions();
   } catch (e) { toast('Erro: ' + e.message, 'err'); }
 }
-async function preparePublish() {
-  const domain = prompt('Domínio desejado (opcional):', '') || undefined;
+async function deployNetlify() {
+  if (!state.selectedDemoId) return;
+  const domain = prompt('Domínio personalizado (opcional). Deixe vazio para usar o endereço gratuito do Netlify:', '') || undefined;
+  btnLoading('btnPublish', true, 'Publicando no Netlify...');
+  const panel = document.getElementById('pubPanel');
+  panel.classList.remove('hidden');
+  panel.textContent = 'Publicando o site e aguardando o deploy ficar pronto...';
   try {
-    const res = await studioFetch(API + '/projects/prepare', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ demoId: state.selectedDemoId, domainName: domain })
+    const res = await studioFetch(API + '/projects/deploy-netlify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ demoId: state.selectedDemoId, customDomain: domain })
     });
     const data = await res.json();
-    if (!data.success) throw new Error(data.error);
-    const panel = document.getElementById('pubPanel');
-    panel.classList.remove('hidden');
-    panel.innerHTML = `<b>🚀 Projeto pronto para publicação</b> (status real: READY_TO_PUBLISH — o deploy automático requer integração futura com Vercel/Netlify).<br><br>
-      <b>Publicação manual via ZIP:</b><br>
-      • <b>Vercel:</b> ${data.instructions.vercel.join(' → ')}<br>
-      • <b>Netlify:</b> ${data.instructions.netlify.join(' → ')}<br>
-      • <b>Host próprio:</b> ${data.instructions.hosting.join(' → ')}<br><br>
-      Use o botão <b>Exportar ZIP</b> e arraste para o provedor escolhido.`;
-    toast('Projeto de publicação criado', 'ok');
-  } catch (e) { toast('Erro: ' + e.message, 'err'); }
+    if (!res.ok || !data.success) throw new Error(data.error || 'Falha no deploy');
+    const url = data.publicUrl || data.deployment?.publicUrl;
+    panel.innerHTML = '<b>✅ Site publicado no Netlify</b><br><br>' +
+      '<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + url + '</a><br><br>' +
+      '<small>Deploy: ' + (data.deployment?.deployId || 'confirmado') + '</small>';
+    toast('Site publicado com sucesso no Netlify!', 'ok');
+    await refreshVersions();
+  } catch (e) {
+    panel.innerHTML = '<b>❌ Publicação não concluída</b><br><br>' + String(e.message || e);
+    toast('Erro no Netlify: ' + (e.message || e), 'err');
+  } finally {
+    btnLoading('btnPublish', false);
+  }
 }
-
 init();
 </script>
 </body>
