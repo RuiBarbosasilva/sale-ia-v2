@@ -281,11 +281,29 @@ export class WebsiteService {
         businessName,
         category,
         city,
+        positioning: customData.positioning || `\${businessName} em \${city}`,
+        valueProposition: customData.valueProposition || 'Presença digital profissional e geração de contatos',
         targetAudience: customData.targetAudience || 'Clientes locais',
         objective: customData.objective || 'Presença digital profissional'
       },
+      strategy: {
+        primaryGoal: customData.primaryGoal || 'Gerar contatos e oportunidades comerciais',
+        secondaryGoals: customData.secondaryGoals || ['Fortalecer presença digital', 'Apresentar serviços'],
+        primaryCTA: customData.primaryCTA || 'Falar no WhatsApp',
+        secondaryCTA: customData.secondaryCTA || 'Conhecer serviços',
+        conversionStrategy: customData.conversionStrategy || 'CTA direto, prova de valor e contato facilitado'
+      },
+      ux: {
+        informationArchitecture: [],
+        navigation: ['Início', 'Serviços', 'Benefícios', 'FAQ', 'Contato'],
+        userJourney: ['Conhecer a empresa', 'Entender a oferta', 'Ver benefícios', 'Entrar em contato'],
+        sectionOrder: ['hero', 'services', 'benefits', 'faq', 'contact']
+      },
       content: {
-        heroHeadline: content.heroHeadline,
+        heroHeadline: content.heroHeadline || `\${businessName}: soluções profissionais em \${city}`,
+        heroSubheadline: content.heroSubheadline || 'Atendimento profissional para clientes da região.',
+        primaryCTA: content.primaryCTA || 'Falar no WhatsApp',
+        secondaryCTA: content.secondaryCTA || 'Conhecer serviços',
         services: (content.services || []).map((s: any) => ({
           title: typeof s === 'string' ? s : s.title,
           description: typeof s === 'string' ? '' : s.description
@@ -294,9 +312,30 @@ export class WebsiteService {
           title: typeof b === 'string' ? b : b.title,
           description: typeof b === 'string' ? '' : b.description
         })),
-        faq: content.faq || []
+        socialProof: [],
+        faq: content.faq || [],
+        contactContent: customData.contactContent || `Entre em contato com \${businessName}.`
       },
-      design: { visualDirection: design.visualStyle || creatorType }
+      design: {
+        visualDirection: design.visualStyle || creatorType,
+        mood: 'Profissional, confiável e moderno',
+        colorStrategy: 'Contraste equilibrado e CTA destacado',
+        typographyStrategy: 'Tipografia legível com hierarquia clara',
+        spacingStrategy: 'Espaçamento consistente e respirado',
+        componentStrategy: 'Componentes simples, claros e orientados à conversão',
+        imageStrategy: 'Imagens reais e contextualizadas do segmento'
+      },
+      responsive: {
+        desktop: 'Layout amplo com hierarquia visual e navegação completa',
+        tablet: 'Grid adaptável e espaçamento intermediário',
+        mobile: 'Layout em coluna, CTAs acessíveis e conteúdo legível'
+      },
+      seo: {
+        title: `\${businessName} | \${city}`,
+        metaDescription: `Conheça \${businessName}, seus serviços e formas de contato em \${city}.`,
+        keywords: [businessName, category, city].filter(Boolean),
+        headingStrategy: 'Um H1 principal e H2 por seção'
+      }
     };
 
     const imageResult = await websiteImageService.acquireAssets(
