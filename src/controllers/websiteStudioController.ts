@@ -21,6 +21,7 @@ import { PrismaClient } from '@prisma/client';
 import { websiteService } from '../services/website/websiteService';
 import { buildZip } from '../utils/zipUtils';
 import { websiteImportedTemplateService } from '../services/website/websiteImportedTemplateService';
+import { rbFactorySiteMaintenanceService } from '../services/website/rbFactorySiteMaintenanceService';
 
 const prisma = new PrismaClient();
 
@@ -529,9 +530,21 @@ export const websiteStudioController = {
       const project = await websiteService.markProjectPublished(projectId, {
         domainName, hostingProvider, sourceCodeRepo
       });
+
+      let maintenanceClient = null;
+      try {
+        maintenanceClient = await rbFactorySiteMaintenanceService.createFromProject(project.id, {
+          maintenancePlan: 'MONITORING',
+          suggestionIntervalDays: 30
+        });
+      } catch (maintenanceError: any) {
+        console.error('[Studio] maintenance client:', maintenanceError?.message || maintenanceError);
+      }
+
       res.json({
         success: true,
         project,
+        maintenanceClient,
         publicationStatus: 'PUBLISHED'
       });
     } catch (e: any) {
