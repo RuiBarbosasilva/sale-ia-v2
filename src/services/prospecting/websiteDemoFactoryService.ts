@@ -210,12 +210,15 @@ export class WebsiteDemoFactoryService {
       });
 
       const result = await this.generateDemoForProspect(job.prospectId);
+      const qualityApproved =
+        result.qualityRecommendation === 'approve' &&
+        Number(result.qualityScore || 0) >= 7.5;
 
       await prisma.websiteDemoJob.update({
         where: { id: jobId },
         data: {
-          status: 'READY',
-          currentStage: 'Concluido',
+          status: qualityApproved ? 'READY' : 'NEEDS_REVIEW',
+          currentStage: qualityApproved ? 'Concluido' : 'Aguardando revisao de qualidade',
           progress: 100,
           demoId: result.demoId,
           completedAt: new Date(),
