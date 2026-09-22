@@ -242,7 +242,7 @@ function buildStaticZip(html: string, companyName: string, projectId: string, as
   return buildZip([
     { name: 'index.html', content: html },
     { name: 'metadata/site.json', content: JSON.stringify(metadata, null, 2) },
-    { name: 'README.txt', content: 'RB Factory — site publicado via Netlify\\nEmpresa: ' + safeName + '\\n' },
+    { name: 'README.txt', content: 'RB Factory — site publicado via Netlify\nEmpresa: ' + safeName + '\n' },
     ...assetFiles
   ]);
 }
