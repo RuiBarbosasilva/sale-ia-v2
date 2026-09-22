@@ -76,7 +76,7 @@ export const rbFactorySalesService={
   async buildDemo(prospectId:string,options?:{niche?:string;modelIndex?:number}){
     await init();
     await this.createFromProspect(prospectId);
-    const result=await websiteDemoFactoryService.generateDemoForProspect(prospectId,{useAI:true});
+    const result=await websiteDemoFactoryService.generateDemoForProspect(prospectId,{useAI:true,niche:options?.niche,modelIndex:options?.modelIndex});
     if(result.qualityRecommendation !== 'approve' || Number(result.qualityScore || 0) < 7.5) {
       throw new Error('DEMO_QUALITY_GATE');
     }
