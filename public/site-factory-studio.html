@@ -258,6 +258,21 @@ const API = '/api/websites/studio';
 let state = { prospects: [], templates: [], versions: [], selectedDemoId: null, prospectId: null };
 
 // ---------- IMPORTAÇÃO DE MODELOS ----------
+async function studioFetch(url, options = {}, retry = true) {
+  const opts = { ...options, headers: new Headers(options.headers || {}) };
+  const storedKey = sessionStorage.getItem('saleIaAdminKey') || '';
+  if (storedKey) opts.headers.set('x-sale-ia-admin-key', storedKey);
+  let res = await fetch(url, opts);
+  if (res.status === 401 && retry) {
+    const entered = prompt('Chave administrativa do SALE-IA:', storedKey);
+    if (entered && entered.trim()) {
+      sessionStorage.setItem('saleIaAdminKey', entered.trim());
+      return studioFetch(url, options, false);
+    }
+  }
+  return res;
+}
+
 function adminTemplateHeaders() {
   const headers = {};
   const key = sessionStorage.getItem('saleIaAdminKey') || '';
@@ -284,12 +299,12 @@ async function importTemplateFile(event) {
   fd.append('segment', document.getElementById('tplImportSegment').value.trim());
   fd.append('description', document.getElementById('tplImportDescription').value.trim());
   try {
-    let res = await fetch(API + '/templates/import', { method:'POST', headers:adminTemplateHeaders(), body:fd });
+    let res = await studioFetch(API + '/templates/import', { method:'POST', headers:adminTemplateHeaders(), body:fd });
     if (res.status === 401) {
       const key = prompt('Chave administrativa do SALE-IA:', sessionStorage.getItem('saleIaAdminKey') || '');
       if (!key || !key.trim()) throw new Error('Acesso administrativo não informado');
       sessionStorage.setItem('saleIaAdminKey', key.trim());
-      res = await fetch(API + '/templates/import', { method:'POST', headers:adminTemplateHeaders(), body:fd });
+      res = await studioFetch(API + '/templates/import', { method:'POST', headers:adminTemplateHeaders(), body:fd });
     }
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.error || 'Falha na importação');
@@ -304,7 +319,7 @@ async function importTemplateFile(event) {
   }
 }
 async function loadTemplates() {
-  const res = await fetch(API + '/templates', { headers: adminTemplateHeaders() });
+  const res = await studioFetch(API + '/templates', { headers: adminTemplateHeaders() });
   const data = await res.json();
   state.templates = data.templates || [];
   const tpl = document.getElementById('templateSelect');
@@ -342,8 +357,8 @@ function checkedValues(id) {
 async function init() {
   try {
     const [p, t] = await Promise.all([
-      fetch(API + '/prospects', { headers: adminTemplateHeaders() }).then(r => r.json()),
-      fetch(API + '/templates', { headers: adminTemplateHeaders() }).then(r => r.json())
+      studioFetch(API + '/prospects', { headers: adminTemplateHeaders() }).then(r => r.json()),
+      studioFetch(API + '/templates', { headers: adminTemplateHeaders() }).then(r => r.json())
     ]);
     state.prospects = p.prospects || [];
     state.templates = t.templates || [];
@@ -361,8 +376,9 @@ async function createProspect() {
   const companyName = document.getElementById('npName').value.trim();
   if (!companyName) return toast('Informe o nome da empresa', 'err');
   try {
-    const res = await fetch(API + '/prospects', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+    const res = await studioFetch(API + '/prospects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         companyName,
         segment: document.getElementById('npSegment').value.trim(),
@@ -371,17 +387,33 @@ async function createProspect() {
       })
     });
     const data = await res.json();
-    if (!data.success) throw new Error(data.error);
+    if (!res.ok || !data.success) throw new Error(data.error || 'Falha ao criar prospect');
     toast('Prospect criado!', 'ok');
     toggleNewProspect();
-    await async function loadAssets(demoId) {
+    await init();
+    if (data.prospect?.id) {
+      document.getElementById('prospectSelect').value = data.prospect.id;
+      await onProspectChange();
+    }
+  } catch (e) {
+    toast('Erro: ' + e.message, 'err');
+  }
+}
+
+async function loadAssets(demoId) {
   const panel = document.getElementById('assetsPanel');
   const grid = document.getElementById('assetsGrid');
   if (!panel || !grid) return;
   try {
-    const r = await fetch(API + '/demos/' + demoId + '/assets').then(x => x.json());
-    const assets = r.assets || [];
-    if (!assets.length) { panel.classList.add('hidden'); grid.innerHTML = ''; return; }
+    const r = await studioFetch(API + '/demos/' + encodeURIComponent(demoId) + '/assets');
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || ('HTTP ' + r.status));
+    const assets = data.assets || [];
+    if (!assets.length) {
+      panel.classList.add('hidden');
+      grid.innerHTML = '';
+      return;
+    }
     panel.classList.remove('hidden');
     grid.innerHTML = assets.map(a =>
       '<div style="border:1px solid var(--sf-border);border-radius:8px;overflow:hidden;background:#fff">' +
@@ -395,13 +427,10 @@ async function createProspect() {
         '</div>' +
       '</div>'
     ).join('');
-  } catch (e) { panel.classList.add('hidden'); }
-}
-
-init();
-    document.getElementById('prospectSelect').value = data.prospect.id;
-    onProspectChange();
-  } catch (e) { toast('Erro: ' + e.message, 'err'); }
+  } catch (e) {
+    panel.classList.add('hidden');
+    grid.innerHTML = '';
+  }
 }
 
 async function onProspectChange() {
@@ -410,8 +439,8 @@ async function onProspectChange() {
   state.prospectId = pid;
   try {
     const [b, v] = await Promise.all([
-      fetch(API + '/briefing/' + pid).then(r => r.json()),
-      fetch(API + '/versions/' + pid).then(r => r.json())
+      studioFetch(API + '/briefing/' + pid).then(r => r.json()),
+      studioFetch(API + '/versions/' + pid).then(r => r.json())
     ]);
     const bf = b.briefing || {};
     document.getElementById('bfBusinessName').value = bf.businessName || '';
@@ -475,7 +504,7 @@ async function generateSite() {
   if (!cd.businessName || !cd.category || !cd.city) return toast('Preencha os campos obrigatórios (nome, segmento, cidade)', 'err');
   btnLoading('btnGenerate', true, 'Gerando site...');
   try {
-    const res = await fetch(API + '/generate', {
+    const res = await studioFetch(API + '/generate', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         prospectId: state.prospectId,
@@ -495,7 +524,7 @@ async function generateSite() {
 
 // ---------- VERSOES / PREVIEW ----------
 async function refreshVersions() {
-  const v = await fetch(API + '/versions/' + state.prospectId).then(r => r.json());
+  const v = await studioFetch(API + '/versions/' + state.prospectId).then(r => r.json());
   state.versions = v.versions || [];
   renderVersions();
 }
@@ -529,7 +558,7 @@ async function regenerate(mode) {
   const btnId = mode === 'content' ? 'btnRegenContent' : mode === 'design' ? 'btnRegenDesign' : 'btnRegenFull';
   btnLoading(btnId, true, 'Regenerando...');
   try {
-    const res = await fetch(API + '/demos/' + state.selectedDemoId + '/regenerate', {
+    const res = await studioFetch(API + '/demos/' + state.selectedDemoId + '/regenerate', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mode })
     });
@@ -549,7 +578,7 @@ function exportZip() {
 }
 async function approveDemo() {
   try {
-    const res = await fetch(API + '/demos/' + state.selectedDemoId + '/approve', { method: 'POST' });
+    const res = await studioFetch(API + '/demos/' + state.selectedDemoId + '/approve', { method: 'POST' });
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
     toast('Demo aprovada!', 'ok');
@@ -559,7 +588,7 @@ async function approveDemo() {
 async function preparePublish() {
   const domain = prompt('Domínio desejado (opcional):', '') || undefined;
   try {
-    const res = await fetch(API + '/projects/prepare', {
+    const res = await studioFetch(API + '/projects/prepare', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ demoId: state.selectedDemoId, domainName: domain })
     });
@@ -582,7 +611,7 @@ async function loadAssets(demoId) {
   const grid = document.getElementById('assetsGrid');
   if (!panel || !grid) return;
   try {
-    const r = await fetch(API + '/demos/' + demoId + '/assets').then(x => x.json());
+    const r = await studioFetch(API + '/demos/' + demoId + '/assets').then(x => x.json());
     const assets = r.assets || [];
     if (!assets.length) { panel.classList.add('hidden'); grid.innerHTML = ''; return; }
     panel.classList.remove('hidden');
