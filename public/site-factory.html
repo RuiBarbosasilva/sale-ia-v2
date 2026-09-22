@@ -138,6 +138,48 @@ main{min-width:0;padding:28px 34px 55px}.top{display:flex;justify-content:space-
   </div>
 </div>
 <script>
+window.__rbFactoryMainReady = false;
+window.addEventListener('error', function(e) {
+  window.__rbFactoryLastError = e.message || 'JavaScript error';
+});
+setTimeout(function(){
+  if (window.__rbFactoryMainReady) return;
+  var toastEl = document.getElementById('toast');
+  function show(msg){
+    if(toastEl){toastEl.textContent=msg;toastEl.style.display='block';setTimeout(function(){toastEl.style.display='none'},5000);}
+    else alert(msg);
+  }
+  function key(){return sessionStorage.getItem('saleIaAdminKey')||''}
+  function admin(path, opts){
+    opts=opts||{};
+    var headers=Object.assign({},opts.headers||{});
+    var k=key();
+    if(k) headers['x-sale-ia-admin-key']=k;
+    return fetch(path,Object.assign({},opts,{headers:headers})).then(function(r){
+      if(r.status===401){
+        var entered=prompt('Chave administrativa do SALE-IA:',k);
+        if(!entered||!entered.trim()) throw new Error('ADMIN_UNAUTHORIZED');
+        sessionStorage.setItem('saleIaAdminKey',entered.trim());
+        headers['x-sale-ia-admin-key']=entered.trim();
+        return fetch(path,Object.assign({},opts,{headers:headers}));
+      }
+      return r;
+    });
+  }
+  var bind=function(id,fn){var el=document.getElementById(id);if(el&&!el.dataset.rbFallback){el.dataset.rbFallback='1';el.addEventListener('click',fn)}};
+  bind('btnAdminKey',function(){var v=prompt('Chave administrativa do SALE-IA:',key());if(v!==null){if(v.trim())sessionStorage.setItem('saleIaAdminKey',v.trim());else sessionStorage.removeItem('saleIaAdminKey');location.reload();}});
+  bind('btnProspect',function(){var m=document.getElementById('prospectModal');if(m)m.classList.add('open');});
+  bind('btnRefresh',function(){location.reload();});
+  bind('sellerToggle',function(){admin('/api/rb-factory-sales-autonomy/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({city:'Poços de Caldas',state:'MG',niches:['clínicas','hamburguerias','restaurantes','advogados','odontologia'],maxResults:10,batchSize:10})}).then(function(r){return r.json()}).then(function(x){if(!x.success)throw new Error(x.error||'Falha ao iniciar');show('Vendedor IA iniciado');location.reload()}).catch(function(e){show('RB Factory: '+e.message)});
+  });
+  bind('sellerCommandToggle',function(){document.getElementById('sellerToggle').click()});
+  bind('sellerStart',function(){document.getElementById('sellerToggle').click()});
+  bind('sellerStop',function(){admin('/api/rb-factory-sales-autonomy/stop',{method:'POST'}).then(function(r){return r.json()}).then(function(x){if(!x.success)throw new Error(x.error||'Falha ao parar');show('Vendedor IA parado');location.reload()}).catch(function(e){show('RB Factory: '+e.message)});
+  });
+  show('Modo de recuperação ativado. O JavaScript principal do dashboard não iniciou. Último erro: '+(window.__rbFactoryLastError||'desconhecido'));
+},1200);
+</script>
+<script>
 const API='/api';
 const $=id=>document.getElementById(id);
 function key(){return sessionStorage.getItem('saleIaAdminKey')||''}
@@ -269,6 +311,7 @@ window.resolveSellerAlert=resolveSellerAlert;
 window.toggleSeller=toggleSeller;
 window.stopSeller=stopSeller;
 window.refreshAll=refreshAll;
+window.__rbFactoryMainReady = true;
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>{refreshAll();setInterval(refreshAll,60000);});
 else {refreshAll();setInterval(refreshAll,60000);}
 </script>
