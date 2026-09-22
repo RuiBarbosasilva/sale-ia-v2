@@ -2,8 +2,10 @@
 import { Router } from 'express';
 import { adminAuthorization } from '../middlewares/security';
 import { websiteController } from '../controllers/websiteController';
+import multer from 'multer';
 
 const router = Router();
+const templateUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024, files: 1 } });
 
 router.post('/analyze', (req, res) => websiteController.analyze(req, res));
 router.post('/generate', (req, res) => websiteController.generate(req, res));
@@ -22,6 +24,7 @@ router.use(adminAuthorization);
 router.get('/studio/prospects', websiteStudioController.listProspects);
 router.post('/studio/prospects', websiteStudioController.createProspect);
 router.get('/studio/templates', websiteStudioController.listTemplates);
+router.post('/studio/templates/import', templateUpload.single('file'), websiteStudioController.importTemplate);
 router.get('/studio/briefing/:prospectId', websiteStudioController.getBriefing);
 router.get('/studio/versions/:prospectId', websiteStudioController.listVersions);
 router.post('/studio/generate', websiteStudioController.generateFromBriefing);
