@@ -6,5 +6,6 @@ router.use(adminAuthorization);
 router.get('/dashboard',rbFactoryCommercialController.dashboard);
 router.post('/bootstrap',rbFactoryCommercialController.bootstrap);
 router.get('/outreach-queue',rbFactoryCommercialController.queue);
+router.get('/today',rbFactoryCommercialController.today);
 router.post('/prospects/:id/follow-up',rbFactoryCommercialController.followUp);
 export default router;
