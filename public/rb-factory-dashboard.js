@@ -16,16 +16,28 @@
     window.__rbFactoryToastTimer = window.setTimeout(() => { el.style.display = 'none'; }, 2600);
   }
 
+  let adminKeyPromptPromise = null;
+
   async function requestAdminKey(force) {
     const current = key();
     if (!force && current) return current;
-    const entered = window.prompt('Chave administrativa do SALE-IA:', current);
-    if (entered !== null && entered.trim()) {
-      sessionStorage.setItem('saleIaAdminKey', entered.trim());
-      return entered.trim();
-    }
-    if (force) sessionStorage.removeItem('saleIaAdminKey');
-    return key();
+    if (adminKeyPromptPromise) return adminKeyPromptPromise;
+
+    adminKeyPromptPromise = Promise.resolve().then(() => {
+      const latest = key();
+      const entered = window.prompt('Chave administrativa do SALE-IA:', latest);
+      if (entered !== null && entered.trim()) {
+        const normalized = entered.trim();
+        sessionStorage.setItem('saleIaAdminKey', normalized);
+        return normalized;
+      }
+      if (force) sessionStorage.removeItem('saleIaAdminKey');
+      return key();
+    }).finally(() => {
+      adminKeyPromptPromise = null;
+    });
+
+    return adminKeyPromptPromise;
   }
 
   async function apiFetch(path, options = {}) {
