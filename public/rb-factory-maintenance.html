@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RB Factory — Clientes & Manutenção</title>
+<style>
+body{margin:0;font-family:Inter,Arial,sans-serif;background:#f4f7fb;color:#172033}
+header{background:#0f172a;color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center}
+main{max-width:1200px;margin:24px auto;padding:0 18px}
+.card{background:#fff;border:1px solid #dbe3ee;border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 6px 24px rgba(15,23,42,.06)}
+button{border:0;border-radius:9px;padding:10px 13px;cursor:pointer;font-weight:700}
+.primary{background:#2563eb;color:#fff}.muted{background:#e8eef7;color:#172033}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+input,textarea,select{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:9px;padding:10px;margin-top:6px}
+small{color:#64748b}.tag{display:inline-block;padding:4px 8px;border-radius:99px;background:#eef2ff;margin:3px;font-size:11px}
+.hidden{display:none}
+pre{white-space:pre-wrap;font-size:12px}
+</style>
+</head>
+<body>
+<header><b>🛠 RB Factory — Clientes & Manutenção</b><a href="/site-factory.html" style="color:#fff">← Dashboard</a></header>
+<main>
+<div class="card">
+<h2>Carteira de sites</h2>
+<p><small>Depois da venda, o cliente permanece dentro do RB Factory. O sistema guarda a versão atual, histórico, solicitações e sugestões de evolução.</small></p>
+<button class="primary" onclick="load()">Atualizar</button>
+<button class="muted" onclick="generateSuggestions()">Gerar sugestões vencidas</button>
+</div>
+<div id="clients" class="grid"></div>
+<div id="detail" class="card hidden"></div>
+</main>
+<script>
+const headers=()=>{const h={};const k=sessionStorage.getItem('saleIaAdminKey')||'';if(k)h['x-sale-ia-admin-key']=k;return h};
+async function req(url,opt={}){opt.headers={...(opt.headers||{}),...headers()};let r=await fetch(url,opt);if(r.status===401){const k=prompt('Chave administrativa do SALE-IA:',sessionStorage.getItem('saleIaAdminKey')||'');if(!k)throw new Error('Acesso administrativo não informado');sessionStorage.setItem('saleIaAdminKey',k.trim());opt.headers=({...opt.headers,'x-sale-ia-admin-key':k.trim()});r=await fetch(url,opt)}const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||'Erro');return d}
+async function load(){const d=await req('/api/rb-factory-maintenance/clients');document.getElementById('clients').innerHTML=(d.clients||[]).map(c=>'<div class="card"><h3>'+esc(c.companyName)+'</h3><div class="tag">'+esc(c.status)+'</div><div class="tag">'+esc(c.maintenancePlan)+'</div><p><small>Domínio: '+esc(c.domainName||'não informado')+'<br>Próxima revisão: '+esc(c.nextSuggestionAt||'não agendada')+'</small></p><button class="primary" onclick="openClient(\''+c.id+'\')">Abrir cliente</button></div>').join('')||'<div class="card">Nenhum cliente de manutenção cadastrado.</div>'}
+async function openClient(id){const d=await req('/api/rb-factory-maintenance/clients/'+id);const c=d.client;document.getElementById('detail').classList.remove('hidden');document.getElementById('detail').innerHTML='<h2>'+esc(c.companyName)+'</h2><p><small>Demo atual: '+esc(c.currentDemoId||'n/d')+'</small></p><h3>Solicitar alteração</h3><input id="ctitle" placeholder="Ex.: Trocar telefone do site"><textarea id="cdesc" rows="4" placeholder="Descreva exatamente o que o cliente pediu"></textarea><button class="primary" onclick="addRequest(\''+id+'\')">Registrar solicitação</button><hr><h3>Sugestões</h3>'+(d.suggestions||[]).map(s=>'<div class="card"><b>'+esc(s.title)+'</b><p>'+esc(s.reason)+'</p><small>'+esc(s.status)+' · '+esc(s.priority)+'</small></div>').join('')+'<h3>Solicitações</h3>'+(d.requests||[]).map(r=>'<div class="card"><b>'+esc(r.title)+'</b><p>'+esc(r.description)+'</p><small>'+esc(r.status)+' · '+esc(r.priority)+'</small>'+(r.status==='OPEN'?'<br><button class="primary" onclick="applyReq(\''+id+'\',\''+r.id+'\')">Gerar nova versão</button>':'')+'</div>').join('')}
+async function addRequest(id){await req('/api/rb-factory-maintenance/clients/'+id+'/change-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:document.getElementById('ctitle').value,description:document.getElementById('cdesc').value,type:'CONTENT'})});await openClient(id)}
+async function applyReq(id,rid){if(!confirm('Gerar uma nova versão do site com esta solicitação?'))return;const d=await req('/api/rb-factory-maintenance/clients/'+id+'/change-requests/'+rid+'/apply',{method:'POST'});alert('Nova versão gerada: '+d.version);window.open(d.previewUrl,'_blank');await openClient(id)}
+async function generateSuggestions(){const d=await req('/api/rb-factory-maintenance/suggestions/generate-due',{method:'POST'});alert(d.count+' sugestão(ões) gerada(s).');await load()}
+function esc(v){return String(v??'').replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]))}
+load().catch(e=>alert(e.message))
+</script>
+</body>
+</html>
