@@ -153,6 +153,9 @@ export const websiteStudioController = {
         version: result.demo.version,
         aiUsed: result.aiUsed,
         creatorType: result.creatorType,
+        assets: result.assets || [],
+        assetsSummary: result.assetsSummary || null,
+        qualityScore: result.qualityReview?.overallScore ?? null,
         previewUrl: `/api/websites/studio/demos/${result.demo.id}/html`,
         exportUrl: `/api/websites/studio/demos/${result.demo.id}/export`
       });
