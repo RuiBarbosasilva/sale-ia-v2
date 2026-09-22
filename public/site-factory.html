@@ -174,9 +174,9 @@ async function adminFetch(path,options={}){
 }
 function openProspects(){ $('prospectsBrowser').classList.add('open'); loadProspectBrowser(); }
 function openDemos(){ document.getElementById('demosTable').scrollIntoView({behavior:'smooth',block:'center'}); }
-function setAdminKey(){const v=prompt('Chave administrativa do SALE-IA:',key());if(v!==null){if(v.trim())sessionStorage.setItem('saleIaAdminKey',v.trim());else sessionStorage.removeItem('saleIaAdminKey');refreshAll()}}
+
 function closeProspects(){ $('prospectsBrowser').classList.remove('open'); }
-function openDemos(){ document.getElementById('demosTable').scrollIntoView({behavior:'smooth',block:'center'}); }
+
 async function loadProspectBrowser(){
   const box=$('prospectBrowserTable');box.innerHTML='<div class="empty">Carregando…</div>';
   try{
