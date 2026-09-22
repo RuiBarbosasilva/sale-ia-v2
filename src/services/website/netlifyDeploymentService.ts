@@ -63,6 +63,31 @@ async function createSite(name: string, customDomain?: string): Promise<NetlifyS
   return response.data;
 }
 
+async function findSiteByName(name: string): Promise<NetlifySite | null> {
+  const response = await axios.get<NetlifySite[]>(NETLIFY_API + '/sites', {
+    params: { name },
+    headers: authHeaders(),
+    timeout: 30000,
+  });
+  const sites = Array.isArray(response.data) ? response.data : [];
+  return sites.find(site => String(site.name || '') === name) || null;
+}
+
+async function updateSite(siteId: string, customDomain?: string): Promise<NetlifySite> {
+  const body: Record<string, any> = {};
+  if (customDomain) body.custom_domain = customDomain;
+  if (!Object.keys(body).length) return getSite(siteId);
+  const response = await axios.patch<NetlifySite>(
+    NETLIFY_API + '/sites/' + encodeURIComponent(siteId),
+    body,
+    {
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      timeout: 30000,
+    }
+  );
+  return response.data;
+}
+
 async function getSite(siteId: string): Promise<NetlifySite> {
   const response = await axios.get<NetlifySite>(NETLIFY_API + '/sites/' + encodeURIComponent(siteId), {
     headers: authHeaders(),
@@ -119,20 +144,31 @@ export const netlifyDeploymentService = {
     if (!input.projectId || !input.html) throw new Error('NETLIFY_INVALID_DEPLOYMENT');
 
     let site: NetlifySite;
+    const customDomain = String(input.customDomain || '').trim()
+      .replace(/^https?:\/\//i, '')
+      .replace(/\/.*$/, '')
+      .replace(/\/$/, '');
+
     if (input.existingSiteId) {
       site = await getSite(input.existingSiteId);
+      if (customDomain && site.custom_domain !== customDomain) {
+        site = await updateSite(site.id || input.existingSiteId, customDomain);
+      }
     } else {
-      const customDomain = String(input.customDomain || '').trim()
-        .replace(/^https?:\/\//i, '')
-        .replace(/\/.*$/, '')
-        .replace(/\/$/, '');
-      site = await createSite(siteSlug(input.companyName, input.projectId), customDomain || undefined);
+      const desiredName = siteSlug(input.companyName, input.projectId);
+      site = await findSiteByName(desiredName) || await createSite(desiredName, customDomain || undefined);
+      if (customDomain && site.custom_domain !== customDomain) {
+        site = await updateSite(site.id || '', customDomain);
+      }
     }
 
     if (!site.id) throw new Error('NETLIFY_SITE_ID_MISSING');
 
     const localized = await localizeAssets(input.html, Array.isArray(input.assets) ? input.assets : []);
     const zip = buildStaticZip(localized.html, input.companyName, input.projectId, localized.files);
+    if (zip.length > 24 * 1024 * 1024) {
+      throw new Error('NETLIFY_DEPLOY_TOO_LARGE');
+    }
     const deploy = await deployZip(site.id, zip);
     if (!deploy.id) throw new Error('NETLIFY_DEPLOY_ID_MISSING');
 
