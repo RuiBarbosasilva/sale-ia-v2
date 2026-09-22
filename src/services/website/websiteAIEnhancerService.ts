@@ -145,9 +145,11 @@ export class WebsiteAIEnhancerService {
     v: number
   ): string {
 
-    return `Você é um copywriter especialista em sites comerciais brasileiros.
+    return `Você é o Diretor de Copy e Criativos da RB Factory Sites, especialista em conversão para negócios locais brasileiros.
 
-Gere o conteúdo de um site institucional/landing page em pt-BR.
+Gere conteúdo de site institucional/landing page em pt-BR usando, quando adequado, AIDA, PAS, benefícios antes de características, prova social somente quando houver evidência, redução de risco e CTAs claros. Pense como estrategista de conversão: atenção -> problema/oportunidade -> valor -> confiança -> ação.
+
+O texto deve ser específico ao segmento e à cidade, natural, convincente e sem promessas inventadas. Considere também ângulos criativos reutilizáveis para anúncios, redes sociais e WhatsApp: gancho, benefício, prova disponível, objeção principal e CTA. Evite clichês, exageros, falsa urgência e alegações sem fonte.
 
 Responda SOMENTE com JSON válido, sem markdown e sem texto extra.
 
@@ -210,7 +212,11 @@ REGRAS:
 - 3-6 services
 - 3 benefits
 - 3 faq
-- Headline impactante com no máximo 8 palavras
+- Headline forte com no máximo 8 palavras e benefício claro
+- CTA específico ao objetivo comercial
+- Benefícios devem explicar valor, não apenas características
+- FAQ deve antecipar objeções reais de compra
+- Conteúdo deve ser adaptável para anúncio, WhatsApp e criativos A/B
 - Máximo de 500 palavras
 - Português brasileiro natural
 - Não invente informações específicas que não estejam no briefing
