@@ -341,10 +341,8 @@ export class WebsiteService {
       },
       content: {
         heroHeadline: content.heroHeadline || `\${businessName}: soluções profissionais em \${city}`,
-        heroSubheadline: content.heroSubheadline || 'Atendimento profissional para clientes da região.',
-        primaryCTA: content.primaryCTA || 'Falar no WhatsApp',
-        secondaryCTA: content.secondaryCTA || 'Conhecer serviços',
-        services: (content.services || []).map((s: any) => ({
+        heroSubtitle: content.heroSubtitle || 'Atendimento profissional para clientes da região.',
+        ctaText: content.ctaText || 'Falar no WhatsApp',
           title: typeof s === 'string' ? s : s.title,
           description: typeof s === 'string' ? '' : s.description
         })),
