@@ -120,7 +120,9 @@ export const netlifyDeploymentService = {
     if (input.existingSiteId) {
       site = await getSite(input.existingSiteId);
     } else {
-      site = await createSite(siteSlug(input.companyName, input.projectId), normalizeUrl(input.customDomain) || undefined);
+      const customDomain = String(input.customDomain || '').trim()
+        .replace(/^https?:\\/\\//i, '').replace(/\\/.*$/, '').replace(/\\/$/, '');
+      site = await createSite(siteSlug(input.companyName, input.projectId), customDomain || undefined);
     }
 
     if (!site.id) throw new Error('NETLIFY_SITE_ID_MISSING');
