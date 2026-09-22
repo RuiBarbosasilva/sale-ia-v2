@@ -44,6 +44,12 @@ export class WebsiteDemoFactoryService {
 
       const customData = {
         businessName: prospect.companyName,
+        benchmarkNiche: options.niche || null,
+        benchmarkModelIndex: options.modelIndex || null,
+        benchmarkSelection: options.niche || options.modelIndex ? {
+          niche: options.niche || null,
+          index: options.modelIndex || null,
+        } : null,
         segment: prospect.segment || prospect.segment || 'empresa',
         category: prospect.segment || prospect.segment,
         city: prospect.city || '',
