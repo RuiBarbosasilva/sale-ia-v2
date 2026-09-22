@@ -121,9 +121,9 @@ export const netlifyDeploymentService = {
       site = await getSite(input.existingSiteId);
     } else {
       const customDomain = String(input.customDomain || '').trim()
-        .replace(/^https?:\\/\\//i, '')
-        .replace(/\\/.*$/, '')
-        .replace(/\\/$/, '');
+        .replace(/^https?:\/\//i, '')
+        .replace(/\/.*$/, '')
+        .replace(/\/$/, '');
       site = await createSite(siteSlug(input.companyName, input.projectId), customDomain || undefined);
     }
 
