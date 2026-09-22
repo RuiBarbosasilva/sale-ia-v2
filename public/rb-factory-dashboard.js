@@ -16,43 +16,67 @@
     window.__rbFactoryToastTimer = window.setTimeout(() => { el.style.display = 'none'; }, 2600);
   }
 
-  let adminKeyPromptPromise = null;
+  let adminAuthPromise = null;
 
-  async function requestAdminKey(force) {
-    const current = key();
-    if (!force && current) return current;
-    if (adminKeyPromptPromise) return adminKeyPromptPromise;
+  async function ensureAdminKey(forcePrompt = false) {
+    if (adminAuthPromise) return adminAuthPromise;
 
-    adminKeyPromptPromise = Promise.resolve().then(() => {
-      const latest = key();
-      const entered = window.prompt('Chave administrativa do SALE-IA:', latest);
-      if (entered !== null && entered.trim()) {
-        const normalized = entered.trim();
-        sessionStorage.setItem('saleIaAdminKey', normalized);
-        return normalized;
+    adminAuthPromise = (async () => {
+      let current = key();
+
+      if (!forcePrompt && current) {
+        const check = await fetch(API + '/rb-factory-sales-autonomy/status', {
+          headers: { 'x-sale-ia-admin-key': current },
+          cache: 'no-store'
+        });
+        if (check.ok) return current;
+        if (check.status !== 401) throw new Error('ADMIN_AUTH_CHECK_' + check.status);
       }
-      if (force) sessionStorage.removeItem('saleIaAdminKey');
-      return key();
-    }).finally(() => {
-      adminKeyPromptPromise = null;
+
+      const entered = window.prompt('Chave administrativa do SALE-IA:', current || '');
+      if (entered === null || !entered.trim()) {
+        sessionStorage.removeItem('saleIaAdminKey');
+        throw new Error('ADMIN_UNAUTHORIZED');
+      }
+
+      current = entered.trim();
+      sessionStorage.setItem('saleIaAdminKey', current);
+
+      const verify = await fetch(API + '/rb-factory-sales-autonomy/status', {
+        headers: { 'x-sale-ia-admin-key': current },
+        cache: 'no-store'
+      });
+      if (!verify.ok) {
+        sessionStorage.removeItem('saleIaAdminKey');
+        throw new Error('ADMIN_UNAUTHORIZED');
+      }
+
+      return current;
+    })().finally(() => {
+      adminAuthPromise = null;
     });
 
-    return adminKeyPromptPromise;
+    return adminAuthPromise;
   }
 
   async function apiFetch(path, options = {}) {
     const headers = Object.assign({}, options.headers || {});
-    const k = key();
-    if (k) headers['x-sale-ia-admin-key'] = k;
+    let k = key();
+
+    if (!k) {
+      k = await ensureAdminKey(false);
+    }
+
+    headers['x-sale-ia-admin-key'] = k;
 
     let response = await fetch(path, Object.assign({}, options, { headers }));
 
     if (response.status === 401) {
-      const entered = await requestAdminKey(true);
-      if (!entered) throw new Error('ADMIN_UNAUTHORIZED');
-      headers['x-sale-ia-admin-key'] = entered;
+      k = await ensureAdminKey(true);
+      headers['x-sale-ia-admin-key'] = k;
       response = await fetch(path, Object.assign({}, options, { headers }));
     }
+
     return response;
   }
 
