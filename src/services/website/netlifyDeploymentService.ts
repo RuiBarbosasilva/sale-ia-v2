@@ -1,4 +1,5 @@
 import axios from 'axios';
+import path from 'path';
 
 const NETLIFY_API = 'https://api.netlify.com/api/v1';
 
@@ -110,6 +111,7 @@ export const netlifyDeploymentService = {
     projectId: string;
     companyName: string;
     html: string;
+    assets?: any[];
     customDomain?: string;
     existingSiteId?: string | null;
   }) {
@@ -129,7 +131,8 @@ export const netlifyDeploymentService = {
 
     if (!site.id) throw new Error('NETLIFY_SITE_ID_MISSING');
 
-    const zip = buildStaticZip(input.html, input.companyName, input.projectId);
+    const localized = await localizeAssets(input.html, Array.isArray(input.assets) ? input.assets : []);
+    const zip = buildStaticZip(localized.html, input.companyName, input.projectId, localized.files);
     const deploy = await deployZip(site.id, zip);
     if (!deploy.id) throw new Error('NETLIFY_DEPLOY_ID_MISSING');
 
@@ -151,7 +154,46 @@ export const netlifyDeploymentService = {
   }
 };
 
-function buildStaticZip(html: string, companyName: string, projectId: string): Buffer {
+async function localizeAssets(html: string, assets: any[]): Promise<{ html: string; files: Array<{ name: string; content: Buffer }> }> {
+  let localizedHtml = html;
+  const files: Array<{ name: string; content: Buffer }> = [];
+  const seen = new Set<string>();
+
+  for (let index = 0; index < assets.length && files.length < 40; index++) {
+    const asset = assets[index] || {};
+    const sourceUrl = String(asset.sourceUrl || asset.url || asset.imageUrl || '').trim();
+    if (!/^https?:\\/\\//i.test(sourceUrl) || seen.has(sourceUrl)) continue;
+    seen.add(sourceUrl);
+
+    try {
+      const response = await axios.get<ArrayBuffer>(sourceUrl, {
+        responseType: 'arraybuffer',
+        timeout: 20000,
+        maxContentLength: 8 * 1024 * 1024,
+        maxBodyLength: 8 * 1024 * 1024,
+        headers: { 'User-Agent': 'Sale-IA-RB-Factory/1.0' }
+      });
+      const contentType = String(response.headers['content-type'] || '').split(';')[0].toLowerCase();
+      let ext = path.extname(new URL(sourceUrl).pathname).toLowerCase();
+      if (!/^\\.(jpe?g|png|webp|gif|svg)$/.test(ext)) {
+        ext = contentType === 'image/png' ? '.png'
+          : contentType === 'image/webp' ? '.webp'
+          : contentType === 'image/gif' ? '.gif'
+          : contentType === 'image/svg+xml' ? '.svg' : '.jpg';
+      }
+      const fileName = 'assets/image-' + String(files.length + 1) + ext;
+      const buffer = Buffer.from(response.data);
+      files.push({ name: fileName, content: buffer });
+      localizedHtml = localizedHtml.split(sourceUrl).join(fileName);
+    } catch {
+      // Mantém a URL remota quando o provedor não permite download.
+    }
+  }
+
+  return { html: localizedHtml, files };
+}
+
+function buildStaticZip(html: string, companyName: string, projectId: string, assetFiles: Array<{ name: string; content: Buffer }> = []): Buffer {
   const { buildZip } = require('../../utils/zipUtils') as typeof import('../../utils/zipUtils');
   const safeName = String(companyName || 'site').replace(/[\\/:*?"<>|]+/g, '-');
   const metadata = {
@@ -164,6 +206,7 @@ function buildStaticZip(html: string, companyName: string, projectId: string): B
   return buildZip([
     { name: 'index.html', content: html },
     { name: 'metadata/site.json', content: JSON.stringify(metadata, null, 2) },
-    { name: 'README.txt', content: 'RB Factory — site publicado via Netlify\\nEmpresa: ' + safeName + '\\n' }
+    { name: 'README.txt', content: 'RB Factory — site publicado via Netlify\\nEmpresa: ' + safeName + '\\n' },
+    ...assetFiles
   ]);
 }
