@@ -109,8 +109,30 @@ export class WebsiteImportedTemplateService {
       archiveData:isZip?file.buffer:undefined,active:true
     }});
   }
-  async listActive(){ return prisma.websiteImportedTemplate.findMany({where:{active:true},orderBy:{createdAt:'desc'},select:{id:true,name:true,slug:true,description:true,segment:true,sourceType:true,active:true,createdAt:true}}); }
+  async listActive(){ return prisma.websiteImportedTemplate.findMany({where:{active:true},orderBy:[{favorite:'desc'},{createdAt:'desc'}],select:{id:true,name:true,slug:true,description:true,segment:true,sourceType:true,active:true,favorite:true,usageCount:true,createdAt:true,updatedAt:true}}); }
+  async listLibrary(options:{includeInactive?:boolean;search?:string;segment?:string;favorite?:boolean}={}) {
+    const where:any={};
+    if(!options.includeInactive) where.active=true;
+    if(options.segment) where.segment=options.segment;
+    if(options.favorite===true) where.favorite=true;
+    if(options.search) where.OR=[{name:{contains:options.search}},{slug:{contains:options.search}},{description:{contains:options.search}},{segment:{contains:options.search}}];
+    return prisma.websiteImportedTemplate.findMany({where,orderBy:[{favorite:'desc'},{active:'desc'},{usageCount:'desc'},{createdAt:'desc'}],select:{id:true,name:true,slug:true,description:true,segment:true,sourceType:true,active:true,favorite:true,usageCount:true,createdAt:true,updatedAt:true}});
+  }
   async get(id:string){ return prisma.websiteImportedTemplate.findUnique({where:{id}}); }
-  async render(id:string,customData:any){ const t=await this.get(id); if(!t||!t.active) throw new Error('Modelo importado não encontrado'); return renderTemplateHtml(t.html,customData); }
+  async update(id:string,data:{name?:string;description?:string|null;segment?:string|null;favorite?:boolean;active?:boolean}) {
+    const current=await this.get(id); if(!current) throw new Error('Modelo importado não encontrado');
+    const patch:any={};
+    if(data.name!==undefined) patch.name=String(data.name).trim().slice(0,120);
+    if(data.description!==undefined) patch.description=data.description?String(data.description).slice(0,500):null;
+    if(data.segment!==undefined) patch.segment=data.segment?String(data.segment).slice(0,80):null;
+    if(data.favorite!==undefined) patch.favorite=Boolean(data.favorite);
+    if(data.active!==undefined) patch.active=Boolean(data.active);
+    if(patch.name!==undefined&&!patch.name) throw new Error('Nome do modelo é obrigatório');
+    return prisma.websiteImportedTemplate.update({where:{id},data:patch});
+  }
+  async remove(id:string){ const current=await this.get(id); if(!current) throw new Error('Modelo importado não encontrado'); await prisma.websiteImportedTemplate.delete({where:{id}}); return {id}; }
+  async getArchive(id:string){ const t=await this.get(id); if(!t) throw new Error('Modelo importado não encontrado'); if(!t.archiveData) throw new Error('Este modelo não possui o ZIP original armazenado'); return {name:t.name,slug:t.slug,archiveData:t.archiveData}; }
+  async preview(id:string,customData:any={}) { const t=await this.get(id); if(!t||!t.active) throw new Error('Modelo importado não encontrado'); return renderTemplateHtml(t.html,{businessName:'Prévia RB Factory',city:'Poços de Caldas',category:t.segment||'Negócio local',ctaText:'Fale conosco',...customData}); }
+  async render(id:string,customData:any){ const t=await this.get(id); if(!t||!t.active) throw new Error('Modelo importado não encontrado'); await prisma.websiteImportedTemplate.update({where:{id},data:{usageCount:{increment:1}}}); return renderTemplateHtml(t.html,customData); }
 }
 export const websiteImportedTemplateService=new WebsiteImportedTemplateService();
