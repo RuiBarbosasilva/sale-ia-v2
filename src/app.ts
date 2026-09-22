@@ -22,6 +22,8 @@ import salesOrchestrationRoutes from './routes/salesOrchestrationRoutes';
 import opportunitySalesBridgeRoutes from './routes/opportunitySalesBridgeRoutes';
 import rbFactorySalesRoutes from './routes/rbFactorySalesRoutes';
 import rbFactorySalesAgentRoutes from './routes/rbFactorySalesAgentRoutes';
+import rbFactorySiteMaintenanceRoutes from './routes/rbFactorySiteMaintenanceRoutes';
+import { startRbFactoryMaintenanceJob } from './jobs/rbFactoryMaintenanceJob';
 
 const app = express();
 
@@ -55,6 +57,7 @@ app.get('/editorial', (_req, res) => res.sendFile('editorial/index.html', { root
 app.get('/sales', (_req, res) => res.sendFile('sales/index.html', { root: 'public' }));
 app.get(['/dashboard', '/dashboard/'], (_req, res) => res.sendFile('dashboard/index.html', { root: 'public' }));
 app.get('/rb-factory-benchmark', (_req, res) => res.sendFile('rb-factory-benchmark/index.html', { root: 'public' }));
+app.get('/rb-factory-maintenance', (_req, res) => res.sendFile('rb-factory-maintenance.html', { root: 'public' }));
 app.use('/generated-images', express.static('storage/generated-images'));
 
 app.use('/api', apiRoutes);
@@ -72,9 +75,11 @@ app.use('/api/sales', seniorSalesRoutes);
 app.use('/api/sales-orchestration', salesOrchestrationRoutes);
 app.use('/api/opportunity-sales', opportunitySalesBridgeRoutes);
 app.use('/api/rb-factory-sales', rbFactorySalesRoutes);
+app.use('/api/rb-factory-maintenance', rbFactorySiteMaintenanceRoutes);
 app.use('/go', affiliatePublicRoutes);
 app.use('/api/mercadolivre', mlRoutes);
 app.use('/dashboard', dashboardRoutes);
+startRbFactoryMaintenanceJob();
 app.use(errorHandler);
 
 export default app;
