@@ -38,7 +38,7 @@ export class WebsiteController {
 
   async listDemos(req: Request, res: Response) {
     try {
-      const demos = await (require('@prisma/client').PrismaClient ? new (require('@prisma/client').PrismaClient)().websiteDemo.findMany({ orderBy: { createdAt: 'desc' }, take: 50, include: { prospect: true } }) : []);
+      const demos = await (require('@prisma/client').PrismaClient ? new (require('@prisma/client').PrismaClient)().websiteDemo.findMany({ orderBy: { generatedAt: 'desc' }, take: 50, include: { prospect: true } }) : []);
       res.json({ success: true, demos });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
