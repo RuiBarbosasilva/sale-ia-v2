@@ -602,22 +602,26 @@ export class WebsiteService {
 
   async markProjectPublished(
     projectId: string,
-    details: { domainName?: string; hostingProvider?: string; sourceCodeRepo?: string }
+    details: { domainName?: string; hostingProvider?: string; sourceCodeRepo?: string; publicUrl?: string; hostingSiteId?: string; hostingDeployId?: string }
   ) {
     const project = await prisma.websiteProject.findUnique({ where: { id: projectId } });
     if (!project) throw new Error('WEBSITE_PROJECT_NOT_FOUND');
 
     const domainName = details.domainName?.trim() || project.domainName;
     const hostingProvider = details.hostingProvider?.trim() || project.hostingProvider;
-    if (!domainName) throw new Error('DOMAIN_REQUIRED');
+    const publicUrl = details.publicUrl?.trim() || project.publicUrl;
+    if (!domainName && !publicUrl) throw new Error('DOMAIN_REQUIRED');
     if (!hostingProvider) throw new Error('HOSTING_PROVIDER_REQUIRED');
 
     return prisma.websiteProject.update({
       where: { id: projectId },
       data: {
-        domainName,
+        domainName: domainName || publicUrl,
         hostingProvider,
         sourceCodeRepo: details.sourceCodeRepo?.trim() || project.sourceCodeRepo,
+        publicUrl,
+        hostingSiteId: details.hostingSiteId?.trim() || project.hostingSiteId,
+        hostingDeployId: details.hostingDeployId?.trim() || project.hostingDeployId,
         status: 'PUBLISHED'
       }
     });
