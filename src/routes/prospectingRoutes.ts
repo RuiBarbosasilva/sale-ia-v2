@@ -2,10 +2,12 @@
 
 import { Router } from 'express';
 import { prospectingController } from '../controllers/prospectingController';
+import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
 
 router.get('/health', prospectingController.health);
+router.use(adminAuthorization);
 
 router.post('/search', prospectingController.searchProspects);
 router.get('/search/:id', prospectingController.getSearchStatus);
