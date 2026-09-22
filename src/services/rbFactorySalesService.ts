@@ -77,6 +77,9 @@ export const rbFactorySalesService={
     await init();
     await this.createFromProspect(prospectId);
     const result=await websiteDemoFactoryService.generateDemoForProspect(prospectId,{useAI:true});
+    if(result.qualityRecommendation !== 'approve' || Number(result.qualityScore || 0) < 7.5) {
+      throw new Error('DEMO_QUALITY_GATE');
+    }
     const model=options?.modelIndex ? {index:options.modelIndex,niche:options.niche||null} : null;
     const pipeline=await (prisma as any).$queryRawUnsafe('SELECT notes FROM "RbFactorySalesPipeline" WHERE prospectId=? LIMIT 1',prospectId);
     let notes:any={};
@@ -89,6 +92,11 @@ export const rbFactorySalesService={
   async buildProposal(prospectId:string){
     await init();
     await this.createFromProspect(prospectId);
+    const demo=await prisma.websiteDemo.findFirst({
+      where:{prospectId,status:{in:['READY','APPROVED']}},
+      orderBy:{version:'desc'}
+    });
+    if(!demo) throw new Error('DEMO_NOT_READY_FOR_PROPOSAL');
     const proposal=await proposalGeneratorService.generateProposal(prospectId);
     await (prisma as any).$executeRawUnsafe(`UPDATE "RbFactorySalesPipeline" SET stage='PROPOSAL_READY',proposalId=?,nextAction='CONTACT_PROSPECT',updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,proposal.id,prospectId);
     const salesAgent=await rbFactorySalesAgentService.prepareProposalApproach(prospectId,'WHATSAPP');
