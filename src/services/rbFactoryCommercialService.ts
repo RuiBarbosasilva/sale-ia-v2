@@ -47,6 +47,43 @@ export const rbFactoryCommercialService={
     return candidates.map((p:any)=>({prospectId:p.id,companyName:p.companyName,channel:'WHATSAPP_OR_MANUAL',reason:p.websiteStatus==='NO_WEBSITE'?'Empresa sem site identificado':'Oportunidade de melhoria digital',suggestedMessage:`Olá, ${p.companyName}! Sou da RB Factory. Analisei rapidamente a presença digital da empresa e preparei uma ideia de como ela poderia ter um site mais profissional e voltado para gerar contatos. Posso te enviar a demonstração sem compromisso?`}));
   },
 
+  async today(city='Poços de Caldas',segment?:string){
+    const data=await this.dashboard(city,segment);
+    const now=Date.now();
+    const rows=(data.pipelines||[]).map((p:any)=>{
+      const due=p.nextFollowUpAt && new Date(p.nextFollowUpAt).getTime()<=now;
+      const stale=p.updatedAt && (now-new Date(p.updatedAt).getTime())>=7*86400000;
+      const contacted=Boolean(p.contactedAt);
+      const stage=String(p.stage||'');
+      const status=String(p.status||'');
+      let bucket:string|null=null;
+      if(due) bucket='FOLLOW_UP_DUE';
+      else if(stage==='WON' || stage==='ACCEPTED' || status==='WON') bucket='WON_READY';
+      else if(stage==='NEGOTIATION' && stale) bucket='NEGOTIATION_STALLED';
+      else if(stage==='PROPOSAL_READY' || stage==='PROPOSAL_SENT' || status==='PROPOSAL_SENT') bucket='PROPOSAL_WAITING';
+      else if(stage==='DEMO_READY') bucket='DEMO_TO_SEND';
+      else if(stage==='AUDITED' || p.nextAction==='GENERATE_DEMO') bucket='DEMO_TO_GENERATE';
+      else if(!contacted && ['DISCOVERED','AUDITED'].includes(stage)) bucket='NEW_CONTACT';
+      return bucket ? {...p,bucket,actionLabel:({
+        FOLLOW_UP_DUE:'Fazer follow-up',
+        WON_READY:'Preparar projeto',
+        NEGOTIATION_STALLED:'Retomar negociação',
+        PROPOSAL_WAITING:'Ver proposta',
+        DEMO_TO_SEND:'Enviar demo',
+        DEMO_TO_GENERATE:'Gerar demo',
+        NEW_CONTACT:'Primeiro contato'
+      } as any)[bucket]} : null;
+    }).filter(Boolean);
+    const order=['FOLLOW_UP_DUE','DEMO_TO_GENERATE','DEMO_TO_SEND','NEW_CONTACT','PROPOSAL_WAITING','NEGOTIATION_STALLED','WON_READY'];
+    const buckets:any={};
+    for(const key of order) buckets[key]=rows.filter((r:any)=>r.bucket===key).slice(0,25);
+    return {
+      city,segment:segment||null,
+      summary:Object.fromEntries(order.map(k=>[k,buckets[k].length])),
+      buckets
+    };
+  },
+
   async scheduleFollowUp(prospectId:string,days=3,note?:string){
     const when=new Date(Date.now()+Math.max(1,Math.min(90,days))*86400000);
     const p=await prisma.websiteProspect.update({where:{id:prospectId},data:{nextFollowUpAt:when,lastContactAt:new Date(),notes:note||undefined}});
