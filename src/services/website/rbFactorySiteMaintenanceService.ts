@@ -279,7 +279,7 @@ export const rbFactorySiteMaintenanceService = {
 
   async markSuggestionSent(id: string) {
     const result = await prisma.$executeRawUnsafe(
-      `UPDATE "RbFactorySiteSuggestion" SET "status"='SENT', "sentAt"=?, WHERE "id"=?`, nowIso(), id
+      `UPDATE "RbFactorySiteSuggestion" SET "status"='SENT', "sentAt"=? WHERE "id"=?`, nowIso(), id
     );
     return result;
   }
