@@ -1,0 +1,13 @@
+import {Router} from 'express';
+import {adminAuthorization} from '../middlewares/security';
+import {rbFactorySalesAutonomyController} from '../controllers/rbFactorySalesAutonomyController';
+const router=Router();
+router.use(adminAuthorization);
+router.get('/status',rbFactorySalesAutonomyController.status);
+router.get('/history',rbFactorySalesAutonomyController.history);
+router.get('/alerts',rbFactorySalesAutonomyController.alerts);
+router.post('/start',rbFactorySalesAutonomyController.start);
+router.post('/stop',rbFactorySalesAutonomyController.stop);
+router.post('/alerts/:id/acknowledge',rbFactorySalesAutonomyController.acknowledge);
+router.post('/alerts/:id/resolve',rbFactorySalesAutonomyController.resolve);
+export default router;
