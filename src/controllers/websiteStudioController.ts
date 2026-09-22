@@ -20,6 +20,7 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { websiteService } from '../services/website/websiteService';
 import { buildZip } from '../utils/zipUtils';
+import { websiteImportedTemplateService } from '../services/website/websiteImportedTemplateService';
 
 const prisma = new PrismaClient();
 
@@ -78,15 +79,50 @@ export const websiteStudioController = {
   // ---------- TEMPLATES ----------
   async listTemplates(req: Request, res: Response) {
     try {
-      const templates = await prisma.websiteTemplate.findMany({
-        where: { active: true },
-        include: { category: { select: { name: true, slug: true } } },
-        orderBy: { featured: 'desc' }
-      });
-      res.json({ success: true, templates });
+      const [templates, importedTemplates] = await Promise.all([
+        prisma.websiteTemplate.findMany({
+          where: { active: true },
+          include: { category: { select: { name: true, slug: true } } },
+          orderBy: { featured: 'desc' }
+        }),
+        websiteImportedTemplateService.listActive()
+      ]);
+      const imported = importedTemplates.map((t) => ({
+        ...t,
+        id: 'imported:' + t.id,
+        source: 'IMPORTED',
+        category: t.segment ? { name: t.segment, slug: t.segment } : null,
+        featured: true
+      }));
+      res.json({ success: true, templates: [...templates, ...imported] });
     } catch (e: any) {
       console.error('[Studio] listTemplates:', e.message);
       res.status(500).json({ success: false, error: 'Erro ao listar templates' });
+    }
+  },
+
+  // ---------- IMPORTAÇÃO DE MODELOS HTML / ZIP ----------
+  async importTemplate(req: Request, res: Response) {
+    try {
+      const file = (req as any).file;
+      if (!file) return res.status(400).json({ success: false, error: 'Envie um arquivo HTML ou ZIP no campo file' });
+      const template = await websiteImportedTemplateService.importFile(file, {
+        name: req.body?.name,
+        description: req.body?.description,
+        segment: req.body?.segment
+      });
+      res.status(201).json({
+        success: true,
+        template: {
+          ...template,
+          archiveData: undefined,
+          id: 'imported:' + template.id,
+          source: 'IMPORTED'
+        }
+      });
+    } catch (e: any) {
+      console.error('[Studio] importTemplate:', e.message);
+      res.status(400).json({ success: false, error: e.message || 'Falha ao importar modelo' });
     }
   },
 
