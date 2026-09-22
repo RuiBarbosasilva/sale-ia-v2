@@ -226,15 +226,55 @@ export class WebsiteService {
   async generateFromBriefing(prospectId: string, templateId: string | null, customData: any, useAI: boolean) {
     const prospect = await prisma.websiteProspect.findUnique({ where: { id: prospectId } });
     if (!prospect) throw new Error('Prospect não encontrado');
+    let importedTemplateId: string | null = null;
     if (templateId) {
-      const tpl = await prisma.websiteTemplate.findUnique({ where: { id: templateId } });
-      if (!tpl) throw new Error('Template não encontrado');
+      if (templateId.startsWith('imported:')) {
+        importedTemplateId = templateId.slice('imported:'.length);
+        const imported = await prisma.websiteImportedTemplate.findUnique({ where: { id: importedTemplateId } });
+        if (!imported || !imported.active) throw new Error('Modelo importado não encontrado');
+      } else {
+        const tpl = await prisma.websiteTemplate.findUnique({ where: { id: templateId } });
+        if (!tpl) throw new Error('Template não encontrado');
+      }
     }
 
     const businessName = customData.businessName || prospect.companyName || 'Sua Empresa';
     const category = customData.category || prospect.segment || 'negócio';
     const city = customData.city || prospect.city || 'sua cidade';
     const phone = customData.whatsapp || customData.phone || prospect.phone || '';
+    if (importedTemplateId) {
+      const { websiteImportedTemplateService } = await import('./websiteImportedTemplateService');
+      const html = await websiteImportedTemplateService.render(importedTemplateId, {
+        ...customData, businessName, category, city, phone,
+        whatsapp: customData.whatsapp || phone
+      });
+      const latestVersion = await prisma.websiteDemo.findFirst({
+        where: { prospectId }, orderBy: { version: 'desc' }, select: { version: true }
+      });
+      const version = (latestVersion?.version || 0) + 1;
+      const demo = await prisma.websiteDemo.create({
+        data: {
+          prospectId,
+          templateId: templateId || undefined,
+          sourceCode: html,
+          status: 'READY',
+          version,
+          previewData: JSON.stringify({
+            briefing: customData,
+            templateId,
+            templateSource: 'IMPORTED',
+            importedTemplateId,
+            useAI: false,
+            assets: [],
+            assetsSummary: { imageCount: 0, realImageCount: 0, placeholderCount: 0 },
+            generatedAt: new Date().toISOString()
+          })
+        }
+      });
+      await prisma.websiteProspect.update({ where: { id: prospectId }, data: { status: 'DEMO_GERADA' } });
+      return { demo, aiUsed: false, creatorType: 'imported-template', assets: [], assetsSummary: null, qualityReview: null };
+    }
+
     const creatorType = customData.visualStyle && String(customData.visualStyle).length > 0
       ? String(customData.visualStyle)
       : creatorSelector.selectCreator(prospect.segment || '');
