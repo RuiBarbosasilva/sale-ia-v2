@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 
 router.get('/overview', async (req: Request, res: Response) => {
   try {
-    const totalModels = await prisma.websiteTemplate.count({ where: { active: true } });
+    const [baseModels, importedModels] = await Promise.all([\n      prisma.websiteTemplate.count({ where: { active: true } }),\n      prisma.websiteImportedTemplate.count({ where: { active: true } })\n    ]);\n    const totalModels = baseModels + importedModels;
     const totalCategories = await prisma.websiteCategory.count({ where: { active: true } });
     const totalProspects = await prisma.websiteProspect.count();
     const totalDemos = await prisma.websiteDemo.count({ where: { status: 'READY' } });
