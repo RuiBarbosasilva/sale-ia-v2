@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 import { websiteDemoFactoryService } from './services/prospecting/websiteDemoFactoryService';
 ﻿import { mercadoLivreWebhookWorker } from './modules/mercadoLivre/workers/mercadoLivreWebhookWorker';
 import app from './app';
