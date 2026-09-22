@@ -341,8 +341,8 @@ function checkedValues(id) {
 async function init() {
   try {
     const [p, t] = await Promise.all([
-      fetch(API + '/prospects').then(r => r.json()),
-      fetch(API + '/templates').then(r => r.json())
+      fetch(API + '/prospects', { headers: adminTemplateHeaders() }).then(r => r.json()),
+      fetch(API + '/templates', { headers: adminTemplateHeaders() }).then(r => r.json())
     ]);
     state.prospects = p.prospects || [];
     state.templates = t.templates || [];
