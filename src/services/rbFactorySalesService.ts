@@ -100,9 +100,14 @@ export const rbFactorySalesService={
     const proposal=await prisma.websiteProposal.findFirst({where:{prospectId},orderBy:{id:'desc'}});
     if(!proposal) throw new Error('WEBSITE_PROPOSAL_NOT_FOUND');
     if(!['READY','SENT'].includes(proposal.status)) throw new Error('WEBSITE_PROPOSAL_NOT_READY');
+    if(proposal.status==='SENT') {
+      const salesAgent=await rbFactorySalesAgentService.ensureConversation(prospectId,'WHATSAPP');
+      const followUp=await rbFactorySalesAgentService.prepareProposalApproach(prospectId,'WHATSAPP');
+      return {...proposal,salesAgent:{conversationId:salesAgent.conversation.id,reused:salesAgent.reused,proposalApproach:followUp.draft},idempotent:true};
+    }
     const updated=await prisma.websiteProposal.update({
       where:{id:proposal.id},
-      data:{status:'SENT',sentAt:proposal.sentAt||new Date()}
+      data:{status:'SENT',sentAt:new Date()}
     });
     await prisma.websiteProspect.update({where:{id:prospectId},data:{status:'PROPOSAL_SENT',lastContactAt:new Date()}});
     await (prisma as any).$executeRawUnsafe(
