@@ -22,6 +22,7 @@ import { websiteService } from '../services/website/websiteService';
 import { buildZip } from '../utils/zipUtils';
 import { websiteImportedTemplateService } from '../services/website/websiteImportedTemplateService';
 import { rbFactorySiteMaintenanceService } from '../services/website/rbFactorySiteMaintenanceService';
+import { netlifyDeploymentService } from '../services/website/netlifyDeploymentService';
 
 const prisma = new PrismaClient();
 
@@ -552,6 +553,94 @@ export const websiteStudioController = {
       const status = ['WEBSITE_PROJECT_NOT_FOUND'].includes(message) ? 404
         : ['DOMAIN_REQUIRED', 'HOSTING_PROVIDER_REQUIRED'].includes(message) ? 400 : 500;
       res.status(status).json({ success: false, error: message });
+    }
+  },
+
+  // ---------- DEPLOY REAL NO NETLIFY ----------
+  async deployNetlify(req: Request, res: Response) {
+    try {
+      const { demoId, projectId, customDomain } = req.body || {};
+      if (!demoId && !projectId) {
+        return res.status(400).json({ success: false, error: 'demoId ou projectId é obrigatório' });
+      }
+      if (!netlifyDeploymentService.isConfigured()) {
+        return res.status(503).json({ success: false, error: 'NETLIFY_NOT_CONFIGURED' });
+      }
+
+      let project: any = null;
+      let demo: any = null;
+
+      if (projectId) {
+        project = await prisma.websiteProject.findUnique({
+          where: { id: projectId },
+          include: { prospect: true }
+        });
+        if (!project) return res.status(404).json({ success: false, error: 'WEBSITE_PROJECT_NOT_FOUND' });
+        demo = await prisma.websiteDemo.findFirst({
+          where: { prospectId: project.prospectId, status: { in: ['APPROVED', 'READY'] } },
+          orderBy: { generatedAt: 'desc' }
+        });
+      } else {
+        demo = await prisma.websiteDemo.findUnique({
+          where: { id: demoId },
+          include: { prospect: true }
+        });
+        if (!demo) return res.status(404).json({ success: false, error: 'Demo não encontrada' });
+        if (!['APPROVED', 'READY'].includes(demo.status)) {
+          return res.status(400).json({ success: false, error: 'DEMO_NOT_PUBLISHABLE' });
+        }
+        project = await websiteService.preparePublication(demo.id, customDomain);
+        project = await prisma.websiteProject.findUnique({
+          where: { id: project.id },
+          include: { prospect: true }
+        });
+      }
+
+      if (!demo?.sourceCode) {
+        return res.status(400).json({ success: false, error: 'SOURCE_CODE_NOT_AVAILABLE' });
+      }
+
+      const result = await netlifyDeploymentService.deployStaticSite({
+        projectId: project.id,
+        companyName: project.prospect.companyName,
+        html: demo.sourceCode,
+        customDomain: customDomain || project.domainName || undefined,
+        existingSiteId: project.hostingProvider === 'NETLIFY' ? project.hostingSiteId : null
+      });
+
+      const published = await websiteService.markProjectPublished(project.id, {
+        domainName: customDomain || project.domainName || result.publicUrl,
+        hostingProvider: 'NETLIFY',
+        publicUrl: result.publicUrl,
+        hostingSiteId: result.siteId,
+        hostingDeployId: result.deployId
+      });
+
+      let maintenanceClient = null;
+      try {
+        maintenanceClient = await rbFactorySiteMaintenanceService.createFromProject(published.id, {
+          maintenancePlan: 'MONITORING',
+          suggestionIntervalDays: 30
+        });
+      } catch (maintenanceError: any) {
+        console.error('[Studio] Netlify maintenance client:', maintenanceError?.message || maintenanceError);
+      }
+
+      return res.json({
+        success: true,
+        publicationStatus: 'PUBLISHED',
+        project: published,
+        deployment: result,
+        publicUrl: result.publicUrl,
+        maintenanceClient
+      });
+    } catch (e: any) {
+      const message = e?.message || 'Erro ao publicar no Netlify';
+      const status = ['NETLIFY_NOT_CONFIGURED'].includes(message) ? 503
+        : ['DEMO_NOT_PUBLISHABLE', 'SOURCE_CODE_NOT_AVAILABLE', 'DOMAIN_REQUIRED'].includes(message) ? 400
+        : ['WEBSITE_PROJECT_NOT_FOUND'].includes(message) ? 404 : 500;
+      console.error('[Studio] deployNetlify:', message);
+      return res.status(status).json({ success: false, error: message });
     }
   },
 
