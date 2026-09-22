@@ -1,0 +1,10 @@
+import {Router} from 'express';
+import {adminAuthorization} from '../middlewares/security';
+import {rbFactoryCommercialController} from '../controllers/rbFactoryCommercialController';
+const router=Router();
+router.use(adminAuthorization);
+router.get('/dashboard',rbFactoryCommercialController.dashboard);
+router.post('/bootstrap',rbFactoryCommercialController.bootstrap);
+router.get('/outreach-queue',rbFactoryCommercialController.queue);
+router.post('/prospects/:id/follow-up',rbFactoryCommercialController.followUp);
+export default router;
