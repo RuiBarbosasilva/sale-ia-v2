@@ -87,8 +87,13 @@
         <button class="btn btn-primary" onclick="createProspect()">Salvar Prospect</button>
       </div>
       <div class="sf-row" style="margin-top:8px">
-        <label>Template (opcional)</label>
-        <select id="templateSelect"><option value="">— Sem template (design automático) —</option></select>
+        <label>Modelo base</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="templateSelect" style="flex:1"><option value="">— Sem modelo (design automático) —</option></select>
+          <button class="btn btn-sec" type="button" onclick="openTemplateImport()">＋ Importar</button>
+        </div>
+        <div style="font-size:11px;color:var(--sf-muted);margin-top:6px">Aceita .html, .htm ou .zip. O modelo importado fica salvo na Biblioteca de Modelos.</div>
+        <input id="templateFile" type="file" accept=".html,.htm,.zip,text/html,application/zip" class="hidden" onchange="importTemplateFile(event)">
       </div>
     </div>
 
@@ -229,11 +234,87 @@
   </div>
 </div>
 
+<div id="templateImportModal" class="hidden" style="position:fixed;inset:0;background:rgba(15,23,42,.65);z-index:2000;display:none;place-items:center;padding:18px">
+  <div style="width:min(520px,100%);background:#fff;border-radius:12px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <h2 style="margin:0 0 6px;color:var(--sf-primary);font-size:18px">Importar modelo para a Biblioteca</h2>
+    <p style="margin:0 0 14px;color:var(--sf-muted);font-size:12px;line-height:1.5">Envie um HTML pronto ou um ZIP com <b>index.html</b>. O modelo poderá ser reutilizado nas próximas demos.</p>
+    <div class="sf-row"><label>Nome do modelo</label><input id="tplImportName" placeholder="Ex.: Restaurante Premium 01"></div>
+    <div class="sf-grid2">
+      <div class="sf-row"><label>Segmento</label><input id="tplImportSegment" placeholder="ex.: restaurante"></div>
+      <div class="sf-row"><label>Descrição</label><input id="tplImportDescription" placeholder="opcional"></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
+      <button class="btn btn-sec" type="button" onclick="closeTemplateImport()">Cancelar</button>
+      <button class="btn btn-primary" type="button" onclick="document.getElementById('templateFile').click()">Escolher arquivo</button>
+    </div>
+    <div id="templateImportStatus" style="margin-top:12px;font-size:11px;color:var(--sf-muted)"></div>
+  </div>
+</div>
 <div id="toast"></div>
 
 <script>
 const API = '/api/websites/studio';
 let state = { prospects: [], templates: [], versions: [], selectedDemoId: null, prospectId: null };
+
+// ---------- IMPORTAÇÃO DE MODELOS ----------
+function adminTemplateHeaders() {
+  const headers = {};
+  const key = sessionStorage.getItem('saleIaAdminKey') || '';
+  if (key) headers['x-sale-ia-admin-key'] = key;
+  return headers;
+}
+function openTemplateImport() {
+  document.getElementById('templateImportModal').style.display = 'grid';
+  document.getElementById('templateImportModal').classList.remove('hidden');
+  document.getElementById('templateImportStatus').textContent = '';
+}
+function closeTemplateImport() {
+  document.getElementById('templateImportModal').style.display = 'none';
+  document.getElementById('templateImportModal').classList.add('hidden');
+}
+async function importTemplateFile(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('templateImportStatus');
+  status.textContent = 'Importando e validando modelo...';
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('name', document.getElementById('tplImportName').value.trim());
+  fd.append('segment', document.getElementById('tplImportSegment').value.trim());
+  fd.append('description', document.getElementById('tplImportDescription').value.trim());
+  try {
+    let res = await fetch(API + '/templates/import', { method:'POST', headers:adminTemplateHeaders(), body:fd });
+    if (res.status === 401) {
+      const key = prompt('Chave administrativa do SALE-IA:', sessionStorage.getItem('saleIaAdminKey') || '');
+      if (!key || !key.trim()) throw new Error('Acesso administrativo não informado');
+      sessionStorage.setItem('saleIaAdminKey', key.trim());
+      res = await fetch(API + '/templates/import', { method:'POST', headers:adminTemplateHeaders(), body:fd });
+    }
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.error || 'Falha na importação');
+    toast('Modelo importado e salvo na biblioteca!', 'ok');
+    closeTemplateImport();
+    event.target.value = '';
+    await loadTemplates();
+    document.getElementById('templateSelect').value = data.template.id;
+  } catch (e) {
+    status.textContent = 'Erro: ' + e.message;
+    toast('Falha ao importar modelo: ' + e.message, 'err');
+  }
+}
+async function loadTemplates() {
+  const res = await fetch(API + '/templates', { headers: adminTemplateHeaders() });
+  const data = await res.json();
+  state.templates = data.templates || [];
+  const tpl = document.getElementById('templateSelect');
+  tpl.innerHTML = '<option value="">— Sem modelo (design automático) —</option>';
+  state.templates.forEach(t => {
+    const o = document.createElement('option');
+    o.value = t.id;
+    o.textContent = (t.source === 'IMPORTED' ? '📦 ' : '') + t.name + (t.category ? ' (' + t.category.name + ')' : '');
+    tpl.appendChild(o);
+  });
+}
 
 // ---------- UTIL ----------
 function toast(msg, type) {
@@ -269,12 +350,7 @@ async function init() {
     sel.innerHTML = state.prospects.length
       ? state.prospects.map(x => `<option value="${x.id}">${x.companyName}${x.city ? ' — ' + x.city : ''}</option>`).join('')
       : '<option value="">Nenhum prospect — crie um novo</option>';
-    const tpl = document.getElementById('templateSelect');
-    state.templates.forEach(t => {
-      const o = document.createElement('option');
-      o.value = t.id; o.textContent = t.name + (t.category ? ' (' + t.category.name + ')' : '');
-      tpl.appendChild(o);
-    });
+    await loadTemplates();
     if (state.prospects.length) onProspectChange();
   } catch (e) { toast('Erro ao carregar dados iniciais', 'err'); }
 }
