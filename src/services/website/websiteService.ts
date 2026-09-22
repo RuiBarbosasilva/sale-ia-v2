@@ -343,6 +343,7 @@ export class WebsiteService {
         heroHeadline: content.heroHeadline || `\${businessName}: soluções profissionais em \${city}`,
         heroSubtitle: content.heroSubtitle || 'Atendimento profissional para clientes da região.',
         ctaText: content.ctaText || 'Falar no WhatsApp',
+        services: (content.services || []).map((s: any) => ({
           title: typeof s === 'string' ? s : s.title,
           description: typeof s === 'string' ? '' : s.description
         })),
