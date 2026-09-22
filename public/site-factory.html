@@ -233,8 +233,34 @@ async function ackSellerAlert(id){try{const headers={'Content-Type':'application
 async function resolveSellerAlert(id){if(!confirm('Confirma que a negociação foi resolvida e que o Vendedor IA pode retomar este prospect?'))return;try{const headers={'Content-Type':'application/json'};const k=key();if(k)headers['x-sale-ia-admin-key']=k;const r=await adminFetch(API+'/rb-factory-sales-autonomy/alerts/'+encodeURIComponent(id)+'/resolve',{method:'POST',headers});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||('HTTP '+r.status));toast('Negociação resolvida; vendedor liberado');await sellerStatus();}catch(e){toast('Não foi possível retomar: '+e.message)}}
 async function toggleSeller(){try{const d=await get('/rb-factory-sales-autonomy/status');if(d.result?.status==='RUNNING')return stopSeller();const payload={city:'Poços de Caldas',state:'MG',niches:['clínicas','hamburguerias','restaurantes','advogados','odontologia'],maxResults:10,batchSize:10};const headers={'Content-Type':'application/json'};const k=key();if(k)headers['x-sale-ia-admin-key']=k;const r=await adminFetch(API+'/rb-factory-sales-autonomy/start',{method:'POST',headers,body:JSON.stringify(payload)});const x=await r.json();if(!r.ok||!x.success)throw new Error(x.error||('HTTP '+r.status));toast('Vendedor IA iniciado');await sellerStatus();}catch(e){toast('Não foi possível iniciar: '+e.message)}}
 async function stopSeller(){try{const headers={'Content-Type':'application/json'};const k=key();if(k)headers['x-sale-ia-admin-key']=k;const r=await adminFetch(API+'/rb-factory-sales-autonomy/stop',{method:'POST',headers});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||('HTTP '+r.status));toast('Vendedor IA parado');await sellerStatus();}catch(e){toast('Não foi possível parar: '+e.message)}}
-async function refreshAll(){ $('updated').textContent='Atualizando…'; await Promise.all([overview(),prospects(),demos(),sellerStatus()]); $('updated').textContent='Atualizado em '+new Date().toLocaleString('pt-BR'); toast('Dashboard atualizado');}
-refreshAll();setInterval(refreshAll,60000);
+async function refreshAll(){
+  $('updated').textContent='Atualizando…';
+  await Promise.allSettled([overview(),prospects(),demos(),sellerStatus()]);
+  $('updated').textContent='Atualizado em '+new Date().toLocaleString('pt-BR');
+  toast('Dashboard atualizado');
+}
+window.setAdminKey=setAdminKey;
+window.startProspecting=startProspecting;
+window.closeProspecting=closeProspecting;
+window.runProspecting=runProspecting;
+window.openProspects=openProspects;
+window.openDemos=openDemos;
+window.closeProspects=closeProspects;
+window.loadProspectBrowser=loadProspectBrowser;
+window.processProspectFromBrowser=processProspectFromBrowser;
+window.processProspect=processProspect;
+window.approveDemo=approveDemo;
+window.prepareProposal=prepareProposal;
+window.sendCommercialProposal=sendCommercialProposal;
+window.registerClientAcceptance=registerClientAcceptance;
+window.prepareCommercialPublication=prepareCommercialPublication;
+window.ackSellerAlert=ackSellerAlert;
+window.resolveSellerAlert=resolveSellerAlert;
+window.toggleSeller=toggleSeller;
+window.stopSeller=stopSeller;
+window.refreshAll=refreshAll;
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>{refreshAll();setInterval(refreshAll,60000);});
+else {refreshAll();setInterval(refreshAll,60000);}
 </script>
 </body>
 </html>
