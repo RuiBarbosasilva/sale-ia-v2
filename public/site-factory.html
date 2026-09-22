@@ -236,5 +236,34 @@ async function stopSeller(){try{const headers={'Content-Type':'application/json'
 async function refreshAll(){ $('updated').textContent='Atualizando…'; await Promise.all([overview(),prospects(),demos(),sellerStatus()]); $('updated').textContent='Atualizado em '+new Date().toLocaleString('pt-BR'); toast('Dashboard atualizado');}
 refreshAll();setInterval(refreshAll,60000);
 </script>
+<!-- RB Factory dashboard fallback controls: keeps critical actions operable even if an older inline script fails to parse. -->
+<script>
+(function(){
+  function k(){return sessionStorage.getItem('saleIaAdminKey')||''}
+  function headers(json){const h={};if(json)h['Content-Type']='application/json';const v=k();if(v)h['x-sale-ia-admin-key']=v;return h}
+  async function req(path,opts){
+    opts=opts||{}; opts.headers=Object.assign({},headers(Boolean(opts.body)),opts.headers||{});
+    let r=await fetch('/api'+path,opts);
+    if(r.status===401){
+      const v=prompt('Informe a Chave Administrativa do SALE-IA:',k());
+      if(v&&v.trim()){sessionStorage.setItem('saleIaAdminKey',v.trim());opts.headers=headers(Boolean(opts.body));r=await fetch('/api'+path,opts)}
+    }
+    return r;
+  }
+  window.setAdminKey=function(){const v=prompt('Chave administrativa do SALE-IA:',k());if(v!==null){if(v.trim())sessionStorage.setItem('saleIaAdminKey',v.trim());else sessionStorage.removeItem('saleIaAdminKey');window.location.reload()}}
+  window.startProspecting=function(){const m=document.getElementById('prospectModal');if(m)m.classList.add('open');const n=document.getElementById('pfNiche');if(n)n.focus()}
+  window.closeProspecting=function(){const m=document.getElementById('prospectModal');if(m)m.classList.remove('open')}
+  window.stopSeller=async function(){try{const r=await req('/rb-factory-sales-autonomy/stop',{method:'POST'});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||('HTTP '+r.status));alert('Vendedor IA desligado.');window.location.reload()}catch(e){alert('Não foi possível desligar o Vendedor IA: '+e.message)}}
+  window.toggleSeller=async function(){
+    try{
+      const s=await req('/rb-factory-sales-autonomy/status');const sd=await s.json();
+      if(sd.result&&sd.result.status==='RUNNING'){return window.stopSeller()}
+      const r=await req('/rb-factory-sales-autonomy/start',{method:'POST',body:JSON.stringify({city:'Poços de Caldas',state:'MG',niches:['clínicas','hamburguerias','restaurantes','advogados','odontologia'],maxResults:10,batchSize:10})});
+      const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||('HTTP '+r.status));alert('Vendedor IA ligado.');window.location.reload()
+    }catch(e){alert('Não foi possível ligar o Vendedor IA: '+e.message)}
+  }
+  window.refreshAll=async function(){window.location.reload()}
+})();
+</script>
 </body>
 </html>
