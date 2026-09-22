@@ -604,6 +604,14 @@ export const websiteStudioController = {
         projectId: project.id,
         companyName: project.prospect.companyName,
         html: demo.sourceCode,
+        assets: (() => {
+          try {
+            const parsed = JSON.parse(demo.previewData || '{}');
+            return Array.isArray(parsed.assets) ? parsed.assets : [];
+          } catch {
+            return [];
+          }
+        })(),
         customDomain: customDomain || project.domainName || undefined,
         existingSiteId: project.hostingProvider === 'NETLIFY' ? project.hostingSiteId : null
       });
