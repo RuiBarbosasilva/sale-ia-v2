@@ -45,7 +45,7 @@ async function inlineZipAssets(html: string, files: Map<string,Buffer>): Promise
   for (const [cssPath, data] of files.entries()) {
     if (!/\.css$/i.test(cssPath)) continue;
     const escaped = cssPath.replace(/[.*+?^$()|[\]\\]/g,'\\$&');
-    const link = new RegExp('<link[^>]+href=["\\'][^"\\']*' + escaped + '[^>]*>', 'i');
+    const link = new RegExp("<link[^>]+href=["']([^"']*)"+escaped+"[^>]*>", "i");
     if (!link.test(out)) continue;
     let css = data.toString('utf8');
     css = css.replace(/url\(([^)]+)\)/gi, (full,raw) => {
