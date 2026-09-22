@@ -606,30 +606,6 @@ async function preparePublish() {
   } catch (e) { toast('Erro: ' + e.message, 'err'); }
 }
 
-async function loadAssets(demoId) {
-  const panel = document.getElementById('assetsPanel');
-  const grid = document.getElementById('assetsGrid');
-  if (!panel || !grid) return;
-  try {
-    const r = await studioFetch(API + '/demos/' + demoId + '/assets').then(x => x.json());
-    const assets = r.assets || [];
-    if (!assets.length) { panel.classList.add('hidden'); grid.innerHTML = ''; return; }
-    panel.classList.remove('hidden');
-    grid.innerHTML = assets.map(a =>
-      '<div style="border:1px solid var(--sf-border);border-radius:8px;overflow:hidden;background:#fff">' +
-        '<img src="' + a.sourceUrl + '" alt="' + (a.alt || '') + '" style="width:100%;height:90px;object-fit:cover;display:block" loading="lazy">' +
-        '<div style="padding:6px;font-size:10px;color:var(--sf-muted);line-height:1.5">' +
-          '<b>' + a.usage + '</b><br>' +
-          'provider: ' + a.provider + '<br>' +
-          'licenca: ' + (a.license || 'n/d') + '<br>' +
-          (a.author ? 'autor: ' + a.author + '<br>' : '') +
-          'alt: ' + (a.alt || '').substring(0, 46) +
-        '</div>' +
-      '</div>'
-    ).join('');
-  } catch (e) { panel.classList.add('hidden'); }
-}
-
 init();
 </script>
 </body>
