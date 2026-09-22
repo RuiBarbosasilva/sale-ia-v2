@@ -37,8 +37,8 @@ main{min-width:0;padding:28px 34px 55px}.top{display:flex;justify-content:space-
     <a href="/site-factory-studio.html">✦ Studio</a>
     <a href="/rb-factory-benchmark">▦ Biblioteca de referências</a>
     <a href="/rb-factory-template-library.html">▣ Biblioteca de modelos</a>
-    <a href="#prospects" onclick="openProspects();return false">◌ Prospects</a>
-    <a href="#demos" onclick="openDemos();return false">◈ Demos</a>
+    <a href="#prospects" id="navProspects">◌ Prospects</a>
+    <a href="#demos" id="navDemos">◈ Demos</a>
   </nav>
   <div class="nav-label">Central</div>
   <nav class="nav">
@@ -47,14 +47,14 @@ main{min-width:0;padding:28px 34px 55px}.top{display:flex;justify-content:space-
   <div class="side-bottom"><b><span class="dot"></span>Factory operacional</b><p>Prospecção → auditoria → demo → proposta → venda → publicação.</p></div>
 </aside>
 <main>
-  <div class="top"><div class="crumb">SALE-IA / <b>RB Factory Sites</b></div><div class="actions"><button class="btn" onclick="setAdminKey()">🔐 Chave</button><button class="btn" onclick="startProspecting()">⌕ Prospectar</button><button class="btn primary" id="sellerToggle" onclick="toggleSeller()">▶ Vendedor IA</button><button class="btn" onclick="refreshAll()">↻ Atualizar</button><a class="btn primary" href="/site-factory-studio.html">Abrir Studio</a></div></div>
+  <div class="top"><div class="crumb">SALE-IA / <b>RB Factory Sites</b></div><div class="actions"><button class="btn" id="btnAdminKey">🔐 Chave</button><button class="btn" id="btnProspect">⌕ Prospectar</button><button class="btn primary" id="sellerToggle">▶ Vendedor IA</button><button class="btn" id="btnRefresh">↻ Atualizar</button><a class="btn primary" href="/site-factory-studio.html">Abrir Studio</a></div></div>
   <section class="hero"><div><h1>Transforme negócios locais em sites que vendem.</h1><p>Central operacional para encontrar prospects, auditar presença digital, gerar demos premium, acompanhar propostas e preparar a conversão em cliente.</p></div><div class="timestamp" id="updated">—</div></section>
   <section class="seller-command panel" id="sellerCommand" aria-live="polite">
     <div class="seller-command-main">
       <div class="seller-command-icon">🤖</div>
       <div><div class="seller-command-label">VENDEDOR IA</div><h2 id="sellerCommandTitle">Vendedor IA está DESLIGADO</h2><p id="sellerCommandText">Clique em LIGAR para iniciar o trabalho comercial persistente da Factory.</p></div>
     </div>
-    <div class="seller-command-actions"><span class="seller-command-status" id="sellerCommandStatus">● DESLIGADO</span><button class="btn seller-on" id="sellerCommandToggle" onclick="toggleSeller()">▶ LIGAR VENDEDOR IA</button></div>
+    <div class="seller-command-actions"><span class="seller-command-status" id="sellerCommandStatus">● DESLIGADO</span><button class="btn seller-on" id="sellerCommandToggle">▶ LIGAR VENDEDOR IA</button></div>
   </section>
 
   <section class="kpis">
@@ -90,7 +90,7 @@ main{min-width:0;padding:28px 34px 55px}.top{display:flex;justify-content:space-
 
     <div>
       <div class="panel">
-        <div class="panel-head"><h2>Vendedor IA</h2><span id="sellerStatus">PARADO</span></div><div id="sellerControlBox" class="notice" style="margin:0 0 12px">O vendedor está parado. Ao iniciar, a Factory prospecta, qualifica oportunidades e prepara contatos pelos canais configurados.</div><div class="actions" style="margin-bottom:12px"><button class="btn primary" id="sellerStart" onclick="toggleSeller()">▶ Iniciar vendedor</button><button class="btn" id="sellerStop" onclick="stopSeller()">■ Parar vendedor</button></div><div class="status-line"><b>Último ciclo</b><span id="sellerLastCycle">—</span></div><div class="status-line"><b>Alertas</b><span id="sellerAlerts">—</span></div><div class="panel-head" style="margin-top:18px"><h2>Estado da Factory</h2><span>agora</span></div><div id="prospectingBox" class="notice" style="margin:0 0 12px">Use “Prospectar” para abrir o fluxo de descoberta de novos negócios.</div>
+        <div class="panel-head"><h2>Vendedor IA</h2><span id="sellerStatus">PARADO</span></div><div id="sellerControlBox" class="notice" style="margin:0 0 12px">O vendedor está parado. Ao iniciar, a Factory prospecta, qualifica oportunidades e prepara contatos pelos canais configurados.</div><div class="actions" style="margin-bottom:12px"><button class="btn primary" id="sellerStart">▶ Iniciar vendedor</button><button class="btn" id="sellerStop">■ Parar vendedor</button></div><div class="status-line"><b>Último ciclo</b><span id="sellerLastCycle">—</span></div><div class="status-line"><b>Alertas</b><span id="sellerAlerts">—</span></div><div class="panel-head" style="margin-top:18px"><h2>Estado da Factory</h2><span>agora</span></div><div id="prospectingBox" class="notice" style="margin:0 0 12px">Use “Prospectar” para abrir o fluxo de descoberta de novos negócios.</div>
         <div class="status-line"><b>Pesquisa de prospects</b><span id="sProspects">—</span></div>
         <div class="status-line"><b>Geração profissional</b><span id="sDemos">—</span></div>
         <div class="status-line"><b>Qualidade / imagens</b><span>Gate ativo</span></div>
@@ -239,6 +239,16 @@ async function refreshAll(){
   $('updated').textContent='Atualizado em '+new Date().toLocaleString('pt-BR');
   toast('Dashboard atualizado');
 }
+const bind=(id,fn)=>{const el=$(id);if(el)el.addEventListener('click',fn)};
+bind('btnAdminKey',setAdminKey);
+bind('btnProspect',startProspecting);
+bind('btnRefresh',refreshAll);
+bind('sellerToggle',toggleSeller);
+bind('sellerCommandToggle',toggleSeller);
+bind('sellerStart',toggleSeller);
+bind('sellerStop',stopSeller);
+bind('navProspects',e=>{e.preventDefault();openProspects()});
+bind('navDemos',e=>{e.preventDefault();openDemos()});
 window.setAdminKey=setAdminKey;
 window.startProspecting=startProspecting;
 window.closeProspecting=closeProspecting;
