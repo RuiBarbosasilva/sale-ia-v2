@@ -405,7 +405,7 @@ export class WebsiteService {
 
     const qualityReview = await websiteQualityService.review(
       html,
-      prd,
+      prd as any,
       design,
       assetsSummary
     );
