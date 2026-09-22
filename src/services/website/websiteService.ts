@@ -43,61 +43,81 @@ export class WebsiteService {
   async generateWebsite(prospectId: string) {
     const prospect = await prisma.websiteProspect.findUnique({ where: { id: prospectId } });
     if (!prospect) throw new Error('Prospect não encontrado');
-    
-    const creatorType = creatorSelector.selectCreator(prospect.segment || '');
+
+    const businessName = prospect.companyName || 'Sua Empresa';
+    const category = prospect.segment || 'negócio';
+    const city = prospect.city || 'sua cidade';
+    const phone = prospect.phone || '';
+    const creatorType = creatorSelector.selectCreator(category);
     const design = websiteDesignService.getDesignTokens(creatorType);
+
     const content = websiteContentService.generateContent(
-      prospect.companyName || 'Sua Empresa',
-      prospect.segment || 'negócio',
-      prospect.city || 'sua cidade',
-      creatorType,
-      prospect.phone
+      businessName, category, city, creatorType, phone
     );
-    
-    const html = websiteCompiler.compile(
-      prospect.companyName || 'Sua Empresa',
-      prospect.city || 'sua cidade',
-      prospect.phone || '',
-      design,
-      content
+
+    const prd: any = {
+      business: { businessName, category, city, targetAudience: 'Clientes locais', objective: 'Presença digital profissional' },
+      content: {
+        heroHeadline: content.heroHeadline,
+        services: (content.services || []).map((s: any) => ({ title: typeof s === 'string' ? s : s.title, description: typeof s === 'string' ? '' : s.description })),
+        benefits: content.benefits || [],
+        faq: content.faq || []
+      },
+      design: { visualDirection: design.visualStyle || creatorType }
+    };
+
+    const imageResult = await websiteImageService.acquireAssets(
+      { businessName, category, city, phone },
+      prd,
+      design as any
     );
-    
-    const slug = (prospect.companyName || 'empresa').toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 50);
-    
+
+    const assets = imageResult.assets;
+    const assetsSummary = websiteImageService.analyzeAssetsMetadata(imageResult.metadata);
+    const contentWithImages = {
+      ...content,
+      services: (content.services || []).map((s: any) => ({
+        ...s,
+        image: (assets.services || {})[typeof s === 'string' ? s : s.title] || null
+      }))
+    };
+
+    const html = websiteCompiler.compileProfessional(
+      businessName, city, phone, design, contentWithImages, assets
+    );
+
     let demo = await prisma.websiteDemo.findFirst({ where: { prospectId } });
-    
+    const nextVersion = (demo?.version || 0) + 1;
+    const previewData = JSON.stringify({
+      businessName, segment: category, city, creatorType,
+      assets: imageResult.metadata, assetsSummary,
+      pipeline: 'legacy-generate-with-image-engine',
+      generatedAt: new Date().toISOString()
+    });
+
     if (demo) {
       demo = await prisma.websiteDemo.update({
         where: { id: demo.id },
-        data: {
-          sourceCode: html,
-          status: 'READY',
-          version: demo.version + 1,
-          previewData: JSON.stringify({ businessName: prospect.companyName, segment: prospect.segment, city: prospect.city, generatedAt: new Date().toISOString() })
-        }
+        data: { sourceCode: html, status: 'READY', version: nextVersion, previewData }
       });
     } else {
       demo = await prisma.websiteDemo.create({
-        data: {
-          prospectId,
-          sourceCode: html,
-          status: 'READY',
-          version: 1,
-          previewData: JSON.stringify({ businessName: prospect.companyName, segment: prospect.segment, city: prospect.city, generatedAt: new Date().toISOString() })
-        }
+        data: { prospectId, sourceCode: html, status: 'READY', version: nextVersion, previewData }
       });
     }
-    
+
     await prisma.websiteProspect.update({
       where: { id: prospectId },
       data: { status: 'DEMO_READY' }
     });
-    
+
     return {
       success: true,
       demoId: demo.id,
       previewUrl: '/api/websites/demo/' + demo.id,
-      version: demo.version
+      version: demo.version,
+      assets: imageResult.metadata,
+      assetsSummary
     };
   }
 
