@@ -1,5 +1,6 @@
 ﻿import { websiteStudioController } from '../controllers/websiteStudioController';
 import { Router } from 'express';
+import { adminAuthorization } from '../middlewares/security';
 import { websiteController } from '../controllers/websiteController';
 
 const router = Router();
@@ -9,6 +10,11 @@ router.post('/generate', (req, res) => websiteController.generate(req, res));
 router.get('/demos', (req, res) => websiteController.listDemos(req, res));
 router.get('/demo/:id', (req, res) => websiteController.getDemo(req, res));
 
+
+router.get('/studio/demos/:id/html', websiteStudioController.getHtml);
+
+// All Studio/API operations are admin-protected; the HTML preview above remains public for client sharing.
+router.use(adminAuthorization);
 
 // ==========================================
 // SITE FACTORY STUDIO (Briefing -> Geracao -> Preview -> Export)
@@ -22,7 +28,6 @@ router.post('/studio/generate', websiteStudioController.generateFromBriefing);
 router.post('/studio/demos/:id/regenerate', websiteStudioController.regenerate);
 router.post('/studio/demos/:id/repair-images', websiteStudioController.repairImages);
 router.post('/studio/demos/:id/approve', websiteStudioController.approve);
-router.get('/studio/demos/:id/html', websiteStudioController.getHtml);
 router.get('/studio/demos/:id/export', websiteStudioController.exportZip);
 router.post('/studio/generate-professional', websiteStudioController.generateProfessional);
 router.get('/studio/ai-status', websiteStudioController.aiStatus);
