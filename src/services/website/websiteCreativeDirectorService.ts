@@ -1,21 +1,34 @@
 ﻿// src/services/website/websiteCreativeDirectorService.ts
 import { DesignSystem, PRD, ResearchResult } from '../../types/websiteV2';
 import { websiteAIEnhancerService } from './websiteAIEnhancerService';
+import { selectBenchmarkModel } from '../rbFactoryTemplateEngine';
 
 export class WebsiteCreativeDirectorService {
   async direct(prd: PRD, research: ResearchResult, briefing: any): Promise<DesignSystem> {
     const category = prd.business.category.toLowerCase();
     console.log(`[Creative Director] Criando direção visual para ${category}`);
+    const benchmark = briefing?.benchmarkNiche || briefing?.benchmarkModelIndex
+      ? selectBenchmarkModel(prd.business.category, briefing.benchmarkNiche || undefined, briefing.benchmarkModelIndex || undefined)
+      : null;
     if (websiteAIEnhancerService.isAvailable) {
       try {
         const prompt = this.buildPrompt(prd, research);
         const data = await websiteAIEnhancerService.generateJSON(prompt, 'creative');
-        if (data) return this.normalize(data, prd);
+        if (data) return this.applyBenchmark(this.normalize(data, prd), benchmark);
       } catch (e: any) {
         console.error('[Creative Director] IA falhou:', e?.message);
       }
     }
-    return this.fallback(category);
+    return this.applyBenchmark(this.fallback(category), benchmark);
+  }
+
+  private applyBenchmark(design: DesignSystem, benchmark: any): DesignSystem {
+    if (!benchmark) return design;
+    return {
+      ...design,
+      visualStyle: design.visualStyle + ' · ' + benchmark.variant,
+      layoutStyle: benchmark.variant,
+    };
   }
 
   private buildPrompt(prd: PRD, research: ResearchResult): string {
