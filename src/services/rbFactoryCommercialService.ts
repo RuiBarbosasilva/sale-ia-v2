@@ -1,4 +1,4 @@
-import { prisma } from './modules/mercadoLivre/lib/prisma';
+import { prisma } from '../modules/mercadoLivre/lib/prisma';
 
 const STAGES = ['DISCOVERED','AUDITED','DEMO_READY','PROPOSAL_READY','CONTACTED','NEGOTIATION','WON','LOST'];
 
