@@ -72,9 +72,15 @@
     let response = await fetch(path, Object.assign({}, options, { headers }));
 
     if (response.status === 401) {
-      k = await ensureAdminKey(true);
+      // Invalidate the browser copy and re-authenticate through the single
+      // shared promise. Never force a second prompt for concurrent 401s.
+      sessionStorage.removeItem('saleIaAdminKey');
+      k = await ensureAdminKey(false);
       headers['x-sale-ia-admin-key'] = k;
-      response = await fetch(path, Object.assign({}, options, { headers }));
+      response = await fetch(path, Object.assign({}, options, {
+        headers,
+        cache: 'no-store'
+      }));
     }
 
     return response;
