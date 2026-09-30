@@ -1,0 +1,16 @@
+﻿# TESTE DO BOTAO PROCESSAR - RB FACTORY
+# Cole os comandos abaixo no Console (F12) do navegador.
+
+console.log("=== RB FACTORY TESTE ===");
+
+const btn = document.querySelector('[data-rb-action="process-prospect"]');
+
+console.log("Botao encontrado:", !!btn);
+console.log("Botao:", btn);
+console.log("data-id:", btn ? btn.getAttribute("data-id") : null);
+console.log("processProspect:", typeof window.processProspect);
+
+if (btn) {
+  console.log("Disparando clique...");
+  btn.click();
+}

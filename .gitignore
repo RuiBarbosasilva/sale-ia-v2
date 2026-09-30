@@ -63,3 +63,9 @@ _local-backups/
 *.bak
 *.bak-*
 *.before-*
+
+# Artefatos gerados localmente
+/output/
+
+# Backups temporarios de arquivos corrompidos
+/public/*.corrupted-*
