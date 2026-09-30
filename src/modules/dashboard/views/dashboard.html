@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard RB Factory - Afiliados + Factory eBook</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+  body { background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; min-height: 100vh; padding: 20px; }
+  .header { text-align: center; margin-bottom: 30px; }
+  .header h1 { font-size: 2.5em; background: linear-gradient(90deg, #00f2fe, #4facfe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
+  .header p { color: #a0a0a0; font-size: 1.1em; }
+  .tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
+  .tab { padding: 12px 24px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; cursor: pointer; transition: all 0.3s; color: #fff; font-size: 1em; }
+  .tab:hover { background: rgba(255,255,255,0.1); }
+  .tab.active { background: linear-gradient(90deg, #00f2fe, #4facfe); border-color: transparent; font-weight: bold; }
+  .content { display: none; }
+  .content.active { display: block; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+  .kpi { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; text-align: center; transition: transform 0.3s; }
+  .kpi:hover { transform: translateY(-5px); }
+  .kpi .icon { font-size: 2em; margin-bottom: 10px; }
+  .kpi .value { font-size: 2.2em; font-weight: bold; background: linear-gradient(90deg, #00f2fe, #4facfe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .kpi .label { color: #a0a0a0; font-size: 0.9em; margin-top: 5px; }
+  .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-bottom: 30px; }
+  .chart-card { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; }
+  .chart-card h3 { margin-bottom: 15px; color: #4facfe; font-size: 1.2em; }
+  table { width: 100%; border-collapse: collapse; background: rgba(255,255,255,0.03); border-radius: 10px; overflow: hidden; }
+  th { background: rgba(79, 172, 254, 0.2); padding: 12px; text-align: left; color: #4facfe; font-weight: 600; }
+  td { padding: 12px; border-top: 1px solid rgba(255,255,255,0.05); }
+  tr:hover { background: rgba(255,255,255,0.03); }
+  .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8em; font-weight: bold; }
+  .badge-hotmart { background: #f06; color: #fff; }
+  .badge-kiwify { background: #0c0; color: #fff; }
+  .badge-braip { background: #f90; color: #fff; }
+  .badge-clickbank { background: #09c; color: #fff; }
+  .badge-mercadolivre { background: #ff0; color: #000; }
+  .badge-default { background: #666; color: #fff; }
+  .loading { text-align: center; padding: 40px; color: #a0a0a0; }
+  .refresh-btn { position: fixed; bottom: 20px; right: 20px; padding: 15px 25px; background: linear-gradient(90deg, #00f2fe, #4facfe); border: none; border-radius: 50px; color: #fff; font-weight: bold; cursor: pointer; box-shadow: 0 5px 20px rgba(79,172,254,0.4); font-size: 1em; }
+  .refresh-btn:hover { transform: scale(1.05); }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🚀 RB Factory Dashboard</h1>
+  <p>Sistema Integrado: Afiliados-IA + Factory eBook + Especialista</p>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('visao-geral')">📊 Visão Geral</div>
+  <div class="tab" onclick="showTab('afiliados')">💰 Afiliados-IA</div>
+  <div class="tab" onclick="showTab('factory')">📚 Factory eBook</div>
+  <div class="tab" onclick="showTab('especialista')">🧠 Especialista</div>
+</div>
+
+<!-- VISÃO GERAL -->
+<div id="visao-geral" class="content active">
+  <div class="kpis" id="kpis-geral"></div>
+  <div class="charts-grid">
+    <div class="chart-card">
+      <h3>📦 Produtos por Plataforma</h3>
+      <canvas id="chart-plataformas"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>🏆 Top 5 Produtos (Score)</h3>
+      <canvas id="chart-top-produtos"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- AFILIADOS -->
+<div id="afiliados" class="content">
+  <div class="kpis" id="kpis-afiliados"></div>
+  <div class="charts-grid">
+    <div class="chart-card">
+      <h3>📝 Copies por Categoria</h3>
+      <canvas id="chart-categorias"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>💵 Comissão Total Acumulada</h3>
+      <canvas id="chart-comissao"></canvas>
+    </div>
+  </div>
+  <div class="chart-card" style="margin-top:20px;">
+    <h3>🏅 Top 10 Produtos por Score</h3>
+    <table id="tabela-top-produtos">
+      <thead><tr><th>#</th><th>Nome</th><th>Plataforma</th><th>Categoria</th><th>Preço</th><th>Comissão</th><th>Score</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- FACTORY EBOOK -->
+<div id="factory" class="content">
+  <div class="kpis" id="kpis-factory"></div>
+  <div class="charts-grid">
+    <div class="chart-card">
+      <h3>📚 Nichos de Livros Gerados</h3>
+      <canvas id="chart-nichos"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>📖 Estatísticas do Factory</h3>
+      <div style="padding: 20px;">
+        <p style="font-size: 1.2em; margin-bottom: 15px;">📊 <strong>Total de Livros:</strong> <span id="factory-livros">0</span></p>
+        <p style="font-size: 1.2em; margin-bottom: 15px;">📄 <strong>Páginas Totais:</strong> <span id="factory-paginas">0</span></p>
+        <p style="font-size: 1.2em; margin-bottom: 15px;">🎯 <strong>Média de Páginas/Livro:</strong> <span id="factory-media">0</span></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ESPECIALISTA -->
+<div id="especialista" class="content">
+  <div class="kpis" id="kpis-especialista"></div>
+  <div class="chart-card">
+    <h3>🌐 Ranking das 16 Plataformas por Potencial de Lucro</h3>
+    <table id="tabela-plataformas">
+      <thead><tr><th>#</th><th>Plataforma</th><th>Potencial</th><th>Comissão</th><th>Moeda</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<button class="refresh-btn" onclick="carregarDados()">🔄 Atualizar</button>
+
+<script>
+let charts = {};
+
+function showTab(tabId) {
+  document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function getBadge(plataforma) {
+  const p = plataforma.toLowerCase();
+  if (p.includes('hotmart')) return 'badge-hotmart';
+  if (p.includes('kiwify')) return 'badge-kiwify';
+  if (p.includes('braip')) return 'badge-braip';
+  if (p.includes('clickbank')) return 'badge-clickbank';
+  if (p.includes('mercadolivre')) return 'badge-mercadolivre';
+  return 'badge-default';
+}
+
+async function carregarDados() {
+  try {
+    const res = await fetch('/dashboard/api/metricas');
+    const data = await res.json();
+    if (!data.sucesso) throw new Error(data.erro);
+    renderizar(data.dados);
+  } catch (e) {
+    console.error('Erro:', e);
+    alert('Erro ao carregar dados: ' + e.message);
+  }
+}
+
+function renderizar(d) {
+  // KPIs GERAIS
+  document.getElementById('kpis-geral').innerHTML = `
+    <div class="kpi"><div class="icon">📦</div><div class="value">${d.afiliados.totalProdutos}</div><div class="label">Produtos Cadastrados</div></div>
+    <div class="kpi"><div class="icon">📝</div><div class="value">${d.afiliados.totalCopies}</div><div class="label">Copies Geradas</div></div>
+    <div class="kpi"><div class="icon">📚</div><div class="value">${d.factoryEbook.livrosGerados}</div><div class="label">Livros Factory</div></div>
+    <div class="kpi"><div class="icon">🌐</div><div class="value">${d.especialista.totalPlataformas}</div><div class="label">Plataformas Suportadas</div></div>
+    <div class="kpi"><div class="icon">💰</div><div class="value">R$ ${d.afiliados.comissaoTotal}</div><div class="label">Comissões Acumuladas</div></div>
+    <div class="kpi"><div class="icon">🎯</div><div class="value">${d.afiliados.taxaConversao}%</div><div class="label">Taxa de Conversão</div></div>
+  `;
+
+  // KPIs AFILIADOS
+  document.getElementById('kpis-afiliados').innerHTML = `
+    <div class="kpi"><div class="icon">✅</div><div class="value">${d.afiliados.produtosAtivos}</div><div class="label">Produtos Ativos</div></div>
+    <div class="kpi"><div class="icon">📢</div><div class="value">${d.afiliados.totalPublicacoes}</div><div class="label">Publicações</div></div>
+    <div class="kpi"><div class="icon">🛒</div><div class="value">${d.afiliados.totalVendas}</div><div class="label">Vendas Confirmadas</div></div>
+    <div class="kpi"><div class="icon">👆</div><div class="value">${d.afiliados.totalCliques}</div><div class="label">Cliques</div></div>
+  `;
+
+  // KPIs FACTORY
+  document.getElementById('kpis-factory').innerHTML = `
+    <div class="kpi"><div class="icon">📚</div><div class="value">${d.factoryEbook.livrosGerados}</div><div class="label">Livros Gerados</div></div>
+    <div class="kpi"><div class="icon">📄</div><div class="value">${d.factoryEbook.paginasTotais}</div><div class="label">Páginas Totais</div></div>
+    <div class="kpi"><div class="icon">🎨</div><div class="value">${Object.keys(d.factoryEbook.nichosLivros).length}</div><div class="label">Nichos Explorados</div></div>
+  `;
+  document.getElementById('factory-livros').textContent = d.factoryEbook.livrosGerados;
+  document.getElementById('factory-paginas').textContent = d.factoryEbook.paginasTotais;
+  document.getElementById('factory-media').textContent = d.factoryEbook.livrosGerados > 0 ? Math.round(d.factoryEbook.paginasTotais / d.factoryEbook.livrosGerados) : 0;
+
+  // KPIs ESPECIALISTA
+  document.getElementById('kpis-especialista').innerHTML = `
+    <div class="kpi"><div class="icon">🌐</div><div class="value">${d.especialista.totalPlataformas}</div><div class="label">Plataformas</div></div>
+    <div class="kpi"><div class="icon">🏆</div><div class="value">10/10</div><div class="label">Top Potencial</div></div>
+    <div class="kpi"><div class="icon">💵</div><div class="value">USD+BRL</div><div class="label">Moedas Suportadas</div></div>
+  `;
+
+  // GRÁFICOS
+  renderizarGraficos(d);
+
+  // TABELA TOP PRODUTOS
+  const tbody = document.querySelector('#tabela-top-produtos tbody');
+  tbody.innerHTML = d.afiliados.topProdutos.map((p, i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td>${p.nome}</td>
+      <td><span class="badge ${getBadge(p.plataforma)}">${p.plataforma}</span></td>
+      <td>${p.categoria}</td>
+      <td>R$ ${p.preco}</td>
+      <td>${p.comissaoPercentual}%</td>
+      <td><strong>${p.score}</strong></td>
+    </tr>
+  `).join('');
+
+  // TABELA PLATAFORMAS
+  const tbodyPlat = document.querySelector('#tabela-plataformas tbody');
+  tbodyPlat.innerHTML = d.especialista.ranking.map((p, i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td><strong>${p.nome}</strong></td>
+      <td>${'⭐'.repeat(Math.round(p.potencial/2))} ${p.potencial}/10</td>
+      <td>${p.comissao}</td>
+      <td>${p.moeda}</td>
+    </tr>
+  `).join('');
+}
+
+function renderizarGraficos(d) {
+  Object.values(charts).forEach(c => c.destroy());
+  charts = {};
+
+  const cores = ['#00f2fe', '#4facfe', '#f093fb', '#f5576c', '#4facfe', '#00f2fe', '#ffd700', '#00ff88'];
+
+  // Chart Plataformas
+  const labelsPlat = d.afiliados.produtosPorPlataforma.map(p => p.plataforma);
+  const dataPlat = d.afiliados.produtosPorPlataforma.map(p => p.quantidade);
+  charts.plataformas = new Chart(document.getElementById('chart-plataformas'), {
+    type: 'doughnut',
+    data: { labels: labelsPlat, datasets: [{ data: dataPlat, backgroundColor: cores, borderWidth: 0 }] },
+    options: { plugins: { legend: { labels: { color: '#fff' } } } }
+  });
+
+  // Chart Top Produtos
+  const top5 = d.afiliados.topProdutos.slice(0, 5);
+  charts.topProdutos = new Chart(document.getElementById('chart-top-produtos'), {
+    type: 'bar',
+    data: {
+      labels: top5.map(p => p.nome.substring(0, 25) + '...'),
+      datasets: [{ label: 'Score', data: top5.map(p => p.score), backgroundColor: '#4facfe' }]
+    },
+    options: { plugins: { legend: { labels: { color: '#fff' } } }, scales: { y: { ticks: { color: '#fff' } }, x: { ticks: { color: '#fff' } } } }
+  });
+
+  // Chart Categorias
+  const labelsCat = d.afiliados.copiesPorCategoria.map(c => c.categoria);
+  const dataCat = d.afiliados.copiesPorCategoria.map(c => c.quantidade);
+  charts.categorias = new Chart(document.getElementById('chart-categorias'), {
+    type: 'pie',
+    data: { labels: labelsCat, datasets: [{ data: dataCat, backgroundColor: cores, borderWidth: 0 }] },
+    options: { plugins: { legend: { labels: { color: '#fff' } } } }
+  });
+
+  // Chart Comissão
+  charts.comissao = new Chart(document.getElementById('chart-comissao'), {
+    type: 'line',
+    data: {
+      labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
+      datasets: [{
+        label: 'Comissão (R$)',
+        data: [0, 0, 0, 0, 0, parseFloat(d.afiliados.comissaoTotal) || 0],
+        borderColor: '#00f2fe', backgroundColor: 'rgba(0,242,254,0.2)', tension: 0.4, fill: true
+      }]
+    },
+    options: { plugins: { legend: { labels: { color: '#fff' } } }, scales: { y: { ticks: { color: '#fff' } }, x: { ticks: { color: '#fff' } } } }
+  });
+
+  // Chart Nichos Factory
+  const nichos = d.factoryEbook.nichosLivros;
+  const labelsNichos = Object.keys(nichos);
+  const dataNichos = Object.values(nichos);
+  if (labelsNichos.length > 0) {
+    charts.nichos = new Chart(document.getElementById('chart-nichos'), {
+      type: 'bar',
+      data: { labels: labelsNichos, datasets: [{ label: 'Livros', data: dataNichos, backgroundColor: '#f093fb' }] },
+      options: { plugins: { legend: { labels: { color: '#fff' } } }, scales: { y: { ticks: { color: '#fff' } }, x: { ticks: { color: '#fff' } } } }
+    });
+  }
+}
+
+carregarDados();
+setInterval(carregarDados, 30000); // Atualiza a cada 30s
+</script>
+</body>
+</html>

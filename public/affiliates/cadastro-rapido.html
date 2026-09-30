@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro Rápido - Afiliados IA</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { color: #38bdf8; margin-bottom: 10px; font-size: 28px; }
+        .subtitle { color: #94a3b8; margin-bottom: 30px; font-size: 14px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; color: #cbd5e1; font-weight: 500; font-size: 14px; }
+        input, select, textarea { width: 100%; padding: 12px; background: #1e293b; border: 1px solid #334155; border-radius: 8px; color: #e2e8f0; font-size: 14px; }
+        input:focus, select:focus { outline: none; border-color: #38bdf8; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        .btn { padding: 14px 28px; background: #38bdf8; color: #0f172a; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; width: 100%; margin-top: 10px; }
+        .btn:hover { background: #0ea5e9; }
+        .btn-secondary { background: #475569; color: #e2e8f0; }
+        .btn-secondary:hover { background: #64748b; }
+        .quick-picks { background: #1e293b; padding: 20px; border-radius: 12px; margin-bottom: 25px; }
+        .quick-picks h3 { color: #fbbf24; margin-bottom: 15px; font-size: 16px; }
+        .product-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+        .chip { padding: 8px 14px; background: #334155; border: 1px solid #475569; border-radius: 20px; cursor: pointer; font-size: 13px; }
+        .chip:hover { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+        .chip.hot { border-color: #ef4444; }
+        .chip.hot:hover { background: #ef4444; color: white; }
+        .message { padding: 15px; border-radius: 8px; margin-top: 20px; display: none; }
+        .message.success { background: #064e3b; color: #6ee7b7; border: 1px solid #10b981; display: block; }
+        .message.error { background: #7f1d1d; color: #fca5a5; border: 1px solid #ef4444; display: block; }
+        .help-text { font-size: 12px; color: #64748b; margin-top: 5px; }
+        .section-title { color: #fbbf24; font-size: 18px; margin: 30px 0 15px 0; padding-bottom: 10px; border-bottom: 1px solid #334155; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1> Cadastro Rápido de Produto</h1>
+        <p class="subtitle">Clique em um produto popular ou cole os dados da ClickBank</p>
+        
+        <div class="quick-picks">
+            <h3>🔥 Produtos Mais Vendidos (Clique para preencher)</h3>
+            <div class="product-chips">
+                <div class="chip hot" onclick="fill('Alpilean', 'alpilean', 69, 60, 'saude-emagrecimento', 150)">Alpilean</div>
+                <div class="chip hot" onclick="fill('Liv Pure', 'livpure', 99, 60, 'saude-geral', 120)">Liv Pure</div>
+                <div class="chip hot" onclick="fill('Puravive', 'puravive', 69, 60, 'saude-emagrecimento', 100)">Puravive</div>
+                <div class="chip" onclick="fill('Ikaria Juice', 'ikariajuice', 59, 60, 'saude-geral', 90)">Ikaria Juice</div>
+                <div class="chip" onclick="fill('GlucoTrust', 'glucotrust', 49, 60, 'saude-geral', 80)">GlucoTrust</div>
+                <div class="chip hot" onclick="fill('ProDentim', 'prodentim', 69, 60, 'saude-geral', 130)">ProDentim</div>
+                <div class="chip" onclick="fill('Nagano Tonic', 'naganotonic', 49, 60, 'saude-emagrecimento', 70)">Nagano Tonic</div>
+                <div class="chip" onclick="fill('FitSpresso', 'fitspresso', 49, 60, 'saude-emagrecimento', 60)">FitSpresso</div>
+                <div class="chip hot" onclick="fill('Java Burn', 'javaburn', 49, 50, 'saude-emagrecimento', 200)">Java Burn</div>
+                <div class="chip" onclick="fill('His Secret Obsession', 'hissecretobsession', 47, 75, 'relacionamentos', 100)">His Secret Obsession</div>
+                <div class="chip" onclick="fill('Manifestation Magic', 'manifestationmagic', 37, 75, 'desenvolvimento-pessoal', 80)">Manifestation Magic</div>
+                <div class="chip" onclick="fill('Genius Wave', 'geniuswave', 39, 60, 'desenvolvimento-pessoal', 90)">Genius Wave</div>
+            </div>
+        </div>
+
+        <form id="productForm">
+            <h2 class="section-title">📋 Dados do Produto</h2>
+            <div class="form-group">
+                <label>Nome do Produto *</label>
+                <input type="text" id="nome" name="nome" required>
+            </div>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Vendor Nickname *</label>
+                    <input type="text" id="vendor" name="vendor" required>
+                    <div class="help-text">Nickname do produtor na ClickBank</div>
+                </div>
+                <div class="form-group">
+                    <label>Categoria *</label>
+                    <select id="categoria" name="categoria" required>
+                        <option value="saude-emagrecimento">Saúde / Emagrecimento</option>
+                        <option value="saude-geral">Saúde Geral</option>
+                        <option value="riqueza-dinheiro">Riqueza / Dinheiro</option>
+                        <option value="relacionamentos">Relacionamentos</option>
+                        <option value="desenvolvimento-pessoal">Desenvolvimento Pessoal</option>
+                        <option value="outros">Outros</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid-3">
+                <div class="form-group">
+                    <label>Preço (USD) *</label>
+                    <input type="number" id="preco" name="preco" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>Comissão (%) *</label>
+                    <input type="number" id="comissao" name="comissao" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>Gravity Score</label>
+                    <input type="number" id="gravity" name="gravity">
+                </div>
+            </div>
+            <button type="submit" class="btn">✅ Cadastrar Produto</button>
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('productForm').reset(); document.getElementById('message').style.display='none';">🗑️ Limpar</button>
+        </form>
+        <div id="message" class="message"></div>
+    </div>
+    <script>
+        function fill(nome, vendor, preco, comissao, categoria, gravity) {
+            document.getElementById('nome').value = nome;
+            document.getElementById('vendor').value = vendor;
+            document.getElementById('preco').value = preco;
+            document.getElementById('comissao').value = comissao;
+            document.getElementById('categoria').value = categoria;
+            document.getElementById('gravity').value = gravity;
+        }
+        document.getElementById('productForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const data = {
+                nome: document.getElementById('nome').value,
+                linkAfiliado: document.getElementById('vendor').value,
+                categoria: document.getElementById('categoria').value,
+                preco: parseFloat(document.getElementById('preco').value),
+                comissaoPercentual: parseFloat(document.getElementById('comissao').value),
+                temperatura: parseFloat(document.getElementById('gravity').value) || 0,
+                tipo: 'digital',
+                plataforma: 'clickbank',
+                status: 'ativo',
+                score: parseFloat(document.getElementById('gravity').value) || 50
+            };
+            try {
+                const response = await fetch('/api/afiliados/produtos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                const msgDiv = document.getElementById('message');
+                if (response.ok) {
+                    msgDiv.className = 'message success';
+                    msgDiv.innerHTML = '✅ Produto cadastrado!<br><strong>Link de divulgação:</strong> <code>/go/' + result.id + '</code>';
+                    msgDiv.style.display = 'block';
+                    document.getElementById('productForm').reset();
+                } else {
+                    throw new Error(result.error || 'Erro ao cadastrar');
+                }
+            } catch (error) {
+                const msgDiv = document.getElementById('message');
+                msgDiv.className = 'message error';
+                msgDiv.innerHTML = '❌ Erro: ' + error.message;
+                msgDiv.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
