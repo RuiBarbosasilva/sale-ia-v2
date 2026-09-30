@@ -1,4 +1,4 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 
 export interface CreativeRequest {
   productName: string;
@@ -36,26 +36,26 @@ export class CreativeGeneratorService {
     if (segLower.includes('perfume') || segLower.includes('luxo') || segLower.includes('joia')) {
       styleHint = "Sofisticado, exclusivo, luxuoso e elegante";
     } else if (segLower.includes('brinde') || segLower.includes('corporativo')) {
-      styleHint = "Profissional, prÃ¡tico, focado em custo-benefÃ­cio e parceria";
-    } else if (segLower.includes('tecnologia') || segLower.includes('eletrÃ´nico')) {
+      styleHint = "Profissional, prático, focado em custo-benefício e parceria";
+    } else if (segLower.includes('tecnologia') || segLower.includes('eletrônico')) {
       styleHint = "Inovador, moderno, focado em specs e performance";
     }
 
-    const prompt = `VocÃª Ã© um especialista em marketing digital e copywriting de alta conversÃ£o.
+    const prompt = `Você é um especialista em marketing digital e copywriting de alta conversão.
     
 Crie materiais de venda para o seguinte produto:
 - Produto: ${request.productName}
 - Segmento: ${request.segment}
-- PÃºblico-alvo: ${request.targetAudience}
-- Tom de voz obrigatÃ³rio: ${styleHint} (Adapte a linguagem para este estilo)
+- Público-alvo: ${request.targetAudience}
+- Tom de voz obrigatório: ${styleHint} (Adapte a linguagem para este estilo)
 
-Retorne APENAS um JSON vÃ¡lido com esta estrutura exata (sem markdown, sem explicaÃ§Ãµes):
+Retorne APENAS um JSON válido com esta estrutura exata (sem markdown, sem explicações):
 {
   "whatsappScript": "Texto curto e persuasivo para WhatsApp (max 500 caracteres) com emoji e CTA claro",
   "emailSubject": "Assunto de email curto e chamativo (max 60 caracteres)",
-  "emailBody": "Corpo do email profissional com problema, soluÃ§Ã£o e CTA (max 800 caracteres)",
+  "emailBody": "Corpo do email profissional com problema, solução e CTA (max 800 caracteres)",
   "socialPost": "Post para Instagram/Facebook com hashtags (max 300 caracteres)",
-  "cta": "Frase curta de chamada para aÃ§Ã£o (max 50 caracteres)"
+  "cta": "Frase curta de chamada para ação (max 50 caracteres)"
 }`;
 
     try {

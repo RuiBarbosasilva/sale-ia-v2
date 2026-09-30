@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import JSZip from 'jszip';
+import path from 'path';
 
 const prisma = new PrismaClient();
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
@@ -134,5 +135,74 @@ export class WebsiteImportedTemplateService {
   async getArchive(id:string){ const t=await this.get(id); if(!t) throw new Error('Modelo importado não encontrado'); if(!t.archiveData) throw new Error('Este modelo não possui o ZIP original armazenado'); return {name:t.name,slug:t.slug,archiveData:t.archiveData}; }
   async preview(id:string,customData:any={}) { const t=await this.get(id); if(!t||!t.active) throw new Error('Modelo importado não encontrado'); return renderTemplateHtml(t.html,{businessName:'Prévia RB Factory',city:'Poços de Caldas',category:t.segment||'Negócio local',ctaText:'Fale conosco',...customData}); }
   async render(id:string,customData:any){ const t=await this.get(id); if(!t||!t.active) throw new Error('Modelo importado não encontrado'); await prisma.websiteImportedTemplate.update({where:{id},data:{usageCount:{increment:1}}}); return renderTemplateHtml(t.html,customData); }
+
+  async servePreviewAsset(id: string, requestedPath: string, baseUrl: string, placeholders?: Record<string, string>) {
+    const template = await prisma.websiteImportedTemplate.findUnique({ where: { id } });
+    if (!template) throw new Error('Template nao encontrado');
+    if (!template.active) throw new Error('Template inativo');
+
+    if (!template.archiveData) {
+      if (!requestedPath || requestedPath === 'index.html' || requestedPath === '/') {
+        return { content: this.prepareHtmlForPreview(template.html, baseUrl, placeholders), mimeType: 'text/html; charset=utf-8' };
+      }
+      throw new Error('Asset nao disponivel em template sem archiveData');
+    }
+
+    const zip = new JSZip();
+    const loadedZip = await zip.loadAsync(template.archiveData);
+    let normalizedPath = requestedPath.replace(/^\/+/, '');
+
+    if (normalizedPath.includes('..') || path.isAbsolute(normalizedPath)) {
+      throw new Error('Caminho inseguro');
+    }
+
+    if (!normalizedPath || normalizedPath === '/') {
+      normalizedPath = this.findIndexHtml(loadedZip);
+    }
+
+    const zipEntry = loadedZip.file(normalizedPath);
+    if (!zipEntry) throw new Error('Arquivo nao encontrado no ZIP');
+
+    const ext = path.extname(normalizedPath).toLowerCase();
+    const mimeType = mimeFor(normalizedPath);
+
+    let content: string | Buffer;
+    if (ext === '.html' || ext === '.htm') {
+      content = this.prepareHtmlForPreview(await zipEntry.async('string'), baseUrl, placeholders);
+    } else {
+      content = await zipEntry.async('nodebuffer');
+    }
+
+    return { content, mimeType };
+  }
+
+  private findIndexHtml(zip: JSZip): string {
+    const indexFile = Object.keys(zip.files).find(f => f.toLowerCase().endsWith('index.html') && !f.includes('..'));
+    if (!indexFile) throw new Error('index.html nao encontrado');
+    return indexFile;
+  }
+
+  private prepareHtmlForPreview(html: string, baseUrl: string, placeholders?: Record<string, string>): string {
+    let result = html;
+    if (placeholders) {
+      const patterns = [{ regex: /\{\{(\w+)\}\}/g }, { regex: /\[\[(\w+)\]\]/g }, { regex: /%%(\w+)%%/g }];
+      for (const { regex } of patterns) {
+        result = result.replace(regex, function(match: any, key: string) {
+            return placeholders[key] !== undefined ? String(placeholders[key]) : match;
+        });
+      }
+    }
+    result = result.replace(/(href|src|action)="\/([^"]+)"/gi, function(match: any, attr: string, p: string) {
+        return attr + '="' + p + '"';
+    });
+
+    if (!result.includes('<base ')) {
+      result = result.replace(/<head[^>]*>/i, function(match: string) {
+          return match + '\n<base href="' + baseUrl + '">';
+      });
+    }
+    return result;
+  }
+
 }
 export const websiteImportedTemplateService=new WebsiteImportedTemplateService();

@@ -1,4 +1,4 @@
-﻿import request from 'supertest';
+import request from 'supertest';
 import express from 'express';
 import pricingRouter from '../src/routes/pricing';
 import pricingService from '../src/services/pricingService';
@@ -68,7 +68,7 @@ describe('Pricing Route & PricingService Edge Cases', () => {
     });
 
     it('deve retornar erro 400 na rota POST /pricing/negotiate em caso de falha', async () => {
-      jest.spyOn(pricingService, 'negotiateQuote').mockRejectedValueOnce(new Error('Erro de negocia��o'));
+      jest.spyOn(pricingService, 'negotiateQuote').mockRejectedValueOnce(new Error('Erro de negocia??o'));
 
       const response = await request(app)
         .post('/pricing/negotiate')
@@ -78,12 +78,12 @@ describe('Pricing Route & PricingService Edge Cases', () => {
         });
 
       expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty('error', 'Erro de negocia��o');
+      expect(response.body).toHaveProperty('error', 'Erro de negocia??o');
     });
   });
 
   describe('PricingService Edge Cases & Direct Methods', () => {
-    it('deve calcular cota��o via calculateQuote utilizando productName', async () => {
+    it('deve calcular cota??o via calculateQuote utilizando productName', async () => {
       const result = await pricingService.calculateQuote({
         productName: 'Caneca Personalizada',
         quantity: 5
@@ -93,7 +93,7 @@ describe('Pricing Route & PricingService Edge Cases', () => {
       expect(result).toHaveProperty('total');
     });
 
-    it('deve buscar cota��o por ID inexistente via getQuoteById sem crashar', async () => {
+    it('deve buscar cota??o por ID inexistente via getQuoteById sem crashar', async () => {
       try {
         await pricingService.getQuoteById('id-inexistente-999');
       } catch (err) {
@@ -101,7 +101,7 @@ describe('Pricing Route & PricingService Edge Cases', () => {
       }
     });
 
-    it('deve processar negocia��o via negotiateQuote diretamente', async () => {
+    it('deve processar negocia??o via negotiateQuote diretamente', async () => {
       try {
         await pricingService.negotiateQuote({
           quoteId: 'id-inexistente-999',

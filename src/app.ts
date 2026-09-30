@@ -1,7 +1,10 @@
 ﻿import 'dotenv/config';
+import { affiliateHunterRoutes } from './routes/affiliateHunterRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
-import prospectingRoutes from './routes/prospectingRoutes';
 import affiliateRoutes from './routes/affiliateRoutes';
+import { credenciaisRoutes } from './modules/credenciais/credenciais.routes';
+import prospectingRoutes from './routes/prospectingRoutes';
+
 import affiliateIntelligenceRoutes from './routes/affiliateIntelligenceRoutes';
 import affiliateActionRoutes from './routes/affiliateActionRoutes';
 import affiliateNetworkSecurityRoutes from './routes/affiliateNetworkSecurityRoutes';
@@ -13,6 +16,11 @@ import hunterRoutes from './routes/hunterRoutes';
 import mlRoutes from './modules/mercadoLivre/routes/mercadoLivreRoutes';
 import cookieParser from 'cookie-parser';
 import express from 'express';
+import templateImportRoutes from './routes/templateImportRoutes';
+import demoPreviewRoutes from './routes/demoPreviewRoutes';
+import mlSellerRoutes from './routes/mlSellerRoutes';
+import contentFactoryRoutes from './routes/contentFactoryRoutes';
+import publisherRoutes from './routes/publisherRoutes';
 import apiRoutes from './routes/apiRoutes';
 import { errorHandler } from './middlewares/errorHandler';
 import { requestId, securityHeaders } from './middlewares/security';
@@ -26,6 +34,11 @@ import rbFactorySalesAutonomyRoutes from './routes/rbFactorySalesAutonomyRoutes'
 import rbFactorySiteMaintenanceRoutes from './routes/rbFactorySiteMaintenanceRoutes';
 import rbFactoryCommercialRoutes from './routes/rbFactoryCommercialRoutes';
 import { startRbFactoryMaintenanceJob } from './jobs/rbFactoryMaintenanceJob';
+import { afiliadosIaRoutes } from './modules/afiliados-ia/afiliados-ia.routes';
+import { factoryEbookRoutes } from './modules/factory-ebook/factory-ebook.routes';
+import trackingRoutes from './modules/afiliados-ia/routes/tracking.routes';
+import produtosRoutes from './modules/afiliados-ia/routes/produtos.routes';
+import { handleAffiliateWebhook } from './modules/afiliados-ia/controllers/webhook.controller';
 
 const app = express();
 
@@ -66,6 +79,7 @@ app.use('/generated-images', express.static('storage/generated-images'));
 app.use('/api', apiRoutes);
 app.use('/api/websites/prospecting', prospectingRoutes);
 app.use('/api/affiliates', affiliateRoutes);
+app.use('/api/affiliate', affiliateRoutes);
 app.use('/api/affiliate-intelligence', affiliateIntelligenceRoutes);
 app.use('/api/affiliate-actions', affiliateActionRoutes);
 app.use('/api/affiliate-networks', affiliateNetworkSecurityRoutes);
@@ -77,15 +91,37 @@ app.use('/api/editorial', editorialFactoryRoutes);
 app.use('/api/sales', seniorSalesRoutes);
 app.use('/api/sales-orchestration', salesOrchestrationRoutes);
 app.use('/api/opportunity-sales', opportunitySalesBridgeRoutes);
+
 app.use('/api/rb-factory-sales', rbFactorySalesRoutes);
+
 app.use('/api/rb-factory-sales-agent', rbFactorySalesAgentRoutes);
+
 app.use('/api/rb-factory-sales-autonomy', rbFactorySalesAutonomyRoutes);
+
 app.use('/api/rb-factory-maintenance', rbFactorySiteMaintenanceRoutes);
+
 app.use('/api/rb-factory-commercial', rbFactoryCommercialRoutes);
 app.use('/go', affiliatePublicRoutes);
 app.use('/api/mercadolivre', mlRoutes);
+app.use('/api/credenciais', credenciaisRoutes);
 app.use('/dashboard', dashboardRoutes);
 startRbFactoryMaintenanceJob();
 app.use(errorHandler);
 
+
+
+// ==========================================
+// ROTAS DO MÃ“DULO AFILIADOS IA
+// ==========================================
+// Tracking de cliques (ex: /go/abc123)
+app.use('/go', trackingRoutes);
+
+// Webhooks de provedores (ex: /api/affiliates/webhook/clickbank)
+app.post('/api/affiliates/webhook/:provider', handleAffiliateWebhook);
 export default app;
+
+app.use('/api/factory-ebook', factoryEbookRoutes);
+app.use('/api/afiliados', afiliadosIaRoutes);
+app.use('/api/publishers', publisherRoutes);
+app.use('/api/ml-seller', mlSellerRoutes);
+app.use('/api/content-factory', contentFactoryRoutes);

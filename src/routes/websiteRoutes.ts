@@ -27,6 +27,7 @@ router.get('/studio/templates', websiteStudioController.listTemplates);
 router.get('/studio/templates/library', websiteStudioController.listImportedTemplateLibrary);
 router.patch('/studio/templates/library/:id', websiteStudioController.updateImportedTemplate);
 router.get('/studio/templates/library/:id/preview', websiteStudioController.previewImportedTemplate);
+router.get('/studio/templates/library/:id/preview/*', websiteStudioController.previewImportedTemplateAsset);
 router.get('/studio/templates/library/:id/download', websiteStudioController.downloadImportedTemplate);
 router.delete('/studio/templates/library/:id', websiteStudioController.deleteImportedTemplate);
 router.post('/studio/templates/import', templateUpload.single('file'), websiteStudioController.importTemplate);

@@ -11,8 +11,103 @@ main{padding:28px 34px 55px;min-width:0}.top{display:flex;justify-content:space-
 .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{background:#fff;border:1px solid var(--line);border-radius:17px;overflow:hidden}.thumb{height:155px;background:#eef0f3}.thumb iframe{width:100%;height:100%;border:0;pointer-events:none;background:#fff}.card-body{padding:14px}.title{display:flex;justify-content:space-between;gap:10px}.title strong{font-size:13px}.star{font-size:18px;cursor:pointer}.meta{color:#858d98;font-size:10px;line-height:1.5;margin:6px 0}.pill{display:inline-block;background:var(--soft);border-radius:999px;padding:4px 7px;font-size:8px;font-weight:900;margin:2px 3px 2px 0}.row{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.empty{padding:35px;text-align:center;color:#9299a3;font-size:11px;background:#fff;border:1px solid var(--line);border-radius:16px}.toast{position:fixed;right:18px;bottom:18px;background:#111318;color:#fff;border-radius:11px;padding:11px 14px;font-size:10px;display:none;z-index:20}.modal{position:fixed;inset:0;background:#0008;display:none;place-items:center;padding:18px;z-index:10}.modal.open{display:grid}.dialog{width:min(900px,100%);height:min(88vh,900px);background:#fff;border-radius:18px;overflow:hidden;display:flex;flex-direction:column}.dialog-head{padding:13px 15px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.dialog iframe{border:0;flex:1;width:100%;background:#fff}
 @media(max-width:1050px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.shell{grid-template-columns:190px 1fr}}@media(max-width:720px){.shell{display:block}.side{padding:13px}.nav{display:flex;overflow:auto}.nav a{white-space:nowrap}.grid{grid-template-columns:1fr}main{padding:20px}.top{display:block}.actions{margin-top:10px}.toolbar input[type=text]{min-width:0;width:100%}}
 </style></head><body>
+<nav style="padding: 15px 20px; background: #1e293b; margin-bottom: 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+    <a href="/rb-factory" style="background: #3b82f6; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+        ← Voltar ao Dashboard
+    </a>
+    <h1 style="color: white; margin: 0; font-size: 1.5rem;">Biblioteca de 100 Demos</h1>
+</nav>
 <div class="shell"><aside class="side"><div class="brand">RB Factory Sites<small>BIBLIOTECA DE MODELOS</small></div>
 <nav class="nav"><a href="/site-factory.html">⌂ Dashboard</a><a href="/site-factory-studio.html">✦ Studio</a><a class="active" href="/rb-factory-template-library.html">▦ Biblioteca</a><a href="/rb-factory-benchmark">Referências</a></nav></aside>
+<div style="max-width: 1200px; margin: 20px auto; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    <h2 style="color: #1e293b; margin-top: 0; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+        📥 Importar Novo Modelo para a Biblioteca
+    </h2>
+
+    <form id="importForm" enctype="multipart/form-data" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; align-items: end;">
+        <div>
+            <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #374151;">Nome do Modelo *</label>
+            <input type="text" name="name" required placeholder="Ex: Hamburgueria Premium"
+                   style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+        </div>
+
+        <div>
+            <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #374151;">Categoria/Nicho</label>
+            <select name="category" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                <option value="restaurante">Restaurante</option>
+                <option value="barbearia">Barbearia</option>
+                <option value="clinica">Clínica</option>
+                <option value="loja">Loja</option>
+                <option value="servicos">Serviços</option>
+                <option value="outro">Outro</option>
+            </select>
+        </div>
+
+        <div style="grid-column: 1 / -1;">
+            <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #374151;">Descrição (opcional)</label>
+            <textarea name="description" rows="2" placeholder="Breve descrição do modelo..."
+                      style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;"></textarea>
+        </div>
+
+        <div style="grid-column: 1 / -1;">
+            <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #374151;">Arquivo (ZIP ou HTML) *</label>
+            <input type="file" name="file" accept=".zip,.html,.htm" required
+                   style="width: 100%; padding: 10px; border: 2px dashed #d1d5db; border-radius: 6px; font-size: 14px; cursor: pointer;">
+            <small style="color: #6b7280;">Aceita: .zip (pacote de site) ou .html (arquivo único)</small>
+        </div>
+
+        <div style="grid-column: 1 / -1;">
+            <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #374151;">URL de Thumbnail (imagem de capa, opcional)</label>
+            <input type="url" name="thumbnailUrl" placeholder="https://exemplo.com/imagem.jpg"
+                   style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+        </div>
+
+        <div style="grid-column: 1 / -1; text-align: right;">
+            <button type="submit" style="background: #10b981; color: white; padding: 12px 30px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 15px;">
+                📤 Importar Modelo
+            </button>
+        </div>
+    </form>
+
+    <div id="uploadStatus" style="margin-top: 15px; padding: 10px; border-radius: 6px; display: none;"></div>
+</div>
+
+<script>
+document.getElementById('importForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const status = document.getElementById('uploadStatus');
+    const formData = new FormData(this);
+
+    status.style.display = 'block';
+    status.style.background = '#dbeafe';
+    status.style.color = '#1e40af';
+    status.textContent = '⏳ Fazendo upload... Aguarde...';
+
+    try {
+        const response = await fetch('/api/templates/import', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            status.style.background = '#d1fae5';
+            status.style.color = '#065f46';
+            status.textContent = '✅ Modelo importado com sucesso! ID: ' + result.data.id;
+            this.reset();
+            setTimeout(() => { location.reload(); }, 2000);
+        } else {
+            throw new Error(result.error || 'Erro desconhecido');
+        }
+    } catch (error) {
+        status.style.background = '#fee2e2';
+        status.style.color = '#991b1b';
+        status.textContent = '❌ Erro: ' + error.message;
+    }
+});
+</script>
+
 <main><div class="top"><div class="crumb">SALE-IA / RB FACTORY / <b>Biblioteca de modelos</b></div><div class="actions"><button class="btn" onclick="setKey()">🔐 Chave</button><button class="btn primary" onclick="document.getElementById('file').click()">＋ Importar ZIP/HTML</button></div></div>
 <section class="hero"><h1>Biblioteca de modelos</h1><p>Modelos importados pelo RB Factory, com prévia, organização, download do ZIP original e arquivamento. Os modelos permanecem no banco do Sale-IA.</p></section>
 <div class="toolbar"><input id="search" type="text" placeholder="Buscar por nome, segmento ou descrição…" oninput="debouncedLoad()"><select id="segment" onchange="load()"><option value="">Todos os segmentos</option></select><button class="btn" onclick="load()">↻ Atualizar</button><label class="btn"><input id="fav" type="checkbox" onchange="load()" style="vertical-align:middle"> Favoritos</label><input id="file" type="file" accept=".zip,.html,.htm" hidden onchange="importFile()"></div>

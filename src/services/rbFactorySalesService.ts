@@ -111,7 +111,7 @@ export const rbFactorySalesService={
     if(proposal.status==='SENT') {
       const salesAgent=await rbFactorySalesAgentService.ensureConversation(prospectId,'WHATSAPP');
       const followUp=await rbFactorySalesAgentService.prepareProposalApproach(prospectId,'WHATSAPP');
-      return {...proposal,salesAgent:{conversationId:salesAgent.conversation.id,reused:salesAgent.reused,proposalApproach:followUp.draft},idempotent:true};
+      return {...proposal,salesAgent:{conversationId:salesAgent.conversation.id,reused:salesAgent.reused,proposalApproach:followUp.message},idempotent:true};
     }
     const updated=await prisma.websiteProposal.update({
       where:{id:proposal.id},
@@ -124,7 +124,7 @@ export const rbFactorySalesService={
     );
     const salesAgent=await rbFactorySalesAgentService.ensureConversation(prospectId,'WHATSAPP');
     const followUp=await rbFactorySalesAgentService.prepareProposalApproach(prospectId,'WHATSAPP');
-    return {...updated,salesAgent:{conversationId:salesAgent.conversation.id,reused:salesAgent.reused,proposalApproach:followUp.draft}};
+    return {...updated,salesAgent:{conversationId:salesAgent.conversation.id,reused:salesAgent.reused,proposalApproach:followUp.message}};
   },
 
   async convertToLead(prospectId:string){
@@ -176,7 +176,7 @@ export const rbFactorySalesService={
     if(!['SENT','READY','ACCEPTED'].includes(proposal.status)) throw new Error('WEBSITE_PROPOSAL_NOT_ACCEPTABLE');
     const demo=await prisma.websiteDemo.findFirst({where:{prospectId,status:{in:['APPROVED','READY']}},orderBy:{version:'desc'}});
     if(!demo) throw new Error('DEMO_NOT_READY_FOR_PROJECT');
-    // Fechamento comercial vem antes da criação do projeto.
+    // Fechamento comercial vem antes da criaÃ§Ã£o do projeto.
     const accepted=proposal.status==='ACCEPTED' ? proposal : await prisma.websiteProposal.update({
       where:{id:proposal.id},
       data:{status:'ACCEPTED',acceptedAt:new Date()}
@@ -188,7 +188,6 @@ export const rbFactorySalesService={
       `UPDATE "RbFactorySalesPipeline" SET stage='WON',nextAction='PROJECT_READY_FOR_PUBLICATION',updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,
       prospectId
     );
-    await rbFactorySalesAgentService.closeSellerForProspect(prospectId,'WON');
     return {proposal:accepted,lead,project};
   },
 

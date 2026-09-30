@@ -127,9 +127,9 @@
     if (!button || !output) return;
 
     button.disabled = true;
-    button.textContent = 'Pesquisando…';
+    button.textContent = 'Pesquisandoâ€¦';
     output.className = 'prospect-result show';
-    output.textContent = 'Consultando a base de prospecção…';
+    output.textContent = 'Consultando a base de prospecÃ§Ã£oâ€¦';
 
     try {
       const payload = {
@@ -153,18 +153,18 @@
 
       output.className = 'prospect-result show ok';
       output.innerHTML =
-        '<b>Pesquisa concluída.</b><br>' +
+        '<b>Pesquisa concluÃ­da.</b><br>' +
         'Encontrados: ' + escapeHtml(data.totalFound || 0) +
-        ' · Qualificados: ' + escapeHtml(data.totalQualified || 0) +
-        ' · Criados: ' + escapeHtml(data.totalCreated || 0) +
-        ' · Auditados: ' + escapeHtml(data.totalAudited || 0);
+        ' Â· Qualificados: ' + escapeHtml(data.totalQualified || 0) +
+        ' Â· Criados: ' + escapeHtml(data.totalCreated || 0) +
+        ' Â· Auditados: ' + escapeHtml(data.totalAudited || 0);
 
-      toast('Prospecção concluída');
+      toast('ProspecÃ§Ã£o concluÃ­da');
       await refreshAll();
     } catch (error) {
       output.className = 'prospect-result show err';
-      output.textContent = 'Não foi possível concluir: ' + error.message;
-      toast('Falha na prospecção');
+      output.textContent = 'NÃ£o foi possÃ­vel concluir: ' + error.message;
+      toast('Falha na prospecÃ§Ã£o');
     } finally {
       button.disabled = false;
       button.textContent = 'Pesquisar agora';
@@ -186,7 +186,7 @@
   async function loadProspectBrowser() {
     const box = $('prospectBrowserTable');
     if (!box) return;
-    box.innerHTML = '<div class="empty">Carregando…</div>';
+    box.innerHTML = '<div class="empty">Carregandoâ€¦</div>';
 
     try {
       const response = await apiFetch(API + '/websites/prospecting/prospects?limit=50');
@@ -200,15 +200,15 @@
       }
 
       box.innerHTML =
-        '<table><thead><tr><th>Empresa</th><th>Cidade</th><th>Segmento</th><th>Score</th><th>Oportunidade</th><th>Ação</th></tr></thead><tbody>' +
+        '<table><thead><tr><th>Empresa</th><th>Cidade</th><th>Segmento</th><th>Score</th><th>Oportunidade</th><th>AÃ§Ã£o</th></tr></thead><tbody>' +
         rows.map((p) =>
           '<tr>' +
-          '<td><b>' + escapeHtml(p.companyName || '—') + '</b><br><span style="color:#9299a3">' + escapeHtml(p.phone || p.whatsapp || '') + '</span></td>' +
-          '<td>' + escapeHtml(p.city || '—') + '</td>' +
-          '<td>' + escapeHtml(p.segment || p.category || '—') + '</td>' +
-          '<td>' + escapeHtml(p.websiteOpportunityScore == null ? (p.websiteScore == null ? (p.score == null ? '—' : p.score) : p.websiteScore) : p.websiteOpportunityScore) + '</td>' +
-          '<td><span class="badge">' + escapeHtml(p.websiteOpportunityStatus || p.status || '—') + '</span></td>' +
-          '<td><button class="btn" data-rb-action="process-prospect" data-id="' + escapeHtml(p.id) + '" style="padding:6px 8px;font-size:9px">⚙ Processar</button></td>' +
+          '<td><b>' + escapeHtml(p.companyName || 'â€”') + '</b><br><span style="color:#9299a3">' + escapeHtml(p.phone || p.whatsapp || '') + '</span></td>' +
+          '<td>' + escapeHtml(p.city || 'â€”') + '</td>' +
+          '<td>' + escapeHtml(p.segment || p.category || 'â€”') + '</td>' +
+          '<td>' + escapeHtml(p.websiteOpportunityScore == null ? (p.websiteScore == null ? (p.score == null ? 'â€”' : p.score) : p.websiteScore) : p.websiteOpportunityScore) + '</td>' +
+          '<td><span class="badge">' + escapeHtml(p.websiteOpportunityStatus || p.status || 'â€”') + '</span></td>' +
+          '<td><button class="btn" data-rb-action="process-prospect" data-id="' + escapeHtml(p.id) + '" style="padding:6px 8px;font-size:9px">âš™ Processar</button></td>' +
           '</tr>'
         ).join('') +
         '</tbody></table>';
@@ -235,7 +235,7 @@
       if ($('sProspects')) $('sProspects').textContent = (data.totalProspects == null ? 0 : data.totalProspects) + ' cadastrados';
       if ($('sDemos')) $('sDemos').textContent = (data.totalDemos == null ? 0 : data.totalDemos) + ' prontos';
     } catch (error) {
-      if ($('sProspects')) $('sProspects').textContent = 'API indisponível';
+      if ($('sProspects')) $('sProspects').textContent = 'API indisponÃ­vel';
       if ($('sDemos')) $('sDemos').textContent = 'verifique a chave';
     }
   }
@@ -270,22 +270,22 @@
       const recent = rows.slice(0, 8);
       if ($('prospectsTable')) {
         $('prospectsTable').innerHTML = recent.length
-          ? '<table><thead><tr><th>Empresa</th><th>Cidade</th><th>Segmento</th><th>Score</th><th>Status</th><th>Ações</th></tr></thead><tbody>' +
+          ? '<table><thead><tr><th>Empresa</th><th>Cidade</th><th>Segmento</th><th>Score</th><th>Status</th><th>AÃ§Ãµes</th></tr></thead><tbody>' +
             recent.map((p) =>
-              '<tr><td><b>' + escapeHtml(p.companyName || '—') + '</b></td>' +
-              '<td>' + escapeHtml(p.city || '—') + '</td>' +
-              '<td>' + escapeHtml(p.segment || p.category || '—') + '</td>' +
-              '<td>' + escapeHtml(p.websiteScore == null ? (p.score == null ? '—' : p.score) : p.websiteScore) + '</td>' +
-              '<td><span class="badge">' + escapeHtml(p.websiteOpportunityStatus || p.status || '—') + '</span></td>' +
-              '<td><button class="btn" data-rb-action="process-prospect" data-id="' + escapeHtml(p.id) + '" style="padding:6px 8px;font-size:9px">⚙ Processar</button></td></tr>'
+              '<tr><td><b>' + escapeHtml(p.companyName || 'â€”') + '</b></td>' +
+              '<td>' + escapeHtml(p.city || 'â€”') + '</td>' +
+              '<td>' + escapeHtml(p.segment || p.category || 'â€”') + '</td>' +
+              '<td>' + escapeHtml(p.websiteScore == null ? (p.score == null ? 'â€”' : p.score) : p.websiteScore) + '</td>' +
+              '<td><span class="badge">' + escapeHtml(p.websiteOpportunityStatus || p.status || 'â€”') + '</span></td>' +
+              '<td><button class="btn" data-rb-action="process-prospect" data-id="' + escapeHtml(p.id) + '" style="padding:6px 8px;font-size:9px">âš™ Processar</button></td></tr>'
             ).join('') +
             '</tbody></table>'
           : '<div class="empty">Nenhum prospect encontrado.</div>';
       }
     } catch (error) {
-      if ($('prospectState')) $('prospectState').textContent = 'indisponível';
-      if ($('pipeline')) $('pipeline').innerHTML = '<div class="empty">Não foi possível carregar o funil.</div>';
-      if ($('prospectsTable')) $('prospectsTable').innerHTML = '<div class="empty">Não foi possível carregar os prospects.</div>';
+      if ($('prospectState')) $('prospectState').textContent = 'indisponÃ­vel';
+      if ($('pipeline')) $('pipeline').innerHTML = '<div class="empty">NÃ£o foi possÃ­vel carregar o funil.</div>';
+      if ($('prospectsTable')) $('prospectsTable').innerHTML = '<div class="empty">NÃ£o foi possÃ­vel carregar os prospects.</div>';
     }
   }
 
@@ -307,7 +307,7 @@
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || ('demo HTTP ' + response.status));
 
-      toast('Demo enviada para geração');
+      toast('Demo enviada para geraÃ§Ã£o');
       await refreshAll();
     } catch (error) {
       toast('Falha: ' + error.message);
@@ -322,18 +322,18 @@
       const running = state.status === 'RUNNING';
 
       if ($('sellerStatus')) $('sellerStatus').textContent = running ? 'TRABALHANDO' : 'PARADO';
-      if ($('sellerToggle')) $('sellerToggle').textContent = running ? '■ DESLIGAR VENDEDOR IA' : '▶ VENDEDOR IA';
-      if ($('sellerCommandTitle')) $('sellerCommandTitle').textContent = running ? 'Vendedor IA está LIGADO' : 'Vendedor IA está DESLIGADO';
-      if ($('sellerCommandText')) $('sellerCommandText').textContent = running ? 'O vendedor está trabalhando a fila comercial.' : 'Clique em LIGAR para iniciar o trabalho comercial da Factory.';
-      if ($('sellerCommandStatus')) $('sellerCommandStatus').textContent = running ? '● LIGADO' : '● DESLIGADO';
+      if ($('sellerToggle')) $('sellerToggle').textContent = running ? 'â–  DESLIGAR VENDEDOR IA' : 'â–¶ VENDEDOR IA';
+      if ($('sellerCommandTitle')) $('sellerCommandTitle').textContent = running ? 'Vendedor IA estÃ¡ LIGADO' : 'Vendedor IA estÃ¡ DESLIGADO';
+      if ($('sellerCommandText')) $('sellerCommandText').textContent = running ? 'O vendedor estÃ¡ trabalhando a fila comercial.' : 'Clique em LIGAR para iniciar o trabalho comercial da Factory.';
+      if ($('sellerCommandStatus')) $('sellerCommandStatus').textContent = running ? 'â— LIGADO' : 'â— DESLIGADO';
       if ($('sellerCommandToggle')) {
-        $('sellerCommandToggle').textContent = running ? '■ DESLIGAR VENDEDOR IA' : '▶ LIGAR VENDEDOR IA';
+        $('sellerCommandToggle').textContent = running ? 'â–  DESLIGAR VENDEDOR IA' : 'â–¶ LIGAR VENDEDOR IA';
         $('sellerCommandToggle').className = running ? 'btn seller-off' : 'btn seller-on';
       }
       if ($('sellerStart')) $('sellerStart').style.display = running ? 'none' : 'inline-block';
       if ($('sellerStop')) $('sellerStop').style.display = running ? 'inline-block' : 'none';
     } catch (error) {
-      if ($('sellerStatus')) $('sellerStatus').textContent = 'INDISPONÍVEL';
+      if ($('sellerStatus')) $('sellerStatus').textContent = 'INDISPONÃVEL';
     }
   }
 
@@ -349,9 +349,9 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          city: 'Poços de Caldas',
+          city: 'PoÃ§os de Caldas',
           state: 'MG',
-          niches: ['clínicas', 'hamburguerias', 'restaurantes', 'advogados', 'odontologia'],
+          niches: ['clÃ­nicas', 'hamburguerias', 'restaurantes', 'advogados', 'odontologia'],
           maxResults: 10,
           batchSize: 10
         })
@@ -361,7 +361,7 @@
       toast('Vendedor IA iniciado');
       await sellerStatus();
     } catch (error) {
-      toast('Não foi possível iniciar: ' + error.message);
+      toast('NÃ£o foi possÃ­vel iniciar: ' + error.message);
     }
   }
 
@@ -373,12 +373,12 @@
       toast('Vendedor IA parado');
       await sellerStatus();
     } catch (error) {
-      toast('Não foi possível parar: ' + error.message);
+      toast('NÃ£o foi possÃ­vel parar: ' + error.message);
     }
   }
 
   async function refreshAll() {
-    if ($('updated')) $('updated').textContent = 'Atualizando…';
+    if ($('updated')) $('updated').textContent = 'Atualizandoâ€¦';
     await Promise.allSettled([overview(), prospects(), sellerStatus()]);
     if ($('updated')) $('updated').textContent = 'Atualizado em ' + new Date().toLocaleString('pt-BR');
     toast('Dashboard atualizado');
@@ -435,3 +435,91 @@
     refreshAll();
   }
 })();
+
+// =========================================================
+// FUNÇÃO INJETADA: Carregar Biblioteca de Modelos (Sites Salvos)
+// =========================================================
+
+
+        if (models.length === 0) {
+            libraryContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Nenhum modelo gerado ainda. Processe um prospect para vê-lo aqui.</p>';
+            return;
+        }
+
+        libraryContainer.innerHTML = models.map(model =>
+            <div class="bg-white rounded-lg shadow-md p-4 border border-gray-200 hover:shadow-lg transition">
+                <h3 class="font-bold text-lg text-gray-800 mb-2">\</h3>
+                <p class="text-sm text-gray-600 mb-3">\</p>
+                <div class="flex gap-2">
+                    <a href="\" target="_blank" class="flex-1 bg-blue-600 text-white text-center py-2 rounded hover:bg-blue-700 text-sm font-medium">
+                        👁️ Visualizar Site
+                    </a>
+                    <button onclick="copyToClipboard('\')" class="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm" title="Copiar Link">
+                        📋
+                    </button>
+                </div>
+            <\/div>
+        ).join('');
+
+        console.log('✅ Biblioteca carregada com \ modelos.');
+    } catch (error) {
+        console.error('❌ Erro ao carregar biblioteca:', error);
+    }
+}
+
+
+// =========================================================
+// FUNCAO CORRIGIDA: Carregar Biblioteca de Demos (do Banco)
+// =========================================================
+async function loadModelLibrary() {
+    try {
+        console.log('Carregando biblioteca de demos do banco...');
+
+        const response = await apiFetch(API + '/demos/list');
+
+        if (!response.success) {
+            console.error('Erro ao carregar demos:', response.error);
+            return;
+        }
+
+        const demos = response.demos || [];
+        const libraryContainer = document.getElementById('library-container') || document.querySelector('.library-grid');
+
+        if (!libraryContainer) {
+            console.warn('Container da biblioteca nao encontrado');
+            return;
+        }
+
+        if (demos.length === 0) {
+            libraryContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Nenhuma demo gerada ainda.</p>';
+            return;
+        }
+
+        libraryContainer.innerHTML = demos.map(demo => {
+            const companyName = demo.prospect && demo.prospect.companyName ? demo.prospect.companyName : 'Empresa Sem Nome';
+            const segment = demo.prospect && demo.prospect.segment ? demo.prospect.segment : 'Segmento nao informado';
+            const city = demo.prospect && demo.prospect.city ? demo.prospect.city : 'Cidade N/A';
+            const statusClass = demo.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700';
+
+            return `
+                <div class="bg-white rounded-lg shadow-md p-4 border border-gray-200 hover:shadow-lg transition">
+                    <h3 class="font-bold text-lg text-gray-800 mb-2">${companyName}</h3>
+                    <p class="text-sm text-gray-600 mb-1">${segment}</p>
+                    <p class="text-xs text-gray-500 mb-3">${city} | v${demo.version}</p>
+                    <div class="flex gap-2">
+                        <a href="/api/demos/preview/${demo.id}" target="_blank" class="flex-1 bg-blue-600 text-white text-center py-2 rounded hover:bg-blue-700 text-sm font-medium">
+                            Visualizar Site
+                        </a>
+                        <span class="px-3 py-2 ${statusClass} rounded text-xs font-medium">
+                            ${demo.status}
+                        </span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        console.log('Biblioteca carregada com ' + demos.length + ' demos.');
+    } catch (error) {
+        console.error('Erro ao carregar biblioteca:', error);
+    }
+}

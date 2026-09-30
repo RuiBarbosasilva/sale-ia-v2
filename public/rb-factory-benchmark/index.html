@@ -1,3 +1,58 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RB Factory Sites — Biblioteca de Demos</title><style>body{font-family:Arial;margin:0;background:#f6f7f9;color:#111}header{padding:50px 7vw;background:#111;color:#fff}main{padding:40px 7vw}.niche{background:#fff;padding:24px;margin:18px 0;border-radius:18px}.links{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}.links a{padding:14px;border:1px solid #ddd;border-radius:12px;text-decoration:none;color:#111}small{color:#666}</style></head><body><header><h1>RB Factory Sites</h1><p>Biblioteca de 100 demos originais para apresentação e como referência de criação.</p></header><main id="app"></main><script>
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RB Factory Sites — Biblioteca de Demos</title><style>body{font-family:Arial;margin:0;background:#f6f7f9;color:#111}header{padding:50px 7vw;background:#111;color:#fff}main{padding:40px 7vw}.niche{background:#fff;padding:24px;margin:18px 0;border-radius:18px}.links{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}.links a{padding:14px;border:1px solid #ddd;border-radius:12px;text-decoration:none;color:#111}small{color:#666}</style></head><body>
+<div style="position:sticky;top:0;z-index:100;background:#101318;padding:15px 25px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+    <div style="display:flex;gap:10px;align-items:center;">
+        <a href="/site-factory.html" style="background:#3b82f6;color:white;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:700;font-size:12px;display:inline-flex;align-items:center;gap:6px;">
+            ← Voltar ao Dashboard
+        </a>
+        <a href="/rb-factory-template-library.html" style="background:#6b7280;color:white;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:700;font-size:12px;">
+            Biblioteca de Modelos
+        </a>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+        <span style="color:#9ca3af;font-size:11px;font-weight:600;">BIBLIOTECA DE REFERÊNCIAS</span>
+        <button onclick="document.getElementById('refFileInput').click()" style="background:#10b981;color:white;padding:10px 18px;border:none;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;">
+            ＋ Importar ZIP/HTML
+        </button>
+        <input type="file" id="refFileInput" accept=".zip,.html,.htm" hidden onchange="importReference(this)">
+    </div>
+</div>
+
+<script>
+async function importReference(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const name = prompt('Nome da referência:', file.name.replace(/\.(zip|html?)$/i, ''));
+    if (!name) { input.value = ''; return; }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('name', name);
+    formData.append('segment', 'referencia');
+    formData.append('description', 'Referência importada da biblioteca de 100 demos');
+
+    try {
+        const key = sessionStorage.getItem('saleIaAdminKey') || '';
+        const response = await fetch('/api/websites/studio/templates/import', {
+            method: 'POST',
+            headers: key ? { 'x-sale-ia-admin-key': key } : {},
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert('✅ Referência importada com sucesso!\n\nEla agora está disponível na Biblioteca de Modelos.');
+            location.reload();
+        } else {
+            alert('❌ Erro ao importar: ' + (result.error || 'Erro desconhecido'));
+        }
+    } catch (error) {
+        alert('❌ Falha na importação: ' + error.message);
+    } finally {
+        input.value = '';
+    }
+}
+</script><header><h1>RB Factory Sites</h1><p>Biblioteca de 100 demos originais para apresentação e como referência de criação.</p></header><main id="app"></main><script>
 fetch('/api/rb-factory-benchmark/catalog').then(r=>r.json()).then(d=>{document.querySelector('#app').innerHTML=d.niches.map(n=>'<section class="niche"><h2>'+n.name+'</h2><small>'+n.description+' · '+n.count+' modelos</small><div class="links">'+Array.from({length:n.count},(_,i)=>'<a target="_blank" href="/api/rb-factory-benchmark/demos/'+n.slug+'/'+(i+1)+'">Modelo '+String(i+1).padStart(2,'0')+'</a>').join('')+'</div></section>').join('')})
 </script></body></html>

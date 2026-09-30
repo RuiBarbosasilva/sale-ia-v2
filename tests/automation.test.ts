@@ -1,10 +1,10 @@
-﻿import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { automationService } from "../src/services/automationService";
 import { evolutionService } from "../src/services/evolutionService";
 
 const prisma = new PrismaClient();
 
-describe("AutomationService - Resposta Autom�tica no WhatsApp", () => {
+describe("AutomationService - Resposta Autom?tica no WhatsApp", () => {
   beforeAll(async () => {
     await prisma.product.upsert({
       where: {
@@ -20,7 +20,7 @@ describe("AutomationService - Resposta Autom�tica no WhatsApp", () => {
         id: "test-automation-product",
         name: "Camisa Polo Personalizada Teste",
         description: "Produto utilizado nos testes automatizados",
-        niche: "Vestu�rio",
+        niche: "Vestu?rio",
         salePrice: 50,
         costPrice: 10,
         active: true,

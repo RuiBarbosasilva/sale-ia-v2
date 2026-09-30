@@ -3,14 +3,14 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const ROOT = process.cwd();
-console.log(' INICIANDO IMPLEMENTAÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢O COMPLETA DO SITE FACTORY...\n');
+console.log(' INICIANDO IMPLEMENTAÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã†â€™O COMPLETA DO SITE FACTORY...\n');
 
 function writeFile(filePath, content) {
   const fullPath = path.join(ROOT, filePath);
   const dir = path.dirname(fullPath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(fullPath, content, 'utf8');
-  console.log('  ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ ' + filePath);
+  console.log('  ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ ' + filePath);
 }
 
 function readFile(filePath) {
@@ -43,7 +43,7 @@ let schema = readFile('prisma/schema.prisma') || '';
 if (!schema.includes('model WebsiteCategory')) {
   schema += categorySchema;
   writeFile('prisma/schema.prisma', schema);
-  console.log('  ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ Model WebsiteCategory adicionado ao schema');
+  console.log('  ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Model WebsiteCategory adicionado ao schema');
 }
 
 // ============================================================================
@@ -75,7 +75,7 @@ model WebsiteTemplate {
 if (!schema.includes('model WebsiteTemplate')) {
   schema += templateSchema;
   writeFile('prisma/schema.prisma', schema);
-  console.log('  ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ Model WebsiteTemplate adicionado ao schema');
+  console.log('  ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Model WebsiteTemplate adicionado ao schema');
 }
 
 // Atualizar WebsiteDemo para ter templateId
@@ -85,7 +85,7 @@ if (!schema.includes('templateId')) {
     'model WebsiteDemo {\n  templateId  String?\n  template    WebsiteTemplate? @relation(fields: [templateId], references: [id])'
   );
   writeFile('prisma/schema.prisma', schema);
-  console.log('  ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ WebsiteDemo atualizado com templateId');
+  console.log('  ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ WebsiteDemo atualizado com templateId');
 }
 
 // ============================================================================
@@ -222,9 +222,9 @@ export default router;
 writeFile('src/routes/templateRoutes.ts', templateRoutes);
 
 // ============================================================================
-// FASE 6-10: WEBSITE SERVICE EVOLUÃƒÆ’Ã†â€™Ãƒâ€šÃ‚ÂDO
+// FASE 6-10: WEBSITE SERVICE EVOLUÃƒÆ’Ã‚ÂDO
 // ============================================================================
-console.log('\n[FASE 6-10] Criando Website Service evoluÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­do...');
+console.log('\n[FASE 6-10] Criando Website Service evoluÃƒÆ’Ã‚Â­do...');
 
 const websiteService = `import { PrismaClient } from '@prisma/client';
 import { websiteDesignService } from './website/websiteDesignService';
@@ -237,16 +237,16 @@ const prisma = new PrismaClient();
 export class WebsiteService {
   async createSiteFromTemplate(templateId: string, prospectId: string, customData: any) {
     const template = await prisma.websiteTemplate.findUnique({ where: { id: templateId } });
-    if (!template) throw new Error('Template nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado');
+    if (!template) throw new Error('Template nÃƒÆ’Ã‚Â£o encontrado');
     
     const prospect = await prisma.websiteProspect.findUnique({ where: { id: prospectId } });
-    if (!prospect) throw new Error('Prospect nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o encontrado');
+    if (!prospect) throw new Error('Prospect nÃƒÆ’Ã‚Â£o encontrado');
     
     const creatorType = creatorSelector.selectCreator(prospect.segment || '');
     const design = websiteDesignService.getDesignTokens(creatorType);
     const content = websiteContentService.generateContent(
       customData.businessName || prospect.companyName || 'Sua Empresa',
-      customData.category || prospect.segment || 'negÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³cio',
+      customData.category || prospect.segment || 'negÃƒÆ’Ã‚Â³cio',
       customData.city || prospect.city || 'sua cidade',
       creatorType,
       customData.whatsapp || prospect.phone
@@ -287,7 +287,7 @@ export class WebsiteService {
       data: {
         prospectId,
         title: 'Proposta de Website - ' + (prospect?.companyName || ''),
-        description: 'CriaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o de website profissional baseado no modelo ' + (template?.name || ''),
+        description: 'CriaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o de website profissional baseado no modelo ' + (template?.name || ''),
         price: template?.price || 0,
         status: 'DRAFT'
       }
@@ -314,8 +314,8 @@ console.log('\n[FASE 11] Atualizando funil de vendas...');
 
 // Atualizar status do WebsiteProspect
 if (schema.includes('status')) {
-  // Adicionar comentÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio sobre os novos status
-  console.log('  ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ Status do funil: NOVO, ANALISADO, DEMO_GERADA, DEMO_ENVIADA, PROPOSTA_ENVIADA, NEGOCIACAO, AGUARDANDO_PAGAMENTO, PAGO, CLIENTE, PROJETO, PUBLICADO, PERDIDO');
+  // Adicionar comentÃƒÆ’Ã‚Â¡rio sobre os novos status
+  console.log('  ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Status do funil: NOVO, ANALISADO, DEMO_GERADA, DEMO_ENVIADA, PROPOSTA_ENVIADA, NEGOCIACAO, AGUARDANDO_PAGAMENTO, PAGO, CLIENTE, PROJETO, PUBLICADO, PERDIDO');
 }
 
 // ============================================================================
@@ -416,27 +416,27 @@ const siteFactoryHtml = `<!DOCTYPE html>
 <body>
   <div class="container">
     <header>
-      <h1>ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â Site Factory</h1>
-      <p>MÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡quina de CriaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o e Venda de Sites</p>
+      <h1>ÃƒÂ°Ã…Â¸Ã…â€™Ã‚Â Site Factory</h1>
+      <p>MÃƒÆ’Ã‚Â¡quina de CriaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o e Venda de Sites</p>
     </header>
 
     <nav class="nav">
-      <button onclick="showSection('overview')" id="btn-overview" class="active">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€¦Ã‚Â  VisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o Geral</button>
-      <button onclick="showSection('templates')" id="btn-templates">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€šÃ‚Â¦ Modelos</button>
-      <button onclick="showSection('categories')" id="btn-categories">ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Categorias</button>
-      <button onclick="showSection('prospects')" id="btn-prospects">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€šÃ‚Â¥ Prospects</button>
-      <button onclick="showSection('demos')" id="btn-demos">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â½Ãƒâ€šÃ‚Â¨ Demos</button>
+      <button onclick="showSection('overview')" id="btn-overview" class="active">ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â  VisÃƒÆ’Ã‚Â£o Geral</button>
+      <button onclick="showSection('templates')" id="btn-templates">ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¦ Modelos</button>
+      <button onclick="showSection('categories')" id="btn-categories">ÃƒÂ¯Ã‚Â¸Ã‚Â Categorias</button>
+      <button onclick="showSection('prospects')" id="btn-prospects">ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚Â¥ Prospects</button>
+      <button onclick="showSection('demos')" id="btn-demos">ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¨ Demos</button>
       <button onclick="showSection('proposals')" id="btn-proposals"> Propostas</button>
     </nav>
 
     <section id="overview" class="section active">
       <div class="stats" id="statsGrid"></div>
-      <div class="card"><h2>ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€¹Ã¢â‚¬Â  Resumo</h2><div id="overviewContent"></div></div>
+      <div class="card"><h2>ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‹â€  Resumo</h2><div id="overviewContent"></div></div>
     </section>
 
     <section id="templates" class="section">
       <div class="card">
-        <h2>ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€šÃ‚Â¦ Biblioteca de Modelos</h2>
+        <h2>ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¦ Biblioteca de Modelos</h2>
         <button onclick="loadTemplates()" class="btn btn-primary"> Atualizar</button>
         <div id="templatesGrid" class="grid" style="margin-top:1rem"></div>
       </div>
@@ -444,8 +444,8 @@ const siteFactoryHtml = `<!DOCTYPE html>
 
     <section id="categories" class="section">
       <div class="card">
-        <h2>ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚Â·ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Categorias</h2>
-        <button onclick="loadCategories()" class="btn btn-primary">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ Atualizar</button>
+        <h2>ÃƒÂ°Ã…Â¸Ã‚ÂÃ‚Â·ÃƒÂ¯Ã‚Â¸Ã‚Â Categorias</h2>
+        <button onclick="loadCategories()" class="btn btn-primary">ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ Atualizar</button>
         <div id="categoriesList" style="margin-top:1rem"></div>
       </div>
     </section>
@@ -453,23 +453,23 @@ const siteFactoryHtml = `<!DOCTYPE html>
     <section id="prospects" class="section">
       <div class="card">
         <h2> Prospects</h2>
-        <button onclick="loadProspects()" class="btn btn-primary">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ Atualizar</button>
+        <button onclick="loadProspects()" class="btn btn-primary">ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ Atualizar</button>
         <div id="prospectsList" style="margin-top:1rem"></div>
       </div>
     </section>
 
     <section id="demos" class="section">
       <div class="card">
-        <h2>ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â½Ãƒâ€šÃ‚Â¨ Demos Geradas</h2>
-        <button onclick="loadDemos()" class="btn btn-primary">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ Atualizar</button>
+        <h2>ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â¨ Demos Geradas</h2>
+        <button onclick="loadDemos()" class="btn btn-primary">ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ Atualizar</button>
         <div id="demosList" style="margin-top:1rem"></div>
       </div>
     </section>
 
     <section id="proposals" class="section">
       <div class="card">
-        <h2>ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ Propostas</h2>
-        <button onclick="loadProposals()" class="btn btn-primary">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾ Atualizar</button>
+        <h2>ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Å¾ Propostas</h2>
+        <button onclick="loadProposals()" class="btn btn-primary">ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ Atualizar</button>
         <div id="proposalsList" style="margin-top:1rem"></div>
       </div>
     </section>
@@ -563,7 +563,7 @@ const siteFactoryHtml = `<!DOCTYPE html>
         const res = await fetch(API + '/websites/demos');
         const data = await res.json();
         const demos = data.demos || [];
-        let html = '<table><thead><tr><th>Empresa</th><th>VersÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o</th><th>Status</th><th>AÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes</th></tr></thead><tbody>';
+        let html = '<table><thead><tr><th>Empresa</th><th>VersÃƒÆ’Ã‚Â£o</th><th>Status</th><th>AÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes</th></tr></thead><tbody>';
         demos.forEach(d => {
           html += '<tr><td>' + (d.prospect?.companyName || 'N/A') + '</td><td>v' + d.version + '</td><td><span class="badge badge-success">' + d.status + '</span></td><td><button class="btn btn-primary" onclick="window.open(\\'/api/websites/demo/' + d.id + '\\', \\'_blank\\')">Ver</button></td></tr>';
         });
@@ -607,7 +607,7 @@ routesToRegister.forEach(route => {
 });
 
 writeFile('src/routes/apiRoutes.ts', apiRoutes);
-console.log('  ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ Todas as rotas registradas');
+console.log('  ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Todas as rotas registradas');
 
 // ============================================================================
 // FASE 18: CRIAR CATEGORIAS INICIAIS
@@ -619,33 +619,33 @@ const seedScript = String.raw`import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 const categories = [
-  { name: 'Dentistas', slug: 'dentistas', icon: 'ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â¦Ãƒâ€šÃ‚Â·' },
-  { name: 'MÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©dicos', slug: 'medicos', icon: 'ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â' },
-  { name: 'Nutricionistas', slug: 'nutricionistas', icon: 'ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â¥ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â' },
-  { name: 'ClÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nicas', slug: 'clinicas', icon: 'ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚Â¥' },
-  { name: 'EstÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tica', slug: 'estetica', icon: 'ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ' },
-  { name: 'PsicÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³logos', slug: 'psicologos', icon: 'ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â ' },
-  { name: 'Advogados', slug: 'advogados', icon: 'ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â' },
-  { name: 'Contadores', slug: 'contadores', icon: 'ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€¦Ã‚Â ' },
-  { name: 'ImobiliÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rias', slug: 'imobiliarias', icon: 'ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚Â ' },
-  { name: 'Restaurantes', slug: 'restaurantes', icon: 'ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚Â½ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â' },
-  { name: 'HotÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©is', slug: 'hoteis', icon: 'ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚Â¨' },
-  { name: 'Academias', slug: 'academias', icon: 'ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢Ãƒâ€šÃ‚Âª' },
-  { name: 'SalÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âµes', slug: 'saloes', icon: 'ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡' },
-  { name: 'Barbearias', slug: 'barbearias', icon: 'ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢Ãƒâ€¹Ã¢â‚¬Â ' },
-  { name: 'FotÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³grafos', slug: 'fotografos', icon: '' },
-  { name: 'Arquitetos', slug: 'arquitetos', icon: 'ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â' },
-  { name: 'Engenheiros', slug: 'engenheiros', icon: 'ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â§' },
-  { name: 'Prestadores de ServiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§os', slug: 'prestadores', icon: 'ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â' },
-  { name: 'ComÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rcio', slug: 'comercio', icon: 'ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢' },
-  { name: 'Empresas', slug: 'empresas', icon: 'ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚Â¢' },
-  { name: 'EducaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o', slug: 'educacao', icon: 'ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€¦Ã‚Â¡' },
-  { name: 'Eventos', slug: 'eventos', icon: 'ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã‚Â½ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°' },
-  { name: 'Outros', slug: 'outros', icon: 'ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€šÃ‚Â¦' }
+  { name: 'Dentistas', slug: 'dentistas', icon: 'ÃƒÂ°Ã…Â¸Ã‚Â¦Ã‚Â·' },
+  { name: 'MÃƒÆ’Ã‚Â©dicos', slug: 'medicos', icon: 'ÃƒÂ¢Ã…Â¡Ã¢â‚¬Â¢ÃƒÂ¯Ã‚Â¸Ã‚Â' },
+  { name: 'Nutricionistas', slug: 'nutricionistas', icon: 'ÃƒÂ°Ã…Â¸Ã‚Â¥Ã¢â‚¬â€' },
+  { name: 'ClÃƒÆ’Ã‚Â­nicas', slug: 'clinicas', icon: 'ÃƒÂ°Ã…Â¸Ã‚ÂÃ‚Â¥' },
+  { name: 'EstÃƒÆ’Ã‚Â©tica', slug: 'estetica', icon: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã¢â‚¬Â ' },
+  { name: 'PsicÃƒÆ’Ã‚Â³logos', slug: 'psicologos', icon: 'ÃƒÂ°Ã…Â¸Ã‚Â§Ã‚Â ' },
+  { name: 'Advogados', slug: 'advogados', icon: 'ÃƒÂ¢Ã…Â¡Ã¢â‚¬â€œÃƒÂ¯Ã‚Â¸Ã‚Â' },
+  { name: 'Contadores', slug: 'contadores', icon: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â ' },
+  { name: 'ImobiliÃƒÆ’Ã‚Â¡rias', slug: 'imobiliarias', icon: 'ÃƒÂ°Ã…Â¸Ã‚ÂÃ‚Â ' },
+  { name: 'Restaurantes', slug: 'restaurantes', icon: 'ÃƒÂ°Ã…Â¸Ã‚ÂÃ‚Â½ÃƒÂ¯Ã‚Â¸Ã‚Â' },
+  { name: 'HotÃƒÆ’Ã‚Â©is', slug: 'hoteis', icon: 'ÃƒÂ°Ã…Â¸Ã‚ÂÃ‚Â¨' },
+  { name: 'Academias', slug: 'academias', icon: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Âª' },
+  { name: 'SalÃƒÆ’Ã‚Âµes', slug: 'saloes', icon: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã¢â‚¬Â¡' },
+  { name: 'Barbearias', slug: 'barbearias', icon: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‹â€ ' },
+  { name: 'FotÃƒÆ’Ã‚Â³grafos', slug: 'fotografos', icon: '' },
+  { name: 'Arquitetos', slug: 'arquitetos', icon: 'ÃƒÂ¯Ã‚Â¸Ã‚Â' },
+  { name: 'Engenheiros', slug: 'engenheiros', icon: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â§' },
+  { name: 'Prestadores de ServiÃƒÆ’Ã‚Â§os', slug: 'prestadores', icon: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂºÃ‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â' },
+  { name: 'ComÃƒÆ’Ã‚Â©rcio', slug: 'comercio', icon: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂºÃ¢â‚¬â„¢' },
+  { name: 'Empresas', slug: 'empresas', icon: 'ÃƒÂ°Ã…Â¸Ã‚ÂÃ‚Â¢' },
+  { name: 'EducaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o', slug: 'educacao', icon: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â¡' },
+  { name: 'Eventos', slug: 'eventos', icon: 'ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Â°' },
+  { name: 'Outros', slug: 'outros', icon: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¦' }
 ];
 
 async function seed() {
-  console.log('ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€¦Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â± Criando categorias iniciais...');
+  console.log('ÃƒÂ°Ã…Â¸Ã…â€™Ã‚Â± Criando categorias iniciais...');
   for (const cat of categories) {
     await prisma.websiteCategory.upsert({
       where: { slug: cat.slug },
@@ -653,7 +653,7 @@ async function seed() {
       create: cat
     });
   }
-  console.log('ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ ' + categories.length + ' categorias criadas!');
+  console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ ' + categories.length + ' categorias criadas!');
   await prisma.\$disconnect();
 }
 
@@ -663,12 +663,12 @@ seed().catch(console.error);
 writeFile('prisma/seed-site-factory.ts', seedScript);
 
 // ============================================================================
-// FINAL: INSTRUÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ES
+// FINAL: INSTRUÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã¢â‚¬Â¢ES
 // ============================================================================
 console.log('\n============================================================');
-console.log('  ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ IMPLEMENTAÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢O CONCLUÃƒÆ’Ã†â€™Ãƒâ€šÃ‚ÂDA!');
+console.log('  ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ IMPLEMENTAÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã†â€™O CONCLUÃƒÆ’Ã‚ÂDA!');
 console.log('============================================================');
-console.log('\nÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹ PRÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œXIMOS PASSOS:');
+console.log('\nÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹ PRÃƒÆ’Ã¢â‚¬Å“XIMOS PASSOS:');
 console.log('1. npx prisma migrate dev --name add-site-factory-models');
 console.log('2. npx ts-node prisma/seed-site-factory.ts');
 console.log('3. npm run build');

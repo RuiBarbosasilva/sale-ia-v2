@@ -14,7 +14,7 @@ async function cycle(){
   if(status!=='RUNNING') return;
   try{
     const result=await rbFactorySalesAgentService.prepareNextSellerAction();
-    pushRun({id:crypto.randomUUID(),createdAt:new Date().toISOString(),status:'SUCCESS',message:result.available?'Próxima ação comercial preparada.':'Fila comercial sem ação disponível.',result});
+    pushRun({id:crypto.randomUUID(),createdAt:new Date().toISOString(),status:'SUCCESS',message:result.hasAction?'Próxima ação comercial preparada.':'Fila comercial sem ação disponível.',result});
   }catch(error:any){
     const message=String(error?.message||error||'Erro no ciclo do vendedor');
     pushRun({id:crypto.randomUUID(),createdAt:new Date().toISOString(),status:'ERROR',message});

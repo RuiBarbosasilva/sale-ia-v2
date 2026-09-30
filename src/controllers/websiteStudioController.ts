@@ -808,7 +808,20 @@ export const websiteStudioController = {
     } catch (e: any) {
       res.status(e.message.includes('não encontrada') ? 404 : 500).json({ success: false, error: e.message });
     }
+  },
+
+
+  async previewImportedTemplateAsset(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const requestedPath = req.params[0] || '';
+      const baseUrl = '/api/websites/studio/templates/library/' + id + '/preview/';
+      const { content, mimeType } = await websiteImportedTemplateService.servePreviewAsset(id, requestedPath, baseUrl, req.query as any);
+      res.setHeader('Content-Type', mimeType);
+      res.send(content);
+    } catch (error: any) { res.status(404).send(error.message); }
   }
+
 };
 
 

@@ -2,18 +2,18 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function validateFlow() {
-  console.log("=== VALIDAÇÃO FLUXO COMERCIAL REAL ===\n");
+  console.log("=== VALIDA??O FLUXO COMERCIAL REAL ===\n");
   const timestamp = Date.now();
   const phone = "55119" + timestamp.toString().substring(5);
   
   try {
-    // 0. PRODUTO (Pré-requisito para Quote/Order)
+    // 0. PRODUTO (Pr?-requisito para Quote/Order)
     console.log("0. PRODUTO: Criando produto de teste...");
     const product = await prisma.product.create({
       data: { 
         name: 'Produto Teste Fluxo', 
         price: 150.00,
-        description: 'Produto para validação de fluxo'
+        description: 'Produto para valida??o de fluxo'
       }
     }).catch(async () => {
       // Se falhar, tenta pegar o primeiro produto existente
@@ -31,7 +31,7 @@ async function validateFlow() {
     console.log("   [OK] Lead criado. ID: " + lead.id);
 
     // 2. QUOTE
-    console.log("\n2. QUOTE: Criando cotação no banco...");
+    console.log("\n2. QUOTE: Criando cota??o no banco...");
     const quoteValue = 150.00;
     const quote = await prisma.quote.create({
       data: {
@@ -46,7 +46,7 @@ async function validateFlow() {
     console.log("   [OK] Quote criada. ID: " + quote.id + ", Valor: R$ " + quote.totalValue);
 
     // 3. ORDER
-    console.log("\n3. ORDER: Criando pedido vinculado à quote...");
+    console.log("\n3. ORDER: Criando pedido vinculado ? quote...");
     const order = await prisma.order.create({
       data: {
         leadId: lead.id,
@@ -68,7 +68,7 @@ async function validateFlow() {
     const payData = await payRes.json();
     console.log("   [OK] Webhook Payment. HTTP: " + payRes.status + ", Success: " + payData.success);
 
-    // 5. SALE & STATE CHECK (Validação no Banco)
+    // 5. SALE & STATE CHECK (Valida??o no Banco)
     console.log("\n5. SALE & ESTADOS: Verificando integridade no banco...");
     const updatedOrder = await prisma.order.findUnique({ where: { id: order.id } });
     const updatedLead = await prisma.lead.findUnique({ where: { id: lead.id } });
@@ -76,7 +76,7 @@ async function validateFlow() {
     
     console.log("   - Order Status: " + updatedOrder.status + " (Esperado: PAID)");
     console.log("   - Lead Stage: " + updatedLead.stage + " (Esperado: PEDIDO_CONFIRMADO)");
-    console.log("   - Sale Created: " + (sale ? 'SIM' : 'NÃO') + " (Status: " + (sale?.status) + ", Valor: R$ " + (sale?.value) + ")");
+    console.log("   - Sale Created: " + (sale ? 'SIM' : 'N?O') + " (Status: " + (sale?.status) + ", Valor: R$ " + (sale?.value) + ")");
 
     // 6. DASHBOARD
     console.log("\n6. DASHBOARD: Verificando sales-metrics...");
@@ -91,8 +91,8 @@ async function validateFlow() {
     await prisma.order.deleteMany({ where: { id: order.id } });
     await prisma.quote.deleteMany({ where: { id: quote.id } });
     await prisma.lead.deleteMany({ where: { id: lead.id } });
-    // Não deletamos o produto de teste para evitar quebrar outros testes que dependam dele
-    console.log("   [OK] Limpeza concluída.");
+    // N?o deletamos o produto de teste para evitar quebrar outros testes que dependam dele
+    console.log("   [OK] Limpeza conclu?da.");
 
     console.log("\n============================================================");
     console.log(" FLUXO COMERCIAL REAL: PASS");
@@ -106,7 +106,7 @@ async function validateFlow() {
     console.log("\nFLUXO COMERCIAL REAL VALIDADO.");
 
   } catch (error) {
-    console.error("\n[ERRO] Falha na validação:", error.message);
+    console.error("\n[ERRO] Falha na valida??o:", error.message);
     console.log("\nFLUXO COMERCIAL REAL: FAIL");
   } finally {
     await prisma.$disconnect();

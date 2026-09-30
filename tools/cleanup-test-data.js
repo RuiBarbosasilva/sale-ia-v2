@@ -1,7 +1,7 @@
 // tools/cleanup-test-data.js
 // EXECUTAR MANUALMENTE APENAS SE DESEJAR LIMPAR DADOS DE TESTE
 // Este script IDENTIFICA e REMOVE apenas registros com nomes/telefones de teste.
-// Ele NÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢O remove vendas ou pagamentos reais vinculados a clientes vÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lidos.
+// Ele NÃƒÆ’Ã†â€™O remove vendas ou pagamentos reais vinculados a clientes vÃƒÆ’Ã‚Â¡lidos.
 
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
@@ -27,8 +27,8 @@ async function cleanup() {
   }
 
   console.log("Encontrados leads de teste.");
-  console.log("ATENÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢O: Isso removerÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ leads, pedidos, pagamentos e vendas vinculadas a estes registros.");
-  console.log("Para confirmar, edite este script e remova o comentÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡rio da execuÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o.");
+  console.log("ATENÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã†â€™O: Isso removerÃƒÆ’Ã‚Â¡ leads, pedidos, pagamentos e vendas vinculadas a estes registros.");
+  console.log("Para confirmar, edite este script e remova o comentÃƒÆ’Ã‚Â¡rio da execuÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o.");
   
   // DESCOMENTE AS LINHAS ABAIXO PARA EXECUTAR A LIMPEZA REAL
   /*
@@ -40,7 +40,7 @@ async function cleanup() {
     await prisma.quote.deleteMany({ where: { leadId: lead.id } });
     await prisma.lead.delete({ where: { id: lead.id } });
   }
-  console.log("Limpeza concluÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­da.");
+  console.log("Limpeza concluÃƒÆ’Ã‚Â­da.");
   */
 }
 
