@@ -1,4 +1,4 @@
-﻿
+
 Path                                                                LineNumber Line                                    
 ----                                                                ---------- ----                                    
 C:\sale-ia-v2\src\modules\mercadoLivre\routes\mercadoLivreRoutes.ts         18 router.get('/health', healthCheck);     
@@ -290,5 +290,3 @@ C:\sale-ia-v2\src\app.ts                                                    60 a
 C:\sale-ia-v2\src\app.ts                                                    61 app.get('/rb-factory-benchmark', (_re...
 C:\sale-ia-v2\src\app.ts                                                    62 app.get('/rb-factory-maintenance', (_...
 C:\sale-ia-v2\src\app.ts                                                    63 app.get('/rb-factory-commercial', (_r...
-
-

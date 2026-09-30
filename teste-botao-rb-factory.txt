@@ -1,4 +1,4 @@
-﻿# TESTE DO BOTAO PROCESSAR - RB FACTORY
+# TESTE DO BOTAO PROCESSAR - RB FACTORY
 # Cole os comandos abaixo no Console (F12) do navegador.
 
 console.log("=== RB FACTORY TESTE ===");
