@@ -1,4 +1,4 @@
-﻿node_modules/
+node_modules/
 .env
 .env.*
 !.env.example
@@ -69,3 +69,25 @@ _local-backups/
 
 # Backups temporarios de arquivos corrompidos
 /public/*.corrupted-*
+
+# Dependências
+# Ambiente e Segredos
+.env.local
+.env.*.local
+# Banco de Dados SQLite
+prisma/dev.db
+prisma/*.db
+*.db.backup*
+# Builds e Cobertura
+# Backups e Quarentena
+_QUARENTENA_LIMPEZA_*/
+_diagnostic_backups/
+_backup-local/
+_backup_factory_local/
+runtime/
+*.bak*
+*.corrupted*
+# Arquivos de mídia gerados (opcional, mas recomendado para não incharem o git)
+public/audios/
+public/generated-images/
+# OS

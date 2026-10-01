@@ -779,8 +779,9 @@ model WebsiteOutreachEvent {
 }
 
 // ============================================================
-// SALE-IA-V2 - MODULO DE AFILIADOS
-// Rastreamento de links, cliques, vendas, comissoes e saques.
+
+// ============================================================
+// SALE-IA-V2 - MÓDULO DE AFILIADOS (UNIFICADO + IA)
 // ============================================================
 
 model Affiliate {
@@ -789,7 +790,7 @@ model Affiliate {
   email           String    @unique
   phone           String?
   slug            String    @unique
-  status          String    @default("PENDING") // PENDING, ACTIVE, BLOCKED
+  status          String    @default("PENDING")
   commissionRate  Float     @default(10)
   accessTokenHash String?   @unique
   lastLoginAt     DateTime?
@@ -797,29 +798,11 @@ model Affiliate {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  links   AffiliateLink[]
-  clicks  AffiliateClick[]
-  sales   AffiliateSale[]
-  payouts AffiliatePayout[]
-}
-
-model AffiliateOffer {
-  id             String   @id @default(uuid())
-  name           String
-  network        String?
-  externalId     String?
-  destinationUrl String
-  category       String?
-  commissionRate Float    @default(10)
-  active         Boolean  @default(true)
-  metadata       String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  links AffiliateLink[]
-
-  @@index([network])
-  @@index([active])
+  links       AffiliateLink[]
+  clicks      AffiliateClick[]
+  sales       AffiliateSale[]
+  payouts     AffiliatePayout[]
+  transactions AffiliateTransaction[]
 }
 
 model AffiliateLink {
@@ -827,7 +810,6 @@ model AffiliateLink {
   affiliateId    String
   affiliate      Affiliate       @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
   offerId        String?
-  offer          AffiliateOffer? @relation(fields: [offerId], references: [id], onDelete: SetNull)
   code           String          @unique
   destinationUrl String
   campaign       String?
@@ -840,7 +822,6 @@ model AffiliateLink {
   sales  AffiliateSale[]
 
   @@index([affiliateId])
-  @@index([offerId])
   @@index([active])
 }
 
@@ -852,7 +833,6 @@ model AffiliateClick {
   link        AffiliateLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
   ipHash      String?
   userAgent   String?
-  referer     String?
   createdAt   DateTime      @default(now())
 
   @@index([affiliateId, createdAt])
@@ -860,21 +840,21 @@ model AffiliateClick {
 }
 
 model AffiliateSale {
-  id               String                @id @default(uuid())
+  id               String          @id @default(uuid())
   affiliateId      String
-  affiliate        Affiliate             @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  affiliate        Affiliate       @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
   linkId           String?
-  link             AffiliateLink?        @relation(fields: [linkId], references: [id], onDelete: SetNull)
-  externalOrderId  String?               @unique
-  webhookEventId   String?               @unique
-  source           String                @default("MANUAL")
+  link             AffiliateLink?  @relation(fields: [linkId], references: [id], onDelete: SetNull)
+  externalOrderId  String?         @unique
+  webhookEventId   String?         @unique
+  source           String          @default("MANUAL")
   customerRef      String?
   amount           Float
   commissionRate   Float
   commissionAmount Float
-  status           String                @default("PENDING") // PENDING, APPROVED, REJECTED, PAID
+  status           String          @default("PENDING")
   metadata         String?
-  createdAt        DateTime              @default(now())
+  createdAt        DateTime        @default(now())
   approvedAt       DateTime?
   paidAt           DateTime?
   payoutItems      AffiliatePayoutItem[]
@@ -884,20 +864,19 @@ model AffiliateSale {
 }
 
 model AffiliatePayout {
-  id          String                @id @default(uuid())
+  id          String          @id @default(uuid())
   affiliateId String
-  affiliate   Affiliate             @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  affiliate   Affiliate       @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
   amount      Float
-  status      String                @default("REQUESTED") // REQUESTED, PROCESSING, PAID, REJECTED
+  status      String          @default("REQUESTED")
   method      String?
   reference   String?
   notes       String?
-  requestedAt DateTime              @default(now())
+  requestedAt DateTime        @default(now())
   paidAt      DateTime?
   items       AffiliatePayoutItem[]
 
   @@index([affiliateId, status])
-  @@index([requestedAt])
 }
 
 model AffiliatePayoutItem {
@@ -911,418 +890,9 @@ model AffiliatePayoutItem {
 
   @@unique([payoutId, saleId])
   @@unique([saleId])
-  @@index([saleId])
-  @@index([payoutId])
-}
-
-// ============================================================
-// SALE-IA-V2 - AI SALES / AFFILIATE INTELLIGENCE
-// Motor de descoberta, avaliacao, campanhas, conteudo e acoes.
-// ============================================================
-
-model AffiliateNetwork {
-  id                   String    @id @default(uuid())
-  name                 String    @unique
-  slug                 String    @unique
-  type                 String    @default("AFFILIATE_NETWORK")
-  baseUrl              String?
-  status               String    @default("CONFIGURED")
-  apiBaseUrl           String?
-  credentialStatus     String    @default("NOT_CONFIGURED")
-  credentialsEncrypted String?
-  metadata             String?
-  active               Boolean   @default(true)
-  lastScanAt           DateTime?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-
-  products AffiliateProduct[]
-  actions  AffiliateAction[]
-
-  @@index([active])
-  @@index([status])
 }
 
 model AffiliateProduct {
-  id                String           @id @default(uuid())
-  networkId         String
-  network           AffiliateNetwork @relation(fields: [networkId], references: [id], onDelete: Cascade)
-  externalId        String?
-  name              String
-  url               String?
-  affiliateUrl      String?
-  category          String?
-  subcategory       String?
-  price             Float?
-  commissionRate    Float?
-  commissionAmount  Float?
-  recurring         Boolean          @default(false)
-  gravity           Float?
-  popularityScore   Float?
-  demandScore       Float?
-  competitionScore  Float?
-  contentScore      Float?
-  conversionScore   Float?
-  saturationScore   Float?
-  opportunityScore  Float            @default(0)
-  status            String           @default("DISCOVERED")
-  affiliationStatus String           @default("NOT_AFFILIATED")
-  affiliationMode   String           @default("MANUAL")
-  description       String?
-  salesPageUrl      String?
-  metadata          String?
-  lastScannedAt     DateTime?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-
-  scores        AffiliateProductScore[]
-  opportunities AffiliateOpportunity[]
-  campaigns     AffiliateCampaign[]
-
-  @@unique([networkId, externalId])
-  @@index([networkId])
-  @@index([status])
-  @@index([opportunityScore])
-  @@index([category])
-}
-
-model AffiliateProductScore {
-  id          String           @id @default(uuid())
-  productId   String
-  product     AffiliateProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
-  score       Float
-  demand      Float?
-  competition Float?
-  commission  Float?
-  contentFit  Float?
-  trend       Float?
-  reasoning   String?
-  createdAt   DateTime         @default(now())
-
-  @@index([productId, createdAt])
-}
-
-model AffiliateOpportunity {
-  id             String           @id @default(uuid())
-  productId      String
-  product        AffiliateProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
-  score          Float
-  status         String           @default("NEW")
-  recommendation String?
-  strategy       String?
-  requiresAction Boolean          @default(false)
-  actionType     String?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-
-  @@index([status])
-  @@index([score])
-}
-
-model AffiliateCampaign {
-  id             String           @id @default(uuid())
-  productId      String
-  product        AffiliateProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
-  name           String
-  objective      String           @default("SALES")
-  strategy       String?
-  targetAudience String?
-  status         String           @default("DRAFT")
-  budget         Float?
-  landingPageUrl String?
-  trackingCode   String?
-  metrics        String?
-  startedAt      DateTime?
-  pausedAt       DateTime?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-
-  contents AffiliateContent[]
-  actions  AffiliateAction[]
-
-  @@index([productId])
-  @@index([status])
-}
-
-model AffiliateContent {
-  id           String            @id @default(uuid())
-  campaignId   String
-  campaign     AffiliateCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  platform     String
-  type         String
-  angle        String?
-  hook         String?
-  title        String?
-  body         String?
-  cta          String?
-  hashtags     String?
-  mediaPrompt  String?
-  mediaUrl     String?
-  status       String            @default("DRAFT")
-  scheduledFor DateTime?
-  publishedAt  DateTime?
-  metrics      String?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-
-  @@index([campaignId])
-  @@index([platform, status])
-}
-
-model AffiliateAction {
-  id               String             @id @default(uuid())
-  networkId        String?
-  network          AffiliateNetwork?  @relation(fields: [networkId], references: [id], onDelete: SetNull)
-  campaignId       String?
-  campaign         AffiliateCampaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  type             String
-  status           String             @default("PENDING_APPROVAL")
-  title            String
-  description      String?
-  payload          String?
-  result           String?
-  requiresApproval Boolean            @default(true)
-  executedAt       DateTime?
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
-
-  @@index([status])
-  @@index([type])
-}
-
-// ==========================================================
-// EDITORIAL FACTORY / KDP - PIPELINE COMERCIAL
-// ==========================================================
-
-model EditorialResearch {
-  id          String   @id @default(uuid())
-  topic       String
-  market      String   @default("BR")
-  language    String   @default("pt-BR")
-  sourceType  String
-  sourceUrl   String?
-  sourceTitle String?
-  snippet     String?
-  data        String?
-  capturedAt  DateTime @default(now())
-  createdAt   DateTime @default(now())
-
-  @@index([topic])
-  @@index([market, capturedAt])
-}
-
-model EditorialOpportunity {
-  id               String   @id @default(uuid())
-  topic            String
-  productType      String   @default("EBOOK")
-  market           String   @default("BR")
-  language         String   @default("pt-BR")
-  audience         String?
-  demandScore      Float    @default(0)
-  trendScore       Float    @default(0)
-  competitionScore Float    @default(0)
-  saturationScore  Float    @default(0)
-  commercialScore  Float    @default(0)
-  opportunityScore Float    @default(0)
-  reasoning        String?
-  status           String   @default("NEW")
-  researchIds      String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  projects EditorialProject[]
-
-  @@index([opportunityScore])
-  @@index([status])
-  @@index([topic])
-}
-
-model EditorialProject {
-  id                 String                @id @default(uuid())
-  opportunityId      String?
-  opportunity        EditorialOpportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
-  productType        String                @default("EBOOK")
-  status             String                @default("RESEARCHED")
-  language           String                @default("pt-BR")
-  market             String                @default("BR")
-  title              String?
-  subtitle           String?
-  author             String?
-  series             String?
-  volume             Int?
-  audience           String?
-  description        String?
-  manuscript         String?
-  metadata           String?
-  manuscriptPath     String?
-  coverPath          String?
-  interiorPath       String?
-  epubPath           String?
-  pdfPath            String?
-  printPdfPath       String?
-  qualityScore       Float                 @default(0)
-  aiDisclosure       String                @default("AI_ASSISTED")
-  rightsNotes        String?
-  generationProvider String?
-  generationModel    String?
-  errorMessage       String?
-  createdAt          DateTime              @default(now())
-  updatedAt          DateTime              @updatedAt
-
-  chapters     EditorialChapter[]
-  assets       EditorialAsset[]
-  checks       EditorialQualityCheck[]
-  publications EditorialPublication[]
-  landingPages EditorialLandingPage[]
-  metrics      EditorialMetric[]
-
-  @@index([status])
-  @@index([productType])
-  @@index([qualityScore])
-}
-
-model EditorialChapter {
-  id        String           @id @default(uuid())
-  projectId String
-  project   EditorialProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  position  Int
-  title     String
-  content   String
-  wordCount Int              @default(0)
-  status    String           @default("DRAFT")
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-
-  @@unique([projectId, position])
-  @@index([projectId])
-}
-
-model EditorialAsset {
-  id        String           @id @default(uuid())
-  projectId String
-  project   EditorialProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  type      String
-  path      String?
-  url       String?
-  prompt    String?
-  altText   String?
-  width     Int?
-  height    Int?
-  checksum  String?
-  status    String           @default("GENERATED")
-  createdAt DateTime         @default(now())
-
-  @@index([projectId, type])
-}
-
-model EditorialQualityCheck {
-  id        String           @id @default(uuid())
-  projectId String
-  project   EditorialProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  checkType String
-  status    String
-  score     Float            @default(0)
-  details   String?
-  createdAt DateTime         @default(now())
-
-  @@index([projectId, status])
-}
-
-model EditorialPublication {
-  id          String           @id @default(uuid())
-  projectId   String
-  project     EditorialProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  platform    String
-  status      String           @default("MANUAL_REQUIRED")
-  externalId  String?
-  url         String?
-  payload     String?
-  error       String?
-  publishedAt DateTime?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-
-  @@unique([projectId, platform])
-  @@index([platform, status])
-}
-
-model EditorialLandingPage {
-  id          String           @id @default(uuid())
-  projectId   String
-  project     EditorialProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  slug        String           @unique
-  title       String
-  headline    String
-  body        String
-  ctaText     String
-  checkoutUrl String?
-  status      String           @default("DRAFT")
-  htmlPath    String?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-}
-
-model EditorialMetric {
-  id         String           @id @default(uuid())
-  projectId  String
-  project    EditorialProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  event      String
-  platform   String?
-  value      Float            @default(0)
-  metadata   String?
-  occurredAt DateTime         @default(now())
-
-  @@index([projectId, event])
-  @@index([occurredAt])
-}
-
-// ============================================================
-// RB FACTORY - MODELOS HTML/ZIP IMPORTADOS PELO USUARIO
-// ============================================================
-model WebsiteImportedTemplate {
-  id          String   @id @default(uuid())
-  name        String
-  slug        String   @unique
-  description String?
-  segment     String?
-  sourceType  String   @default("HTML")
-  html        String
-  archiveData Bytes?
-  active      Boolean  @default(true)
-  favorite    Boolean  @default(false)
-  usageCount  Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([active])
-  @@index([segment])
-  @@index([favorite])
-  @@index([usageCount])
-}
-
-// ==========================================
-// MÃ“DULO AFILIADOS IA - TransaÃ§Ãµes e IdempotÃªncia
-// ==========================================
-model AffiliateTransaction {
-  id                String          @id @default(uuid())
-  externalId        String          @unique // ID da transaÃ§Ã£o na plataforma (ex: receipt)
-  provider          String // 'clickbank', 'hotmart', etc.
-  afiliadoProdutoId String
-  produto           AfiliadoProduto @relation(fields: [afiliadoProdutoId], references: [id])
-  amount            Float // Valor total da venda
-  commission        Float // Valor da comissÃ£o recebida
-  status            String // 'PENDING', 'CONFIRMED', 'REFUNDED', 'CANCELLED'
-  rawPayload        String // Salva o payload bruto como texto (SQLite compatÃ­vel)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-
-  @@index([provider, externalId])
-}
-
-// ==========================================
-// MÃ“DULO AFILIADOS IA - Produto/Oferta
-// ==========================================
-model AfiliadoProduto {
   id                 String                 @id @default(uuid())
   plataforma         String
   produtoIdExterno   String?
@@ -1334,66 +904,90 @@ model AfiliadoProduto {
   linkAfiliado       String
   thumbnail          String?
   temperatura        Float?
-  score              Float
-  status             String                 @default("ativo")
+  score              Float                  @default(0)
+  status             String                 @default("ATIVO")
   vendasConfirmadas  Int                    @default(0)
   comissaoTotal      Float                  @default(0)
   createdAt          DateTime               @default(now())
   updatedAt          DateTime               @updatedAt
-  copies             AfiliadoCopy[]
-  publicacoes        AfiliadoPublicacao[]
-  AfiliadoCriativo   AfiliadoCriativo[]
-  transactions       AffiliateTransaction[]
+
+  copies       AffiliateCopy[]
+  publicacoes  AffiliatePublication[]
+  criativos    AffiliateCreative[]
+  transactions AffiliateTransaction[]
+
+  @@index([plataforma])
+  @@index([status])
+  @@index([score])
 }
 
-// ==========================================
-// MÃ“DULO AFILIADOS IA - Copy/ConteÃºdo
-// ==========================================
-model AfiliadoCopy {
-  id        String          @id @default(uuid())
+model AffiliateCopy {
+  id        String           @id @default(uuid())
   produtoId String
-  produto   AfiliadoProduto @relation(fields: [produtoId], references: [id])
-  tipo              String?
-  conteudo          String?
+  produto   AffiliateProduct @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+  tipo      String
+  conteudo  String
   canal     String?
-  status    String          @default("ativo")
-  createdAt DateTime        @default(now())
-  updatedAt         DateTime? @updatedAt
+  status    String           @default("ATIVO")
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@index([produtoId])
 }
 
-// ==========================================
-// MÃ“DULO AFILIADOS IA - PublicaÃ§Ã£o/Campanha
-// ==========================================
-model AfiliadoPublicacao {
-  id                String            @id @default(uuid())
+model AffiliateCreative {
+  id          String               @id @default(uuid())
+  produtoId   String
+  produto     AffiliateProduct     @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+  tipo        String
+  url         String?
+  descricao   String?
+  promptUsado String?
+  status      String               @default("ATIVO")
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  publicacoes AffiliatePublication[]
+
+  @@index([produtoId])
+}
+
+model AffiliatePublication {
+  id                String               @id @default(uuid())
   produtoId         String
-  produto           AfiliadoProduto   @relation(fields: [produtoId], references: [id])
+  produto           AffiliateProduct     @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+  criativoId        String?
+  criativo          AffiliateCreative?   @relation(fields: [criativoId], references: [id], onDelete: SetNull)
   canal             String
   postIdExterno     String?
   dataPublicacao    DateTime?
-  impressoes        Int               @default(0)
-  cliques           Int               @default(0)
-  comentarios       Int               @default(0)
-  dmsEnviados       Int               @default(0)
-  vendasConfirmadas Int               @default(0)
-  comissaoGerada    Float             @default(0)
-  status            String            @default("agendado")
-  criativoId        String?
-  criativo          AfiliadoCriativo? @relation(fields: [criativoId], references: [id])
+  impressoes        Int                  @default(0)
+  cliques           Int                  @default(0)
+  vendasConfirmadas Int                  @default(0)
+  comissaoGerada    Float                @default(0)
+  status            String               @default("AGENDADO")
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@index([produtoId])
+  @@index([status])
 }
 
-// ==========================================
-// MÃ“DULO AFILIADOS IA - Criativo/MÃ­dia
-// ==========================================
-model AfiliadoCriativo {
-  id          String               @id @default(uuid())
+model AffiliateTransaction {
+  id          String           @id @default(uuid())
+  externalId  String           @unique
+  provider    String
   produtoId   String
-  produto     AfiliadoProduto      @relation(fields: [produtoId], references: [id])
-  tipo              String?
-  url               String?
-  descricao   String?
-  status      String               @default("ativo")
-  createdAt   DateTime             @default(now())
-  updatedAt         DateTime? @updatedAt
-  publicacoes AfiliadoPublicacao[]
+  produto     AffiliateProduct @relation(fields: [produtoId], references: [id], onDelete: Restrict)
+  affiliateId String?
+  affiliate   Affiliate?       @relation(fields: [affiliateId], references: [id], onDelete: SetNull)
+  amount      Float
+  commission  Float
+  status      String
+  rawPayload  String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([provider, externalId])
+  @@index([status])
 }

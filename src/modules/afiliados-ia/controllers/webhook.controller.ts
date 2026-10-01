@@ -1,79 +1,145 @@
-﻿import { Request, Response } from 'express';
-import { PrismaClient, Prisma } from '@prisma/client';
-import { clickBankProvider } from '../providers/ClickBankProvider';
+import { Request, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 export const handleAffiliateWebhook = async (req: Request, res: Response) => {
   try {
-    const provider = req.params.provider; // ex: 'clickbank'
-    const rawPayload = req.body;
+    const { provider } = req.params;
+    const webhookKey = req.headers['x-affiliate-webhook-key'] as string;
 
-    console.log(`[Webhook] Recebido evento do provedor: ${provider}`);
+    // 1. Validação da chave de segurança
+    const expectedKey = process.env.AFFILIATE_WEBHOOK_KEY;
+    if (!expectedKey || webhookKey !== expectedKey) {
+      console.warn('[Webhook] Chave inválida para provider: ' + provider);
+      return res.status(401).json({ error: 'Chave de webhook inválida ou não configurada' });
+    }
 
-    if (provider === 'clickbank') {
-      const normalizedData = await clickBankProvider.processWebhook(rawPayload);
+    const payload = req.body;
+    const rawPayload = JSON.stringify(payload);
 
-      if (!normalizedData) {
-        return res.status(200).json({ status: 'IGNORED', reason: 'Invalid or test payload' });
+    // 2. Extração de dados (mapeamento flexível para diferentes providers)
+    const externalId = String(
+      payload.transaction_id || payload.id || payload.receipt || payload.order_id
+    );
+    const productExternalId = String(
+      payload.product_id || payload.produtoid || 'UNKNOWN'
+    );
+    const amount = parseFloat(
+      payload.amount || payload.valor || payload.total || 0
+    );
+    const commission = parseFloat(
+      payload.commission || payload.comissao || (amount * 0.1)
+    );
+    const affiliateCode = String(
+      payload.affiliate_code || payload.afiliado || payload.clickbank_affiliate || 'UNKNOWN'
+    );
+    const statusRaw = String(payload.status || 'CONFIRMED').toUpperCase();
+
+    if (!externalId || externalId === 'undefined') {
+      return res.status(400).json({ error: 'ID externo da transação não encontrado no payload' });
+    }
+
+    // 3. Idempotência: Verifica se já processamos essa transação
+    const existingTransaction = await prisma.affiliateTransaction.findUnique({
+      where: { externalId }
+    });
+
+    if (existingTransaction) {
+      console.log('[Webhook] Transação já processada (idempotente): ' + externalId);
+      return res.status(200).json({
+        message: 'Webhook recebido e já processado anteriormente',
+        id: existingTransaction.id
+      });
+    }
+
+    // 4. Processamento Atômico (Transação no Prisma)
+    const result = await prisma.$transaction(async (tx) => {
+      // 4.1. Buscar ou criar o produto (fallback seguro)
+      let product = await tx.affiliateProduct.findFirst({
+        where: { produtoIdExterno: productExternalId, plataforma: provider }
+      });
+
+      if (!product) {
+        product = await tx.affiliateProduct.create({
+          data: {
+            plataforma: provider,
+            produtoIdExterno: productExternalId,
+            nome: payload.product_name || payload.titulo || ('Produto ' + productExternalId),
+            tipo: payload.tipo || 'desconhecido',
+            preco: amount,
+            comissaoPercentual: 10,
+            linkAfiliado: payload.link || 'https://example.com',
+            score: 0,
+            status: 'ATIVO'
+          }
+        });
       }
 
-      const { externalId, offerExternalId, amount, commission, status, rawPayload: raw } = normalizedData;
-
-      // 1. Buscar o produto interno baseado no vendor (offerExternalId)
-      const produto = await prisma.afiliadoProduto.findFirst({
+      // 4.2. Buscar afiliado pelo código (slug ou código externo)
+      const affiliate = await tx.affiliate.findFirst({
         where: {
-          plataforma: 'clickbank',
-          linkAfiliado: offerExternalId // Assumindo que o vendor nickname está salvo aqui
+          OR: [
+            { slug: affiliateCode },
+            { name: { contains: affiliateCode, mode: 'insensitive' } }
+          ]
         }
       });
 
-      if (!produto) {
-        console.warn(`[Webhook] Produto não encontrado para vendor: ${offerExternalId}`);
-        return res.status(200).json({ status: 'IGNORED', reason: 'Product not found in DB' });
-      }
-
-      // 2. Tentar registrar a transação (A MÁGICA DA IDEMPOTÊNCIA)
-      try {
-        await prisma.affiliateTransaction.create({
-          data: {
-            externalId: externalId,
-            provider: provider,
-            afiliadoProdutoId: produto.id,
-            amount: amount,
-            commission: commission,
-            status: status,
-            rawPayload: JSON.stringify(raw)
-          }
-        });
-
-        // 3. Se criou com sucesso, atualizar as métricas do produto atomicamente
-        await prisma.afiliadoProduto.update({
-          where: { id: produto.id },
-          data: {
-            vendasConfirmadas: { increment: status === 'CONFIRMED' ? 1 : 0 },
-            comissaoTotal: { increment: status === 'CONFIRMED' ? commission : 0 },
-            status: status === 'REFUNDED' || status === 'CANCELLED' ? 'reembolsado' : produto.status
-          }
-        });
-
-        console.log(`[Webhook] ✅ Venda processada e salva. Receipt: ${externalId}`);
-        return res.status(200).json({ status: 'SUCCESS', receipt: externalId });
-
-      } catch (dbError: any) {
-        // Se for erro de restrição única, significa que já processamos esse webhook antes
-        if (dbError.code === 'P2002') {
-          console.log(`[Webhook] ⚠️ Webhook duplicado ignorado (Idempotência funcionou). Receipt: ${externalId}`);
-          return res.status(200).json({ status: 'DUPLICATE_IGNORED', receipt: externalId });
+      // 4.3. Criar a Transação Financeira (Ledger)
+      const transaction = await tx.affiliateTransaction.create({
+        data: {
+          externalId,
+          provider,
+          produtoId: product.id,
+          affiliateId: affiliate ? affiliate.id : null,
+          amount,
+          commission,
+          status: statusRaw,
+          rawPayload
         }
-        throw dbError; // Se for outro erro de banco, lança para o catch geral
+      });
+
+      // 4.4. Criar a Venda (Sale) vinculada, se houver afiliado identificado
+      if (affiliate) {
+        await tx.affiliateSale.create({
+          data: {
+            affiliateId: affiliate.id,
+            externalOrderId: externalId,
+            webhookEventId: transaction.id,
+            source: provider.toUpperCase(),
+            amount,
+            commissionRate: product.comissaoPercentual,
+            commissionAmount: commission,
+            status: (statusRaw === 'CONFIRMED' || statusRaw === 'APPROVED') ? 'APPROVED' : 'PENDING',
+            metadata: rawPayload
+          }
+        });
+
+        // Atualiza métricas do produto automaticamente
+        await tx.affiliateProduct.update({
+          where: { id: product.id },
+          data: {
+            vendasConfirmadas: { increment: 1 },
+            comissaoTotal: { increment: commission }
+          }
+        });
       }
-    }
 
-    return res.status(400).json({ error: 'Provedor não suportado' });
+      return { transaction, product, affiliate };
+    });
 
-  } catch (error: any) {
-    console.error('[Webhook] ❌ Erro crítico ao processar evento:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.log('[Webhook] Processado com sucesso: ' + provider + ' - ' + externalId);
+    return res.status(200).json({
+      message: 'Webhook processado com sucesso',
+      transactionId: result.transaction.id
+    });
+
+  } catch (error) {
+    console.error('[Webhook Error]', error);
+    return res.status(500).json({
+      error: 'Erro interno ao processar webhook',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 };

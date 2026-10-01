@@ -1,4 +1,4 @@
-﻿import 'dotenv/config';
+import 'dotenv/config';
 import { affiliateHunterRoutes } from './routes/affiliateHunterRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import affiliateRoutes from './routes/affiliateRoutes';
@@ -33,11 +33,14 @@ import rbFactorySalesAgentRoutes from './routes/rbFactorySalesAgentRoutes';
 import rbFactorySalesAutonomyRoutes from './routes/rbFactorySalesAutonomyRoutes';
 import rbFactorySiteMaintenanceRoutes from './routes/rbFactorySiteMaintenanceRoutes';
 import rbFactoryCommercialRoutes from './routes/rbFactoryCommercialRoutes';
-import { startRbFactoryMaintenanceJob } from './jobs/rbFactoryMaintenanceJob';
+// [DESABILITADO TEMPORARIAMENTE] import { startRbFactoryMaintenanceJob } from './jobs/rbFactoryMaintenanceJob';
 import { afiliadosIaRoutes } from './modules/afiliados-ia/afiliados-ia.routes';
+import contentGeneratorRoutes from './modules/afiliados-ia/routes/contentGenerator.routes';
 import { factoryEbookRoutes } from './modules/factory-ebook/factory-ebook.routes';
 import trackingRoutes from './modules/afiliados-ia/routes/tracking.routes';
+import contentGeneratorRoutes from './modules/afiliados-ia/routes/contentGenerator.routes';
 import produtosRoutes from './modules/afiliados-ia/routes/produtos.routes';
+import contentGeneratorRoutes from './modules/afiliados-ia/routes/contentGenerator.routes';
 import { handleAffiliateWebhook } from './modules/afiliados-ia/controllers/webhook.controller';
 
 const app = express();
@@ -105,23 +108,39 @@ app.use('/go', affiliatePublicRoutes);
 app.use('/api/mercadolivre', mlRoutes);
 app.use('/api/credenciais', credenciaisRoutes);
 app.use('/dashboard', dashboardRoutes);
-startRbFactoryMaintenanceJob();
-app.use(errorHandler);
-
-
-
+// [DESABILITADO TEMPORARIAMENTE] startRbFactoryMaintenanceJob(); // Tabela RbFactorySiteClient não existe no schema
 // ==========================================
-// ROTAS DO MÃ“DULO AFILIADOS IA
+// ROTAS DO MÓDULO AFILIADOS IA E OUTROS
+// (DEVEM VIR ANTES DO errorHandler)
 // ==========================================
-// Tracking de cliques (ex: /go/abc123)
 app.use('/go', trackingRoutes);
-
-// Webhooks de provedores (ex: /api/affiliates/webhook/clickbank)
 app.post('/api/affiliates/webhook/:provider', handleAffiliateWebhook);
-export default app;
-
 app.use('/api/factory-ebook', factoryEbookRoutes);
 app.use('/api/afiliados', afiliadosIaRoutes);
 app.use('/api/publishers', publisherRoutes);
 app.use('/api/ml-seller', mlSellerRoutes);
 app.use('/api/content-factory', contentFactoryRoutes);
+
+// ==========================================
+// MIDDLEWARE DE ERRO (DEVE SER O ÚLTIMO)
+// ==========================================
+app.use('/api/afiliados/conteudo', contentGeneratorRoutes);
+
+
+// Rota temporária para listar produtos no dashboard
+app.get('/api/afiliados/produtos', async (req, res) => {
+  try {
+    const products = await prisma.affiliateProduct.findMany({
+      where: { status: 'ATIVO' },
+      orderBy: { createdAt: 'desc' },
+      take: 20
+    });
+    res.json({ products });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar produtos' });
+  }
+});
+
+app.use(errorHandler);
+
+export default app;
