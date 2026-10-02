@@ -12,8 +12,17 @@ let server;
 app.use('/dashboard', dashboardRoutes);
 
 if (process.env.NODE_ENV !== 'test') {
-  server = app.listen(PORT, () => {
+  server = app.listen(PORT, async () => {
     console.log(`[SERVER] Rodando na porta ${PORT}`);
+    if (String(process.env.RB_FACTORY_AUTONOMY_ENABLED || '').toLowerCase() === 'true') {
+      try {
+        const { rbFactorySalesAutonomyService } = await import('./services/rbFactorySalesAutonomyService');
+        await rbFactorySalesAutonomyService.start();
+        console.log('[RB FACTORY] Autonomia iniciada automaticamente.');
+      } catch (error: any) {
+        console.error('[RB FACTORY] Falha ao iniciar autonomia:', error?.message || error);
+      }
+    }
   });
 }
 
