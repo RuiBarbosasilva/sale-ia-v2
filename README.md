@@ -16,6 +16,43 @@ npm run dev
 
 Nao versione `.env`, bancos SQLite, `node_modules`, backups ou credenciais.
 
+## RB Factory Sites — produção
+
+O RB Factory Sites cobre o fluxo comercial e operacional: prospecção, auditoria, score, geração de demo, aprovação, proposta, aceite, projeto, publicação, manutenção e sugestões periódicas.
+
+### Variáveis de produção
+
+    SALE_IA_ADMIN_KEY=chave-interna-forte
+    RB_FACTORY_AUTONOMY_ENABLED=true
+    NETLIFY_AUTH_TOKEN=token-do-netlify
+
+NETLIFY_AUTH_TOKEN é necessário para publicação automática. O token nunca deve ser commitado no repositório; configure-o como secret na hospedagem.
+
+### Publicação automática
+
+O Studio usa POST /api/websites/studio/projects/deploy-netlify. O serviço cria ou reutiliza o site Netlify, publica o HTML/ativos, aguarda o deploy ficar pronto e grava no projeto a URL pública, site ID e deploy ID. Atualizações posteriores reutilizam o site existente quando hostingSiteId estiver salvo.
+
+### Autonomia
+
+Com RB_FACTORY_AUTONOMY_ENABLED=true, o servidor inicia automaticamente o ciclo comercial a cada 5 minutos. O mesmo ciclo também gera sugestões de manutenção para clientes ativos.
+
+### Checklist de produção
+
+- [x] autenticação administrativa
+- [x] migrations e Prisma
+- [x] prospecção e auditoria
+- [x] score comercial
+- [x] geração e quality gate de demos
+- [x] propostas e aceite comercial
+- [x] preparação do projeto
+- [x] publicação Netlify via API
+- [x] persistência de URL/site/deploy
+- [x] manutenção e snapshots
+- [x] sugestões automáticas de manutenção
+- [x] autonomia iniciada pelo servidor
+- [ ] configurar NETLIFY_AUTH_TOKEN no ambiente de produção
+- [ ] configurar domínio DNS personalizado, quando houver domínio próprio
+
 ## Modulo de Afiliados
 
 O modulo de afiliados foi estruturado como uma base de monetizacao independente dentro do SALE-IA-V2.
