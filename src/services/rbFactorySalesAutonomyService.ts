@@ -1,4 +1,5 @@
 import { rbFactorySalesAgentService } from './rbFactorySalesAgentService';
+import { rbFactorySiteMaintenanceService } from './website/rbFactorySiteMaintenanceService';
 
 type SellerStatus='RUNNING'|'STOPPED';
 type Run={id:string;createdAt:string;status:string;message:string;result?:any};
@@ -13,8 +14,11 @@ function pushRun(run:Run){runs.unshift(run);if(runs.length>50)runs.length=50;}
 async function cycle(){
   if(status!=='RUNNING') return;
   try{
-    const result=await rbFactorySalesAgentService.prepareNextSellerAction();
-    pushRun({id:crypto.randomUUID(),createdAt:new Date().toISOString(),status:'SUCCESS',message:result.hasAction?'Próxima ação comercial preparada.':'Fila comercial sem ação disponível.',result});
+    const [result, maintenance] = await Promise.all([
+      rbFactorySalesAgentService.prepareNextSellerAction(),
+      rbFactorySiteMaintenanceService.generateDueSuggestions(25)
+    ];
+    pushRun({id:crypto.randomUUID(),createdAt:new Date().toISOString(),status:'SUCCESS',message:result.hasAction?'Próxima ação comercial preparada.':'Fila comercial sem ação disponível.',result: { ...result, maintenanceSuggestions: maintenance.length } });
   }catch(error:any){
     const message=String(error?.message||error||'Erro no ciclo do vendedor');
     pushRun({id:crypto.randomUUID(),createdAt:new Date().toISOString(),status:'ERROR',message});
