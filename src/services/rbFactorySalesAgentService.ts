@@ -63,7 +63,9 @@ export const rbFactorySalesAgentService = {
         channel: action.phone ? 'WHATSAPP_OR_MANUAL' : 'MANUAL',
         requiresApproval: true,
         status: 'PENDING_APPROVAL',
-        message: await this.prepareInitialApproach(action.prospectId, 'WHATSAPP').then(x => x.message).catch(() => '')
+        message: action.type === 'FOLLOW_UP'
+          ? await this.prepareFollowUpApproach(action.prospectId, 'WHATSAPP').then(x => x.message).catch(() => '')
+          : await this.prepareInitialApproach(action.prospectId, 'WHATSAPP').then(x => x.message).catch(() => '')
       }
     };
   },
@@ -131,6 +133,22 @@ export const rbFactorySalesAgentService = {
       message: 'Olá! Vi a ' + prospect.companyName + ', de ' + (prospect.city || 'nossa região') + '. ' +
         'Analisei rapidamente a presença digital e ' + reason + '. ' +
         'Preparei uma demonstração sem compromisso. Posso te enviar?',
+      reused: false
+    };
+  },
+
+  async prepareFollowUpApproach(prospectId: string, channel: string = 'WHATSAPP') {
+    const prospect = await (prisma as any).websiteProspect.findUnique({
+      where: { id: prospectId },
+      select: { id: true, companyName: true, city: true }
+    });
+    if (!prospect) throw new Error('WEBSITE_PROSPECT_NOT_FOUND');
+
+    return {
+      prospectId,
+      channel,
+      message: 'Olá! Passando para retomar nosso contato sobre a demonstração da ' + prospect.companyName +
+        '. Posso te enviar novamente os detalhes e a proposta para você avaliar?',
       reused: false
     };
   },
