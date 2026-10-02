@@ -164,7 +164,30 @@ export const rbFactorySalesAgentService = {
 
   async approveAction(actionId: string) { return { id: actionId, status: 'APPROVED' }; },
   async rejectAction(actionId: string, reason: string = '') { return { id: actionId, status: 'REJECTED', reason }; },
-  async markActionSent(actionId: string, data: any = {}) { return { id: actionId, status: 'SENT', data }; },
+  async markActionSent(actionId: string, data: any = {}) {
+    const sentAt = new Date();
+    const nextFollowUpAt = data?.nextFollowUpAt ? new Date(data.nextFollowUpAt) : new Date(sentAt.getTime() + 48 * 60 * 60 * 1000);
+    const prospect = await (prisma as any).websiteProspect.findUnique({ where: { id: actionId }, select: { id: true } });
+    if (!prospect) throw new Error('WEBSITE_PROSPECT_NOT_FOUND');
+
+    await (prisma as any).websiteProspect.update({
+      where: { id: actionId },
+      data: {
+        contactedAt: sentAt,
+        lastContactAt: sentAt,
+        nextFollowUpAt,
+        status: 'CONTACTED',
+      },
+    });
+
+    return {
+      id: actionId,
+      status: 'SENT',
+      sentAt: sentAt.toISOString(),
+      nextFollowUpAt: nextFollowUpAt.toISOString(),
+      data,
+    };
+  },
 
   async createConversation(prospectId: string, channel: string = 'WHATSAPP') {
     return this.ensureConversation(prospectId, channel);
