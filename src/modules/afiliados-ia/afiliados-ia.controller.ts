@@ -1,5 +1,5 @@
-﻿import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { Request, Response } from 'express';
+import { prisma } from '../mercadoLivre/lib/prisma';
 import { HunterService } from './services/hunter.service';
 import { CopywriterService } from './services/copywriter.service';
 import { CriativoService } from './services/criativo.service';
@@ -7,8 +7,6 @@ import { VendedorVirtualService } from './services/vendedor.service';
 import { TelegramAPI } from './integrations/telegram.api';
 import { HotmartWebhookService } from './services/hotmart-webhook.service';
 import { KiwifyAPI } from './integrations/kiwify.api';
-
-const prisma = new PrismaClient();
 const hunterService = new HunterService();
 const copywriterService = new CopywriterService();
 const criativoService = new CriativoService();
@@ -70,14 +68,14 @@ export const divulgarNoTelegram = async (req: Request, res: Response) => {
   try {
     const { produtoId, variacaoCopy } = req.body;
     const produto = await prisma.afiliadoProduto.findUnique({ where: { id: produtoId } });
-    if (!produto) return res.status(404).json({ sucesso: false, erro: 'Produto nao encontrado' });
+    if (!produto) return res.status(404).json({ sucesso: false, erro: 'Produto não encontrado' });
 
     const copies = await prisma.afiliadoCopy.findMany({ where: { produtoId } });
     if (copies.length === 0) return res.status(400).json({ sucesso: false, erro: 'Gere copies para este produto primeiro' });
 
     const copyEscolhida = copies.find((c: any) => c.variacao === (variacaoCopy || 1)) || copies[0];
     const link = produto.linkAfiliado || 'Link na Bio do Perfil';
-    const mensagem = copyEscolhida.conteudo + '\n\nðŸ”— *Garanta o seu aqui:* ' + link;
+    const mensagem = copyEscolhida.conteudo + '\n\n🔗 *Garanta o seu aqui:* ' + link;
 
     const messageId = await telegramAPI.enviarMensagem(mensagem);
     await prisma.afiliadoPublicacao.create({
@@ -92,7 +90,7 @@ export const divulgarNoTelegram = async (req: Request, res: Response) => {
 
 export const receberWebhookHotmart = async (req: Request, res: Response) => {
   try {
-    console.log('[Webhook Hotmart] RequisiÃ§Ã£o recebida');
+    console.log('[Webhook Hotmart] Requisição recebida');
     const resultado = await hotmartWebhookService.processarEvento(req.body);
     return res.json(resultado);
   } catch (error: any) {
@@ -146,7 +144,7 @@ export const debugKiwify = async (req: Request, res: Response) => {
     return res.json({
       sucesso: true,
       config: {
-        clientId: process.env.KIWIFY_CLIENT_ID ? 'Configurado (' + process.env.KIWIFY_CLIENT_ID.substring(0,4) + '...)' : 'NÃƒO CONFIGURADO',
+        clientId: process.env.KIWIFY_CLIENT_ID ? 'Configurado (' + process.env.KIWIFY_CLIENT_ID.substring(0,4) + '...)' : 'NÃO CONFIGURADO',
         clientSecret: process.env.KIWIFY_CLIENT_SECRET ? 'Configurado' : 'NÃƒO CONFIGURADO',
         accountId: process.env.KIWIFY_ACCOUNT_ID ? 'Configurado' : 'NÃƒO CONFIGURADO'
       },
