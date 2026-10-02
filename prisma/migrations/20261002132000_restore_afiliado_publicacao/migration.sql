@@ -16,5 +16,3 @@ CREATE TABLE IF NOT EXISTS "AfiliadoPublicacao" (
 CREATE INDEX IF NOT EXISTS "AfiliadoPublicacao_produtoId_idx" ON "AfiliadoPublicacao"("produtoId");
 CREATE INDEX IF NOT EXISTS "AfiliadoPublicacao_canal_status_idx" ON "AfiliadoPublicacao"("canal","status");
 CREATE INDEX IF NOT EXISTS "AfiliadoPublicacao_postIdExterno_idx" ON "AfiliadoPublicacao"("postIdExterno");
-
-ALTER TABLE "AffiliateClick" ADD COLUMN "referer" TEXT;
