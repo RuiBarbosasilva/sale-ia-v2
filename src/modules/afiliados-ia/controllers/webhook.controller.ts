@@ -56,22 +56,34 @@ export const handleAffiliateWebhook = async (req: Request, res: Response) => {
     // 4. Processamento Atômico (Transação no Prisma)
     const result = await prisma.$transaction(async (tx) => {
       // 4.1. Buscar ou criar o produto (fallback seguro)
+      let network = await tx.affiliateNetwork.findFirst({ where: { slug: provider.toLowerCase() } });
+      if (!network) {
+        network = await tx.affiliateNetwork.create({
+          data: {
+            name: provider,
+            slug: provider.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+            type: 'AFFILIATE_NETWORK',
+            status: 'CONFIGURED'
+          }
+        });
+      }
+
       let product = await tx.affiliateProduct.findFirst({
-        where: { produtoIdExterno: productExternalId, plataforma: provider }
+        where: { networkId: network.id, externalId: productExternalId }
       });
 
       if (!product) {
         product = await tx.affiliateProduct.create({
           data: {
-            plataforma: provider,
-            produtoIdExterno: productExternalId,
-            nome: payload.product_name || payload.titulo || ('Produto ' + productExternalId),
-            tipo: payload.tipo || 'desconhecido',
-            preco: amount,
-            comissaoPercentual: 10,
-            linkAfiliado: payload.link || 'https://example.com',
-            score: 0,
-            status: 'ATIVO'
+            networkId: network.id,
+            externalId: productExternalId,
+            name: payload.product_name || payload.titulo || ('Produto ' + productExternalId),
+            type: payload.tipo || 'digital',
+            price: amount,
+            commissionRate: 10,
+            affiliateUrl: payload.link || null,
+            opportunityScore: 0,
+            status: 'DISCOVERED'
           }
         });
       }
@@ -81,7 +93,7 @@ export const handleAffiliateWebhook = async (req: Request, res: Response) => {
         where: {
           OR: [
             { slug: affiliateCode },
-            { name: { contains: affiliateCode, mode: 'insensitive' } }
+            { name: { contains: affiliateCode } }
           ]
         }
       });
@@ -109,7 +121,7 @@ export const handleAffiliateWebhook = async (req: Request, res: Response) => {
             webhookEventId: transaction.id,
             source: provider.toUpperCase(),
             amount,
-            commissionRate: product.comissaoPercentual,
+            commissionRate: product.commissionRate || 10,
             commissionAmount: commission,
             status: (statusRaw === 'CONFIRMED' || statusRaw === 'APPROVED') ? 'APPROVED' : 'PENDING',
             metadata: rawPayload
@@ -120,8 +132,7 @@ export const handleAffiliateWebhook = async (req: Request, res: Response) => {
         await tx.affiliateProduct.update({
           where: { id: product.id },
           data: {
-            vendasConfirmadas: { increment: 1 },
-            comissaoTotal: { increment: commission }
+            opportunityScore: product.opportunityScore
           }
         });
       }
