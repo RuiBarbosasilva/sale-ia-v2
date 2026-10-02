@@ -45,6 +45,21 @@ export class HotmartWebhookService {
         });
       }
 
+      // Webhooks podem ser reenviados pela Hotmart; torna o processamento idempotente.
+      const vendaExistente = hotmartId
+        ? await prisma.afiliadoPublicacao.findFirst({ where: { postIdExterno: hotmartId } })
+        : null;
+
+      if (vendaExistente) {
+        return {
+          recebido: true,
+          evento: eventoNome,
+          vendaId: vendaExistente.id,
+          comissao: vendaExistente.comissaoGerada || 0,
+          duplicado: true
+        };
+      }
+
       // Registra a venda
       const venda = await prisma.afiliadoPublicacao.create({
         data: {
@@ -90,14 +105,29 @@ export class HotmartWebhookService {
       });
 
       if (venda) {
+        const comissaoAnterior = Number(venda.comissaoGerada || 0);
+        const vendasAnteriores = Number(venda.vendasConfirmadas || 0);
+
         await prisma.afiliadoPublicacao.update({
           where: { id: venda.id },
-          data: { 
+          data: {
             status: 'reembolso',
             vendasConfirmadas: 0,
             comissaoGerada: 0
           }
         });
+
+        const produto = await prisma.afiliadoProduto.findUnique({ where: { id: venda.produtoId } });
+        if (produto) {
+          await prisma.afiliadoProduto.update({
+            where: { id: produto.id },
+            data: {
+              vendasConfirmadas: { decrement: Math.min(vendasAnteriores, Number(produto.vendasConfirmadas || 0)) },
+              comissaoTotal: { decrement: Math.min(comissaoAnterior, Number(produto.comissaoTotal || 0)) }
+            }
+          });
+        }
+
         console.log('[Hotmart Webhook] Reembolso registrado para: ' + hotmartId);
       }
 
