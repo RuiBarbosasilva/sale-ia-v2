@@ -78,7 +78,6 @@ export const handleAffiliateWebhook = async (req: Request, res: Response) => {
             networkId: network.id,
             externalId: productExternalId,
             name: payload.product_name || payload.titulo || ('Produto ' + productExternalId),
-            type: payload.tipo || 'digital',
             price: amount,
             commissionRate: 10,
             affiliateUrl: payload.link || null,
@@ -132,7 +131,7 @@ export const handleAffiliateWebhook = async (req: Request, res: Response) => {
         await tx.affiliateProduct.update({
           where: { id: product.id },
           data: {
-            opportunityScore: product.opportunityScore
+            lastScannedAt: new Date()
           }
         });
       }
