@@ -35,13 +35,12 @@ import rbFactorySiteMaintenanceRoutes from './routes/rbFactorySiteMaintenanceRou
 import rbFactoryCommercialRoutes from './routes/rbFactoryCommercialRoutes';
 // [DESABILITADO TEMPORARIAMENTE] import { startRbFactoryMaintenanceJob } from './jobs/rbFactoryMaintenanceJob';
 import { afiliadosIaRoutes } from './modules/afiliados-ia/afiliados-ia.routes';
-import contentGeneratorRoutes from './modules/afiliados-ia/routes/contentGenerator.routes';
 import { factoryEbookRoutes } from './modules/factory-ebook/factory-ebook.routes';
 import trackingRoutes from './modules/afiliados-ia/routes/tracking.routes';
-import contentGeneratorRoutes from './modules/afiliados-ia/routes/contentGenerator.routes';
 import produtosRoutes from './modules/afiliados-ia/routes/produtos.routes';
-import contentGeneratorRoutes from './modules/afiliados-ia/routes/contentGenerator.routes';
 import { handleAffiliateWebhook } from './modules/afiliados-ia/controllers/webhook.controller';
+import contentGeneratorRoutes from './modules/afiliados-ia/routes/contentGenerator.routes';
+import { prisma } from './modules/mercadoLivre/lib/prisma';
 
 const app = express();
 
@@ -125,7 +124,6 @@ app.use('/api/content-factory', contentFactoryRoutes);
 // MIDDLEWARE DE ERRO (DEVE SER O ÚLTIMO)
 // ==========================================
 app.use('/api/afiliados/conteudo', contentGeneratorRoutes);
-
 
 // Rota temporária para listar produtos no dashboard
 app.get('/api/afiliados/produtos', async (req, res) => {
