@@ -31,7 +31,7 @@ export const generateAffiliateContent = async (
     throw new Error('Produto afiliado nao encontrado');
   }
 
-  console.log('[AI Content] Gerando conteudo para: ' + product.nome);
+  console.log('[AI Content] Gerando conteudo para: ' + product.name);
 
   // Se estiver em modo mock, retorna dados simulados
   if (USE_MOCK) {
@@ -61,7 +61,7 @@ export const generateAffiliateContent = async (
         data: {
           produtoId: product.id,
           tipo: 'video',
-          descricao: 'Roteiro e prompt gerados (MOCK) para ' + product.nome,
+          descricao: 'Roteiro e prompt gerados (MOCK) para ' + product.name,
           promptUsado: mockData.videoPrompt4K,
           status: 'ATIVO'
         }
@@ -70,7 +70,7 @@ export const generateAffiliateContent = async (
       return { copyRecord, creativeRecord, generatedData: mockData };
     });
 
-    console.log('[AI Content] Conteudo MOCK gerado e salvo com sucesso para: ' + product.nome);
+    console.log('[AI Content] Conteudo MOCK gerado e salvo com sucesso para: ' + product.name);
 
     return {
       copyId: result.copyRecord.id,
@@ -82,13 +82,13 @@ export const generateAffiliateContent = async (
   }
 
   // Modo real: Chama a OpenAI
-  const systemPrompt = 'Voce e um especialista em marketing de afiliados, copywriting de alta conversao e direcao de videos virais. Seu objetivo e criar conteudo para promover um produto. O produto e: "' + product.nome + '" (Categoria: ' + (product.categoria || 'Geral') + '). Descricao: ' + product.tipo + '.\n\nRetorne APENAS um objeto JSON valido com a estrutura:\n{\n  "videoPrompt4K": "Prompt detalhado em ingles para IA de video (Runway, Sora). Inclua: 4K resolution, cinematic lighting, dynamic camera movement, hyper-realistic, descricao visual do produto em uso, foco em retencao nos primeiros 3 segundos.",\n  "elevenLabsScript": "Roteiro de fala em portugues para sintese de voz (ElevenLabs). Use marcacoes como [pausa curta], [entonacao empolgada], [sussurro]. Maximo 150 palavras. Foco em dor -> solucao -> CTA.",\n  "instagramCaption": "Legenda para Instagram/TikTok em portugues. Use 1 gancho forte na primeira linha, 3 beneficios em bullet points com emojis, e uma CTA clara no final. Inclua 5 hashtags relevantes."\n}';
+  const systemPrompt = 'Voce e um especialista em marketing de afiliados, copywriting de alta conversao e direcao de videos virais. Seu objetivo e criar conteudo para promover um produto. O produto e: "' + product.name + '" (Categoria: ' + (product.category || 'Geral') + '). Descricao: ' + product.description || product.type || 'produto' + '.\n\nRetorne APENAS um objeto JSON valido com a estrutura:\n{\n  "videoPrompt4K": "Prompt detalhado em ingles para IA de video (Runway, Sora). Inclua: 4K resolution, cinematic lighting, dynamic camera movement, hyper-realistic, descricao visual do produto em uso, foco em retencao nos primeiros 3 segundos.",\n  "elevenLabsScript": "Roteiro de fala em portugues para sintese de voz (ElevenLabs). Use marcacoes como [pausa curta], [entonacao empolgada], [sussurro]. Maximo 150 palavras. Foco em dor -> solucao -> CTA.",\n  "instagramCaption": "Legenda para Instagram/TikTok em portugues. Use 1 gancho forte na primeira linha, 3 beneficios em bullet points com emojis, e uma CTA clara no final. Inclua 5 hashtags relevantes."\n}';
 
   const completion = await openai.chat.completions.create({
     model: 'gpt-4o',
     messages: [
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: 'Gere o conteudo JSON para o produto: ' + product.nome }
+      { role: 'user', content: 'Gere o conteudo JSON para o produto: ' + product.name }
     ],
     response_format: { type: 'json_object' },
     temperature: 0.8,
@@ -125,7 +125,7 @@ export const generateAffiliateContent = async (
       data: {
         produtoId: product.id,
         tipo: 'video',
-        descricao: 'Roteiro e prompt gerados para ' + product.nome,
+        descricao: 'Roteiro e prompt gerados para ' + product.name,
         promptUsado: generatedData.videoPrompt4K,
         status: 'ATIVO'
       }
@@ -134,7 +134,7 @@ export const generateAffiliateContent = async (
     return { copyRecord, creativeRecord, generatedData };
   });
 
-  console.log('[AI Content] Conteudo gerado e salvo com sucesso para: ' + product.nome);
+  console.log('[AI Content] Conteudo gerado e salvo com sucesso para: ' + product.name);
 
   return {
     copyId: result.copyRecord.id,
@@ -163,7 +163,7 @@ export const generateContentForAllActiveProducts = async () => {
       results.push({ productId: product.id, success: true, ...res });
       await new Promise(resolve => setTimeout(resolve, 2000));
     } catch (error) {
-      console.error('[AI Content] Falha ao gerar para ' + product.nome + ':', error);
+      console.error('[AI Content] Falha ao gerar para ' + product.name + ':', error);
       results.push({ productId: product.id, success: false, error });
     }
   }
