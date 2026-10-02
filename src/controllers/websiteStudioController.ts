@@ -17,14 +17,14 @@ function guessExtHelper(url: string, mime?: string): string {
 }
 // src/controllers/websiteStudioController.ts
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../modules/mercadoLivre/lib/prisma';
 import { websiteService } from '../services/website/websiteService';
 import { buildZip } from '../utils/zipUtils';
 import { websiteImportedTemplateService } from '../services/website/websiteImportedTemplateService';
 import { rbFactorySiteMaintenanceService } from '../services/website/rbFactorySiteMaintenanceService';
 import { netlifyDeploymentService } from '../services/website/netlifyDeploymentService';
 
-const prisma = new PrismaClient();
+
 
 const slugify = (s: string) =>
   (s || 'site').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').substring(0, 40) || 'site';
