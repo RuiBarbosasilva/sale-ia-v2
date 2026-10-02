@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { generateElevenLabsAudio } from '../../../services/contentFactory/elevenLabsAudio.service';
-import { Request, Response } from 'express';
 import { generateAffiliateContent, generateContentForAllActiveProducts } from '../../../services/contentFactory/affiliateContentGenerator.service';
 
 /**
