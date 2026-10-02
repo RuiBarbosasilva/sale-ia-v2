@@ -15,13 +15,14 @@ router.get('/', async (req: Request, res: Response) => {
 
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { nome, linkAfiliado, categoria, preco, comissaoPercentual, temperatura, tipo, plataforma, status, score } = req.body;
+    const { nome, produtoIdExterno, linkAfiliado, categoria, preco, comissaoPercentual, temperatura, tipo, plataforma, status, score } = req.body;
     if (!nome || !linkAfiliado) {
       return res.status(400).json({ error: 'Nome e Vendor Nickname são obrigatórios' });
     }
     const produto = await prisma.afiliadoProduto.create({
       data: {
         nome,
+        produtoIdExterno: produtoIdExterno || `${plataforma || 'clickbank'}_${Date.now()}`,
         linkAfiliado,
         categoria: categoria || 'outros',
         preco: preco || 0,
