@@ -11,6 +11,7 @@ import { websiteDemoFactoryService } from '../services/prospecting/websiteDemoFa
 import { websiteAuditService } from '../services/website/websiteAuditService';
 import { businessProspectingManager } from '../services/prospecting/providers/businessProspectingManager';
 import { websiteOutreachService } from '../services/prospecting/websiteOutreachService';
+import { netlifyDeploymentService } from '../services/website/netlifyDeploymentService';
 
 export const prospectingController = {
   
@@ -24,6 +25,7 @@ export const prospectingController = {
         timestamp: new Date().toISOString(),
         providers,
         database: 'CONNECTED',
+        publication: { netlify: netlifyDeploymentService.isConfigured() ? 'CONFIGURED' : 'NOT_CONFIGURED' },
       });
     } catch (error: any) {
       res.status(500).json({
