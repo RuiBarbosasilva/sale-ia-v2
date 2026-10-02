@@ -834,6 +834,7 @@ model AffiliateClick {
   link        AffiliateLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
   ipHash      String?
   userAgent   String?
+  referer     String?
   createdAt   DateTime      @default(now())
 
   @@index([affiliateId, createdAt])
@@ -1384,8 +1385,9 @@ model AfiliadoProduto {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  copies    AfiliadoCopy[]
-  criativos AfiliadoCriativo[]
+  copies       AfiliadoCopy[]
+  criativos    AfiliadoCriativo[]
+  publicacoes AfiliadoPublicacao[]
 
   @@index([plataforma])
   @@index([produtoIdExterno])
@@ -1419,4 +1421,25 @@ model AfiliadoCriativo {
   createdAt   DateTime @default(now())
 
   @@index([produtoId])
+}
+
+
+model AfiliadoPublicacao {
+  id                 String         @id @default(uuid())
+  produtoId          String
+  produto            AfiliadoProduto @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+  canal              String
+  postIdExterno      String?
+  dataPublicacao     DateTime       @default(now())
+  status             String         @default("PENDENTE")
+  cliques            Int            @default(0)
+  vendasConfirmadas  Int            @default(0)
+  comissaoGerada     Float          @default(0)
+  variacao           Int?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  @@index([produtoId])
+  @@index([canal, status])
+  @@index([postIdExterno])
 }
