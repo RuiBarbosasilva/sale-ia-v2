@@ -1,6 +1,4 @@
-﻿import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../../mercadoLivre/lib/prisma';
 
 export class HotmartWebhookService {
   async processarEvento(evento: any) {
@@ -27,7 +25,7 @@ export class HotmartWebhookService {
         }
       });
 
-      // Se nÃ£o existir, cria um registro bÃ¡sico
+      // Se não existir, cria um registro bÃ¡sico
       if (!produtoAfiliado) {
         produtoAfiliado = await prisma.afiliadoProduto.create({
           data: {
@@ -85,7 +83,7 @@ export class HotmartWebhookService {
       console.log('[Hotmart Webhook] VENDA REGISTRADA!');
       console.log('  Produto: ' + produtoAfiliado.nome);
       console.log('  Valor: R$ ' + valorVenda);
-      console.log('  Comissao: R$ ' + comissao);
+      console.log('  Comissão: R$ ' + comissao);
       console.log('  Hotmart ID: ' + hotmartId);
 
       return { 
