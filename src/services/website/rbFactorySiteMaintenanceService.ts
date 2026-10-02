@@ -1,8 +1,6 @@
 import { randomUUID } from 'crypto';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../modules/mercadoLivre/lib/prisma';
 import { websiteService } from './websiteService';
-
-const prisma = new PrismaClient();
 
 type ClientRow = {
   id: string;
