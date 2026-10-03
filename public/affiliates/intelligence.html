@@ -1,27 +1,135 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SALE-IA V2 | Afiliados IA</title>
 <style>
-:root{font-family:Inter,system-ui,sans-serif;color:#172033;background:#f4f7fb}*{box-sizing:border-box}body{margin:0}.wrap{max-width:1400px;margin:auto;padding:24px}.top{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}.card{background:#fff;border:1px solid #dfe6ef;border-radius:16px;padding:18px;margin:14px 0;box-shadow:0 4px 18px #00000008}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}.metric{font-size:28px;font-weight:800}.muted{color:#68758a}.row{display:flex;gap:8px;flex-wrap:wrap}input,button,select{padding:10px 12px;border:1px solid #cbd5e1;border-radius:9px;font:inherit}button{cursor:pointer;background:#172033;color:#fff}button.secondary{background:#fff;color:#172033}.scroll{overflow:auto}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px;border-bottom:1px solid #edf0f4;white-space:nowrap}.badge{padding:4px 8px;border-radius:999px;background:#eef2ff}.ok{color:#087443}.warn{color:#9a6700}.err{color:#b42318}pre{white-space:pre-wrap;background:#101827;color:#eaf0fa;padding:12px;border-radius:10px}
-</style></head>
-<body><main class="wrap">
-<div class="top"><div><h1>Afiliados IA</h1><p class="muted">Inteligência de produtos, oportunidades, campanhas e conteúdo.</p></div>
-<div class="row"><input id="key" type="password" placeholder="AFFILIATE_ADMIN_KEY" style="min-width:300px"><button onclick="load()">Atualizar</button></div></div>
-<div id="msg" class="muted"></div><section id="metrics" class="grid"></section>
-<section class="card"><h2>Redes</h2><div class="row"><button onclick="bootstrap()">Inicializar redes padrão</button><span id="networks"></span></div></section>
-<section class="card"><h2>Produtos e oportunidades</h2><div class="scroll"><table><thead><tr><th>Produto</th><th>Rede</th><th>Score</th><th>Comissão</th><th>Status</th><th>Ação</th></tr></thead><tbody id="products"></tbody></table></div></section>
-<section class="card"><h2>Plano de autonomia</h2><button onclick="plan()">Gerar plano supervisionado</button><pre id="planOut">Nenhum plano gerado.</pre></section>
-<section class="card"><h2>Campanha</h2><div class="row"><input id="pid" placeholder="ID do produto" style="min-width:280px"><input id="cname" placeholder="Nome da campanha" style="min-width:280px"><button onclick="campaign()">Criar campanha</button></div><pre id="campaignOut"></pre></section>
+:root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#172033;background:#f4f7fb}
+*{box-sizing:border-box}body{margin:0}.wrap{max-width:1500px;margin:auto;padding:24px}
+.top{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}
+h1,h2,h3{margin-top:0}.card{background:#fff;border:1px solid #dfe6ef;border-radius:16px;padding:18px;margin:14px 0;box-shadow:0 4px 18px #00000008}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}.metric{font-size:28px;font-weight:800}.muted{color:#68758a}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}input,button,select{padding:10px 12px;border:1px solid #cbd5e1;border-radius:9px;font:inherit}
+button{cursor:pointer;background:#172033;color:#fff}button.secondary{background:#fff;color:#172033}button:disabled{opacity:.55;cursor:not-allowed}
+.scroll{overflow:auto}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px;border-bottom:1px solid #edf0f4;vertical-align:top}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef2ff}.ok{color:#087443}.warn{color:#9a6700}.err{color:#b42318}
+pre{white-space:pre-wrap;background:#101827;color:#eaf0fa;padding:12px;border-radius:10px;max-height:420px;overflow:auto}
+.actions{display:flex;gap:6px;flex-wrap:wrap}.small{font-size:12px}.hidden{display:none}
+.notice{padding:10px 12px;border-radius:10px;background:#fff8e6;margin-top:10px}
+</style>
+</head>
+<body>
+<main class="wrap">
+<div class="top">
+  <div><h1>Afiliados IA</h1><p class="muted">Central operacional: produtos, oportunidades, conteúdo, campanhas e fluxo de vendas.</p></div>
+  <div class="row"><input id="key" type="password" placeholder="AFFILIATE_ADMIN_KEY" style="min-width:300px"><button onclick="loadAll()">Atualizar</button></div>
+</div>
+<div id="msg" class="muted"></div>
+
+<section id="metrics" class="grid"></section>
+
+<section class="card">
+  <div class="top"><div><h2>Caça de produtos</h2><div class="muted">Executa o Hunter legado e alimenta a base de afiliados.</div></div>
+  <button onclick="runHunter()">Executar Hunter</button></div>
+  <div id="hunterOut" class="notice hidden"></div>
+</section>
+
+<section class="card">
+<h2>Redes</h2>
+<div class="row"><button onclick="bootstrap()">Inicializar redes padrão</button><span id="networks" class="muted"></span></div>
+</section>
+
+<section class="card">
+<h2>Produtos e oportunidades</h2>
+<div class="scroll"><table><thead><tr><th>Produto</th><th>Rede</th><th>Score</th><th>Comissão</th><th>Preço</th><th>Status</th><th>Ações</th></tr></thead>
+<tbody id="products"></tbody></table></div>
+</section>
+
+<section class="card">
+<h2>Plano de autonomia supervisionada</h2>
+<div class="row"><button onclick="plan()">Gerar plano</button><button class="secondary" onclick="legacyOpportunities()">Oportunidades legadas</button></div>
+<pre id="planOut">Nenhum plano gerado.</pre>
+</section>
+
+<section class="card">
+<h2>Campanhas</h2>
+<div class="row"><input id="pid" placeholder="ID do produto" style="min-width:280px"><input id="cname" placeholder="Nome da campanha" style="min-width:280px"><button onclick="campaign()">Criar campanha</button></div>
+<pre id="campaignOut"></pre>
+</section>
+
+<section class="card">
+<h2>Execução de conteúdo e vendas</h2>
+<p class="muted">Selecione um produto na tabela para gerar copy, criativo ou fluxo de vendedor.</p>
+<pre id="actionOut">Nenhuma ação executada.</pre>
+</section>
 </main>
+
 <script>
-let K=localStorage.getItem('affiliateAdminKey')||'';key.value=K;const api=location.origin+'/api/affiliate-intelligence';
+const state={key:localStorage.getItem('affiliateAdminKey')||'',products:[],legacyProducts:[]};
+const key=document.getElementById('key'); key.value=state.key;
+const api=location.origin+'/api/affiliate-intelligence';
+const legacy=location.origin+'/api/afiliados';
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const brl=v=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(v||0));
-async function call(path,opt={}){opt.headers={...(opt.headers||{}),'x-affiliate-admin-key':K,'Content-Type':'application/json'};const r=await fetch(api+path,opt),j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.error||'HTTP '+r.status);return j}
-async function load(){K=key.value;localStorage.setItem('affiliateAdminKey',K);try{const [d,p,n,o]=await Promise.all([call('/dashboard'),call('/products?take=100'),call('/networks'),call('/opportunities')]);metrics.innerHTML=Object.entries(d).filter(([k])=>k!=='mode').map(([k,v])=>'<div class="card"><div class="muted">'+esc(k)+'</div><div class="metric">'+esc(v)+'</div></div>').join('');networks.textContent=n.networks.length+' redes cadastradas';products.innerHTML=p.products.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(x.network?.name||'')+'</td><td><b>'+Number(x.opportunityScore||0).toFixed(1)+'</b></td><td>'+esc(x.commissionRate||0)+'%</td><td><span class="badge">'+esc(x.status)+'</span></td><td><button onclick="campaignFor(\''+x.id+'\')">Campanha</button></td></tr>').join('')||'<tr><td colspan="6">Nenhum produto. Inicialize uma rede e importe produtos.</td></tr>';msg.textContent='Atualizado em '+new Date().toLocaleString('pt-BR')+' · '+o.opportunities.length+' oportunidades';}catch(e){msg.textContent=e.message;msg.className='err'}}
-async function bootstrap(){try{await call('/bootstrap',{method:'POST'});await load()}catch(e){alert(e.message)}}
-async function plan(){try{const j=await call('/autonomy-plan');planOut.textContent=JSON.stringify(j.plan,null,2)}catch(e){planOut.textContent=e.message}}
-function campaignFor(id){pid.value=id;cname.value=''}
-async function campaign(){try{const j=await call('/campaigns',{method:'POST',body:JSON.stringify({productId:pid.value,name:cname.value||undefined})});campaignOut.textContent=JSON.stringify(j.campaign,null,2)}catch(e){campaignOut.textContent=e.message}}
-if(K)load();
-</script></body></html>
+async function jsonFetch(url,opt={}){
+  const headers={...(opt.headers||{})};
+  if(url.startsWith(api)) headers['x-affiliate-admin-key']=state.key;
+  if(opt.body) headers['Content-Type']='application/json';
+  const r=await fetch(url,{...opt,headers});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok) throw Error(j.error||j.erro||('HTTP '+r.status));
+  return j;
+}
+async function modern(path,opt={}){return jsonFetch(api+path,opt)}
+async function legacyCall(path,opt={}){return jsonFetch(legacy+path,opt)}
+
+async function loadAll(){
+  state.key=key.value.trim(); localStorage.setItem('affiliateAdminKey',state.key);
+  const errors=[];
+  let d=null,p=null,n=null,o=null,l=null;
+  try{[d,p,n,o]=await Promise.all([modern('/dashboard'),modern('/products?take=100'),modern('/networks'),modern('/opportunities')]);}catch(e){errors.push('Painel moderno: '+e.message)}
+  try{l=await legacyCall('/dashboard');}catch(e){errors.push('Painel legado: '+e.message)}
+  renderMetrics(d,l);
+  renderNetworks(n);
+  if(p&&Array.isArray(p.products)){state.products=p.products;renderProducts(p.products)}
+  else if(l&&Array.isArray(l.dados?.topProdutos)){state.legacyProducts=l.dados.topProdutos;renderLegacyProducts(l.dados.topProdutos)}
+  else renderProducts([]);
+  document.getElementById('msg').textContent=(errors.length?errors.join(' · '):'Painel atualizado com sucesso')+' · '+new Date().toLocaleString('pt-BR');
+  document.getElementById('msg').className=errors.length?'warn':'ok';
+}
+function renderMetrics(d,l){
+  const m=d||{}; const x=l?.dados||{};
+  const vals=[
+    ['Produtos',m.totalProducts??x.totalProdutos??0],
+    ['Copies',m.totalCopies??x.totalCopies??0],
+    ['Publicações',m.totalPublications??x.totalPublicacoes??0],
+    ['Cliques',m.totalClicks??x.totalCliques??0],
+    ['Vendas',m.totalSales??x.totalVendas??0],
+    ['Comissão',brl(m.totalCommission??x.comissaoTotal??0)]
+  ];
+  document.getElementById('metrics').innerHTML=vals.map(v=>'<div class="card"><div class="muted">'+esc(v[0])+'</div><div class="metric">'+esc(v[1])+'</div></div>').join('');
+}
+function renderNetworks(n){
+  document.getElementById('networks').textContent=n?.networks? n.networks.length+' redes cadastradas':'rede moderna indisponível; Hunter legado disponível';
+}
+function renderProducts(rows){
+  const body=document.getElementById('products');
+  body.innerHTML=rows.length?rows.map(x=>'<tr><td><b>'+esc(x.name)+'</b><div class="muted small">'+esc(x.externalId||x.id)+'</div></td><td>'+esc(x.network?.name||x.networkName||'')+'</td><td><b>'+Number(x.opportunityScore||x.score||0).toFixed(1)+'</b></td><td>'+esc(x.commissionRate??x.commissionPercent??0)+'%</td><td>'+brl(x.price)+'</td><td><span class="badge">'+esc(x.status)+'</span></td><td><div class="actions"><button onclick="selectProduct(\''+esc(x.id)+'\')">Selecionar</button><button class="secondary" onclick="generateCopy(\''+esc(x.id)+'\')">Copy</button><button class="secondary" onclick="sellerFlow(\''+esc(x.id)+'\')">Vendas</button></div></td></tr>').join(''):'<tr><td colspan="7">Nenhum produto disponível.</td></tr>';
+}
+function renderLegacyProducts(rows){
+  const body=document.getElementById('products');
+  body.innerHTML=rows.length?rows.map(x=>'<tr><td><b>'+esc(x.nome)+'</b><div class="muted small">'+esc(x.id)+'</div></td><td>'+esc(x.plataforma)+'</td><td><b>'+Number(x.score||0).toFixed(1)+'</b></td><td>'+esc(x.comissaoPercentual||0)+'%</td><td>'+brl(x.preco)+'</td><td><span class="badge">'+esc(x.status)+'</span></td><td><div class="actions"><button onclick="selectProduct(\''+esc(x.id)+'\')">Selecionar</button><button class="secondary" onclick="generateCopy(\''+esc(x.id)+'\')">Copy</button><button class="secondary" onclick="sellerFlow(\''+esc(x.id)+'\')">Vendas</button></div></td></tr>').join(''):'<tr><td colspan="7">Nenhum produto disponível. Execute o Hunter.</td></tr>';
+}
+function selectProduct(id){document.getElementById('pid').value=id;document.getElementById('cname').value='';document.getElementById('actionOut').textContent='Produto selecionado: '+id}
+async function bootstrap(){try{await modern('/bootstrap',{method:'POST'});await loadAll()}catch(e){document.getElementById('actionOut').textContent=e.message}}
+async function plan(){try{const j=await modern('/autonomy-plan');document.getElementById('planOut').textContent=JSON.stringify(j.plan??j,null,2)}catch(e){document.getElementById('planOut').textContent=e.message}}
+async function campaign(){try{const j=await modern('/campaigns',{method:'POST',body:JSON.stringify({productId:document.getElementById('pid').value,name:document.getElementById('cname').value||undefined})});document.getElementById('campaignOut').textContent=JSON.stringify(j.campaign??j,null,2)}catch(e){document.getElementById('campaignOut').textContent=e.message}}
+async function runHunter(){const out=document.getElementById('hunterOut');out.className='notice';out.textContent='Executando Hunter...';try{const j=await legacyCall('/hunter/executar',{method:'POST',body:JSON.stringify({nichos:['saude','tecnologia','renda extra','beleza','casa']})});out.textContent='Hunter concluído: '+(j.total??j.produtos?.length??0)+' produtos processados.';await loadAll()}catch(e){out.textContent='Hunter: '+e.message}}
+async function legacyOpportunities(){try{const j=await legacyCall('/oportunidades');document.getElementById('planOut').textContent=JSON.stringify(j,null,2)}catch(e){document.getElementById('planOut').textContent=e.message}}
+async function generateCopy(id){const out=document.getElementById('actionOut');out.textContent='Gerando copies...';try{const j=await legacyCall('/copies/gerar',{method:'POST',body:JSON.stringify({produtoId:id,quantidade:3})});out.textContent=JSON.stringify(j,null,2)}catch(e){out.textContent='Copy: '+e.message}}
+async function sellerFlow(id){const out=document.getElementById('actionOut');out.textContent='Gerando fluxo de vendas...';try{const j=await legacyCall('/vendedor/fluxo',{method:'POST',body:JSON.stringify({produtoId:id})});out.textContent=JSON.stringify(j,null,2)}catch(e){out.textContent='Vendas: '+e.message}}
+loadAll();
+</script>
+</body>
+</html>
