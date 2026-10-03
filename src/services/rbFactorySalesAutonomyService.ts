@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { rbFactorySalesAgentService } from './rbFactorySalesAgentService';
 import { rbFactorySiteMaintenanceService } from './website/rbFactorySiteMaintenanceService';
 
@@ -39,7 +40,7 @@ async function cycle(): Promise<void> {
     ]);
 
     pushRun({
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       createdAt: new Date().toISOString(),
       status: 'SUCCESS',
       message: result.hasAction
