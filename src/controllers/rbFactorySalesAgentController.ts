@@ -4,7 +4,7 @@ import { rbFactorySalesAgentService } from '../services/rbFactorySalesAgentServi
 export const rbFactorySalesAgentController={
   async errors(e:any,res:Response){
     const message=e?.message||'Erro interno';
-    const status=['WEBSITE_PROSPECT_NOT_FOUND','SALES_CONVERSATION_NOT_FOUND'].includes(message)?404:['SALES_CONVERSATION_PROSPECT_MISMATCH'].includes(message)?409:500;
+    const status=['WEBSITE_PROSPECT_NOT_FOUND','SALES_CONVERSATION_NOT_FOUND','SALES_ACTION_NOT_FOUND'].includes(message)?404:['SALES_CONVERSATION_PROSPECT_MISMATCH'].includes(message)?409:['SALES_ACTION_NOT_APPROVED'].includes(message)?409:500;
     res.status(status).json({success:false,error:message});
   },
   async dueFollowUps(req:Request,res:Response){try{res.json({success:true,followUps:await rbFactorySalesAgentService.dueFollowUps(Number(req.query?.limit||50))});}catch(e){return rbFactorySalesAgentController.errors(e,res);}},
