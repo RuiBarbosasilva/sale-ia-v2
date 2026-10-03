@@ -136,8 +136,12 @@ export const affiliateIntelligenceService = {
   },
   async generateContent(campaignId:string,platforms:string[]=['INSTAGRAM','TIKTOK','YOUTUBE_SHORTS']){
     const campaign=await prisma.affiliateCampaign.findUnique({where:{id:campaignId},include:{product:true}}); if(!campaign) throw new Error('CAMPAIGN_NOT_FOUND');
-    const p=campaign.product, created=[];
-    for(const platform of platforms){
+    const p=campaign.product, created=[], requested=[...new Set(platforms)];
+    const existing=await prisma.affiliateContent.findMany({where:{campaignId,platform:{in:requested}}});
+    const byPlatform=new Map(existing.map(item=>[item.platform,item]));
+    for(const platform of requested){
+      const current=byPlatform.get(platform);
+      if(current){ created.push(current); continue; }
       const type=platform==='YOUTUBE_SHORTS'?'SHORT_VIDEO':'POST';
       created.push(await prisma.affiliateContent.create({data:{campaignId,platform,type,angle:'PROBLEMA -> SOLUÇÃO',hook:'Você está tentando resolver '+(p.category||'esse problema')+' e ainda não encontrou uma solução prática?',title:'Uma alternativa para '+(p.category||p.name),body:'Conheça '+p.name+'. Analise a oferta, veja se faz sentido para você e confira os detalhes antes de decidir.',cta:'Saiba mais pelo link da campanha.',hashtags:'#'+slug(p.category||'oferta')+' #dicas #solucao',mediaPrompt:'Criativo comercial vertical, limpo, informativo, sem promessas enganosas, para '+p.name+'.',status:'DRAFT'}}));
     }
