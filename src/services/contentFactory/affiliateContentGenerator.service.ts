@@ -35,10 +35,11 @@ export const generateAffiliateContent = async (
   if (USE_MOCK) {
     console.log('[AI Content] MODO MOCK ATIVADO: Gerando dados simulados...');
     
+    const description = product.description || 'Produto afiliado para promoção comercial.';
     const mockData = {
-      videoPrompt4K: '4K resolution, cinematic lighting, dynamic camera movement, hyper-realistic, a professional marketer working on a laptop with glowing holographic charts floating in the air, golden hour lighting, highly detailed, 8k render, Unreal Engine 5 style, slow zoom in.',
-      elevenLabsScript: 'Voce ja se sentiu frustrado [pausa curta] tentando vender online e nao ter resultados? [entonação empolgada] Imagine ter um sistema que faz o trafego trabalhar por voce. [pausa] Com o Curso Master de Trafego Pago, voce aprende a escalar suas vendas de forma previsivel. [sussurro] Nao deixe essa oportunidade passar. Clique no link agora mesmo.',
-      instagramCaption: '🚀 Pare de queimar dinheiro com anuncios que nao convertem!\n\n✅ Aprenda a estruturar campanhas do zero\n✅ Domine o pixel e a segmentacao avancada\n✅ Escale seus resultados com seguranca\n\n👇 Comente "TRAFEGO" que eu te envio o link no direct!\n\n#MarketingDigital #TrafegoPago #VendasOnline #Empreendedorismo #Growth'
+      videoPrompt4K: '4K resolution, cinematic lighting, dynamic camera movement, hyper-realistic commercial video showing the product "' + product.name + '" in practical use. Category: ' + (product.category || 'general') + '. Show clear benefits, professional composition, strong visual hook in the first 3 seconds, no misleading claims.',
+      elevenLabsScript: 'Conheça ' + product.name + '. [pausa curta] Uma opção para quem procura ' + (product.category || 'uma solução prática') + '. [entonação empolgada] Veja os detalhes, benefícios e condições da oferta antes de decidir. [pausa] Acesse o link da campanha para conhecer o produto.',
+      instagramCaption: 'Conheça ' + product.name + '.\n\n✅ Confira os principais benefícios\n✅ Veja os detalhes da oferta\n✅ Compare antes de decidir\n\nAcesse o link para saber mais.\n\n#Afiliados #' + (product.category || 'Ofertas').replace(/\\s+/g, '') + ' #Dicas #Produtos #Compras'
     };
 
     const result = await prisma.$transaction(async (tx) => {
@@ -80,7 +81,7 @@ export const generateAffiliateContent = async (
   }
 
   // Modo real: Chama a OpenAI
-  const systemPrompt = 'Voce e um especialista em marketing de afiliados, copywriting de alta conversao e direcao de videos virais. Seu objetivo e criar conteudo para promover um produto. O produto e: "' + product.name + '" (Categoria: ' + (product.category || 'Geral') + '). Descricao: ' + product.description || 'produto' + '.\n\nRetorne APENAS um objeto JSON valido com a estrutura:\n{\n  "videoPrompt4K": "Prompt detalhado em ingles para IA de video (Runway, Sora). Inclua: 4K resolution, cinematic lighting, dynamic camera movement, hyper-realistic, descricao visual do produto em uso, foco em retencao nos primeiros 3 segundos.",\n  "elevenLabsScript": "Roteiro de fala em portugues para sintese de voz (ElevenLabs). Use marcacoes como [pausa curta], [entonacao empolgada], [sussurro]. Maximo 150 palavras. Foco em dor -> solucao -> CTA.",\n  "instagramCaption": "Legenda para Instagram/TikTok em portugues. Use 1 gancho forte na primeira linha, 3 beneficios em bullet points com emojis, e uma CTA clara no final. Inclua 5 hashtags relevantes."\n}';
+  const systemPrompt = 'Voce e um especialista em marketing de afiliados, copywriting de alta conversao e direcao de videos virais. Seu objetivo e criar conteudo para promover um produto. O produto e: "' + product.name + '" (Categoria: ' + (product.category || 'Geral') + '). Descricao: ' + (product.description || 'produto') + '.\n\nRetorne APENAS um objeto JSON valido com a estrutura:\n{\n  "videoPrompt4K": "Prompt detalhado em ingles para IA de video (Runway, Sora). Inclua: 4K resolution, cinematic lighting, dynamic camera movement, hyper-realistic, descricao visual do produto em uso, foco em retencao nos primeiros 3 segundos.",\n  "elevenLabsScript": "Roteiro de fala em portugues para sintese de voz (ElevenLabs). Use marcacoes como [pausa curta], [entonacao empolgada], [sussurro]. Maximo 150 palavras. Foco em dor -> solucao -> CTA.",\n  "instagramCaption": "Legenda para Instagram/TikTok em portugues. Use 1 gancho forte na primeira linha, 3 beneficios em bullet points com emojis, e uma CTA clara no final. Inclua 5 hashtags relevantes."\n}';
 
   const completion = await openai.chat.completions.create({
     model: 'gpt-4o',
@@ -146,7 +147,7 @@ export const generateAffiliateContent = async (
 export const generateContentForAllActiveProducts = async () => {
   const products = await prisma.affiliateProduct.findMany({
     where: { 
-      status: 'ATIVO',
+      status: { in: ['ATIVO', 'SHORTLISTED', 'ANALYZED'] },
       criativos: { none: {} }
     },
     take: 5
