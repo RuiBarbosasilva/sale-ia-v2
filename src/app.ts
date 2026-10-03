@@ -120,11 +120,14 @@ app.use('/api/ml-seller', mlSellerRoutes);
 app.use('/api/content-factory', contentFactoryRoutes);
 
 // ==========================================
-// MIDDLEWARE DE ERRO (DEVE SER O ÚLTIMO)
+// ROTAS DE CONTEÚDO DE AFILIADOS
+// (DEVEM VIR ANTES DO errorHandler)
 // ==========================================
 app.use('/api/afiliados/conteudo', contentGeneratorRoutes);
 
-
+// ==========================================
+// MIDDLEWARE DE ERRO (DEVE SER O ÚLTIMO)
+// ==========================================
 app.use(errorHandler);
 
 export default app;
