@@ -162,10 +162,11 @@ export const affiliateIntelligenceService = {
       const type=p.affiliationStatus==='AFFILIATED'?'CREATE_CAMPAIGN':'REQUEST_AFFILIATION';
       const title=type==='CREATE_CAMPAIGN'?'Criar campanha para '+p.name:'Solicitar afiliação: '+p.name;
       const existing=await prisma.affiliateAction.findFirst({where:{type,title,status:{in:['PENDING_APPROVAL','READY','APPROVED']}}});
-      if(!existing){
-        await prisma.affiliateAction.create({data:{networkId:p.networkId,type,title,status:'PENDING_APPROVAL',description:type==='CREATE_CAMPAIGN'?'Produto já afiliado; preparar campanha.':'Produto selecionado; requer afiliação na plataforma.',payload:JSON.stringify({productId:p.id,score:p.opportunityScore}),requiresApproval:true}});
+      let action=existing;
+      if(!action){
+        action=await prisma.affiliateAction.create({data:{networkId:p.networkId,type,title,status:'PENDING_APPROVAL',description:type==='CREATE_CAMPAIGN'?'Produto já afiliado; preparar campanha.':'Produto selecionado; requer afiliação na plataforma.',payload:JSON.stringify({productId:p.id,score:p.opportunityScore}),requiresApproval:true}});
       }
-      items.push({productId:p.id,product:p.name,network:p.network.name,score:p.opportunityScore,action:type,status:'PENDING_APPROVAL'});
+      items.push({productId:p.id,product:p.name,network:p.network.name,score:p.opportunityScore,action:type,status:action.status,actionId:action.id});
     }
     return {generatedAt:new Date().toISOString(),mode:'SUPERVISED',items};
   },
