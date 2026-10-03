@@ -38,6 +38,13 @@ pre{white-space:pre-wrap;background:#101827;color:#eaf0fa;padding:12px;border-ra
 <section class="card">
 <h2>Redes</h2>
 <div class="row"><button onclick="bootstrap()">Inicializar redes padrão</button><span id="networks" class="muted"></span></div>
+<div class="row" style="margin-top:10px">
+<select id="networkId" style="min-width:220px"><option value="">Selecione a rede</option></select>
+<input id="offerName" placeholder="Nome do produto" style="min-width:240px">
+<input id="offerUrl" placeholder="Link de afiliado" style="min-width:320px">
+<input id="offerCommission" type="number" step="0.01" placeholder="Comissão %" style="width:150px">
+<button onclick="importOffer()">Importar oferta</button>
+</div>
 </section>
 
 <section class="card">
@@ -125,7 +132,10 @@ function renderMetrics(d,l){
   document.getElementById('metrics').innerHTML=vals.map(v=>'<div class="card"><div class="muted">'+esc(v[0])+'</div><div class="metric">'+esc(v[1])+'</div></div>').join('');
 }
 function renderNetworks(n){
-  document.getElementById('networks').textContent=n?.networks? n.networks.length+' redes cadastradas':'rede moderna indisponível; Hunter legado disponível';
+  const rows=Array.isArray(n?.networks)?n.networks:[];
+  document.getElementById('networks').textContent=rows.length?rows.length+' redes cadastradas':'rede moderna indisponível; Hunter legado disponível';
+  const sel=document.getElementById('networkId');
+  sel.innerHTML='<option value="">Selecione a rede</option>'+rows.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('');
 }
 function renderProducts(rows){
   const body=document.getElementById('products');
@@ -136,6 +146,13 @@ function renderLegacyProducts(rows){
   body.innerHTML=rows.length?rows.map(x=>'<tr><td><b>'+esc(x.nome)+'</b><div class="muted small">'+esc(x.id)+'</div></td><td>'+esc(x.plataforma)+'</td><td><b>'+Number(x.score||0).toFixed(1)+'</b></td><td>'+esc(x.comissaoPercentual||0)+'%</td><td>'+brl(x.preco)+'</td><td><span class="badge">'+esc(x.status)+'</span></td><td><div class="actions"><button onclick="selectProduct(\''+esc(x.id)+'\')">Selecionar</button><button class="secondary" onclick="generateCopy(\''+esc(x.id)+'\')">Copy</button><button class="secondary" onclick="sellerFlow(\''+esc(x.id)+'\')">Vendas</button></div></td></tr>').join(''):'<tr><td colspan="7">Nenhum produto disponível. Execute o Hunter.</td></tr>';
 }
 function selectProduct(id){document.getElementById('pid').value=id;document.getElementById('cname').value='';document.getElementById('actionOut').textContent='Produto selecionado: '+id}
+async function importOffer(){
+  const networkId=document.getElementById('networkId').value, name=document.getElementById('offerName').value.trim(), affiliateUrl=document.getElementById('offerUrl').value.trim(), commissionRate=document.getElementById('offerCommission').value;
+  const out=document.getElementById('actionOut');
+  if(!networkId||!name||!affiliateUrl){out.textContent='Informe rede, nome e link de afiliado.';return}
+  out.textContent='Importando oferta...';
+  try{const j=await modern('/networks/'+networkId+'/affiliate-offers/import',{method:'POST',body:JSON.stringify({name,affiliateUrl,commissionRate:commissionRate?Number(commissionRate):undefined})});out.textContent='Oferta importada.\\n'+JSON.stringify(j.product??j,null,2);document.getElementById('offerName').value='';document.getElementById('offerUrl').value='';document.getElementById('offerCommission').value='';await loadAll()}catch(e){out.textContent='Importação: '+e.message}
+}
 async function bootstrap(){try{await modern('/bootstrap',{method:'POST'});await loadAll()}catch(e){document.getElementById('actionOut').textContent=e.message}}
 async function plan(){try{const j=await modern('/autonomy-plan');document.getElementById('planOut').textContent=JSON.stringify(j.plan??j,null,2)}catch(e){document.getElementById('planOut').textContent=e.message}}
 async function campaign(){try{const j=await modern('/campaigns',{method:'POST',body:JSON.stringify({productId:document.getElementById('pid').value,name:document.getElementById('cname').value||undefined})});const id=j.campaign?.id;document.getElementById('campaignOut').innerHTML=esc(JSON.stringify(j.campaign??j,null,2))+(id?'\\n\\n[Campanha criada: '+id+']':'');if(id){const content=await modern('/campaigns/'+id+'/content/generate',{method:'POST',body:JSON.stringify({platforms:['INSTAGRAM','TIKTOK','YOUTUBE_SHORTS']})});document.getElementById('actionOut').textContent='Conteúdo DRAFT gerado para a campanha '+id+'\\n'+JSON.stringify(content.content??content,null,2);await loadAll()}}catch(e){document.getElementById('campaignOut').textContent=e.message}}
