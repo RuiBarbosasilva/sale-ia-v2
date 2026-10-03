@@ -115,11 +115,13 @@ export const affiliateIntelligenceService = {
       }
     });
 
-    await prisma.affiliateOpportunity.upsert({
-      where:{id:(await prisma.affiliateOpportunity.findFirst({where:{productId:product.id,status:'NEW'},orderBy:{createdAt:'desc'},select:{id:true}}))?.id || '__missing__'},
-      update:{score:s.score,recommendation:'Produto afiliado manualmente; pronto para campanha supervisionada.',strategy:'Conteúdo + landing page + tracking',requiresAction:false,actionType:'CREATE_CAMPAIGN'},
-      create:{productId:product.id,score:s.score,status:'NEW',recommendation:'Produto afiliado manualmente; pronto para campanha supervisionada.',strategy:'Conteúdo + landing page + tracking',requiresAction:false,actionType:'CREATE_CAMPAIGN'}
-    });
+    const existingOpportunity=await prisma.affiliateOpportunity.findFirst({where:{productId:product.id},orderBy:{createdAt:'desc'}});
+    if(existingOpportunity){
+      await prisma.affiliateOpportunity.update({where:{id:existingOpportunity.id},data:{
+      score:s.score,recommendation:'Produto afiliado manualmente; pronto para campanha supervisionada.',strategy:'Conteúdo + landing page + tracking',requiresAction:false,actionType:'CREATE_CAMPAIGN'}});
+    } else {
+      await prisma.affiliateOpportunity.create({data:{productId:product.id,score:s.score,status:'NEW',recommendation:'Produto afiliado manualmente; pronto para campanha supervisionada.',strategy:'Conteúdo + landing page + tracking',requiresAction:false,actionType:'CREATE_CAMPAIGN'}});
+    }
 
     return product;
   },
