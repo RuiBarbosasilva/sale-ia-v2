@@ -133,7 +133,11 @@ export const affiliateIntelligenceService = {
     if(!name) throw new Error('CAMPAIGN_NAME_REQUIRED');
     const landingPageUrl=input.landingPageUrl||product.affiliateUrl||product.salesPageUrl||product.url||null;
     const existing=await prisma.affiliateCampaign.findFirst({where:{productId:product.id,name,status:{in:['DRAFT','ACTIVE']}}});
-    if(existing) return existing;
+    if(existing){
+      const action=await prisma.affiliateAction.findFirst({where:{campaignId:existing.id,type:'CAMPAIGN_CREATED'}});
+      if(!action) await prisma.affiliateAction.create({data:{campaignId:existing.id,type:'CAMPAIGN_CREATED',status:'READY',title:'Campanha criada: '+name,description:'Pronta para revisão e execução supervisionada.',requiresApproval:true}});
+      return existing;
+    }
     const campaign=await prisma.affiliateCampaign.create({data:{productId:product.id,name,objective:String(input.objective||'SALES'),strategy:input.strategy||'Teste controlado de conteúdo e conversão',targetAudience:input.targetAudience||null,status:'DRAFT',landingPageUrl,trackingCode:'aff-'+crypto.randomBytes(5).toString('hex')}});
     await prisma.affiliateAction.create({data:{campaignId:campaign.id,type:'CAMPAIGN_CREATED',status:'READY',title:'Campanha criada: '+name,description:'Pronta para revisão e execução supervisionada.',requiresApproval:true}});
     return campaign;
