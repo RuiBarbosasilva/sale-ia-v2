@@ -41,6 +41,20 @@ pre{white-space:pre-wrap;background:#101827;color:#eaf0fa;padding:12px;border-ra
 </section>
 
 <section class="card">
+<h2>Importar oferta afiliada</h2>
+<div class="row">
+<input id="offerNetwork" placeholder="ID da rede" style="min-width:220px">
+<input id="offerName" placeholder="Nome do produto" style="min-width:220px">
+<input id="offerUrl" placeholder="URL de afiliado" style="min-width:300px">
+<input id="offerCategory" placeholder="Categoria" style="min-width:160px">
+<input id="offerPrice" type="number" step="0.01" placeholder="Preço" style="width:120px">
+<input id="offerCommission" type="number" step="0.01" placeholder="Comissão %" style="width:130px">
+<button onclick="importOffer()">Importar</button>
+</div>
+<div id="offerOut" class="notice hidden"></div>
+</section>
+
+<section class="card">
 <h2>Produtos e oportunidades</h2>
 <div class="scroll"><table><thead><tr><th>Produto</th><th>Rede</th><th>Score</th><th>Comissão</th><th>Preço</th><th>Status</th><th>Ações</th></tr></thead>
 <tbody id="products"></tbody></table></div>
@@ -125,6 +139,7 @@ function selectProduct(id){document.getElementById('pid').value=id;document.getE
 async function bootstrap(){try{await modern('/bootstrap',{method:'POST'});await loadAll()}catch(e){document.getElementById('actionOut').textContent=e.message}}
 async function plan(){try{const j=await modern('/autonomy-plan');document.getElementById('planOut').textContent=JSON.stringify(j.plan??j,null,2)}catch(e){document.getElementById('planOut').textContent=e.message}}
 async function campaign(){try{const j=await modern('/campaigns',{method:'POST',body:JSON.stringify({productId:document.getElementById('pid').value,name:document.getElementById('cname').value||undefined})});const id=j.campaign?.id;document.getElementById('campaignOut').innerHTML=esc(JSON.stringify(j.campaign??j,null,2))+(id?'\\n\\n[Campanha criada: '+id+']':'');if(id){const content=await modern('/campaigns/'+id+'/content/generate',{method:'POST',body:JSON.stringify({platforms:['INSTAGRAM','TIKTOK','YOUTUBE_SHORTS']})});document.getElementById('actionOut').textContent='Conteúdo DRAFT gerado para a campanha '+id+'\\n'+JSON.stringify(content.content??content,null,2);await loadAll()}}catch(e){document.getElementById('campaignOut').textContent=e.message}}
+async function importOffer(){const out=document.getElementById('offerOut');out.className='notice';out.textContent='Importando oferta...';const networkId=document.getElementById('offerNetwork').value.trim();const name=document.getElementById('offerName').value.trim();const affiliateUrl=document.getElementById('offerUrl').value.trim();if(!networkId||!name||!affiliateUrl){out.textContent='Preencha ID da rede, nome e URL de afiliado.';return}try{const body={name,affiliateUrl,category:document.getElementById('offerCategory').value.trim()||undefined,price:Number(document.getElementById('offerPrice').value)||undefined,commissionRate:Number(document.getElementById('offerCommission').value)||undefined};const j=await modern('/networks/'+encodeURIComponent(networkId)+'/affiliate-offers/import',{method:'POST',body:JSON.stringify(body)});out.textContent='Oferta importada: '+(j.product?.name||name)+' · score '+Number(j.product?.opportunityScore||0).toFixed(1);await loadAll()}catch(e){out.textContent='Importação: '+e.message}}
 async function generateSelectedContent(){const id=document.getElementById('pid').value.trim();const out=document.getElementById('actionOut');if(!id){out.textContent='Selecione um produto primeiro.';return}out.textContent='Localizando campanha e gerando conteúdo...';try{const j=await modern('/campaigns',{method:'POST',body:JSON.stringify({productId:id})});const cid=j.campaign?.id;if(!cid)throw Error('Campanha não retornada');const c=await modern('/campaigns/'+cid+'/content/generate',{method:'POST',body:JSON.stringify({platforms:['INSTAGRAM','TIKTOK','YOUTUBE_SHORTS']})});out.textContent=JSON.stringify(c.content??c,null,2);await loadAll()}catch(e){out.textContent='Conteúdo: '+e.message}}
 async function runHunter(){const out=document.getElementById('hunterOut');out.className='notice';out.textContent='Executando Hunter...';try{const j=await legacyCall('/hunter/executar',{method:'POST',body:JSON.stringify({nichos:['saude','tecnologia','renda extra','beleza','casa']})});out.textContent='Hunter concluído: '+(j.total??j.produtos?.length??0)+' produtos processados.';await loadAll()}catch(e){out.textContent='Hunter: '+e.message}}
 async function legacyOpportunities(){try{const j=await legacyCall('/oportunidades');document.getElementById('planOut').textContent=JSON.stringify(j,null,2)}catch(e){document.getElementById('planOut').textContent=e.message}}
