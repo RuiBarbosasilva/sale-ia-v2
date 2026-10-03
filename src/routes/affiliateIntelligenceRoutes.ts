@@ -12,6 +12,7 @@ router.post('/networks/:id/affiliate-offers/import',c.importAffiliateOffer);
 router.get('/products',c.products);
 router.get('/opportunities',c.opportunities);
 router.get('/autonomy-plan',c.autonomyPlan);
+router.get('/campaigns',c.campaigns);
 router.post('/campaigns',c.createCampaign);
 router.post('/campaigns/:id/content/generate',c.generateContent);
 export default router;
