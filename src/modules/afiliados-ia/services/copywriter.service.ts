@@ -1,6 +1,4 @@
-﻿import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+﻿import { prisma } from '../../mercadoLivre/lib/prisma';
 
 const AIDA_TEMPLATES: any = {
   saude: {
