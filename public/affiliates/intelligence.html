@@ -63,6 +63,7 @@ pre{white-space:pre-wrap;background:#101827;color:#eaf0fa;padding:12px;border-ra
 <h2>Campanhas</h2>
 <div class="row"><input id="pid" placeholder="ID do produto" style="min-width:280px"><input id="cname" placeholder="Nome da campanha" style="min-width:280px"><button onclick="campaign()">Criar campanha</button><button class="secondary" onclick="generateSelectedContent()">Gerar conteúdo</button></div>
 <pre id="campaignOut"></pre>
+<div class="scroll" style="margin-top:12px"><table><thead><tr><th>Campanha</th><th>Produto</th><th>Status</th><th>Conteúdos</th><th>Ações</th></tr></thead><tbody id="campaigns"></tbody></table></div>
 </section>
 
 <section class="card">
@@ -94,11 +95,12 @@ async function legacyCall(path,opt={}){return jsonFetch(legacy+path,opt)}
 async function loadAll(){
   state.key=key.value.trim(); localStorage.setItem('affiliateAdminKey',state.key);
   const errors=[];
-  let d=null,p=null,n=null,o=null,l=null;
-  try{[d,p,n,o]=await Promise.all([modern('/dashboard'),modern('/products?take=100'),modern('/networks'),modern('/opportunities')]);}catch(e){errors.push('Painel moderno: '+e.message)}
+  let d=null,p=null,n=null,o=null,cs=null,l=null;
+  try{[d,p,n,o,cs]=await Promise.all([modern('/dashboard'),modern('/products?take=100'),modern('/networks'),modern('/opportunities'),modern('/campaigns')]);}catch(e){errors.push('Painel moderno: '+e.message)}
   try{l=await legacyCall('/dashboard');}catch(e){errors.push('Painel legado: '+e.message)}
   renderMetrics(d,l);
   renderNetworks(n);
+  renderCampaigns(cs);
   if(p&&Array.isArray(p.products)){state.products=p.products;renderProducts(p.products)}
   else if(l&&Array.isArray(l.dados?.topProdutos)){state.legacyProducts=l.dados.topProdutos;renderLegacyProducts(l.dados.topProdutos)}
   else renderProducts([]);
@@ -117,6 +119,7 @@ function renderMetrics(d,l){
   ];
   document.getElementById('metrics').innerHTML=vals.map(v=>'<div class="card"><div class="muted">'+esc(v[0])+'</div><div class="metric">'+esc(v[1])+'</div></div>').join('');
 }
+function renderCampaigns(data){const rows=Array.isArray(data?.campaigns)?data.campaigns:[];const body=document.getElementById('campaigns');if(!body)return;body.innerHTML=rows.length?rows.map(x=>'<tr><td><b>'+esc(x.name)+'</b><div class="muted small">'+esc(x.id)+'</div></td><td>'+esc(x.product?.name||'')+'</td><td><span class="badge">'+esc(x.status)+'</span></td><td>'+((x.contents||[]).length)+'</td><td>'+((x.actions||[]).length)+'</td></tr>').join(''):'<tr><td colspan="5">Nenhuma campanha criada.</td></tr>';}
 function renderNetworks(n){
   const rows=Array.isArray(n?.networks)?n.networks:[];
   document.getElementById('networks').textContent=rows.length?rows.length+' redes cadastradas':'rede moderna indisponível; Hunter legado disponível';
