@@ -59,7 +59,7 @@ export const affiliateIntelligenceService = {
       await prisma.affiliateProduct.update({where:{id:p.id},data:{demandScore:s.demand,competitionScore:s.competition,contentScore:s.content,conversionScore:s.conversion,popularityScore:s.trend,saturationScore:s.saturation,opportunityScore:s.score,status:s.score>=75?'SHORTLISTED':s.score>=55?'ANALYZED':'LOW_PRIORITY'}});
       await prisma.affiliateProductScore.create({data:{productId:p.id,score:s.score,demand:s.demand,competition:s.competition,commission:s.commission,contentFit:s.content,trend:s.trend,reasoning:'Score calculado por comissão, demanda, tendência, conteúdo, conversão, concorrência e saturação.'}});
       if(s.score>=55){
-        const existingOpportunity=await prisma.affiliateOpportunity.findFirst({where:{productId:p.id,status:'NEW'}});
+        const existingOpportunity=await prisma.affiliateOpportunity.findFirst({where:{productId:p.id,status:{in:['NEW','READY','PENDING_APPROVAL']}}});
         const opportunityData={score:s.score,recommendation:s.score>=75?'PRIORIZAR TESTE':'TESTAR COM CAUTELA',strategy:s.score>=75?'Conteúdo + landing page + tracking':'Conteúdo orgânico + validação',requiresAction:p.affiliationStatus!=='AFFILIATED',actionType:p.affiliationStatus==='AFFILIATED'?'CREATE_CAMPAIGN':'AFFILIATE_PRODUCT'};
         if(existingOpportunity) await prisma.affiliateOpportunity.update({where:{id:existingOpportunity.id},data:opportunityData});
         else await prisma.affiliateOpportunity.create({data:{productId:p.id,status:'NEW',...opportunityData}});
@@ -115,16 +115,10 @@ export const affiliateIntelligenceService = {
       }
     });
 
-    await prisma.affiliateOpportunity.create({
-      data:{
-        productId:product.id,
-        score:s.score,
-        status:'NEW',
-        recommendation:'Produto afiliado manualmente; pronto para campanha supervisionada.',
-        strategy:'Conteúdo + landing page + tracking',
-        requiresAction:false,
-        actionType:'CREATE_CAMPAIGN'
-      }
+    await prisma.affiliateOpportunity.upsert({
+      where:{id:(await prisma.affiliateOpportunity.findFirst({where:{productId:product.id,status:'NEW'},orderBy:{createdAt:'desc'},select:{id:true}}))?.id || '__missing__'},
+      update:{score:s.score,recommendation:'Produto afiliado manualmente; pronto para campanha supervisionada.',strategy:'Conteúdo + landing page + tracking',requiresAction:false,actionType:'CREATE_CAMPAIGN'},
+      create:{productId:product.id,score:s.score,status:'NEW',recommendation:'Produto afiliado manualmente; pronto para campanha supervisionada.',strategy:'Conteúdo + landing page + tracking',requiresAction:false,actionType:'CREATE_CAMPAIGN'}
     });
 
     return product;
@@ -163,6 +157,6 @@ export const affiliateIntelligenceService = {
   },
   async dashboard(){
     const [networks,products,opportunities,campaigns,content,actions]=await Promise.all([prisma.affiliateNetwork.count({where:{active:true}}),prisma.affiliateProduct.count(),prisma.affiliateOpportunity.count({where:{status:'NEW'}}),prisma.affiliateCampaign.count({where:{status:{in:['DRAFT','ACTIVE']}}}),prisma.affiliateContent.count({where:{status:'DRAFT'}}),prisma.affiliateAction.count({where:{status:{in:['PENDING_APPROVAL','READY']}}})]);
-    return {networks,products,opportunities,campaigns,contentDrafts:content,actionsPending:actions,mode:'SUPERVISED_AUTONOMY'};
+    return {networks,products,opportunities,campaigns,contentDrafts:content,actionsPending:actions,totalNetworks:networks,totalProducts:products,totalOpportunities:opportunities,totalCampaigns:campaigns,totalContentDrafts:content,totalActionsPending:actions,mode:'SUPERVISED_AUTONOMY'};
   }
 };
