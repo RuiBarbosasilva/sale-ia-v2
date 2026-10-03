@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../modules/mercadoLivre/lib/prisma';
 import OpenAI from 'openai';
-
-const prisma = new PrismaClient();
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || 'sua-chave-aqui',
