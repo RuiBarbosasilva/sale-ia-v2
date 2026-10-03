@@ -542,7 +542,10 @@ function selectVersion(demoId) {
   frame.src = API + '/demos/' + demoId + '/html?t=' + Date.now();
   frame.classList.remove('hidden');
   document.getElementById('emptyMsg').classList.add('hidden');
-  ['btnRegenContent','btnRegenDesign','btnRegenFull','btnExport','btnApprove','btnPublish'].forEach(id => document.getElementById(id).disabled = false);
+  ['btnRegenContent','btnRegenDesign','btnRegenFull','btnExport'].forEach(id => document.getElementById(id).disabled = false);
+  const approved = v && v.status === 'APPROVED';
+  document.getElementById('btnApprove').disabled = !v || approved;
+  document.getElementById('btnPublish').disabled = !approved;
   renderVersions();
   loadAssets(demoId);
 }
