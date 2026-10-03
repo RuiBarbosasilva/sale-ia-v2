@@ -55,17 +55,35 @@ export const rbFactorySalesAgentService = {
     const result = await this.nextSellerAction();
     if (!result.hasAction) return { ...result, prepared: false };
     const action: any = result.action;
+    const message = action.type === 'FOLLOW_UP'
+      ? await this.prepareFollowUpApproach(action.prospectId, 'WHATSAPP').then(x => x.message).catch(() => '')
+      : await this.prepareInitialApproach(action.prospectId, 'WHATSAPP').then(x => x.message).catch(() => '');
+
+    const idempotencyKey = `RBFACTORY:${action.type}:${action.prospectId}:${new Date().toISOString().slice(0, 10)}`;
+    const existing = await (prisma as any).websiteOutreach.findUnique({ where: { idempotencyKey } });
+    const outreach = existing || await (prisma as any).websiteOutreach.create({
+      data: {
+        prospectId: action.prospectId,
+        channel: 'WHATSAPP',
+        status: 'PENDING_APPROVAL',
+        subject: action.title,
+        body: message,
+        recipient: action.phone || null,
+        idempotencyKey,
+      }
+    });
+
     return {
       hasAction: true,
       prepared: true,
       action: {
         ...action,
+        id: outreach.id,
+        outreachId: outreach.id,
         channel: action.phone ? 'WHATSAPP_OR_MANUAL' : 'MANUAL',
         requiresApproval: true,
-        status: 'PENDING_APPROVAL',
-        message: action.type === 'FOLLOW_UP'
-          ? await this.prepareFollowUpApproach(action.prospectId, 'WHATSAPP').then(x => x.message).catch(() => '')
-          : await this.prepareInitialApproach(action.prospectId, 'WHATSAPP').then(x => x.message).catch(() => '')
+        status: outreach.status,
+        message: outreach.body || message
       }
     };
   },
@@ -177,19 +195,63 @@ export const rbFactorySalesAgentService = {
   },
 
   async prepareActionChannel(actionId: string) {
-    return { actionId, channel: 'WHATSAPP', ready: true, requiresApproval: true };
+    const outreach = await (prisma as any).websiteOutreach.findUnique({ where: { id: actionId } });
+    if (!outreach) throw new Error('SALES_ACTION_NOT_FOUND');
+    return {
+      actionId,
+      channel: outreach.channel || 'WHATSAPP',
+      recipient: outreach.recipient || null,
+      ready: Boolean(outreach.body),
+      status: outreach.status,
+      requiresApproval: outreach.status !== 'SENT'
+    };
   },
 
-  async approveAction(actionId: string) { return { id: actionId, status: 'APPROVED' }; },
-  async rejectAction(actionId: string, reason: string = '') { return { id: actionId, status: 'REJECTED', reason }; },
+  async approveAction(actionId: string) {
+    const outreach = await (prisma as any).websiteOutreach.findUnique({ where: { id: actionId } });
+    if (!outreach) throw new Error('SALES_ACTION_NOT_FOUND');
+    if (outreach.status === 'SENT') return { id: actionId, status: 'SENT' };
+    await (prisma as any).websiteOutreach.update({
+      where: { id: actionId },
+      data: { status: 'APPROVED', error: null }
+    });
+    return { id: actionId, status: 'APPROVED' };
+  },
+
+  async rejectAction(actionId: string, reason: string = '') {
+    const outreach = await (prisma as any).websiteOutreach.findUnique({ where: { id: actionId } });
+    if (!outreach) throw new Error('SALES_ACTION_NOT_FOUND');
+    await (prisma as any).websiteOutreach.update({
+      where: { id: actionId },
+      data: { status: 'REJECTED', error: reason || null }
+    });
+    return { id: actionId, status: 'REJECTED', reason };
+  },
+
   async markActionSent(actionId: string, data: any = {}) {
     const sentAt = new Date();
     const nextFollowUpAt = data?.nextFollowUpAt ? new Date(data.nextFollowUpAt) : new Date(sentAt.getTime() + 48 * 60 * 60 * 1000);
-    const prospect = await (prisma as any).websiteProspect.findUnique({ where: { id: actionId }, select: { id: true } });
-    if (!prospect) throw new Error('WEBSITE_PROSPECT_NOT_FOUND');
+    const outreach = await (prisma as any).websiteOutreach.findUnique({ where: { id: actionId } });
+    if (!outreach) throw new Error('SALES_ACTION_NOT_FOUND');
+    if (!['APPROVED', 'PENDING_APPROVAL'].includes(outreach.status)) {
+      if (outreach.status === 'SENT') return { id: actionId, status: 'SENT', sentAt: outreach.sentAt?.toISOString?.() || null };
+      throw new Error('SALES_ACTION_NOT_APPROVED');
+    }
+
+    await (prisma as any).websiteOutreach.update({
+      where: { id: actionId },
+      data: {
+        status: 'SENT',
+        sentAt,
+        recipient: data?.recipient || outreach.recipient || null,
+        provider: data?.provider || 'MANUAL',
+        messageId: data?.messageId || null,
+        error: null,
+      },
+    });
 
     await (prisma as any).websiteProspect.update({
-      where: { id: actionId },
+      where: { id: outreach.prospectId },
       data: {
         contactedAt: sentAt,
         lastContactAt: sentAt,
@@ -197,6 +259,14 @@ export const rbFactorySalesAgentService = {
         status: 'CONTACTED',
       },
     });
+
+    await (prisma as any).websiteOutreachEvent.create({
+      data: {
+        outreachId: actionId,
+        type: 'SENT',
+        metadata: JSON.stringify({ nextFollowUpAt: nextFollowUpAt.toISOString(), provider: data?.provider || 'MANUAL' })
+      }
+    }).catch(() => undefined);
 
     return {
       id: actionId,
