@@ -19,6 +19,7 @@ type Alert = {
 };
 
 let status: SellerStatus = 'STOPPED';
+const AUTOSTART = String(process.env.RB_FACTORY_AUTOSTART || '').toLowerCase() === 'true';
 let timer: NodeJS.Timeout | null = null;
 const runs: Run[] = [];
 const alerts: Alert[] = [];
@@ -132,3 +133,10 @@ export const rbFactorySalesAutonomyService = {
     return alert;
   },
 };
+
+
+if (AUTOSTART) {
+  void rbFactorySalesAutonomyService.start().catch((error) => {
+    alerts.unshift({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), message: String(error?.message || error), status: 'OPEN' });
+  });
+}
