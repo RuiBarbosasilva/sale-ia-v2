@@ -127,6 +127,7 @@ export const affiliateIntelligenceService = {
   },
   async topProducts(take=50){ return prisma.affiliateProduct.findMany({take:Math.min(Math.max(take,1),200),orderBy:{opportunityScore:'desc'},include:{network:{select:{name:true,slug:true}},_count:{select:{campaigns:true,scores:true}}}}); },
   async opportunities(status?:string){ return prisma.affiliateOpportunity.findMany({where:status?{status}:undefined,orderBy:[{score:'desc'},{createdAt:'desc'}],take:200,include:{product:{include:{network:{select:{name:true,slug:true}}}}}}); },
+  async campaigns(status?:string){ return prisma.affiliateCampaign.findMany({where:status?{status}:undefined,orderBy:{createdAt:'desc'},take:100,include:{product:{select:{id:true,name:true,opportunityScore:true}},contents:{orderBy:{createdAt:'desc'}},actions:{orderBy:{createdAt:'desc'}}}}); },
   async createCampaign(input:any){
     const product=await prisma.affiliateProduct.findUnique({where:{id:input.productId}}); if(!product) throw new Error('PRODUCT_NOT_FOUND');
     const name=String(input.name || (product.name + ' - campanha de vendas')).trim();
