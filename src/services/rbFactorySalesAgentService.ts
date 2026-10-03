@@ -233,7 +233,7 @@ export const rbFactorySalesAgentService = {
     const nextFollowUpAt = data?.nextFollowUpAt ? new Date(data.nextFollowUpAt) : new Date(sentAt.getTime() + 48 * 60 * 60 * 1000);
     const outreach = await (prisma as any).websiteOutreach.findUnique({ where: { id: actionId } });
     if (!outreach) throw new Error('SALES_ACTION_NOT_FOUND');
-    if (!['APPROVED', 'PENDING_APPROVAL'].includes(outreach.status)) {
+    if (outreach.status !== 'APPROVED') {
       if (outreach.status === 'SENT') return { id: actionId, status: 'SENT', sentAt: outreach.sentAt?.toISOString?.() || null };
       throw new Error('SALES_ACTION_NOT_APPROVED');
     }
