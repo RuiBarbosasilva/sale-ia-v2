@@ -235,6 +235,14 @@
   </div>
 </div>
 
+<section style="margin-top:16px;border:1px solid var(--sf-border);border-radius:12px;padding:14px;background:#fff">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+    <div><b style="color:var(--sf-primary)">🤖 Vendedor IA — RB Factory</b><div style="font-size:11px;color:var(--sf-muted);margin-top:3px">Fila comercial supervisionada: preparar → aprovar → registrar envio → follow-up.</div></div>
+    <button class="btn btn-sec" type="button" onclick="loadSellerQueue()">Atualizar fila</button>
+  </div>
+  <div id="sellerActionPanel" style="margin-top:10px;font-size:12px;color:var(--sf-muted)">Carregando fila...</div>
+</section>
+
 <div id="templateImportModal" class="hidden" style="position:fixed;inset:0;background:rgba(15,23,42,.65);z-index:2000;display:none;place-items:center;padding:18px">
   <div style="width:min(520px,100%);background:#fff;border-radius:12px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
     <h2 style="margin:0 0 6px;color:var(--sf-primary);font-size:18px">Importar modelo para a Biblioteca</h2>
@@ -390,7 +398,51 @@ async function createProspect() {
     if (!res.ok || !data.success) throw new Error(data.error || 'Falha ao criar prospect');
     toast('Prospect criado!', 'ok');
     toggleNewProspect();
-    await init();
+    await async function loadSellerQueue() {
+  const panel = document.getElementById('sellerActionPanel');
+  try {
+    const data = await studioFetch('/api/rb-factory-sales-agent/next-action').then(r => r.json());
+    if (!data.success || !data.hasAction) {
+      panel.innerHTML = '<span>Nenhuma ação comercial pendente.</span>';
+      return;
+    }
+    const a = data.action;
+    const status = a.status || 'PENDING_APPROVAL';
+    panel.innerHTML =
+      '<div style="display:grid;gap:8px">' +
+      '<div><b>' + (a.title || a.companyName) + '</b> · prioridade ' + (a.priority || 0) + '</div>' +
+      '<div>' + (a.message || '') + '</div>' +
+      '<div style="font-size:11px">Status: <b>' + status + '</b>' + (a.phone ? ' · ' + a.phone : '') + '</div>' +
+      '<div style="display:flex;gap:7px;flex-wrap:wrap">' +
+      '<button class="btn btn-primary" type="button" onclick="approveSellerAction(\'' + a.id + '\')">Aprovar</button>' +
+      '<button class="btn btn-sec" type="button" onclick="rejectSellerAction(\'' + a.id + '\')">Rejeitar</button>' +
+      '<button class="btn btn-sec" type="button" onclick="markSellerSent(\'' + a.id + '\')">Registrar envio</button>' +
+      '</div></div>';
+  } catch (e) {
+    panel.innerHTML = '<span style="color:#b91c1c">Erro ao carregar vendedor IA: ' + (e.message || e) + '</span>';
+  }
+}
+async function sellerActionRequest(path, method, body) {
+  const res = await studioFetch(path, { method, headers:{'Content-Type':'application/json'}, body: body ? JSON.stringify(body) : undefined });
+  const data = await res.json();
+  if (!res.ok || !data.success) throw new Error(data.error || ('HTTP ' + res.status));
+  return data;
+}
+async function approveSellerAction(id) {
+  try { await sellerActionRequest('/api/rb-factory-sales-agent/actions/' + encodeURIComponent(id) + '/approve','POST'); toast('Ação aprovada.','ok'); await loadSellerQueue(); }
+  catch(e) { toast('Erro: ' + e.message,'err'); }
+}
+async function rejectSellerAction(id) {
+  const reason = prompt('Motivo da rejeição (opcional):','') || '';
+  try { await sellerActionRequest('/api/rb-factory-sales-agent/actions/' + encodeURIComponent(id) + '/reject','POST',{reason}); toast('Ação rejeitada.','ok'); await loadSellerQueue(); }
+  catch(e) { toast('Erro: ' + e.message,'err'); }
+}
+async function markSellerSent(id) {
+  try { await sellerActionRequest('/api/rb-factory-sales-agent/actions/' + encodeURIComponent(id) + '/sent','POST',{provider:'MANUAL'}); toast('Envio registrado e follow-up programado.','ok'); await loadSellerQueue(); }
+  catch(e) { toast('Erro: ' + e.message,'err'); }
+}
+loadSellerQueue();
+init();
     if (data.prospect?.id) {
       document.getElementById('prospectSelect').value = data.prospect.id;
       await onProspectChange();
