@@ -40,7 +40,6 @@ import trackingRoutes from './modules/afiliados-ia/routes/tracking.routes';
 import produtosRoutes from './modules/afiliados-ia/routes/produtos.routes';
 import { handleAffiliateWebhook } from './modules/afiliados-ia/controllers/webhook.controller';
 import contentGeneratorRoutes from './modules/afiliados-ia/routes/contentGenerator.routes';
-import { prisma } from './modules/mercadoLivre/lib/prisma';
 
 const app = express();
 
@@ -125,19 +124,6 @@ app.use('/api/content-factory', contentFactoryRoutes);
 // ==========================================
 app.use('/api/afiliados/conteudo', contentGeneratorRoutes);
 
-// Rota temporária para listar produtos no dashboard
-app.get('/api/afiliados/produtos', async (req, res) => {
-  try {
-    const products = await prisma.affiliateProduct.findMany({
-      where: { status: 'ATIVO' },
-      orderBy: { createdAt: 'desc' },
-      take: 20
-    });
-    res.json({ products });
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar produtos' });
-  }
-});
 
 app.use(errorHandler);
 
