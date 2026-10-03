@@ -401,7 +401,7 @@ async function createProspect() {
     await async function loadSellerQueue() {
   const panel = document.getElementById('sellerActionPanel');
   try {
-    const data = await studioFetch('/api/rb-factory-sales-agent/next-action').then(r => r.json());
+    const data = await studioFetch('/api/rb-factory-sales-agent/next-action/prepare').then(r => r.json());
     if (!data.success || !data.hasAction) {
       panel.innerHTML = '<span>Nenhuma ação comercial pendente.</span>';
       return;
