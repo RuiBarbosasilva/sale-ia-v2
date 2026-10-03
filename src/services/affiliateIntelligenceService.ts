@@ -115,7 +115,7 @@ export const affiliateIntelligenceService = {
       }
     });
 
-    const existingOpportunity=await prisma.affiliateOpportunity.findFirst({where:{productId:product.id},orderBy:{createdAt:'desc'}});
+    const existingOpportunity=await prisma.affiliateOpportunity.findFirst({where:{productId:product.id,status:{in:['NEW','READY','PENDING_APPROVAL']}},orderBy:{createdAt:'desc'}});
     if(existingOpportunity){
       await prisma.affiliateOpportunity.update({where:{id:existingOpportunity.id},data:{
       score:s.score,recommendation:'Produto afiliado manualmente; pronto para campanha supervisionada.',strategy:'Conteúdo + landing page + tracking',requiresAction:false,actionType:'CREATE_CAMPAIGN'}});
