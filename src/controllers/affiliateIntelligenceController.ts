@@ -45,6 +45,7 @@ export const affiliateIntelligenceController = {
   async products(req: Request, res: Response) { if (!guard(req, res)) return; try { res.json({ success: true, products: await s.topProducts(boundedTake(req.query.take)) }); } catch (e) { err(res, e); } },
   async opportunities(req: Request, res: Response) { if (!guard(req, res)) return; try { res.json({ success: true, opportunities: await s.opportunities(req.query.status as string | undefined) }); } catch (e) { err(res, e); } },
   async autonomyPlan(req: Request, res: Response) { if (!guard(req, res)) return; try { res.json({ success: true, plan: await s.createAutonomyPlan() }); } catch (e) { err(res, e); } },
+  async campaigns(req: Request, res: Response) { if (!guard(req, res)) return; try { res.json({ success: true, campaigns: await s.campaigns(req.query.status as string | undefined) }); } catch (e) { err(res, e); } },
   async createCampaign(req: Request, res: Response) { if (!guard(req, res)) return; try { res.status(201).json({ success: true, campaign: await s.createCampaign(req.body || {}) }); } catch (e) { err(res, e); } },
   async generateContent(req: Request, res: Response) { if (!guard(req, res)) return; try { res.status(201).json({ success: true, content: await s.generateContent(req.params.id, req.body?.platforms) }); } catch (e) { err(res, e); } },
 };
