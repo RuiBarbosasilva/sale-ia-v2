@@ -145,8 +145,8 @@ export const debugKiwify = async (req: Request, res: Response) => {
       sucesso: true,
       config: {
         clientId: process.env.KIWIFY_CLIENT_ID ? 'Configurado (' + process.env.KIWIFY_CLIENT_ID.substring(0,4) + '...)' : 'NÃO CONFIGURADO',
-        clientSecret: process.env.KIWIFY_CLIENT_SECRET ? 'Configurado' : 'NÃƒO CONFIGURADO',
-        accountId: process.env.KIWIFY_ACCOUNT_ID ? 'Configurado' : 'NÃƒO CONFIGURADO'
+        clientSecret: process.env.KIWIFY_CLIENT_SECRET ? 'Configurado' : 'NÃO CONFIGURADO',
+        accountId: process.env.KIWIFY_ACCOUNT_ID ? 'Configurado' : 'NÃO CONFIGURADO'
       },
       tokenStatus: token ? 'Gerado com sucesso!' : 'Falha ao gerar token',
       produtosEncontrados: produtos.length,
