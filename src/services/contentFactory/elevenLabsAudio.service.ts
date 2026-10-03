@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../modules/mercadoLivre/lib/prisma';
 import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
-
-const prisma = new PrismaClient();
 
 // Voice ID padrão (Adam - profissional e natural). Pode ser alterado no .env
 const DEFAULT_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJgB';
