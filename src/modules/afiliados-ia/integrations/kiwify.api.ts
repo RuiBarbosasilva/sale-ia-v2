@@ -1,4 +1,4 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 
 export class KiwifyAPI {
   private baseURL = 'https://api.kiwify.com.br/v1';
@@ -25,7 +25,7 @@ export class KiwifyAPI {
         },
         params: {
           status: 'active',
-          limit: 50 // Aumentamos o limite para trazer mais opÃ§Ãµes
+          limit: 50 // Aumentamos o limite para trazer mais opções
         }
       });
 
