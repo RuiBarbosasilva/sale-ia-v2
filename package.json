@@ -4,7 +4,7 @@
   "description": "",
   "main": "src/index.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "prisma generate && tsc",
     "start": "node dist/src/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "test": "jest --coverage --runInBand",
@@ -12,7 +12,7 @@
     "test:automation": "jest tests/automation.test.ts --runInBand",
     "system:audit": "tsx tools/run-system-audit.ts",
     "audit:full": "tsx tools/full-debug-audit.ts",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "prisma generate && tsc --noEmit",
     "test:pricing": "jest tests/pricing_edge_cases.test.ts --runInBand",
     "guardian": "node guardian/index.js",
     "guardian:health": "node guardian/index.js",
@@ -22,7 +22,8 @@
     "guardian:begin": "node guardian/transaction.js begin",
     "guardian:status": "node guardian/transaction.js status",
     "guardian:commit": "node guardian/transaction.js commit",
-    "check:encoding": "tsx tools/check-encoding.ts"
+    "check:encoding": "tsx tools/check-encoding.ts",
+    "prebuild": "prisma generate"
   },
   "keywords": [],
   "author": "",
