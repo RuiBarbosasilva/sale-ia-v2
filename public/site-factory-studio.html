@@ -299,31 +299,79 @@ function closeTemplateImport() {
 async function importTemplateFile(event) {
   const file = event.target.files && event.target.files[0];
   if (!file) return;
+
   const status = document.getElementById('templateImportStatus');
-  status.textContent = 'Importando e validando modelo...';
+  const name = document.getElementById('tplImportName').value.trim();
+  const segment = document.getElementById('tplImportSegment').value.trim();
+  const description = document.getElementById('tplImportDescription').value.trim();
+
+  if (!name) {
+    status.textContent = 'Erro: informe o nome do modelo antes de escolher o arquivo.';
+    toast('Informe o nome do modelo.', 'err');
+    event.target.value = '';
+    return;
+  }
+
   const fd = new FormData();
   fd.append('file', file);
-  fd.append('name', document.getElementById('tplImportName').value.trim());
-  fd.append('segment', document.getElementById('tplImportSegment').value.trim());
-  fd.append('description', document.getElementById('tplImportDescription').value.trim());
+  fd.append('name', name);
+  fd.append('segment', segment);
+  fd.append('description', description);
+
+  status.style.color = 'var(--sf-muted)';
+  status.textContent = 'Importando e validando modelo...';
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 60000);
+
   try {
-    let res = await studioFetch(API + '/templates/import', { method:'POST', headers:adminTemplateHeaders(), body:fd });
+    let res = await studioFetch(API + '/templates/import', {
+      method: 'POST',
+      headers: adminTemplateHeaders(),
+      body: fd,
+      signal: controller.signal
+    });
+
     if (res.status === 401) {
-      const key = prompt('Chave administrativa do SALE-IA:', sessionStorage.getItem('saleIaAdminKey') || '');
-      if (!key || !key.trim()) throw new Error('Acesso administrativo não informado');
-      sessionStorage.setItem('saleIaAdminKey', key.trim());
-      res = await studioFetch(API + '/templates/import', { method:'POST', headers:adminTemplateHeaders(), body:fd });
+      const entered = prompt('Chave administrativa do SALE-IA:', sessionStorage.getItem('saleIaAdminKey') || '');
+      if (!entered || !entered.trim()) throw new Error('Acesso administrativo não informado');
+      sessionStorage.setItem('saleIaAdminKey', entered.trim());
+      res = await studioFetch(API + '/templates/import', {
+        method: 'POST',
+        headers: adminTemplateHeaders(),
+        body: fd,
+        signal: controller.signal
+      });
     }
-    const data = await res.json();
-    if (!res.ok || !data.success) throw new Error(data.error || 'Falha na importação');
+
+    const raw = await res.text();
+    let data = {};
+    try { data = raw ? JSON.parse(raw) : {}; } catch { data = { error: raw || 'Resposta inválida do servidor' }; }
+
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || ('Falha na importação (HTTP ' + res.status + ')'));
+    }
+
+    status.style.color = '#166534';
+    status.textContent = 'Modelo importado com sucesso. Atualizando a biblioteca...';
     toast('Modelo importado e salvo na biblioteca!', 'ok');
-    closeTemplateImport();
-    event.target.value = '';
+
     await loadTemplates();
-    document.getElementById('templateSelect').value = data.template.id;
+    const importedId = data.template?.id;
+    if (importedId) document.getElementById('templateSelect').value = importedId;
+
+    event.target.value = '';
+    closeTemplateImport();
   } catch (e) {
-    status.textContent = 'Erro: ' + e.message;
-    toast('Falha ao importar modelo: ' + e.message, 'err');
+    const message = e?.name === 'AbortError'
+      ? 'A importação excedeu 60 segundos. O arquivo pode ser grande ou o servidor não respondeu.'
+      : (e?.message || String(e));
+    status.style.color = '#b91c1c';
+    status.textContent = 'Erro: ' + message;
+    toast('Falha ao importar modelo: ' + message, 'err');
+    event.target.value = '';
+  } finally {
+    clearTimeout(timeout);
   }
 }
 async function loadTemplates() {
