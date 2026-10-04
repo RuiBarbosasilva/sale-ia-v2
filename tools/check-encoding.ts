@@ -8,6 +8,7 @@ const EXTENSIONS = new Set([
   '.md', '.prisma', '.sql', '.yml', '.yaml', '.ps1', '.bat', '.txt'
 ]);
 const SKIP = new Set(['node_modules', '.git', 'dist', 'coverage', 'runtime', '_audit_backups']);
+const GENERATED_SQL = new Set(['DIFF_9_MIGRATIONS_VS_DATABASE.sql', 'DIFF_BANCO_SCHEMA.sql', 'DIFF_SCHEMA_MIGRATIONS.sql', 'RECONCILE_EXISTING_DATABASE.sql']);
 const decoder = new TextDecoder('utf-8', { fatal: true });
 const bad: string[] = [];
 
@@ -16,7 +17,7 @@ function walk(dir: string) {
     if (SKIP.has(entry.name)) continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) walk(full);
-    else if (EXTENSIONS.has(path.extname(entry.name).toLowerCase())) {
+    else if (EXTENSIONS.has(path.extname(entry.name).toLowerCase()) && !GENERATED_SQL.has(entry.name)) {
       try {
         decoder.decode(fs.readFileSync(full));
       } catch {
