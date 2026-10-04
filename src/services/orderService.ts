@@ -1,4 +1,4 @@
-﻿import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { generatePixPayload } from "./pixService";
 
 const prisma = new PrismaClient();
