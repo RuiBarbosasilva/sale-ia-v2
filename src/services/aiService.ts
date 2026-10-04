@@ -1,4 +1,4 @@
-﻿import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 
 // Instanciaã£Â£ã†â€™ã£â€šã‚Â§ã£Â£ã†â€™ã£â€šã‚Â£o segura da SDK do Gemini
 const apiKey = process.env.GEMINI_API_KEY || '';
