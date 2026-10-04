@@ -1,4 +1,4 @@
-﻿// src/routes/dashboardRoutes.ts
+// src/routes/dashboardRoutes.ts
 import { Router } from 'express';
 import { getMercadoLivreDashboard } from '../controllers/dashboardController';
 import { fetchMLMetrics } from '../modules/mercadoLivre/controllers/metricsController';
