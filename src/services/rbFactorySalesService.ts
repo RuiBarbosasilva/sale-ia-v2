@@ -176,7 +176,7 @@ export const rbFactorySalesService={
     if(!['SENT','READY','ACCEPTED'].includes(proposal.status)) throw new Error('WEBSITE_PROPOSAL_NOT_ACCEPTABLE');
     const demo=await prisma.websiteDemo.findFirst({where:{prospectId,status:{in:['APPROVED','READY']}},orderBy:{version:'desc'}});
     if(!demo) throw new Error('DEMO_NOT_READY_FOR_PROJECT');
-    // Fechamento comercial vem antes da criaÃ§Ã£o do projeto.
+    // Fechamento comercial vem antes da criação do projeto.
     const accepted=proposal.status==='ACCEPTED' ? proposal : await prisma.websiteProposal.update({
       where:{id:proposal.id},
       data:{status:'ACCEPTED',acceptedAt:new Date()}
