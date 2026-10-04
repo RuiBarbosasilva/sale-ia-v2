@@ -6,6 +6,7 @@ import { affiliateIntelligenceService } from '../services/affiliateIntelligenceS
 import { hunterService } from '../services/hunterService';
 import { salesOrchestrationService } from '../services/salesOrchestrationService';
 import { opportunitySalesBridgeService } from '../services/opportunitySalesBridgeService';
+import { rbFactorySalesService } from '../services/rbFactorySalesService';
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
 import { adminAuthorization } from '../middlewares/security';
 
@@ -56,7 +57,8 @@ router.get('/operations', adminAuthorization, async (_req, res) => {
     }
   };
 
-  const [affiliates, affiliateProducts, affiliateOpportunities, hunter, sales, plans, editorialProjects] = await Promise.all([
+  const [rbFactory, affiliates, affiliateProducts, affiliateOpportunities, hunter, sales, plans, editorialProjects] = await Promise.all([
+    check('rb factory pipeline', async () => (await rbFactorySalesService.list()).length, 0),
     check('affiliate networks', async () => (await affiliateIntelligenceService.listNetworks()).length, 0),
     check('affiliate products', async () => (await affiliateIntelligenceService.topProducts(200)).length, 0),
     check('affiliate opportunities', async () => (await affiliateIntelligenceService.opportunities()).length, 0),
@@ -72,6 +74,7 @@ router.get('/operations', adminAuthorization, async (_req, res) => {
   ]);
 
   const affiliateChecks = [affiliates.ok, affiliateProducts.ok, affiliateOpportunities.ok];
+  const rbFactoryScore = rbFactory.ok ? 100 : 0;
   const affiliateScore = Math.round((affiliateChecks.filter(Boolean).length / affiliateChecks.length) * 100);
   const hunterScore = hunter.ok ? 100 : 0;
   const salesScore = sales.ok ? 100 : 0;
@@ -79,7 +82,7 @@ router.get('/operations', adminAuthorization, async (_req, res) => {
   const editorialScore = editorialProjects.ok ? 100 : 0;
 
   const modules = [
-    { id: 'rb-factory', name: 'RB Factory Sites', score: 100, status: 'OPERACIONAL', href: '/rb-factory' },
+    { id: 'rb-factory', name: 'RB Factory Sites', score: rbFactoryScore, status: rbFactoryScore === 100 ? 'OPERACIONAL' : 'INDISPONIVEL', href: '/rb-factory' },
     { id: 'afiliados', name: 'Afiliados & IA', score: affiliateScore, status: affiliateScore === 100 ? 'OPERACIONAL' : affiliateScore > 0 ? 'PARCIAL' : 'INDISPONIVEL', href: '/affiliates/intelligence' },
     { id: 'hunter', name: 'Hunter', score: hunterScore, status: hunterScore === 100 ? 'OPERACIONAL' : 'INDISPONIVEL', href: '/api/hunter/opportunities' },
     { id: 'sales', name: 'Sales Agent', score: salesScore, status: salesScore === 100 ? 'OPERACIONAL' : 'INDISPONIVEL', href: '/sales' },
