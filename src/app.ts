@@ -63,6 +63,15 @@ app.use((req, res, next) => {
   next();
 });
 
+// Força UTF-8 nas páginas HTML para evitar mojibake em ambientes Windows/proxies.
+app.use((req, res, next) => {
+  const htmlRoutes = ['/affiliates', '/affiliates/admin', '/affiliates/intelligence', '/editorial', '/sales', '/dashboard', '/dashboard/', '/rb-factory', '/rb-factory-benchmark', '/rb-factory-maintenance', '/rb-factory-commercial'];
+  if (htmlRoutes.includes(req.path) || req.path.endsWith('.html')) {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  }
+  next();
+});
+
 app.use(express.static('public', { index: false }));
 app.get('/', (_req, res) => res.redirect(302, '/rb-factory'));
 app.get('/rb-factory', (_req, res) => { res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate'); res.setHeader('Pragma', 'no-cache'); res.setHeader('Expires', '0'); return res.sendFile('site-factory.html', { root: 'public' }); });
