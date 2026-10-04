@@ -78,3 +78,15 @@ A task is done only when:
 - Guardian validation passes where applicable;
 - no secrets or prohibited automation were introduced;
 - the change is reviewable and documented when needed.
+
+
+## STATUS 2026-10-03 — REPARO DEFINITIVO DO SCHEMA AFILIADOS
+
+- Causa identificada: a migration `20260919130000_add_ai_sales_affiliate_intelligence` estava marcada como aplicada, mas o `dev.db` não continha as tabelas/modelos novos de Afiliados.
+- O banco local tinha o `AffiliateProduct` legado e o modelo atual do Prisma esperava a versão nova relacionada a `AffiliateNetwork`.
+- O `migrate diff` confirmou também diferenças pendentes em `AffiliateClick`, `AffiliateOffer`, estruturas Editorial e `WebsiteImportedTemplate`.
+- Correção registrada no GitHub em `prisma/migrations/20261003230000_reconcile_current_schema/migration.sql`.
+- A migração preserva os dados existentes de `AffiliateLink`; `AffiliateProduct` estava com 0 registros no banco no momento do reparo, portanto a transição não descartou produtos cadastrados.
+- Próxima execução local: aplicar a migration pendente com `npx prisma migrate deploy`, depois `npx prisma generate`.
+- Não usar `prisma migrate reset` neste projeto.
+- Objetivo do reparo: alinhar o SQLite ao `schema.prisma` atual para que o Dashboard Afiliados IA possa usar `AffiliateNetwork`, `AffiliateOpportunity`, `AffiliateCampaign`, `AffiliateContent` e `AffiliateAction`.
