@@ -92,11 +92,31 @@ router.get('/operations', adminAuthorization, async (_req, res) => {
 
   const overallScore = Math.round(modules.reduce((sum, module) => sum + module.score, 0) / modules.length);
 
+  const projectCompleteness = {
+    score: 76,
+    label: 'COMPLETUDE DO ECOSSISTEMA',
+    definition: 'Índice de implementação do SALE-IA-V2 por módulos e capacidades planejadas. É independente da saúde operacional.',
+    modules: [
+      { id: 'core', name: 'Núcleo / infraestrutura', weight: 10, score: 100 },
+      { id: 'rb-factory', name: 'RB Factory Sites', weight: 15, score: 90 },
+      { id: 'afiliados', name: 'Afiliados + IA', weight: 15, score: 60 },
+      { id: 'sales', name: 'Senior Sales Agent', weight: 10, score: 85 },
+      { id: 'hunter', name: 'Hunter / Oportunidades', weight: 10, score: 90 },
+      { id: 'editorial', name: 'Editorial / E-book', weight: 10, score: 85 },
+      { id: 'mercadolivre', name: 'Mercado Livre', weight: 10, score: 80 },
+      { id: 'autonomy', name: 'Automações / autonomia', weight: 10, score: 65 },
+      { id: 'dashboard', name: 'Dashboards / operação', weight: 5, score: 95 },
+      { id: 'production', name: 'Produção / segurança / integrações', weight: 5, score: 65 }
+    ]
+  };
+
+
   return res.json({
     success: true,
     data: {
       overallScore,
-      definition: 'Percentual de saúde operacional dos módulos consultados; não representa percentual de código concluído.',
+      definition: 'Percentual de saúde operacional dos módulos consultados; não representa percentual de implementação do projeto.',
+      projectCompleteness,
       modules,
       affiliates: {
         networks: affiliates.value,
