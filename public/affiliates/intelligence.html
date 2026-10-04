@@ -23,7 +23,7 @@ pre{white-space:pre-wrap;background:#101827;color:#eaf0fa;padding:12px;border-ra
 <main class="wrap">
 <div class="top">
   <div><h1>Afiliados IA</h1><p class="muted">Central operacional: produtos, oportunidades, conteúdo, campanhas e fluxo de vendas.</p></div>
-  <div class="row"><input id="key" type="password" placeholder="AFFILIATE_ADMIN_KEY" style="min-width:300px"><button onclick="loadAll()">Atualizar</button></div>
+  <div class="row"><input id="key" type="password" placeholder="AFFILIATE_ADMIN_KEY" style="min-width:300px"><button id="refreshBtn">Atualizar</button></div>
 </div>
 <div id="msg" class="muted"></div>
 
@@ -31,19 +31,19 @@ pre{white-space:pre-wrap;background:#101827;color:#eaf0fa;padding:12px;border-ra
 
 <section class="card">
   <div class="top"><div><h2>Caça de produtos</h2><div class="muted">Executa o Hunter legado e alimenta a base de afiliados.</div></div>
-  <button onclick="runHunter()">Executar Hunter</button></div>
+  <button id="hunterBtn">Executar Hunter</button></div>
   <div id="hunterOut" class="notice hidden"></div>
 </section>
 
 <section class="card">
 <h2>Redes</h2>
-<div class="row"><button onclick="bootstrap()">Inicializar redes padrão</button><span id="networks" class="muted"></span></div>
+<div class="row"><button id="bootstrapBtn">Inicializar redes padrão</button><span id="networks" class="muted"></span></div>
 <div class="row" style="margin-top:10px">
 <select id="networkId" style="min-width:220px"><option value="">Selecione a rede</option></select>
 <input id="offerName" placeholder="Nome do produto" style="min-width:240px">
 <input id="offerUrl" placeholder="Link de afiliado" style="min-width:320px">
 <input id="offerCommission" type="number" step="0.01" placeholder="Comissão %" style="width:150px">
-<button onclick="importOffer()">Importar oferta</button>
+<button id="importOfferBtn">Importar oferta</button>
 </div>
 </section>
 
@@ -55,13 +55,13 @@ pre{white-space:pre-wrap;background:#101827;color:#eaf0fa;padding:12px;border-ra
 
 <section class="card">
 <h2>Plano de autonomia supervisionada</h2>
-<div class="row"><button onclick="plan()">Gerar plano</button><button class="secondary" onclick="legacyOpportunities()">Oportunidades legadas</button></div>
+<div class="row"><button id="planBtn">Gerar plano</button><button id="legacyOppBtn" class="secondary">Oportunidades legadas</button></div>
 <pre id="planOut">Nenhum plano gerado.</pre>
 </section>
 
 <section class="card">
 <h2>Campanhas</h2>
-<div class="row"><input id="pid" placeholder="ID do produto" style="min-width:280px"><input id="cname" placeholder="Nome da campanha" style="min-width:280px"><button onclick="campaign()">Criar campanha</button><button class="secondary" onclick="generateSelectedContent()">Gerar conteúdo</button></div>
+<div class="row"><input id="pid" placeholder="ID do produto" style="min-width:280px"><input id="cname" placeholder="Nome da campanha" style="min-width:280px"><button id="campaignBtn">Criar campanha</button><button id="generateContentBtn" class="secondary">Gerar conteúdo</button></div>
 <pre id="campaignOut"></pre>
 <div class="scroll" style="margin-top:12px"><table><thead><tr><th>Campanha</th><th>Produto</th><th>Status</th><th>Conteúdos</th><th>Ações</th></tr></thead><tbody id="campaigns"></tbody></table></div>
 </section>
@@ -74,77 +74,463 @@ pre{white-space:pre-wrap;background:#101827;color:#eaf0fa;padding:12px;border-ra
 </main>
 
 <script>
-const state={key:localStorage.getItem('affiliateAdminKey')||'',products:[],legacyProducts:[]};
-const key=document.getElementById('key'); key.value=state.key;
-const api=location.origin+'/api/affiliate-intelligence';
-const legacy=location.origin+'/api/afiliados';
-const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const brl=v=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(v||0));
-async function jsonFetch(url,opt={}){
-  const headers={...(opt.headers||{})};
-  if(url.startsWith(api)) headers['x-affiliate-admin-key']=state.key;
-  if(opt.body) headers['Content-Type']='application/json';
-  const r=await fetch(url,{...opt,headers});
-  const j=await r.json().catch(()=>({}));
-  if(!r.ok) throw Error(j.error||j.erro||('HTTP '+r.status));
-  return j;
-}
-async function modern(path,opt={}){return jsonFetch(api+path,opt)}
-async function legacyCall(path,opt={}){return jsonFetch(legacy+path,opt)}
+(() => {
+  'use strict';
 
-async function loadAll(){
-  state.key=key.value.trim(); localStorage.setItem('affiliateAdminKey',state.key);
-  const errors=[];
-  let d=null,p=null,n=null,o=null,cs=null,l=null;
-  try{[d,p,n,o,cs]=await Promise.all([modern('/dashboard'),modern('/products?take=100'),modern('/networks'),modern('/opportunities'),modern('/campaigns')]);}catch(e){errors.push('Painel moderno: '+e.message)}
-  try{l=await legacyCall('/dashboard');}catch(e){errors.push('Painel legado: '+e.message)}
-  renderMetrics(d,l);
-  renderNetworks(n);
-  renderCampaigns(cs);
-  if(p&&Array.isArray(p.products)){state.products=p.products;renderProducts(p.products)}
-  else if(l&&Array.isArray(l.dados?.topProdutos)){state.legacyProducts=l.dados.topProdutos;renderLegacyProducts(l.dados.topProdutos)}
-  else renderProducts([]);
-  document.getElementById('msg').textContent=(errors.length?errors.join(' · '):'Painel atualizado com sucesso')+' · '+new Date().toLocaleString('pt-BR');
-  document.getElementById('msg').className=errors.length?'warn':'ok';
-}
-function renderMetrics(d,l){
-  const m=d||{}; const x=l?.dados||{};
-  const vals=[
-    ['Produtos',m.totalProducts??x.totalProdutos??0],
-    ['Copies',m.totalCopies??x.totalCopies??0],
-    ['Publicações',m.totalPublications??x.totalPublicacoes??0],
-    ['Cliques',m.totalClicks??x.totalCliques??0],
-    ['Vendas',m.totalSales??x.totalVendas??0],
-    ['Comissão',brl(m.totalCommission??x.comissaoTotal??0)]
-  ];
-  document.getElementById('metrics').innerHTML=vals.map(v=>'<div class="card"><div class="muted">'+esc(v[0])+'</div><div class="metric">'+esc(v[1])+'</div></div>').join('');
-}
-function renderCampaigns(data){const rows=Array.isArray(data?.campaigns)?data.campaigns:[];const body=document.getElementById('campaigns');if(!body)return;body.innerHTML=rows.length?rows.map(x=>'<tr><td><b>'+esc(x.name)+'</b><div class="muted small">'+esc(x.id)+'</div></td><td>'+esc(x.product?.name||'')+'</td><td><span class="badge">'+esc(x.status)+'</span></td><td>'+((x.contents||[]).length)+'</td><td>'+((x.actions||[]).length)+'</td></tr>').join(''):'<tr><td colspan="5">Nenhuma campanha criada.</td></tr>';}
-function renderNetworks(n){
-  const rows=Array.isArray(n?.networks)?n.networks:[];
-  document.getElementById('networks').textContent=rows.length?rows.length+' redes cadastradas':'rede moderna indisponível; Hunter legado disponível';
-  const sel=document.getElementById('networkId');
-  sel.innerHTML='<option value="">Selecione a rede</option>'+rows.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('');
-}
-function renderProducts(rows){
-  const body=document.getElementById('products');
-  body.innerHTML=rows.length?rows.map(x=>'<tr><td><b>'+esc(x.name)+'</b><div class="muted small">'+esc(x.externalId||x.id)+'</div></td><td>'+esc(x.network?.name||x.networkName||'')+'</td><td><b>'+Number(x.opportunityScore||x.score||0).toFixed(1)+'</b></td><td>'+esc(x.commissionRate??x.commissionPercent??0)+'%</td><td>'+brl(x.price)+'</td><td><span class="badge">'+esc(x.status)+'</span></td><td><div class="actions"><button onclick="selectProduct(\''+esc(x.id)+'\')">Selecionar</button><button class="secondary" onclick="generateCopy(\''+esc(x.id)+'\')">Copy</button><button class="secondary" onclick="sellerFlow(\''+esc(x.id)+'\')">Vendas</button></div></td></tr>').join(''):'<tr><td colspan="7">Nenhum produto disponível.</td></tr>';
-}
-function renderLegacyProducts(rows){
-  const body=document.getElementById('products');
-  body.innerHTML=rows.length?rows.map(x=>'<tr><td><b>'+esc(x.nome)+'</b><div class="muted small">'+esc(x.id)+'</div></td><td>'+esc(x.plataforma)+'</td><td><b>'+Number(x.score||0).toFixed(1)+'</b></td><td>'+esc(x.comissaoPercentual||0)+'%</td><td>'+brl(x.preco)+'</td><td><span class="badge">'+esc(x.status)+'</span></td><td><div class="actions"><button onclick="selectProduct(\''+esc(x.id)+'\')">Selecionar</button><button class="secondary" onclick="generateCopy(\''+esc(x.id)+'\')">Copy</button><button class="secondary" onclick="sellerFlow(\''+esc(x.id)+'\')">Vendas</button></div></td></tr>').join(''):'<tr><td colspan="7">Nenhum produto disponível. Execute o Hunter.</td></tr>';
-}
-function selectProduct(id){document.getElementById('pid').value=id;document.getElementById('cname').value='';document.getElementById('actionOut').textContent='Produto selecionado: '+id}
-async function bootstrap(){try{await modern('/bootstrap',{method:'POST'});await loadAll()}catch(e){document.getElementById('actionOut').textContent=e.message}}
-async function plan(){try{const j=await modern('/autonomy-plan');document.getElementById('planOut').textContent=JSON.stringify(j.plan??j,null,2)}catch(e){document.getElementById('planOut').textContent=e.message}}
-async function campaign(){try{const j=await modern('/campaigns',{method:'POST',body:JSON.stringify({productId:document.getElementById('pid').value,name:document.getElementById('cname').value||undefined})});const id=j.campaign?.id;document.getElementById('campaignOut').innerHTML=esc(JSON.stringify(j.campaign??j,null,2))+(id?'\\n\\n[Campanha criada: '+id+']':'');if(id){const content=await modern('/campaigns/'+id+'/content/generate',{method:'POST',body:JSON.stringify({platforms:['INSTAGRAM','TIKTOK','YOUTUBE_SHORTS']})});document.getElementById('actionOut').textContent='Conteúdo DRAFT gerado para a campanha '+id+'\\n'+JSON.stringify(content.content??content,null,2);await loadAll()}}catch(e){document.getElementById('campaignOut').textContent=e.message}}
-async function importOffer(){const out=document.getElementById('actionOut');const networkId=document.getElementById('networkId').value.trim();const name=document.getElementById('offerName').value.trim();const affiliateUrl=document.getElementById('offerUrl').value.trim();const commissionRaw=document.getElementById('offerCommission').value.trim();if(!networkId||!name||!affiliateUrl){out.textContent='Preencha rede, nome e URL de afiliado.';return}out.textContent='Importando oferta...';try{const body={name,affiliateUrl,commissionRate:commissionRaw?Number(commissionRaw):undefined};const j=await modern('/networks/'+encodeURIComponent(networkId)+'/affiliate-offers/import',{method:'POST',body:JSON.stringify(body)});out.textContent='Oferta importada: '+(j.product?.name||name)+' · score '+Number(j.product?.opportunityScore||0).toFixed(1);document.getElementById('offerName').value='';document.getElementById('offerUrl').value='';document.getElementById('offerCommission').value='';await loadAll()}catch(e){out.textContent='Importação: '+e.message}}
-async function generateSelectedContent(){const id=document.getElementById('pid').value.trim();const out=document.getElementById('actionOut');if(!id){out.textContent='Selecione um produto primeiro.';return}out.textContent='Localizando campanha e gerando conteúdo...';try{const j=await modern('/campaigns',{method:'POST',body:JSON.stringify({productId:id})});const cid=j.campaign?.id;if(!cid)throw Error('Campanha não retornada');const c=await modern('/campaigns/'+cid+'/content/generate',{method:'POST',body:JSON.stringify({platforms:['INSTAGRAM','TIKTOK','YOUTUBE_SHORTS']})});out.textContent=JSON.stringify(c.content??c,null,2);await loadAll()}catch(e){out.textContent='Conteúdo: '+e.message}}
-async function runHunter(){const out=document.getElementById('hunterOut');out.className='notice';out.textContent='Executando Hunter...';try{const j=await legacyCall('/hunter/executar',{method:'POST',body:JSON.stringify({nichos:['saude','tecnologia','renda extra','beleza','casa']})});out.textContent='Hunter concluído: '+(j.total??j.produtos?.length??0)+' produtos processados.';await loadAll()}catch(e){out.textContent='Hunter: '+e.message}}
-async function legacyOpportunities(){try{const j=await legacyCall('/oportunidades');document.getElementById('planOut').textContent=JSON.stringify(j,null,2)}catch(e){document.getElementById('planOut').textContent=e.message}}
-async function generateCopy(id){const out=document.getElementById('actionOut');out.textContent='Gerando copies...';try{const j=await legacyCall('/copies/gerar',{method:'POST',body:JSON.stringify({produtoId:id,quantidade:3})});out.textContent=JSON.stringify(j,null,2)}catch(e){out.textContent='Copy: '+e.message}}
-async function sellerFlow(id){const out=document.getElementById('actionOut');out.textContent='Gerando fluxo de vendas...';try{const j=await legacyCall('/vendedor/fluxo',{method:'POST',body:JSON.stringify({produtoId:id})});out.textContent=JSON.stringify(j,null,2)}catch(e){out.textContent='Vendas: '+e.message}}
-loadAll();
+  const state = {
+    key: localStorage.getItem('affiliateAdminKey') || '',
+    products: [],
+    legacyProducts: []
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const keyInput = $('key');
+  keyInput.value = state.key;
+
+  const api = location.origin + '/api/affiliate-intelligence';
+  const legacy = location.origin + '/api/afiliados';
+
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (m) => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[m]));
+
+  const brl = (v) => new Intl.NumberFormat('pt-BR', {
+    style: 'currency', currency: 'BRL'
+  }).format(Number(v || 0));
+
+  function setMessage(message, type = 'muted') {
+    $('msg').textContent = message;
+    $('msg').className = type;
+  }
+
+  function setOutput(id, message) {
+    $(id).textContent = String(message ?? '');
+  }
+
+  function setBusy(button, busy, label) {
+    if (!button) return;
+    if (busy) {
+      button.dataset.originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = label || 'Processando...';
+    } else {
+      button.disabled = false;
+      button.textContent = button.dataset.originalText || button.textContent;
+    }
+  }
+
+  async function jsonFetch(url, options = {}, allowAuthRetry = true) {
+    const headers = new Headers(options.headers || {});
+    if (url.startsWith(api)) headers.set('x-affiliate-admin-key', state.key);
+    if (options.body && !headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
+
+    const response = await fetch(url, {
+      ...options,
+      headers,
+      credentials: 'same-origin',
+      cache: 'no-store'
+    });
+
+    const raw = await response.text();
+    let data = {};
+    try { data = raw ? JSON.parse(raw) : {}; } catch {
+      throw new Error('Resposta inválida do servidor (HTTP ' + response.status + ').');
+    }
+
+    if (response.status === 401 && allowAuthRetry) {
+      const entered = prompt('Acesso administrativo. Informe a chave do SALE-IA:');
+      if (entered && entered.trim()) {
+        state.key = entered.trim();
+        keyInput.value = state.key;
+        localStorage.setItem('affiliateAdminKey', state.key);
+        return jsonFetch(url, options, false);
+      }
+      throw new Error('ADMIN_UNAUTHORIZED');
+    }
+
+    if (!response.ok) {
+      throw new Error(data.error || data.erro || data.message || ('HTTP ' + response.status));
+    }
+
+    return data;
+  }
+
+  async function modern(path, options = {}) {
+    return jsonFetch(api + path, options);
+  }
+
+  async function legacyCall(path, options = {}) {
+    return jsonFetch(legacy + path, options);
+  }
+
+  async function loadAll() {
+    state.key = keyInput.value.trim();
+    if (state.key) localStorage.setItem('affiliateAdminKey', state.key);
+    else localStorage.removeItem('affiliateAdminKey');
+
+    setMessage('Carregando dados do Afiliados IA...');
+    const errors = [];
+
+    let dashboard = null;
+    let products = null;
+    let networks = null;
+    let opportunities = null;
+    let campaigns = null;
+    let legacyDashboard = null;
+
+    const modernResults = await Promise.allSettled([
+      modern('/dashboard'),
+      modern('/products?take=100'),
+      modern('/networks'),
+      modern('/opportunities'),
+      modern('/campaigns')
+    ]);
+
+    [dashboard, products, networks, opportunities, campaigns] =
+      modernResults.map((result) => {
+        if (result.status === 'fulfilled') return result.value;
+        errors.push('Painel moderno: ' + result.reason.message);
+        return null;
+      });
+
+    try {
+      legacyDashboard = await legacyCall('/dashboard');
+    } catch (e) {
+      errors.push('Painel legado: ' + e.message);
+    }
+
+    renderMetrics(dashboard, legacyDashboard);
+    renderNetworks(networks);
+    renderCampaigns(campaigns);
+
+    if (products && Array.isArray(products.products)) {
+      state.products = products.products;
+      renderProducts(state.products);
+    } else if (legacyDashboard && Array.isArray(legacyDashboard.dados?.topProdutos)) {
+      state.legacyProducts = legacyDashboard.dados.topProdutos;
+      renderLegacyProducts(state.legacyProducts);
+    } else {
+      renderProducts([]);
+    }
+
+    if (errors.length) {
+      setMessage(errors.join(' · ') + ' · ' + new Date().toLocaleString('pt-BR'), 'warn');
+    } else {
+      setMessage('Painel atualizado com sucesso · ' + new Date().toLocaleString('pt-BR'), 'ok');
+    }
+  }
+
+  function renderMetrics(d, l) {
+    const modernData = d || {};
+    const legacyData = l?.dados || {};
+    const values = [
+      ['Produtos', modernData.totalProducts ?? legacyData.totalProdutos ?? 0],
+      ['Copies', modernData.totalCopies ?? legacyData.totalCopies ?? 0],
+      ['Publicações', modernData.totalPublications ?? legacyData.totalPublicacoes ?? 0],
+      ['Cliques', modernData.totalClicks ?? legacyData.totalCliques ?? 0],
+      ['Vendas', modernData.totalSales ?? legacyData.totalVendas ?? 0],
+      ['Comissão', brl(modernData.totalCommission ?? legacyData.comissaoTotal ?? 0)]
+    ];
+    $('metrics').innerHTML = values.map(([label, value]) =>
+      '<div class="card"><div class="muted">' + esc(label) +
+      '</div><div class="metric">' + esc(value) + '</div></div>'
+    ).join('');
+  }
+
+  function renderCampaigns(data) {
+    const rows = Array.isArray(data?.campaigns) ? data.campaigns : [];
+    $('campaigns').innerHTML = rows.length
+      ? rows.map((x) =>
+        '<tr><td><b>' + esc(x.name) + '</b><div class="muted small">' + esc(x.id) +
+        '</div></td><td>' + esc(x.product?.name || '') +
+        '</td><td><span class="badge">' + esc(x.status) +
+        '</span></td><td>' + ((x.contents || []).length) +
+        '</td><td>' + ((x.actions || []).length) + '</td></tr>'
+      ).join('')
+      : '<tr><td colspan="5">Nenhuma campanha criada.</td></tr>';
+  }
+
+  function renderNetworks(data) {
+    const rows = Array.isArray(data?.networks) ? data.networks : [];
+    $('networks').textContent = rows.length
+      ? rows.length + ' redes cadastradas'
+      : 'Nenhuma rede moderna cadastrada.';
+
+    $('networkId').innerHTML =
+      '<option value="">Selecione a rede</option>' +
+      rows.map((x) =>
+        '<option value="' + esc(x.id) + '">' + esc(x.name) + '</option>'
+      ).join('');
+  }
+
+  function renderProducts(rows) {
+    const body = $('products');
+    body.innerHTML = rows.length
+      ? rows.map((x) => {
+          const id = esc(x.id);
+          return '<tr><td><b>' + esc(x.name) +
+            '</b><div class="muted small">' + esc(x.externalId || x.id) +
+            '</div></td><td>' + esc(x.network?.name || x.networkName || '') +
+            '</td><td><b>' + Number(x.opportunityScore || x.score || 0).toFixed(1) +
+            '</b></td><td>' + esc(x.commissionRate ?? x.commissionPercent ?? 0) +
+            '%</td><td>' + brl(x.price) +
+            '</td><td><span class="badge">' + esc(x.status) +
+            '</span></td><td><div class="actions">' +
+            '<button data-action="select" data-id="' + id + '">Selecionar</button>' +
+            '<button class="secondary" data-action="copy" data-id="' + id + '">Copy</button>' +
+            '<button class="secondary" data-action="seller" data-id="' + id + '">Vendas</button>' +
+            '</div></td></tr>';
+        }).join('')
+      : '<tr><td colspan="7">Nenhum produto disponível.</td></tr>';
+  }
+
+  function renderLegacyProducts(rows) {
+    const body = $('products');
+    body.innerHTML = rows.length
+      ? rows.map((x) => {
+          const id = esc(x.id);
+          return '<tr><td><b>' + esc(x.nome) +
+            '</b><div class="muted small">' + esc(x.id) +
+            '</div></td><td>' + esc(x.plataforma) +
+            '</td><td><b>' + Number(x.score || 0).toFixed(1) +
+            '</b></td><td>' + esc(x.comissaoPercentual || 0) +
+            '%</td><td>' + brl(x.preco) +
+            '</td><td><span class="badge">' + esc(x.status) +
+            '</span></td><td><div class="actions">' +
+            '<button data-action="select" data-id="' + id + '">Selecionar</button>' +
+            '<button class="secondary" data-action="copy" data-id="' + id + '">Copy</button>' +
+            '<button class="secondary" data-action="seller" data-id="' + id + '">Vendas</button>' +
+            '</div></td></tr>';
+        }).join('')
+      : '<tr><td colspan="7">Nenhum produto disponível. Execute o Hunter.</td></tr>';
+  }
+
+  function selectProduct(id) {
+    $('pid').value = id;
+    $('cname').value = '';
+    setOutput('actionOut', 'Produto selecionado: ' + id);
+  }
+
+  async function bootstrap() {
+    const button = document.querySelector('[data-action="bootstrap"]');
+    setBusy(button, true, 'Inicializando...');
+    try {
+      const result = await modern('/bootstrap', { method: 'POST' });
+      setOutput('actionOut', 'Redes inicializadas: ' + ((result.networks || []).length || 0));
+      await loadAll();
+    } catch (e) {
+      setOutput('actionOut', 'Inicializar redes: ' + e.message);
+    } finally {
+      setBusy(button, false);
+    }
+  }
+
+  async function plan() {
+    const button = document.querySelector('[data-action="plan"]');
+    setBusy(button, true, 'Gerando...');
+    try {
+      const result = await modern('/autonomy-plan');
+      setOutput('planOut', JSON.stringify(result.plan ?? result, null, 2));
+    } catch (e) {
+      setOutput('planOut', 'Erro ao gerar plano: ' + e.message);
+    } finally {
+      setBusy(button, false);
+    }
+  }
+
+  async function campaign() {
+    const button = document.querySelector('[data-action="campaign"]');
+    const productId = $('pid').value.trim();
+    if (!productId) {
+      setOutput('campaignOut', 'Informe ou selecione um ID de produto.');
+      return;
+    }
+
+    setBusy(button, true, 'Criando...');
+    try {
+      const result = await modern('/campaigns', {
+        method: 'POST',
+        body: JSON.stringify({
+          productId,
+          name: $('cname').value.trim() || undefined
+        })
+      });
+
+      const id = result.campaign?.id;
+      setOutput('campaignOut', JSON.stringify(result.campaign ?? result, null, 2));
+
+      if (id) {
+        const content = await modern('/campaigns/' + encodeURIComponent(id) + '/content/generate', {
+          method: 'POST',
+          body: JSON.stringify({ platforms: ['INSTAGRAM', 'TIKTOK', 'YOUTUBE_SHORTS'] })
+        });
+        setOutput('actionOut',
+          'Conteúdo DRAFT gerado para a campanha ' + id + '\n' +
+          JSON.stringify(content.content ?? content, null, 2)
+        );
+      }
+
+      await loadAll();
+    } catch (e) {
+      setOutput('campaignOut', 'Erro na campanha: ' + e.message);
+    } finally {
+      setBusy(button, false);
+    }
+  }
+
+  async function importOffer() {
+    const out = $('actionOut');
+    const networkId = $('networkId').value.trim();
+    const name = $('offerName').value.trim();
+    const affiliateUrl = $('offerUrl').value.trim();
+    const commissionRaw = $('offerCommission').value.trim();
+
+    if (!networkId || !name || !affiliateUrl) {
+      out.textContent = 'Preencha rede, nome e URL de afiliado.';
+      return;
+    }
+
+    out.textContent = 'Importando oferta...';
+    try {
+      const body = {
+        name,
+        affiliateUrl,
+        commissionRate: commissionRaw ? Number(commissionRaw) : undefined
+      };
+      const result = await modern(
+        '/networks/' + encodeURIComponent(networkId) + '/affiliate-offers/import',
+        { method: 'POST', body: JSON.stringify(body) }
+      );
+      out.textContent = 'Oferta importada: ' +
+        (result.product?.name || name) +
+        ' · score ' + Number(result.product?.opportunityScore || 0).toFixed(1);
+      $('offerName').value = '';
+      $('offerUrl').value = '';
+      $('offerCommission').value = '';
+      await loadAll();
+    } catch (e) {
+      out.textContent = 'Importação: ' + e.message;
+    }
+  }
+
+  async function generateSelectedContent() {
+    const id = $('pid').value.trim();
+    if (!id) {
+      setOutput('actionOut', 'Selecione um produto primeiro.');
+      return;
+    }
+
+    setOutput('actionOut', 'Localizando campanha e gerando conteúdo...');
+    try {
+      const result = await modern('/campaigns', {
+        method: 'POST',
+        body: JSON.stringify({ productId: id })
+      });
+      const campaignId = result.campaign?.id;
+      if (!campaignId) throw new Error('Campanha não retornada');
+
+      const content = await modern(
+        '/campaigns/' + encodeURIComponent(campaignId) + '/content/generate',
+        {
+          method: 'POST',
+          body: JSON.stringify({ platforms: ['INSTAGRAM', 'TIKTOK', 'YOUTUBE_SHORTS'] })
+        }
+      );
+
+      setOutput('actionOut', JSON.stringify(content.content ?? content, null, 2));
+      await loadAll();
+    } catch (e) {
+      setOutput('actionOut', 'Conteúdo: ' + e.message);
+    }
+  }
+
+  async function runHunter() {
+    const button = document.querySelector('[data-action="hunter"]');
+    const out = $('hunterOut');
+    out.className = 'notice';
+    out.textContent = 'Executando Hunter...';
+    setBusy(button, true, 'Executando...');
+
+    try {
+      const result = await legacyCall('/hunter/executar', {
+        method: 'POST',
+        body: JSON.stringify({
+          nichos: ['saude', 'tecnologia', 'renda extra', 'beleza', 'casa']
+        })
+      });
+      out.textContent = 'Hunter concluído: ' +
+        (result.total ?? result.produtos?.length ?? 0) +
+        ' produtos processados.';
+      await loadAll();
+    } catch (e) {
+      out.textContent = 'Hunter: ' + e.message;
+    } finally {
+      setBusy(button, false);
+    }
+  }
+
+  async function legacyOpportunities() {
+    try {
+      const result = await legacyCall('/oportunidades');
+      setOutput('planOut', JSON.stringify(result, null, 2));
+    } catch (e) {
+      setOutput('planOut', 'Oportunidades legadas: ' + e.message);
+    }
+  }
+
+  async function generateCopy(id) {
+    setOutput('actionOut', 'Gerando copies...');
+    try {
+      const result = await legacyCall('/copies/gerar', {
+        method: 'POST',
+        body: JSON.stringify({ produtoId: id, quantidade: 3 })
+      });
+      setOutput('actionOut', JSON.stringify(result, null, 2));
+    } catch (e) {
+      setOutput('actionOut', 'Copy: ' + e.message);
+    }
+  }
+
+  async function sellerFlow(id) {
+    setOutput('actionOut', 'Gerando fluxo de vendas...');
+    try {
+      const result = await legacyCall('/vendedor/fluxo', {
+        method: 'POST',
+        body: JSON.stringify({ produtoId: id })
+      });
+      setOutput('actionOut', JSON.stringify(result, null, 2));
+    } catch (e) {
+      setOutput('actionOut', 'Vendas: ' + e.message);
+    }
+  }
+
+  // Eventos sem onclick inline: evita falhas de binding e facilita depuração.
+  $('refreshBtn').addEventListener('click', loadAll);
+  $('bootstrapBtn').addEventListener('click', bootstrap);
+  $('planBtn').addEventListener('click', plan);
+  $('campaignBtn').addEventListener('click', campaign);
+  $('generateContentBtn').addEventListener('click', generateSelectedContent);
+  $('hunterBtn').addEventListener('click', runHunter);
+  $('legacyOppBtn').addEventListener('click', legacyOpportunities);
+  $('importOfferBtn').addEventListener('click', importOffer);
+
+  $('products').addEventListener('click', (event) => {
+    const button = event.target.closest('button[data-action]');
+    if (!button) return;
+    const id = button.dataset.id;
+    const action = button.dataset.action;
+    if (action === 'select') selectProduct(id);
+    if (action === 'copy') generateCopy(id);
+    if (action === 'seller') sellerFlow(id);
+  });
+
+  // Disponibiliza somente para depuração manual no console.
+  window.saleIaAffiliateDashboard = { loadAll, state };
+
+  loadAll().catch((e) => setMessage('Falha ao iniciar dashboard: ' + e.message, 'err'));
+})();
 </script>
 </body>
 </html>
