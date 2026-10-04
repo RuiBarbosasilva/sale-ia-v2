@@ -1,10 +1,10 @@
-﻿import { Request, Response } from 'express';
+import { Request, Response } from 'express';
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
-// ConfiguraÃ§Ã£o do multer
+// Configuração do multer
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'templates');
@@ -28,7 +28,7 @@ export const upload = multer({
     if (['.zip', '.html', '.htm'].includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error('Apenas arquivos .zip ou .html sao permitidos'));
+      cb(new Error('Apenas arquivos .zip ou .html são permitidos'));
     }
   }
 });
@@ -43,13 +43,13 @@ export const templateImportController = {
       const { name, category, description, thumbnailUrl, prospectId } = req.body;
       
       if (!name) {
-        return res.status(400).json({ success: false, error: 'Nome do modelo e obrigatorio' });
+        return res.status(400).json({ success: false, error: 'Nome do modelo é obrigatório' });
       }
 
       const filePath = req.file.path;
       const isZip = path.extname(req.file.originalname).toLowerCase() === '.zip';
 
-      // Se for HTML, lÃª o conteÃºdo para sourceCode
+      // Se for HTML, lê o conteúdo para sourceCode
       let sourceCode = null;
       if (!isZip) {
         sourceCode = fs.readFileSync(filePath, 'utf-8');
