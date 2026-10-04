@@ -1,4 +1,4 @@
-﻿// src/services/website/websiteImageService.ts
+// src/services/website/websiteImageService.ts
 import { GeneratedImageProvider } from './imageProviders/generatedImageProvider';
 import axios from 'axios';
 import { DesignSystem, PRD } from '../../types/websiteV2';
