@@ -3,8 +3,9 @@ import { affiliateIntelligenceService as s } from '../services/affiliateIntellig
 import { timingSafeSecret } from '../middlewares/security';
 
 function guard(req: Request, res: Response) {
-  const key = process.env.AFFILIATE_ADMIN_KEY;
-  if (!timingSafeSecret(key, req.header('x-affiliate-admin-key'))) {
+  const key = process.env.AFFILIATE_ADMIN_KEY || process.env.SALE_IA_ADMIN_KEY;
+  const provided = req.header('x-affiliate-admin-key') || req.header('x-sale-ia-admin-key');
+  if (!timingSafeSecret(key, provided)) {
     res.status(401).json({ success: false, error: 'ADMIN_UNAUTHORIZED', requestId: (req as any).requestId });
     return false;
   }
