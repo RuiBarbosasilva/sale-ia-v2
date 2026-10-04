@@ -1,4 +1,4 @@
-﻿import { Request, Response } from 'express';
+import { Request, Response } from 'express';
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
 
 export const demoPreviewController = {
@@ -12,7 +12,7 @@ export const demoPreviewController = {
       });
 
       if (!demo || !demo.sourceCode) {
-        return res.status(404).send('Demo nÃ£o encontrada ou sem conteÃºdo');
+        return res.status(404).send('Demo não encontrada ou sem conteúdo');
       }
 
       // Serve o HTML diretamente no navegador
