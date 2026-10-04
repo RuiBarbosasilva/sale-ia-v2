@@ -1,4 +1,4 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 import { prisma } from '../../modules/mercadoLivre/lib/prisma';
 
 export class MlAffiliateHunterService {
