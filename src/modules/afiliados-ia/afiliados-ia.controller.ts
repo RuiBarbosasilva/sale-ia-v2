@@ -34,6 +34,39 @@ export const listarProdutos = async (req: Request, res: Response) => {
   }
 };
 
+export const cadastrarProduto = async (req: Request, res: Response) => {
+  try {
+    const {
+      nome, produtoIdExterno, linkAfiliado, categoria, preco,
+      comissaoPercentual, temperatura, tipo, plataforma, status, score
+    } = req.body;
+
+    if (!nome || !linkAfiliado) {
+      return res.status(400).json({ sucesso: false, erro: 'Nome e link de afiliado são obrigatórios' });
+    }
+
+    const produto = await prisma.afiliadoProduto.create({
+      data: {
+        nome,
+        produtoIdExterno: produtoIdExterno || (plataforma || 'clickbank') + '_' + Date.now(),
+        linkAfiliado,
+        categoria: categoria || 'outros',
+        preco: Number(preco) || 0,
+        comissaoPercentual: Number(comissaoPercentual) || 50,
+        temperatura: Number(temperatura) || 0,
+        tipo: tipo || 'digital',
+        plataforma: plataforma || 'clickbank',
+        status: status || 'ativo',
+        score: Number(score) || 50
+      }
+    });
+
+    return res.status(201).json({ sucesso: true, produto });
+  } catch (error: any) {
+    return res.status(500).json({ sucesso: false, erro: error.message });
+  }
+};
+
 export const gerarCopies = async (req: Request, res: Response) => {
   try {
     const { produtoId, quantidade } = req.body;
