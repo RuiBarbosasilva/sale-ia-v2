@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   executarHunter,
   listarProdutos,
+  cadastrarProduto,
   gerarCopies,
   gerarCriativo,
   gerarFluxoVendedor,
@@ -20,6 +21,7 @@ afiliadosIaRoutes.get('/debug/criativo', debugCriativo);
 // Rotas principais
 afiliadosIaRoutes.post('/hunter/executar', executarHunter);
 afiliadosIaRoutes.get('/produtos', listarProdutos);
+afiliadosIaRoutes.post('/produtos', cadastrarProduto);
 afiliadosIaRoutes.post('/copies/gerar', gerarCopies);
 afiliadosIaRoutes.post('/criativo/gerar', gerarCriativo);
 afiliadosIaRoutes.post('/vendedor/fluxo', gerarFluxoVendedor);
