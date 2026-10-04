@@ -21,7 +21,8 @@
     "guardian:transaction": "node guardian/transaction.js",
     "guardian:begin": "node guardian/transaction.js begin",
     "guardian:status": "node guardian/transaction.js status",
-    "guardian:commit": "node guardian/transaction.js commit"
+    "guardian:commit": "node guardian/transaction.js commit",
+    "check:encoding": "tsx tools/check-encoding.ts"
   },
   "keywords": [],
   "author": "",
