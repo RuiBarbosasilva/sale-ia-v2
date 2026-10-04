@@ -42,7 +42,7 @@ main{margin-left:252px;width:calc(100% - 252px);padding:28px 34px 60px}.top{disp
   <div class="side-bottom"><div class="status"><b><span class="dot"></span>Sistema operacional</b><p>Módulos trabalham de forma independente e supervisionada.</p></div></div>
 </aside>
 <main>
-  <div class="top"><div class="crumb">SALE-IA / <b>Central</b></div><div class="top-actions"><button class="btn" onclick="setAdminKey()">🔐 Chave</button><button class="btn" onclick="refresh()">↻ Atualizar</button><a class="btn dark" href="/rb-factory">Abrir RB Factory</a></div></div>
+  <div class="top"><div class="crumb">SALE-IA / <b>Central</b></div><div class="top-actions"><button id="adminKeyBtn" class="btn">🔐 Chave</button><button id="refreshBtn" class="btn">↻ Atualizar</button><a class="btn dark" href="/rb-factory">Abrir RB Factory</a></div></div>
   <section class="hero"><div><h1>Bom dia. Vamos vender.</h1><p>Uma central limpa para acompanhar oportunidades, vendas, afiliados, sites e inteligência comercial em um só lugar.</p></div><div class="date" id="date"></div></section>
   <section class="grid">
     <div class="card"><div class="metric-label">Receita Mercado Livre</div><div class="metric" id="revenue">—</div><div class="metric-note">dados da conta conectada</div></div>
@@ -114,6 +114,8 @@ async function refresh(){
     $('pipeline').innerHTML=stages.map(s=>{const n=rows.filter(x=>x.stage===s).length;const pct=rows.length?Math.max(5,Math.round(n/rows.length*100)):5;return '<div class="stage"><span class="stage-name">'+s.replaceAll('_',' ')+'</span><div class="bar"><div class="fill" style="width:'+pct+'%"></div></div><span class="count">'+n+'</span></div>'}).join('');
   }catch(e){$('pipeline').innerHTML='<div style="font-size:11px;color:#9299a3">Pipeline aguardando dados da operação.</div>'}
 }
+document.getElementById('adminKeyBtn').addEventListener('click', setAdminKey);
+document.getElementById('refreshBtn').addEventListener('click', refresh);
 refresh();
 setInterval(refresh,60000);
 </script>
