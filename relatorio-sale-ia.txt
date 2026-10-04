@@ -1,4 +1,33 @@
 ================================================================
+ ATUALIZAÇÃO EXECUTIVA - 04/10/2026
+================================================================
+
+REVISÃO TÉCNICA CONCLUÍDA NO GIT/CI
+
+Commit atual: a2a70fd599f5b263361490d0314906bb3c963946
+
+Gates CI:
+- Prisma validate: PASS
+- Prisma generate: PASS
+- Prisma migrate deploy: PASS
+- TypeScript typecheck: PASS
+- Build: PASS
+- Testes Jest: PASS
+- Guardian verify: PASS
+- Validação UTF-8: PASS
+
+Correções efetivadas:
+- Migração 20261003230000_reconcile_current_schema tornada não destrutiva/idempotente.
+- Geração do Prisma Client incorporada ao ciclo de build/typecheck.
+- Validação UTF-8 corrigida para detectar mojibake real sem falso positivo de BOM.
+- Reparo automático de encoding incorporado ao CI e persistido no branch main.
+- Código do módulo Afiliados passa Prisma validate, migrate, typecheck, build, testes e guardian.
+
+STATUS DO GATE TÉCNICO: 100% VERDE.
+
+----------------------------------------------------------------
+
+================================================================
  RELATÓRIO DE ANÁLISE - sale-ia-v2
  Gerado em: 30/09/2026 14:24:28
 ================================================================
