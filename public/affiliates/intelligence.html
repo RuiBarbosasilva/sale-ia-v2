@@ -314,7 +314,7 @@ pre{white-space:pre-wrap;background:#101827;color:#eaf0fa;padding:12px;border-ra
   }
 
   async function bootstrap() {
-    const button = document.querySelector('[data-action="bootstrap"]');
+    const button = $('bootstrapBtn');
     setBusy(button, true, 'Inicializando...');
     try {
       const result = await modern('/bootstrap', { method: 'POST' });
@@ -328,7 +328,7 @@ pre{white-space:pre-wrap;background:#101827;color:#eaf0fa;padding:12px;border-ra
   }
 
   async function plan() {
-    const button = document.querySelector('[data-action="plan"]');
+    const button = $('planBtn');
     setBusy(button, true, 'Gerando...');
     try {
       const result = await modern('/autonomy-plan');
@@ -341,7 +341,7 @@ pre{white-space:pre-wrap;background:#101827;color:#eaf0fa;padding:12px;border-ra
   }
 
   async function campaign() {
-    const button = document.querySelector('[data-action="campaign"]');
+    const button = $('campaignBtn');
     const productId = $('pid').value.trim();
     if (!productId) {
       setOutput('campaignOut', 'Informe ou selecione um ID de produto.');
@@ -447,7 +447,7 @@ pre{white-space:pre-wrap;background:#101827;color:#eaf0fa;padding:12px;border-ra
   }
 
   async function runHunter() {
-    const button = document.querySelector('[data-action="hunter"]');
+    const button = $('hunterBtn');
     const out = $('hunterOut');
     out.className = 'notice';
     out.textContent = 'Executando Hunter...';
