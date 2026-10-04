@@ -1,4 +1,4 @@
-﻿import { Request, Response } from 'express';
+import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -7,13 +7,13 @@ export const debugCriativo = async (req: Request, res: Response) => {
   try {
     const debug: any = { sucesso: false, etapas: [] };
 
-    // Etapa 1: Verificar conexÃ£o com banco
-    debug.etapas.push({ etapa: '1. ConexÃ£o Prisma', status: 'testando' });
+    // Etapa 1: Verificar conexão com banco
+    debug.etapas.push({ etapa: '1. Conexão Prisma', status: 'testando' });
     try {
       await prisma.$connect();
-      debug.etapas.push({ etapa: '1. ConexÃ£o Prisma', status: 'OK' });
+      debug.etapas.push({ etapa: '1. Conexão Prisma', status: 'OK' });
     } catch (e: any) {
-      debug.etapas.push({ etapa: '1. ConexÃ£o Prisma', status: 'FALHOU', erro: e.message });
+      debug.etapas.push({ etapa: '1. Conexão Prisma', status: 'FALHOU', erro: e.message });
       return res.json(debug);
     }
 
