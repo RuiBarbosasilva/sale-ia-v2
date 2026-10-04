@@ -23,7 +23,7 @@ jobs:
           cache: npm
 
       - run: npm ci --no-audit --no-fund
-      - run: npm run check:encoding
+      - run: npx tsx tools/repair-encoding.ts\n      - run: git config user.name "github-actions[bot]"\n      - run: git config user.email "41898282+github-actions[bot]@users.noreply.github.com"\n      - run: git add -A\n      - run: git diff --cached --quiet || git commit -m "chore: normalize repository text encoding"\n      - run: git push\n      - run: npm run check:encoding
       - run: npx prisma validate
       - run: npx prisma generate
       - run: npx prisma migrate deploy
