@@ -1,8 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../modules/mercadoLivre/lib/prisma';
 import JSZip from 'jszip';
 import path from 'path';
 
-const prisma = new PrismaClient();
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 const MAX_UNCOMPRESSED_BYTES = 50 * 1024 * 1024;
 const MAX_FILES = 250;
