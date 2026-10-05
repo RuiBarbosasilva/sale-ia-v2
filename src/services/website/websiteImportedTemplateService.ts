@@ -56,9 +56,16 @@ async function inlineZipAssets(html: string, files: Map<string,Buffer>, document
     const link = new RegExp(`<link[^>]+href=["']([^"']*)${escaped}[^>]*>`, 'i');
     if (!link.test(out)) continue;
     let css = data.toString('utf8');
+    const cssDir = path.posix.dirname(cssPath);
+    const resolveCss = (raw: string): string|null => {
+      const clean = raw.trim().replace(/^['\"]|['\"]$/g,'').split('#')[0].split('?')[0];
+      if (!clean || /^(https?:|data:|mailto:|tel:|javascript:|#)/i.test(clean)) return null;
+      const candidates = [clean, clean.replace(/^\.\//,''), clean.replace(/^\//,''), path.posix.normalize(path.posix.join(cssDir, clean)).replace(/^\.\//,'')];
+      return candidates.find(candidate => files.has(candidate)) || null;
+    };
     css = css.replace(/url\(([^)]+)\)/gi, (full,raw) => {
-      const path = resolve(raw); if (!path) return full;
-      return 'url(data:' + mimeFor(path) + ';base64,' + files.get(path)!.toString('base64') + ')';
+      const assetPath = resolveCss(raw); if (!assetPath) return full;
+      return 'url(data:' + mimeFor(assetPath) + ';base64,' + files.get(assetPath)!.toString('base64') + ')';
     });
     out = out.replace(link, '<style data-imported-template-css>' + css + '</style>');
   }
