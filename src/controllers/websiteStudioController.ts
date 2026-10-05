@@ -1,4 +1,4 @@
-﻿
+
 // Helper function for image extension guessing (forbidden as 'private' inside object literal)
 function guessExtHelper(url: string, mime?: string): string {
   const u = url.toLowerCase();
