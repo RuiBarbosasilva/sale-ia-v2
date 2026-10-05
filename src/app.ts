@@ -113,6 +113,7 @@ app.use('/api/rb-factory-sales-autonomy', rbFactorySalesAutonomyRoutes);
 app.use('/api/rb-factory-maintenance', rbFactorySiteMaintenanceRoutes);
 
 app.use('/api/rb-factory-commercial', rbFactoryCommercialRoutes);
+app.use('/go', trackingRoutes);
 app.use('/go', affiliatePublicRoutes);
 app.use('/api/mercadolivre', mlRoutes);
 app.use('/api/credenciais', credenciaisRoutes);
@@ -122,7 +123,6 @@ app.use('/dashboard', dashboardRoutes);
 // ROTAS DO MÓDULO AFILIADOS IA E OUTROS
 // (DEVEM VIR ANTES DO errorHandler)
 // ==========================================
-app.use('/go', trackingRoutes);
 app.post('/api/affiliates/webhook/:provider', handleAffiliateWebhook);
 app.use('/api/factory-ebook', factoryEbookRoutes);
 app.use('/api/afiliados', afiliadosIaRoutes);
