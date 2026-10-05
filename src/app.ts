@@ -113,7 +113,6 @@ app.use('/api/rb-factory-sales-autonomy', rbFactorySalesAutonomyRoutes);
 app.use('/api/rb-factory-maintenance', rbFactorySiteMaintenanceRoutes);
 
 app.use('/api/rb-factory-commercial', rbFactoryCommercialRoutes);
-app.use('/go', trackingRoutes);
 app.use('/go', affiliatePublicRoutes);
 app.use('/api/mercadolivre', mlRoutes);
 app.use('/api/credenciais', credenciaisRoutes);
