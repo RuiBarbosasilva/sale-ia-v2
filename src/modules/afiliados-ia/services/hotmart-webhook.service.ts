@@ -25,7 +25,7 @@ export class HotmartWebhookService {
         }
       });
 
-      // Se não existir, cria um registro bÃ¡sico
+      // Se não existir, cria um registro básico
       if (!produtoAfiliado) {
         produtoAfiliado = await prisma.afiliadoProduto.create({
           data: {
