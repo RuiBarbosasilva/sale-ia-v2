@@ -1,4 +1,4 @@
-﻿import { prisma } from '../../mercadoLivre/lib/prisma';
+import { prisma } from '../../mercadoLivre/lib/prisma';
 
 const AIDA_TEMPLATES: any = {
   saude: {
