@@ -37,7 +37,6 @@ import rbFactoryCommercialRoutes from './routes/rbFactoryCommercialRoutes';
 // [DESABILITADO TEMPORARIAMENTE] import { startRbFactoryMaintenanceJob } from './jobs/rbFactoryMaintenanceJob';
 import { afiliadosIaRoutes } from './modules/afiliados-ia/afiliados-ia.routes';
 import { factoryEbookRoutes } from './modules/factory-ebook/factory-ebook.routes';
-import trackingRoutes from './modules/afiliados-ia/routes/tracking.routes';
 import produtosRoutes from './modules/afiliados-ia/routes/produtos.routes';
 import { handleAffiliateWebhook } from './modules/afiliados-ia/controllers/webhook.controller';
 import contentGeneratorRoutes from './modules/afiliados-ia/routes/contentGenerator.routes';
