@@ -4,6 +4,7 @@ import dashboardRoutes from './routes/dashboardRoutes';
 import affiliateRoutes from './routes/affiliateRoutes';
 import { credenciaisRoutes } from './modules/credenciais/credenciais.routes';
 import prospectingRoutes from './routes/prospectingRoutes';
+import websiteRoutes from './routes/websiteRoutes';
 
 import affiliateIntelligenceRoutes from './routes/affiliateIntelligenceRoutes';
 import affiliateActionRoutes from './routes/affiliateActionRoutes';
@@ -88,6 +89,7 @@ app.use('/generated-images', express.static('storage/generated-images'));
 
 app.use('/api', apiRoutes);
 app.use('/api/websites/prospecting', prospectingRoutes);
+app.use('/api/websites', websiteRoutes);
 app.use('/api/affiliates', affiliateRoutes);
 app.use('/api/affiliate', affiliateRoutes);
 app.use('/api/affiliate-intelligence', affiliateIntelligenceRoutes);
