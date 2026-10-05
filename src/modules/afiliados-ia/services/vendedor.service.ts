@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../../mercadoLivre/lib/prisma';
 
 export class VendedorVirtualService {
   async gerarFluxoVendas(produtoId: string) {
@@ -12,8 +10,8 @@ export class VendedorVirtualService {
     const categoria = produto.categoria;
 
     const objecao = categoria === 'saude' 
-      ? 'Muita gente pergunta se funciona. Esse produto tem fórmula aprovada e garantia de 30 dias. Se não gostar, devolvemos seu dinheiro.'
-      : 'Muita gente pergunta sobre a qualidade. Esse produto tem garantia do fabricante e milhares de avaliações 5 estrelas.';
+      ? 'Muita gente pergunta se funciona. Esse produto tem informações claras sobre o produto e as condições de garantia informadas pelo fabricante.'
+      : 'Muita gente pergunta sobre a qualidade. Esse produto tem as condições de garantia e as avaliações disponíveis na página do produto.';
 
     const fluxo = {
       mensagemBoasVindas: 'Olá! 👋 Vi que você tem interesse no *' + nome + '*.\n\nÉ uma excelente escolha! Ele é perfeito para quem busca qualidade e resultado rápido.',
