@@ -1,8 +1,7 @@
-﻿import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { Router, Request, Response } from 'express';
+import { prisma } from '../../../modules/mercadoLivre/lib/prisma';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 /**
  * Rota de redirecionamento e tracking de afiliados
