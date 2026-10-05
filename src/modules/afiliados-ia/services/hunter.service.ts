@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../mercadoLivre/lib/prisma';
 import { KiwifyAPI } from '../integrations/kiwify.api';
 import { BraipAPI } from '../integrations/braip.api';
 import { ClickbankAPI } from '../integrations/clickbank.api';
-
-const prisma = new PrismaClient();
 const kiwifyAPI = new KiwifyAPI();
 const braipAPI = new BraipAPI();
 const clickbankAPI = new ClickbankAPI();
