@@ -3,7 +3,7 @@ import { affiliateService } from '../services/affiliateService';
 import { timingSafeSecret } from '../middlewares/security';
 
 function adminGuard(req: Request, res: Response) {
-  const expected = process.env.AFFILIATE_ADMIN_KEY;
+  const expected = process.env.AFFILIATE_ADMIN_KEY || process.env.SALE_IA_ADMIN_KEY;
   if (!timingSafeSecret(expected, req.header('x-affiliate-admin-key'))) {
     res.status(401).json({ success: false, error: 'ADMIN_UNAUTHORIZED', requestId: (req as any).requestId });
     return false;
