@@ -18,8 +18,10 @@ function mimeFor(path: string): string {
 function safeZipPath(name: string): string {
   const normalized = name.replace(/\\/g, '/').replace(/^\/+/, '');
   const parts = normalized.split('/');
-  if (parts.some(p => p === '..' || p === '.')) throw new Error('ZIP contém caminho inseguro');
-  return parts.join('/');
+  if (parts.some(p => p === '..')) throw new Error('ZIP contém caminho inseguro');
+  const cleaned = parts.filter(p => p.length > 0 && p !== '.');
+  if (!cleaned.length) throw new Error('ZIP contém caminho inválido');
+  return cleaned.join('/');
 }
 async function inlineZipAssets(html: string, files: Map<string,Buffer>, documentPath: string): Promise<string> {
   const resolve = (raw: string): string|null => {
