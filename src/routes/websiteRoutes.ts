@@ -1,4 +1,4 @@
-﻿import { websiteStudioController } from '../controllers/websiteStudioController';
+import { websiteStudioController } from '../controllers/websiteStudioController';
 import { Router } from 'express';
 import { adminAuthorization } from '../middlewares/security';
 import { websiteController } from '../controllers/websiteController';
