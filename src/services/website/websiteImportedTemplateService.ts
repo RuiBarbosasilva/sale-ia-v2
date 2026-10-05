@@ -22,11 +22,18 @@ function safeZipPath(name: string): string {
   if (parts.some(p => p === '..' || p === '.')) throw new Error('ZIP contém caminho inseguro');
   return parts.join('/');
 }
-async function inlineZipAssets(html: string, files: Map<string,Buffer>): Promise<string> {
+async function inlineZipAssets(html: string, files: Map<string,Buffer>, documentPath: string): Promise<string> {
   const resolve = (raw: string): string|null => {
     const clean = raw.trim().replace(/^['"]|['"]$/g,'').split('#')[0].split('?')[0];
     if (!clean || /^(https?:|data:|mailto:|tel:|javascript:|#)/i.test(clean)) return null;
-    const candidates = [clean, clean.replace(/^\.\//,''), clean.replace(/^\//,'')];
+    const documentDir = path.posix.dirname(documentPath);
+    const candidates = [
+      clean,
+      clean.replace(/^\.\//,''),
+      clean.replace(/^\//,''),
+      path.posix.normalize(path.posix.join(documentDir, clean)).replace(/^\.\//,''),
+      path.posix.normalize(path.posix.join(documentDir, clean.replace(/^\.\//,''))).replace(/^\.\//,'')
+    ];
     for (const c of candidates) if (files.has(c)) return c;
     return null;
   };
@@ -95,7 +102,7 @@ export class WebsiteImportedTemplateService {
       }
       const indexName=[...files.keys()].find(k=>/^index\.html?$/i.test(k))||[...files.keys()].find(k=>/(^|\/)index\.html?$/i.test(k));
       if(!indexName) throw new Error('ZIP precisa conter um index.html');
-      html=await inlineZipAssets(files.get(indexName)!.toString('utf8'),files);
+      html=await inlineZipAssets(files.get(indexName)!.toString('utf8'),files,indexName);
     } else {
       if(!/\.html?$/i.test(original)&&!/text\/html/i.test(file.mimetype)) throw new Error('Envie um arquivo .html ou .htm');
       html=file.buffer.toString('utf8');
