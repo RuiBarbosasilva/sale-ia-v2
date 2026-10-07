@@ -25,7 +25,9 @@ export class PDFGeneratorService {
         fs.mkdirSync(baseDir, { recursive: true });
       }
 
-      const safeName = config.titulo.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const titulo = typeof config.titulo === 'string' ? config.titulo.trim() : '';
+      if (!titulo) return { sucesso: false, erro: 'Título do livro é obrigatório' };
+      const safeName = titulo.replace(/[^a-z0-9]/gi, '_').toLowerCase();
       const fileName = safeName + '_' + Date.now();
       const pdfPath = path.join(baseDir, fileName + '.pdf');
       const metadataPath = path.join(baseDir, fileName + '_metadata.json');
@@ -37,7 +39,7 @@ export class PDFGeneratorService {
       const doc = new PDFDocument({ 
         size: [width, height], 
         margins: { top: 36, bottom: 36, left: 36, right: 36 },
-        info: { Title: config.titulo, Author: config.autor || 'RB Factory' }
+        info: { Title: titulo, Author: config.autor || 'RB Factory' }
       });
 
       const stream = fs.createWriteStream(pdfPath);
@@ -81,7 +83,7 @@ export class PDFGeneratorService {
       return new Promise((resolve, reject) => {
         stream.on('finish', () => {
           const metadata = {
-            titulo: config.titulo,
+            titulo,
             subtitulo: config.subtitulo || '',
             autor: config.autor || 'RB Factory',
             tema: config.tema,
