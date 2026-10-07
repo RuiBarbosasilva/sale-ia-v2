@@ -27,7 +27,7 @@ export const syncOrders = async (req: Request, res: Response) => {
     });
   } catch (error) {
     const code = error instanceof Error && error.message === 'INVALID_PAGINATION' ? 'INVALID_PAGINATION' : 'MERCADO_LIVRE_ORDERS_SYNC_ERROR';
-    return res.status(code === 'INVALID_PAGINATION' ? 400 : 500).json({ success: false, error: code, requestId: (req as any).requestId });
+    return res.status(code === 'INVALID_PAGINATION' ? 400 : 500).json({ success: false, error: code, requestId: (req as Request & { requestId?: string }).requestId });
   }
 };
 
@@ -45,6 +45,6 @@ export const listOrders = async (req: Request, res: Response) => {
     return res.json({ success: true, account: { id: account.id, nickname: account.nickname, mlUserId: account.mlUserId }, ...result });
   } catch (error) {
     const code = error instanceof Error && error.message === 'INVALID_PAGINATION' ? 'INVALID_PAGINATION' : 'MERCADO_LIVRE_ORDERS_ERROR';
-    return res.status(code === 'INVALID_PAGINATION' ? 400 : 500).json({ success: false, error: code, requestId: (req as any).requestId });
+    return res.status(code === 'INVALID_PAGINATION' ? 400 : 500).json({ success: false, error: code, requestId: (req as Request & { requestId?: string }).requestId });
   }
 };
