@@ -86,7 +86,10 @@ export const callback = async (req: Request, res: Response) => {
       validateStatus: status => status >= 200 && status < 300,
     });
 
-    const accessToken = tokenResponse.data?.access_token;
+    const accessToken = typeof tokenResponse.data?.access_token === 'string' ? tokenResponse.data.access_token : '';
+    if (!accessToken || accessToken.length > 4096) {
+      throw new Error('MERCADO_LIVRE_ACCESS_TOKEN_INVALID');
+    }
     const userResponse = await axios.get(ML_USER_URL, {
       headers: { Authorization: `Bearer ${accessToken}` },
       timeout: 15000,
@@ -117,7 +120,7 @@ export const callback = async (req: Request, res: Response) => {
     await tokenService.saveInitialTokens(account.id, tokenResponse.data);
 
     return res.redirect('/dashboard/mercadolivre?status=success');
-  } catch (error) {
+  } catch (error: unknown) {
     const status = axios.isAxiosError(error) ? error.response?.status : undefined;
     console.warn('[ML OAuth] callback failed', {
       requestId: (req as Request & { requestId?: string }).requestId,
