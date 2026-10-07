@@ -27,13 +27,14 @@ export class PDFGeneratorService {
 
       const titulo = typeof config.titulo === 'string' ? config.titulo.trim() : '';
       if (!titulo) return { sucesso: false, erro: 'Título do livro é obrigatório' };
-      const safeName = titulo.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const safeName = titulo.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '').toLowerCase().slice(0, 100) || 'ebook';
       const fileName = safeName + '_' + Date.now();
       const pdfPath = path.join(baseDir, fileName + '.pdf');
       const metadataPath = path.join(baseDir, fileName + '_metadata.json');
 
       const tamanhos: Record<NonNullable<EbookConfig['tamanho']>, [number, number]> = { '8.5x11': [612, 792], '6x9': [432, 648], '8x10': [576, 720] };
-      const [width, height] = tamanhos[config.tamanho || '8.5x11'];
+      const tamanho = config.tamanho || '8.5x11';
+      const [width, height] = tamanhos[tamanho];
 
       // Agora o PDFDocument vai funcionar corretamente como construtor
       const doc = new PDFDocument({ 
@@ -51,7 +52,7 @@ export class PDFGeneratorService {
       doc.fontSize(24).text('_________________________________', { align: 'center' });
       
       // Paginas de desenho: usa imagens reais quando fornecidas pelo pipeline.
-      const numPaginas = Math.max(1, Math.min(500, Number(config.numeroPaginas) || 10));
+      const numPaginas = Math.max(1, Math.min(200, Number(config.numeroPaginas) || 10));
       const imagens = Array.isArray(config.imagens) ? config.imagens : [];
       const prompts = Array.isArray(config.promptsImagem) ? config.promptsImagem : [];
       for (let i = 1; i <= numPaginas; i++) {
