@@ -135,9 +135,12 @@ export const affiliateIntelligenceService = {
   async opportunities(status?:string){ return prisma.affiliateOpportunity.findMany({where:status?{status}:undefined,orderBy:[{score:'desc'},{createdAt:'desc'}],take:200,include:{product:{include:{network:{select:{name:true,slug:true}}}}}}); },
   async campaigns(status?:string){ return prisma.affiliateCampaign.findMany({where:status?{status}:undefined,orderBy:{createdAt:'desc'},take:100,include:{product:{select:{id:true,name:true,opportunityScore:true}},contents:{orderBy:{createdAt:'desc'}},actions:{orderBy:{createdAt:'desc'}}}}); },
   async createCampaign(input: Record<string, any>){
-    const product=await prisma.affiliateProduct.findUnique({where:{id:input.productId}}); if(!product) throw new Error('PRODUCT_NOT_FOUND');
+    const productId=String(input.productId||'').trim();
+    if (!productId) throw new Error('PRODUCT_ID_REQUIRED');
+    const product=await prisma.affiliateProduct.findUnique({where:{id:productId}}); if(!product) throw new Error('PRODUCT_NOT_FOUND');
     const name=String(input.name || (product.name + ' - campanha de vendas')).trim();
     if(!name) throw new Error('CAMPAIGN_NAME_REQUIRED');
+    if (name.length > 200) throw new Error('CAMPAIGN_NAME_TOO_LONG');
     const landingPageUrl=input.landingPageUrl||product.affiliateUrl||product.salesPageUrl||product.url||null;
     const existing=await prisma.affiliateCampaign.findFirst({where:{productId:product.id,name,status:{in:['DRAFT','ACTIVE']}}});
     if(existing){
