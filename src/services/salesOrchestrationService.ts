@@ -66,13 +66,13 @@ export const salesOrchestrationService = {
     await init();
     return (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesExperiment" ORDER BY createdAt DESC LIMIT 200');
   },
-  async createExperiment(input:any){
+  async createExperiment(input: unknown){
     await init();
     const v=[id(),String(input.name||'Experimento'),String(input.hypothesis||''),String(input.metric||'conversion_rate'),input.variantA||null,input.variantB||null,input.status||'PLANNED',input.target==null?null:n(input.target)];
     await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesExperiment" ("id","name","hypothesis","metric","variantA","variantB","status","target") VALUES (?,?,?,?,?,?,?,?)',...v);
     return (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesExperiment" WHERE id=?',v[0]);
   },
-  async recordMetric(input:any){
+  async recordMetric(input: unknown){
     await init();
     const v=[id(),String(input.metric||'unknown'),n(input.value),input.source||null,input.referenceId||null,input.occurredAt||new Date().toISOString()];
     await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesMetric" ("id","metric","value","source","referenceId","occurredAt") VALUES (?,?,?,?,?,?)',...v);
