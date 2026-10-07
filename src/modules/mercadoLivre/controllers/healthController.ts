@@ -1,4 +1,4 @@
-﻿// src/modules/mercadoLivre/controllers/healthController.ts
+// src/modules/mercadoLivre/controllers/healthController.ts
 import { Request, Response } from 'express';
 import axios from 'axios';
 import { prisma } from '../lib/prisma';
@@ -122,9 +122,9 @@ export const healthCheck = async (_req: Request, res: Response) => {
     });
   } catch (error: unknown) {
     console.error('[ML Health] ❌ Erro crítico:', error instanceof Error ? error.message : 'UNKNOWN_ERROR');
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'MERCADO_LIVRE_HEALTH_CHECK_FAILED',
-      message: error instanceof Error ? error.message : 'UNKNOWN_ERROR' 
+      message: 'Erro ao verificar a saúde do Mercado Livre'
     });
   }
 };
