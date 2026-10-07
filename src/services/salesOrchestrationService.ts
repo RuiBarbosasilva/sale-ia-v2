@@ -46,6 +46,9 @@ async function init() {
 
 function id(){ return crypto.randomUUID(); }
 function n(v: unknown){ const x=Number(v); return Number.isFinite(x)?x:0; }
+function text(v: unknown, max: number, fallback = '') {
+  return typeof v === 'string' ? v.trim().slice(0, max) : fallback;
+}
 
 export const salesOrchestrationService = {
   async offers(){
@@ -54,7 +57,8 @@ export const salesOrchestrationService = {
   },
   async createOffer(input: unknown){
     await init();
-    const v=[id(),String(input.name||'Oferta'),String(input.channel||'WEB'),input.productType||null,input.price==null?null:n(input.price),input.monthlyPrice==null?null:n(input.monthlyPrice),input.currency||'BRL',input.metadata?JSON.stringify(input.metadata):null];
+    const data = input && typeof input === 'object' ? input as Record<string, unknown> : {};
+    const v=[id(),text(data.name,200,'Oferta'),text(data.channel,40,'WEB'),text(data.productType,120)||null,data.price==null?null:n(data.price),data.monthlyPrice==null?null:n(data.monthlyPrice),text(data.currency,8,'BRL'),null];
     await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesOffer" ("id","name","channel","productType","price","monthlyPrice","currency","metadata") VALUES (?,?,?,?,?,?,?,?)',...v);
     return (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesOffer" WHERE id=?',v[0]);
   },
