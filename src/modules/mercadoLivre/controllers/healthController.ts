@@ -85,11 +85,21 @@ export const healthCheck = async (_req: Request, res: Response) => {
       }
     }
 
-    // 4. Buscar última sincronização
-    const lastSync = await prisma.mercadoLivreOrder.findFirst({
-      orderBy: { lastSyncedAt: 'desc' },
-      select: { lastSyncedAt: true }
-    });
+    // 4. Buscar a sincronização mais recente entre pedidos e anúncios
+    const [lastOrderSync, lastItemSync] = await Promise.all([
+      prisma.mercadoLivreOrder.findFirst({
+        orderBy: { lastSyncedAt: 'desc' },
+        select: { lastSyncedAt: true }
+      }),
+      prisma.mercadoLivreItem.findFirst({
+        orderBy: { lastSyncedAt: 'desc' },
+        select: { lastSyncedAt: true }
+      })
+    ]);
+    const lastSync = [lastOrderSync?.lastSyncedAt, lastItemSync?.lastSyncedAt].reduce<Date | null>(
+      (latest, date) => (!date || (latest && latest.getTime() >= date.getTime()) ? latest : date),
+      null
+    );
 
     // 5. Retornar health check completo
     res.json({
