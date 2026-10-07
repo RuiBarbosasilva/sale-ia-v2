@@ -82,6 +82,9 @@ export const healthCheck = async (_req: Request, res: Response) => {
       } else if (['ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_AGAIN'].includes(error.code)) {
         apiReachable = false;
         authenticationValid = false;
+      } else {
+        apiReachable = true;
+        authenticationValid = false;
       }
     }
 
