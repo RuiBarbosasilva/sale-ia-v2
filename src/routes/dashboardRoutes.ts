@@ -99,14 +99,14 @@ router.get('/operations', adminAuthorization, async (_req, res) => {
     modules: [
       { id: 'core', name: 'Núcleo / infraestrutura', weight: 10, score: 100 },
       { id: 'rb-factory', name: 'RB Factory Sites', weight: 15, score: 90 },
-      { id: 'afiliados', name: 'Afiliados + IA', weight: 15, score: 50 },
+      { id: 'afiliados', name: 'Afiliados + IA', weight: 15, score: 85 },
       { id: 'sales', name: 'Senior Sales Agent', weight: 10, score: 85 },
       { id: 'hunter', name: 'Hunter / Oportunidades', weight: 10, score: 90 },
       { id: 'editorial', name: 'Editorial / E-book', weight: 10, score: 75 },
       { id: 'mercadolivre', name: 'Mercado Livre', weight: 10, score: 75 },
-      { id: 'autonomy', name: 'Automações / autonomia', weight: 10, score: 50 },
+      { id: 'autonomy', name: 'Automações / autonomia', weight: 10, score: 80 },
       { id: 'dashboard', name: 'Dashboards / operação', weight: 5, score: 95 },
-      { id: 'production', name: 'Produção / segurança / integrações', weight: 5, score: 55 }
+      { id: 'production', name: 'Produção / segurança / integrações', weight: 5, score: 80 }
     ]
   };
 
