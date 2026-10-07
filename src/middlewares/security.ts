@@ -116,7 +116,7 @@ export function adminAuthorization(req: Request, res: Response, next: NextFuncti
 }
 
 export function requestId(req: Request, res: Response, next: NextFunction) {
-  const incoming = String(req.header('x-request-id') || '');
+  const incoming = String(req.header('x-request-id') || '').trim();
   const id = /^[A-Za-z0-9._:-]{1,100}$/.test(incoming) ? incoming : crypto.randomUUID();
   res.setHeader('X-Request-Id', id);
   (req as any).requestId = id;
