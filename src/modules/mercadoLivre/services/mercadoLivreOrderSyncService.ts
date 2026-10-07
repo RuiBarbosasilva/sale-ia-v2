@@ -184,8 +184,8 @@ export class MercadoLivreOrderSyncService {
         }
       }
 
-      stats.success = true;
-      console.log('[ML Orders Sync] ✅ Sincronização concluída com sucesso');
+      stats.success = stats.failed === 0;
+      console.log('[ML Orders Sync] ' + (stats.success ? '✅ Sincronização concluída com sucesso' : '⚠️ Sincronização concluída com falhas parciais'));
       console.log(`[ML Orders Sync] 📊 Estatísticas:`);
       console.log(`[ML Orders Sync]   Total encontrados: ${stats.totalFound}`);
       console.log(`[ML Orders Sync]   Criados: ${stats.created}`);
