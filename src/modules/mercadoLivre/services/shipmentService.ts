@@ -106,7 +106,8 @@ export class ShipmentService {
       // 3. Buscar todos os pedidos sincronizados
       const orders = await prisma.mercadoLivreOrder.findMany({
         where: { accountId },
-        select: { mlOrderId: true, status: true }
+        select: { mlOrderId: true, status: true },
+        orderBy: { lastSyncedAt: 'desc' }
       });
 
       console.log(`[ML Shipments] 📦 ${orders.length} pedidos encontrados para processar`);
