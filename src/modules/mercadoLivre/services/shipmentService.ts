@@ -23,7 +23,7 @@ export class ShipmentService {
     const accessToken = await tokenService.getValidToken(accountId);
     const client = new MercadoLivreClient(
       accessToken,
-      () => tokenService.refreshToken(accountId, 'placeholder')
+      () => tokenService.getValidToken(accountId)
     );
 
     const data = await client.getShipment<any>(shipmentId);
@@ -100,7 +100,7 @@ export class ShipmentService {
       const accessToken = await tokenService.getValidToken(accountId);
       const client = new MercadoLivreClient(
         accessToken,
-        () => tokenService.refreshToken(accountId, 'placeholder')
+        () => tokenService.getValidToken(accountId)
       );
 
       // 3. Buscar todos os pedidos sincronizados
