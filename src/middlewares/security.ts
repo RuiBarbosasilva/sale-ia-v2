@@ -32,7 +32,7 @@ function pruneRateLimitBuckets(now: number) {
   }
   if (rateLimitBuckets.size >= RATE_LIMIT_MAX_KEYS) {
     const oldest = rateLimitBuckets.keys().next().value;
-    if (oldest) rateLimitBuckets.delete(oldest);
+    if (typeof oldest === 'string') rateLimitBuckets.delete(oldest);
   }
 }
 
