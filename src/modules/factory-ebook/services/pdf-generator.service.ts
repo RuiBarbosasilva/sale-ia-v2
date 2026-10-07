@@ -2,8 +2,23 @@ import PDFDocument = require('pdfkit');
 import * as fs from 'fs';
 import * as path from 'path';
 
+type EbookImage = string | { filePath?: string };
+
+type EbookConfig = {
+  titulo: string;
+  subtitulo?: string;
+  autor?: string;
+  tema?: string;
+  tamanho?: '8.5x11' | '6x9' | '8x10';
+  numeroPaginas?: number;
+  capaDura?: boolean;
+  imagens?: EbookImage[];
+  promptsImagem?: string[];
+  coverPath?: string;
+};
+
 export class PDFGeneratorService {
-  async gerarLivroColorir(config: any) {
+  async gerarLivroColorir(config: EbookConfig) {
     try {
       const baseDir = path.resolve(process.cwd(), 'output', 'factory-ebook');
       if (!fs.existsSync(baseDir)) {
@@ -15,8 +30,8 @@ export class PDFGeneratorService {
       const pdfPath = path.join(baseDir, fileName + '.pdf');
       const metadataPath = path.join(baseDir, fileName + '_metadata.json');
 
-      const tamanhos: any = { '8.5x11': [612, 792], '6x9': [432, 648], '8x10': [576, 720] };
-      const [width, height] = tamanhos[config.tamanho] || tamanhos['8.5x11'];
+      const tamanhos: Record<NonNullable<EbookConfig['tamanho']>, [number, number]> = { '8.5x11': [612, 792], '6x9': [432, 648], '8x10': [576, 720] };
+      const [width, height] = tamanhos[config.tamanho || '8.5x11'];
 
       // Agora o PDFDocument vai funcionar corretamente como construtor
       const doc = new PDFDocument({ 
