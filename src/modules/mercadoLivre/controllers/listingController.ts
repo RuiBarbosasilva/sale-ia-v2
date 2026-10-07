@@ -59,6 +59,9 @@ export const getItem = async (req: Request, res: Response) => {
 
 export const createListing = async (req: Request, res: Response) => {
   try {
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+      return res.status(400).json({ error: 'INVALID_LISTING_PAYLOAD', requestId: (req as Request & { requestId?: string }).requestId });
+    }
     const account = await getActiveAccount();
     if (!account) return res.status(404).json({ error: 'MERCADO_LIVRE_ACCOUNT_NOT_FOUND' });
     const { accountId: _accountId, ...listingData } = req.body || {};
@@ -71,6 +74,9 @@ export const createListing = async (req: Request, res: Response) => {
 
 export const updateListing = async (req: Request, res: Response) => {
   try {
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+      return res.status(400).json({ error: 'INVALID_LISTING_PAYLOAD', requestId: (req as Request & { requestId?: string }).requestId });
+    }
     const id = validateItemId(req.params.id);
     const account = await getActiveAccount();
     if (!account) return res.status(404).json({ error: 'MERCADO_LIVRE_ACCOUNT_NOT_FOUND' });
