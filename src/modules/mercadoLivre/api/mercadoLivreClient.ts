@@ -78,7 +78,7 @@ export class MercadoLivreClient {
   }
 
   async getShipment<T>(shipmentId: string): Promise<T> {
-    const response = await this.client.get<T>(`/shipments/${shipmentId}`, {
+    const response = await this.client.get<T>(`/shipments/${encodeURIComponent(shipmentId)}`, {
       headers: { 'x-format-new': 'true' }
     });
     return response.data;
