@@ -66,7 +66,7 @@ export class MercadoLivreClient {
     );
   }
 
-  async get<T>(url: string, params?: any): Promise<T> {
+  async get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
     const response = await this.client.get<T>(url, { params });
     return response.data;
   }
