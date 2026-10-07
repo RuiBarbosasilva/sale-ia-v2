@@ -105,6 +105,9 @@ export class MercadoLivreSyncService {
    * Upsert idempotente por mlItemId (usado pelo sync em lote E pelo worker).
    */
   private async upsertItemFromApi(accountId: string, item: any): Promise<'created' | 'updated'> {
+    if (item?.id === undefined || item?.id === null || item?.id === '') {
+      throw new Error('ITEM_ID_MISSING');
+    }
     const itemId = String(item.id);
     const dbData = {
       accountId,
