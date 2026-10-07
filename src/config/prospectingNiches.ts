@@ -1,4 +1,4 @@
-﻿// src/config/prospectingNiches.ts
+// src/config/prospectingNiches.ts
 // Lista centralizada de nichos - adicione/remova aqui
 
 export const PROSPECTING_NICHES: string[] = [

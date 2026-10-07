@@ -1,4 +1,4 @@
-﻿// src/modules/mercadoLivre/auth/oauthStateService.ts
+// src/modules/mercadoLivre/auth/oauthStateService.ts
 import crypto from 'crypto';
 
 interface StateRecord {

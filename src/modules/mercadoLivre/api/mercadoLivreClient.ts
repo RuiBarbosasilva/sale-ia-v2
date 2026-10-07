@@ -1,4 +1,4 @@
-﻿// src/modules/mercadoLivre/api/mercadoLivreClient.ts
+// src/modules/mercadoLivre/api/mercadoLivreClient.ts
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 const BASE_URL = process.env.MERCADOLIVRE_API_BASE_URL || 'https://api.mercadolibre.com';

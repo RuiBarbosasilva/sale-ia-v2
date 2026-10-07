@@ -1,4 +1,4 @@
-﻿// src/modules/mercadoLivre/auth/tokenService.ts
+// src/modules/mercadoLivre/auth/tokenService.ts
 import { encrypt, decrypt } from '../security/secretStorageService';
 import axios from 'axios';
 import { prisma } from '../lib/prisma';

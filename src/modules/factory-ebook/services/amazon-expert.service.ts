@@ -344,7 +344,7 @@ export class AmazonExpertService {
         potencial: 8,
         exemplos: ['Flores', 'Jardins', 'Paisagens', 'Florestas', 'Frutas e Vegetais'],
         palavrasChave: ['flores para colorir', 'jardim encantado', 'paisagens'],
-        dicasEspeciais: 'Livros botânicos com detalhes realistas são tendência forte.'
+        dicasEspeciais: 'Livros botnicos com detalhes realistas são tendência forte.'
       },
       {
         nome: 'mindfulness',

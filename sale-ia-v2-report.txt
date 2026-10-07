@@ -1,1 +1,23 @@
-﻿
+﻿SALE-IA V2 - RELATORIO DE FINALIZACAO
+Data: 2026-10-07 18:43:12
+Projeto: C:\sale-ia-v2
+
+Node: v22.23.1
+Prisma validate : OK
+Typecheck       : OK
+Build           : OK
+Mojibake/BOM    : 1176 ocorrencias
+Git dirty       : True
+
+Proximos passos manuais (se houver FAIL):
+  1. Abra typecheck-errors.log e corrija os TS erros reais
+  2. Abra utf8-issues.log e re-salve os arquivos em UTF-8 sem BOM
+  3. Rode 'npx prisma migrate dev' SOMENTE se houver migration pendente legitima
+  4. Reexecute este script
+
+Arquivos gerados:
+  - sale-ia-v2-report.txt
+  - sale-ia-v2-finalizer.log
+  - typecheck-errors.log (se houver)
+  - utf8-issues.log (se houver)
+  - .sale-ia-backups/ (backups de schema.prisma, dev.db, package.json, .env)

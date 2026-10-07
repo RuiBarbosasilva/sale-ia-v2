@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Interface base para todos os provedores de afiliados (ClickBank, Hotmart, etc.)
  * Isso garante que o núcleo do sistema (controllers, services) não precise saber
  * os detalhes de implementação de cada plataforma.

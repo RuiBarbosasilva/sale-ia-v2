@@ -1,4 +1,4 @@
-﻿// src/controllers/dashboardController.ts
+// src/controllers/dashboardController.ts
 import { Request, Response } from 'express';
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
 

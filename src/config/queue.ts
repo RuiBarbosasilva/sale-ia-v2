@@ -1,4 +1,4 @@
-﻿import { Queue, Worker } from 'bullmq';
+import { Queue, Worker } from 'bullmq';
 import IORedis from 'ioredis';
 
 const isTestEnvironment =
