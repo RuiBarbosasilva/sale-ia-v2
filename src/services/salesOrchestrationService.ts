@@ -68,13 +68,19 @@ export const salesOrchestrationService = {
   },
   async createExperiment(input: unknown){
     await init();
-    const v=[id(),String(input.name||'Experimento'),String(input.hypothesis||''),String(input.metric||'conversion_rate'),input.variantA||null,input.variantB||null,input.status||'PLANNED',input.target==null?null:n(input.target)];
+    const data = input && typeof input === 'object' ? input as Record<string, unknown> : {};
+    const status = text(data.status,30,'PLANNED').toUpperCase();
+    const v=[id(),text(data.name,200,'Experimento'),text(data.hypothesis,2000),text(data.metric,120,'conversion_rate'),text(data.variantA,2000)||null,text(data.variantB,2000)||null,status,data.target==null?null:n(data.target)];
     await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesExperiment" ("id","name","hypothesis","metric","variantA","variantB","status","target") VALUES (?,?,?,?,?,?,?,?)',...v);
     return (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesExperiment" WHERE id=?',v[0]);
   },
   async recordMetric(input: unknown){
     await init();
-    const v=[id(),String(input.metric||'unknown'),n(input.value),input.source||null,input.referenceId||null,input.occurredAt||new Date().toISOString()];
+    const data = input && typeof input === 'object' ? input as Record<string, unknown> : {};
+    const occurredAt = typeof data.occurredAt === 'string' && !Number.isNaN(Date.parse(data.occurredAt))
+      ? new Date(data.occurredAt).toISOString()
+      : new Date().toISOString();
+    const v=[id(),text(data.metric,120,'unknown'),n(data.value),text(data.source,120)||null,text(data.referenceId,160)||null,occurredAt];
     await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesMetric" ("id","metric","value","source","referenceId","occurredAt") VALUES (?,?,?,?,?,?)',...v);
     return (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesMetric" WHERE id=?',v[0]);
   },
