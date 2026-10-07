@@ -22,8 +22,8 @@ export class SocialPublisherService {
     const hooks: any = {
       'Bastidores da criação': 'Você não vai acreditar em quanto tempo levei para criar este desenho de ' + nicho + '...',
       'Dica de colorir': 'Pare de estragar seus desenhos! Use esta dica simples para ' + nicho + '...',
-      'Desafio da semana': 'Duvido você colorir esta página de ' + nicho + ' em em menos de 10 minutos!',
-      'Depoimento (fictício para inspirar)': 'O que uma mãe disse depois que comprou este livro para o filho...',
+      'Desafio da semana': 'Duvido você colorir esta página de ' + nicho + ' em menos de 10 minutos!',
+      'Depoimento de cliente real': 'Compartilhe aqui um depoimento real e autorizado de um cliente sobre o livro.',
       'Antes e Depois': 'O resultado final deste desenho de ' + nicho + ' vai te deixar de queixo caído!'
     };
     return hooks[tema] || 'Olha só isso!';
