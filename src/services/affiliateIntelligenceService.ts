@@ -77,6 +77,8 @@ export const affiliateIntelligenceService = {
     if(!network) throw new Error('NETWORK_NOT_FOUND');
     const name=String(input.name||'').trim();
     const affiliateUrl=String(input.affiliateUrl||'').trim();
+    if (name.length > 200) throw new Error('AFFILIATE_PRODUCT_NAME_TOO_LONG');
+    if (affiliateUrl.length > 2048) throw new Error('AFFILIATE_URL_TOO_LONG');
     if(!name) throw new Error('AFFILIATE_PRODUCT_NAME_REQUIRED');
     if(!affiliateUrl) throw new Error('AFFILIATE_URL_REQUIRED');
 
