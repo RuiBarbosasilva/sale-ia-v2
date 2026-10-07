@@ -45,7 +45,7 @@ async function init() {
 }
 
 function id(){ return crypto.randomUUID(); }
-function n(v:any){ const x=Number(v); return Number.isFinite(x)?x:0; }
+function n(v: unknown){ const x=Number(v); return Number.isFinite(x)?x:0; }
 
 export const salesOrchestrationService = {
   async offers(){
