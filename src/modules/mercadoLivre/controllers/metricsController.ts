@@ -71,9 +71,10 @@ export async function fetchMLMetrics(): Promise<MLMetricsData | null> {
   ]);
 
   const syncDates = [lastItemSync?.lastSyncedAt, lastOrderSync?.lastSyncedAt].filter((date): date is Date => Boolean(date));
-  const lastSync = syncDates.length
-    ? new Date(Math.max(...syncDates.map((date) => date.getTime())))
-    : null;
+  const lastSync = syncDates.reduce<Date | null>(
+    (latest, date) => (!latest || date.getTime() > latest.getTime() ? date : latest),
+    null
+  );
 
   return {
     account: {
