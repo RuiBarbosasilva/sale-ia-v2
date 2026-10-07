@@ -93,7 +93,7 @@ router.get('/operations', adminAuthorization, async (_req, res) => {
   const overallScore = Math.round(modules.reduce((sum, module) => sum + module.score, 0) / modules.length);
 
   const projectCompleteness = {
-    score: 76,
+    score: 86,
     label: 'COMPLETUDE DO ECOSSISTEMA',
     definition: 'Índice de implementação do SALE-IA-V2 por módulos e capacidades planejadas. É independente da saúde operacional.',
     modules: [
