@@ -13,15 +13,21 @@ type CategoryMap = Record<string, string[]>;
 
 export class AmazonUploadAssistant {
   gerarMetadadosKDP(metadataLivro: LivroMetadata) {
+    const titulo = String(metadataLivro?.titulo || '').trim();
+    const tema = String(metadataLivro?.tema || '').trim();
+    if (!titulo || titulo.length > 200) throw new Error('Título do livro inválido');
+    if (!tema || tema.length > 120) throw new Error('Tema do livro inválido');
+    const paginas = Math.max(1, Math.min(500, Number(metadataLivro.paginas) || 0));
+    const tamanho = metadataLivro.tamanho === '6x9' || metadataLivro.tamanho === '8x10' || metadataLivro.tamanho === '8.5x11' ? metadataLivro.tamanho : '8.5x11';
     return {
-      titulo_completo: metadataLivro.titulo + (metadataLivro.subtitulo ? ': ' + metadataLivro.subtitulo : ''),
+      titulo_completo: titulo + (metadataLivro.subtitulo ? ': ' + String(metadataLivro.subtitulo).trim().slice(0, 200) : ''),
       autor: metadataLivro.autor,
-      descricao_html: this.formatarDescricaoAmazon(metadataLivro),
-      palavras_chave_7_slots: this.gerarKeywordsAmazon(metadataLivro.tema),
-      categorias: this.gerarCategoriasAmazon(metadataLivro.tema),
+      descricao_html: this.formatarDescricaoAmazon({ ...metadataLivro, titulo, tema, paginas, tamanho }),
+      palavras_chave_7_slots: this.gerarKeywordsAmazon(tema),
+      categorias: this.gerarCategoriasAmazon(tema),
       faixa_etaria: '3 - 8 anos',
       idioma: 'Português (Brasil)',
-      dimensoes: metadataLivro.tamanho === '8.5x11' ? '8.5 x 11 polegadas' : '8.5 x 11 polegadas',
+      dimensoes: tamanho === '6x9' ? '6 x 9 polegadas' : tamanho === '8x10' ? '8 x 10 polegadas' : '8.5 x 11 polegadas',
       tipo_capa: metadataLivro.capa,
       aviso_legal: 'Este é um livro de colorir. As imagens são destinadas a ser coloridas pelo usuário.'
     };
