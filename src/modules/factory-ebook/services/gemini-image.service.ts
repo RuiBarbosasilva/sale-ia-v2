@@ -7,7 +7,7 @@ export class GeminiImageService {
   private baseURL = 'https://generativelanguage.googleapis.com/v1';
 
   async gerarImagemUnica(prompt: string, fileName: string) {
-    if (!this.apiKey) return { sucesso: false, erro: 'GEMINI_API_KEY nao configurada no .env' };
+    if (!this.apiKey) return { sucesso: false, erro: 'GEMINI_API_KEY não configurada no .env' };
 
     try {
       // Adiciona sufixo para garantir estilo livro de colorir
@@ -39,7 +39,7 @@ export class GeminiImageService {
       // Fallback se a API retornar apenas texto (comum em chaves free sem imagem ativada)
       return { 
         sucesso: false, 
-        erro: 'A API retornou texto, mas nao imagem. Sua chave pode nao ter permissao para geracao de imagens ainda. Use o prompt abaixo em um gerador de imagens compatível: ' + promptOtimizado 
+        erro: 'A API retornou texto, mas não imagem. Sua chave pode nao ter permissao para geração de imagens ainda. Use o prompt abaixo em um gerador de imagens compatível: ' + promptOtimizado 
       };
     } catch (error: any) {
       console.error('[GeminiImage] Erro:', error.response?.data || error.message);
