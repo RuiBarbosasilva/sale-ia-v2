@@ -48,6 +48,7 @@ export const affiliateIntelligenceService = {
   async ingestProducts(networkId: string, products: Array<Record<string, any>>){
     const network=await prisma.affiliateNetwork.findUnique({where:{id:networkId}}); if(!network) throw new Error('NETWORK_NOT_FOUND');
     if (!Array.isArray(products)) throw new Error('PRODUCTS_MUST_BE_ARRAY');
+    if (products.length > 500) throw new Error('TOO_MANY_PRODUCTS');
     let created=0,updated=0;
     for(const raw of products||[]){
       const name=String(raw.name||'').trim(); if(!name) continue;
