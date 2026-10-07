@@ -29,7 +29,7 @@ export const syncShipments = async (req: Request, res: Response) => {
       stats: { totalFound: stats.totalFound, created: stats.created, updated: stats.updated, skipped: stats.skipped, failed: stats.failed, syncedAt: stats.syncedAt },
       account: { id: account.id, nickname: account.nickname, mlUserId: account.mlUserId }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     return res.status(500).json({ success: false, error: 'MERCADO_LIVRE_SHIPMENTS_SYNC_ERROR', requestId: (req as Request & { requestId?: string }).requestId });
   }
 };
@@ -43,7 +43,7 @@ export const listShipments = async (req: Request, res: Response) => {
     const status = typeof req.query.status === 'string' && /^[a-z_]{1,40}$/i.test(req.query.status) ? req.query.status : undefined;
     const result = await shipmentService.listShipments(account.id, { status, page, limit });
     return res.json({ success: true, account: { id: account.id, nickname: account.nickname, mlUserId: account.mlUserId }, ...result });
-  } catch (error) {
+  } catch (error: unknown) {
     const code = error instanceof Error && error.message === 'INVALID_PAGINATION' ? 'INVALID_PAGINATION' : 'MERCADO_LIVRE_SHIPMENTS_ERROR';
     return res.status(code === 'INVALID_PAGINATION' ? 400 : 500).json({ success: false, error: code, requestId: (req as Request & { requestId?: string }).requestId });
   }
@@ -55,7 +55,7 @@ export const getShipment = async (req: Request, res: Response) => {
     const account = await activeAccount();
     if (!account) return res.status(404).json({ error: 'MERCADO_LIVRE_ACCOUNT_NOT_FOUND' });
     return res.json(await shipmentService.getShipment(account.id, id));
-  } catch (error) {
+  } catch (error: unknown) {
     const code = error instanceof Error && error.message === 'INVALID_SHIPMENT_ID' ? 'INVALID_SHIPMENT_ID' : 'MERCADO_LIVRE_SHIPMENT_ERROR';
     return res.status(code === 'INVALID_SHIPMENT_ID' ? 400 : 500).json({ error: code, requestId: (req as Request & { requestId?: string }).requestId });
   }
@@ -67,7 +67,7 @@ export const getShipmentLabel = async (req: Request, res: Response) => {
     const account = await activeAccount();
     if (!account) return res.status(404).json({ error: 'MERCADO_LIVRE_ACCOUNT_NOT_FOUND' });
     return res.json(await shipmentService.getShipmentLabel(account.id, id));
-  } catch (error) {
+  } catch (error: unknown) {
     const code = error instanceof Error && error.message === 'INVALID_SHIPMENT_ID' ? 'INVALID_SHIPMENT_ID' : 'MERCADO_LIVRE_SHIPMENT_LABEL_ERROR';
     return res.status(code === 'INVALID_SHIPMENT_ID' ? 400 : 500).json({ error: code, requestId: (req as Request & { requestId?: string }).requestId });
   }
