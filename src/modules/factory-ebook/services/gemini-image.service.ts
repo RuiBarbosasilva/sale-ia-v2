@@ -7,11 +7,15 @@ export class GeminiImageService {
   private baseURL = 'https://generativelanguage.googleapis.com/v1';
 
   async gerarImagemUnica(prompt: string, fileName: string) {
+    const cleanPrompt = String(prompt || '').trim();
+    const cleanFileName = String(fileName || '').trim().replace(/[^a-zA-Z0-9._-]/g, '-').slice(0, 180);
+    if (!cleanPrompt || cleanPrompt.length > 2000) return { sucesso: false, erro: 'Prompt invalido' };
+    if (!cleanFileName) return { sucesso: false, erro: 'Nome de arquivo invalido' };
     if (!this.apiKey) return { sucesso: false, erro: 'GEMINI_API_KEY não configurada no .env' };
 
     try {
       // Adiciona sufixo para garantir estilo livro de colorir
-      const promptOtimizado = prompt + ', black and white line art, coloring book page style, white background, no shading, high quality, vector style';
+      const promptOtimizado = cleanPrompt + ', black and white line art, coloring book page style, white background, no shading, high quality, vector style';
       
       // Modelo oficial de geração de imagens Gemini
       const response = await axios.post(
@@ -34,7 +38,7 @@ export class GeminiImageService {
         const baseDir = path.resolve(process.cwd(), 'output', 'factory-ebook', 'imagens');
         if (!fs.existsSync(baseDir)) fs.mkdirSync(baseDir, { recursive: true });
         
-        const filePath = path.join(baseDir, fileName + '.png');
+        const filePath = path.join(baseDir, cleanFileName + '.png');
         fs.writeFileSync(filePath, Buffer.from(imagem.inlineData.data, 'base64'));
         
         return { sucesso: true, filePath, mensagem: 'Imagem gerada com sucesso!' };
