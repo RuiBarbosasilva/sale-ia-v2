@@ -13,13 +13,14 @@ export class GeminiImageService {
       // Adiciona sufixo para garantir estilo livro de colorir
       const promptOtimizado = prompt + ', black and white line art, coloring book page style, white background, no shading, high quality, vector style';
       
-      // Usando o modelo estavel e oficial gemini-1.5-flash
+      // Modelo oficial de geração de imagens Gemini
       const response = await axios.post(
-        this.baseURL + '/models/gemini-2.5-flash-image:generateContent?key=' + this.apiKey,
+        this.baseURL + '/models/gemini-2.5-flash-image:generateContent',
         {
           contents: [{ parts: [{ text: promptOtimizado }] }],
           generationConfig: { responseModalities: ['IMAGE'] }
-        }
+        },
+        { headers: { 'x-goog-api-key': this.apiKey, 'Content-Type': 'application/json' } }
       );
       
       const parts = response.data.candidates[0].content.parts;
@@ -38,7 +39,7 @@ export class GeminiImageService {
       // Fallback se a API retornar apenas texto (comum em chaves free sem imagem ativada)
       return { 
         sucesso: false, 
-        erro: 'A API retornou texto, mas nao imagem. Sua chave pode nao ter permissao para geracao de imagens ainda. Use o prompt abaixo no Bing Image Creator (gratis): ' + promptOtimizado 
+        erro: 'A API retornou texto, mas nao imagem. Sua chave pode nao ter permissao para geracao de imagens ainda. Use o prompt abaixo em um gerador de imagens compatível: ' + promptOtimizado 
       };
     } catch (error: any) {
       console.error('[GeminiImage] Erro:', error.response?.data || error.message);
