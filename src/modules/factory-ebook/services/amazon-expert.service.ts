@@ -199,7 +199,7 @@ export class AmazonExpertService {
       publicoAlvo: analise.publico,
       precoSugerido: analise.precoIdeal,
       margemLucro: analise.margemLucro,
-      estrutura: estrutura,
+      estrutura,
       especificacoesTecnicas: estrutura.especificacoesTecnicas,
       dicasSEO: {
         titulo: 'Use palavras-chave principais no titulo + subtitulo. Ex: "Animais para Colorir: 50 Desenhos Relaxantes para Adultos"',
