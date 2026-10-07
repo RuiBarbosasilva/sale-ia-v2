@@ -2,11 +2,17 @@ import { Request, Response } from 'express';
 import { affiliateIntelligenceService as s } from '../services/affiliateIntelligenceService';
 import { timingSafeSecret } from '../middlewares/security';
 
+type RequestWithId = Request & { requestId?: string };
+
+function requestId(req: Request): string | undefined {
+  return (req as RequestWithId).requestId;
+}
+
 function guard(req: Request, res: Response) {
   const key = process.env.AFFILIATE_ADMIN_KEY || process.env.SALE_IA_ADMIN_KEY;
   const provided = req.header('x-affiliate-admin-key') || req.header('x-sale-ia-admin-key');
   if (!timingSafeSecret(key, provided)) {
-    res.status(401).json({ success: false, error: 'ADMIN_UNAUTHORIZED', requestId: (req as any).requestId });
+    res.status(401).json({ success: false, error: 'ADMIN_UNAUTHORIZED', requestId: requestId(req) });
     return false;
   }
   return true;
@@ -32,11 +38,11 @@ function err(res: Response, e: unknown) {
   };
   const raw = e instanceof Error ? e.message : '';
   const code = Object.prototype.hasOwnProperty.call(map, raw) ? raw : 'AFFILIATE_INTELLIGENCE_ERROR';
-  return res.status(map[code] || 500).json({ success: false, error: code, requestId: (res.req as any)?.requestId });
+  return res.status(map[code] || 500).json({ success: false, error: code, requestId: requestId(res.req) });
 }
 
 export const affiliateIntelligenceController = {
-  async bootstrap(req: Request, res: Response) { if (!guard(req, res)) return; try { res.json({ success: true, networks: await s.bootstrapNetworks() }); } catch (e) { err(res, e); } },
+  async bootstrap(req: Request, res: Response) { if (!guard(req, res)) return; try { res.json({ success: true, networks: await s.bootstrapNetworks() }); } catch (e: unknown) { err(res, e); } },
   async dashboard(req: Request, res: Response) { if (!guard(req, res)) return; try { res.json({ success: true, ...await s.dashboard() }); } catch (e) { err(res, e); } },
   async networks(req: Request, res: Response) { if (!guard(req, res)) return; try { res.json({ success: true, networks: await s.listNetworks() }); } catch (e) { err(res, e); } },
   async createNetwork(req: Request, res: Response) { if (!guard(req, res)) return; try { res.status(201).json({ success: true, network: await s.createNetwork(req.body || {}) }); } catch (e) { err(res, e); } },
