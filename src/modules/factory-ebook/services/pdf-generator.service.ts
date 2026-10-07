@@ -89,9 +89,10 @@ export class PDFGeneratorService {
         });
         stream.on('error', (err) => reject({ sucesso: false, erro: 'Erro no stream do PDF: ' + err.message }));
       });
-    } catch (error: any) {
-      console.error('[PDFGenerator] ERRO CRITICO:', error);
-      return { sucesso: false, erro: error.message };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Erro desconhecido ao gerar PDF';
+      console.error('[PDFGenerator] ERRO CRITICO:', message);
+      return { sucesso: false, erro: message };
     }
   }
 
