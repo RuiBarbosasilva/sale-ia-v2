@@ -42,7 +42,7 @@ export const gerarLivroPDF = async (req: Request, res: Response) => {
 export const gerarLivroCompleto = async (req: Request, res: Response) => {
   try {
     const config = req.body || {};
-    if (!String(config.titulo || '').trim() || !String(config.tema || '').trim()) {
+    if (typeof config !== 'object' || Array.isArray(config) || !String(config.titulo || '').trim() || !String(config.tema || '').trim() || String(config.titulo).length > 200 || String(config.tema).length > 120) {
       return res.status(400).json({ sucesso: false, erro: 'Titulo e tema obrigatorios' });
     }
 
