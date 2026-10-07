@@ -1,6 +1,6 @@
 export class SocialPublisherService {
   gerarCalendario30Dias(metadataLivro: any) {
-    const temas = ['Bastidores da criação', 'Dica de colorir', 'Desafio da semana', 'Depoimento (fictício para inspirar)', 'Antes e Depois'];
+    const temas = ['Bastidores da criação', 'Dica de colorir', 'Desafio da semana', 'Depoimento de cliente real', 'Antes e Depois'];
     const dias = [];
     
     for (let i = 1; i <= 30; i++) {
@@ -22,7 +22,7 @@ export class SocialPublisherService {
     const hooks: any = {
       'Bastidores da criação': 'Você não vai acreditar em quanto tempo levei para criar este desenho de ' + nicho + '...',
       'Dica de colorir': 'Pare de estragar seus desenhos! Use esta dica simples para ' + nicho + '...',
-      'Desafio da semana': 'Duvido você colorir esta página de ' + nicho + ' em menos dePVK 10 minutos!',
+      'Desafio da semana': 'Duvido você colorir esta página de ' + nicho + ' em em menos de 10 minutos!',
       'Depoimento (fictício para inspirar)': 'O que uma mãe disse depois que comprou este livro para o filho...',
       'Antes e Depois': 'O resultado final deste desenho de ' + nicho + ' vai te deixar de queixo caído!'
     };
