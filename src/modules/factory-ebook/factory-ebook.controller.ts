@@ -30,9 +30,10 @@ export const gerarLivroPDF = async (req: Request, res: Response) => {
     if (!config.titulo || !config.tema) return res.status(400).json({ sucesso: false, erro: 'Titulo e tema obrigatorios' });
     const resultado = await pdfGenerator.gerarLivroColorir(config);
     return res.json(resultado);
-  } catch (error: any) { 
-    console.error('[Controller] Erro ao gerar PDF:', error);
-    return res.status(500).json({ sucesso: false, erro: error.message }); 
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Erro ao gerar PDF';
+    console.error('[Controller] Erro ao gerar PDF:', message);
+    return res.status(500).json({ sucesso: false, erro: message });
   }
 };
 
