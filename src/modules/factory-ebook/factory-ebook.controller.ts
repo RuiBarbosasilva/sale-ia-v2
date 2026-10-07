@@ -12,8 +12,10 @@ const amazonUpload = new AmazonUploadAssistant();
 const socialPublisher = new SocialPublisherService();
 
 export const analisarNichoAmazon = async (req: Request, res: Response) => {
+  const nicho = String(req.params.nicho || '').trim();
+  if (!nicho || nicho.length > 120) return res.status(400).json({ sucesso: false, erro: 'Nicho invalido' });
   try {
-    const resultado = await amazonExpert.analisarNicho(req.params.nicho);
+    const resultado = await amazonExpert.analisarNicho(nicho);
     return res.json({ sucesso: true, dados: resultado });
   } catch (error: unknown) { return res.status(500).json({ sucesso: false, erro: error instanceof Error ? error.message : 'Erro interno' }); }
 };
@@ -26,8 +28,8 @@ export const listarTendenciasAmazon = async (req: Request, res: Response) => {
 
 export const gerarLivroPDF = async (req: Request, res: Response) => {
   try {
-    const config = req.body;
-    if (!config.titulo || !config.tema) return res.status(400).json({ sucesso: false, erro: 'Titulo e tema obrigatorios' });
+    const config = req.body || {};
+    if (typeof config !== 'object' || Array.isArray(config) || !String(config.titulo || '').trim() || !String(config.tema || '').trim()) return res.status(400).json({ sucesso: false, erro: 'Titulo e tema obrigatorios' });
     const resultado = await pdfGenerator.gerarLivroColorir(config);
     return res.json(resultado);
   } catch (error: unknown) {
@@ -90,8 +92,8 @@ export const gerarLivroCompleto = async (req: Request, res: Response) => {
 
 export const gerarImagemComGemini = async (req: Request, res: Response) => {
   try {
-    const { prompt, fileName } = req.body;
-    if (!prompt || !fileName) return res.status(400).json({ sucesso: false, erro: 'Prompt e fileName obrigatorios' });
+    const { prompt, fileName } = req.body || {};
+    if (typeof prompt !== 'string' || !prompt.trim() || prompt.length > 2000 || typeof fileName !== 'string' || !fileName.trim() || fileName.length > 180) return res.status(400).json({ sucesso: false, erro: 'Prompt e fileName obrigatorios' });
     const resultado = await geminiImage.gerarImagemUnica(prompt, fileName);
     return res.json(resultado);
   } catch (error: unknown) { return res.status(500).json({ sucesso: false, erro: error instanceof Error ? error.message : 'Erro interno' }); }
