@@ -52,7 +52,7 @@ export const salesOrchestrationService = {
     await init();
     return (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesOffer" WHERE active=1 ORDER BY updatedAt DESC');
   },
-  async createOffer(input:any){
+  async createOffer(input: unknown){
     await init();
     const v=[id(),String(input.name||'Oferta'),String(input.channel||'WEB'),input.productType||null,input.price==null?null:n(input.price),input.monthlyPrice==null?null:n(input.monthlyPrice),input.currency||'BRL',input.metadata?JSON.stringify(input.metadata):null];
     await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesOffer" ("id","name","channel","productType","price","monthlyPrice","currency","metadata") VALUES (?,?,?,?,?,?,?,?)',...v);
