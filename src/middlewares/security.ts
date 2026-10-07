@@ -44,24 +44,27 @@ export function rateLimit(options: {
   return (req: Request, res: Response, next: NextFunction) => {
     const now = Date.now();
     const identity = options.key ? options.key(req) : req.ip;
-    const key = options.name + ':' + identity;
+    const safeName = String(options.name || 'default').slice(0, 80);
+    const safeWindow = Number.isFinite(options.windowMs) && options.windowMs > 0 ? Math.min(options.windowMs, 24 * 60 * 60 * 1000) : 60_000;
+    const safeLimit = Number.isFinite(options.limit) && options.limit > 0 ? Math.min(Math.floor(options.limit), 100_000) : 100;
+    const key = safeName + ':' + identity;
     let bucket = rateLimitBuckets.get(key);
 
     if (!bucket || bucket.resetAt <= now) {
       pruneRateLimitBuckets(now);
-      bucket = { count: 1, resetAt: now + options.windowMs };
+      bucket = { count: 1, resetAt: now + safeWindow };
       rateLimitBuckets.set(key, bucket);
       return next();
     }
 
     bucket.count += 1;
-    if (bucket.count > options.limit) {
+    if (bucket.count > safeLimit) {
       const retryAfter = Math.max(1, Math.ceil((bucket.resetAt - now) / 1000));
       res.setHeader('Retry-After', String(retryAfter));
       return res.status(429).json({
         success: false,
         error: 'RATE_LIMITED',
-        requestId: (req as any).requestId,
+        requestId: (req as Request & { requestId?: string }).requestId,
       });
     }
 
