@@ -51,7 +51,7 @@ export const gerarLivroCompleto = async (req: Request, res: Response) => {
           String(config.tema) + ', desenho original para colorir, página ' + (i + 1)
         );
 
-    const imagens: any[] = Array.isArray(config.imagens) ? [...config.imagens] : [];
+    const imagens: Array<string | { filePath?: string }> = Array.isArray(config.imagens) ? [...config.imagens] : [];
     if (imagens.length < numeroPaginas) {
       for (let i = imagens.length; i < numeroPaginas; i++) {
         const generated = await geminiImage.gerarImagemUnica(
