@@ -45,10 +45,11 @@ export function rateLimit(options: {
   return (req: Request, res: Response, next: NextFunction) => {
     const now = Date.now();
     const identity = options.key ? options.key(req) : req.ip;
+    const safeIdentity = String(identity || 'unknown').slice(0, 128);
     const safeName = String(options.name || 'default').slice(0, 80);
     const safeWindow = Number.isFinite(options.windowMs) && options.windowMs > 0 ? Math.min(options.windowMs, 24 * 60 * 60 * 1000) : 60_000;
     const safeLimit = Number.isFinite(options.limit) && options.limit > 0 ? Math.min(Math.floor(options.limit), 100_000) : 100;
-    const key = safeName + ':' + String(identity || 'unknown').slice(0, 128);
+    const key = safeName + ':' + safeIdentity;
     let bucket = rateLimitBuckets.get(key);
 
     if (!bucket || bucket.resetAt <= now) {
