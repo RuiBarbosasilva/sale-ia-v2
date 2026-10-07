@@ -7,6 +7,10 @@ type HookMap = Record<string, string>;
 
 export class SocialPublisherService {
   gerarCalendario30Dias(metadataLivro: LivroSocialMetadata) {
+    const titulo = String(metadataLivro?.titulo || '').trim();
+    const temaLivro = String(metadataLivro?.tema || '').trim();
+    if (!titulo || titulo.length > 200) throw new Error('Título do livro inválido');
+    if (!temaLivro || temaLivro.length > 120) throw new Error('Tema do livro inválido');
     const temas = ['Bastidores da criação', 'Dica de colorir', 'Desafio da semana', 'Depoimento de cliente real', 'Antes e Depois'];
     const dias = [];
     
@@ -16,10 +20,10 @@ export class SocialPublisherService {
         dia: i,
         plataforma: i % 2 === 0 ? 'TikTok / Reels' : 'Telegram / Instagram Stories',
         tema: tema,
-        hook: this.getHook(tema, metadataLivro.tema),
+        hook: this.getHook(tema, temaLivro),
         acao: 'Mostrar página do livro sendo colorida em timelapse',
-        legenda: this.getLegenda(tema, metadataLivro.titulo),
-        hashtags: '#livroparacolorir #' + metadataLivro.tema.replace(/ /g, '') + ' #arteterapia #rbfactory #amazonkdp'
+        legenda: this.getLegenda(tema, titulo),
+        hashtags: '#livroparacolorir #' + temaLivro.replace(/[^\p{L}\p{N}]+/gu, '').slice(0, 60) + ' #arteterapia #rbfactory #amazonkdp'
       });
     }
     return dias;
