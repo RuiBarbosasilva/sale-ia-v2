@@ -1,5 +1,5 @@
 // src/modules/mercadoLivre/controllers/metricsController.ts
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { prisma } from '../lib/prisma';
 
 export interface MLMetricsData {
@@ -102,7 +102,7 @@ export async function fetchMLMetrics(): Promise<MLMetricsData | null> {
   };
 }
 
-export const getMetrics = async (_req: Request, res: Response) => {
+export const getMetrics = async (_req: unknown, res: Response) => {
   try {
     console.log('[ML Metrics] 🟢 Buscando métricas...');
 
