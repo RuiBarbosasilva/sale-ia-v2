@@ -23,8 +23,12 @@ export class GeminiImageService {
         { headers: { 'x-goog-api-key': this.apiKey, 'Content-Type': 'application/json' } }
       );
       
-      const parts = response.data.candidates[0].content.parts;
-      const imagem = parts.find((p: any) => p.inlineData);
+      const candidates = Array.isArray(response.data?.candidates) ? response.data.candidates : [];
+      const parts = candidates[0]?.content?.parts;
+      if (!Array.isArray(parts)) {
+        return { sucesso: false, erro: 'A API não retornou partes de conteúdo válidas.' };
+      }
+      const imagem = parts.find((p: unknown) => Boolean((p as { inlineData?: unknown })?.inlineData));
       
       if (imagem) {
         const baseDir = path.resolve(process.cwd(), 'output', 'factory-ebook', 'imagens');
@@ -41,9 +45,12 @@ export class GeminiImageService {
         sucesso: false, 
         erro: 'A API retornou texto, mas não imagem. Sua chave pode nao ter permissao para geração de imagens ainda. Use o prompt abaixo em um gerador de imagens compatível: ' + promptOtimizado 
       };
-    } catch (error: any) {
-      console.error('[GeminiImage] Erro:', error.response?.data || error.message);
-      return { sucesso: false, erro: error.response?.data?.error?.message || error.message };
+    } catch (error: unknown) {
+      const message = axios.isAxiosError(error)
+        ? String(error.response?.data?.error?.message || error.message)
+        : error instanceof Error ? error.message : 'Erro desconhecido ao gerar imagem';
+      console.error('[GeminiImage] Erro:', message);
+      return { sucesso: false, erro: message };
     }
   }
 }
