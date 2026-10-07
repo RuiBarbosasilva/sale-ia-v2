@@ -30,7 +30,11 @@ export class MercadoLivreClient {
     this.client.interceptors.response.use(
       (response) => response,
       async (error: AxiosError) => {
-        const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean; _rateLimitRetryCount?: number };
+        const originalRequest = error.config as (InternalAxiosRequestConfig & { _retry?: boolean; _rateLimitRetryCount?: number }) | undefined;
+
+        if (!originalRequest) {
+          throw error;
+        }
 
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
