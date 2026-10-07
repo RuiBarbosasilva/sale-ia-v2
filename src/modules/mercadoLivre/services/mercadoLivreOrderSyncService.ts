@@ -133,13 +133,13 @@ export class MercadoLivreOrderSyncService {
         const orderData = allOrders[i];
         
         try {
-          const orderId = String(orderData.id);
-          
-          if (!orderId) {
+          if (orderData?.id === undefined || orderData?.id === null || orderData?.id === '') {
             console.error('[ML Orders Sync] ❌ Pedido sem ID');
             stats.failed++;
             continue;
           }
+
+          const orderId = String(orderData.id);
 
           // Mapear dados do pedido
           const dbData = {
