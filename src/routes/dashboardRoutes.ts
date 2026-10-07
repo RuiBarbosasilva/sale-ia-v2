@@ -49,9 +49,23 @@ router.get('/overview', adminAuthorization, async (_req, res) => {
 
 router.get('/operations', adminAuthorization, async (_req, res) => {
   type Check<T> = { ok: boolean; value: T };
+  const withTimeout = async <T>(fn: () => Promise<T>, timeoutMs: number): Promise<T> => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        fn(),
+        new Promise<T>((_, reject) => {
+          timer = setTimeout(() => reject(new Error('CHECK_TIMEOUT')), timeoutMs);
+        })
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  };
+
   const check = async <T>(label: string, fn: () => Promise<T>, fallback: T): Promise<Check<T>> => {
     try {
-      return { ok: true, value: await fn() };
+      return { ok: true, value: await withTimeout(fn, 8000) };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       console.warn('[Dashboard] Falha em', label, message);
