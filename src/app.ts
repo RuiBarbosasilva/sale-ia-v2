@@ -34,7 +34,7 @@ import rbFactorySalesAgentRoutes from './routes/rbFactorySalesAgentRoutes';
 import rbFactorySalesAutonomyRoutes from './routes/rbFactorySalesAutonomyRoutes';
 import rbFactorySiteMaintenanceRoutes from './routes/rbFactorySiteMaintenanceRoutes';
 import rbFactoryCommercialRoutes from './routes/rbFactoryCommercialRoutes';
-// [DESABILITADO TEMPORARIAMENTE] import { startRbFactoryMaintenanceJob } from './jobs/rbFactoryMaintenanceJob';
+import { startRbFactoryMaintenanceJob } from './jobs/rbFactoryMaintenanceJob';
 import { afiliadosIaRoutes } from './modules/afiliados-ia/afiliados-ia.routes';
 import { factoryEbookRoutes } from './modules/factory-ebook/factory-ebook.routes';
 import produtosRoutes from './modules/afiliados-ia/routes/produtos.routes';
@@ -116,7 +116,7 @@ app.use('/go', affiliatePublicRoutes);
 app.use('/api/mercadolivre', mlRoutes);
 app.use('/api/credenciais', credenciaisRoutes);
 app.use('/dashboard', dashboardRoutes);
-// [DESABILITADO TEMPORARIAMENTE] startRbFactoryMaintenanceJob(); // Tabela RbFactorySiteClient não existe no schema
+startRbFactoryMaintenanceJob();
 // ==========================================
 // ROTAS DO MÓDULO AFILIADOS IA E OUTROS
 // (DEVEM VIR ANTES DO errorHandler)
