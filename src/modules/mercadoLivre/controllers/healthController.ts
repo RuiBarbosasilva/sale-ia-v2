@@ -43,8 +43,8 @@ export const healthCheck = async (_req: Request, res: Response) => {
       });
       
       tokenExpiresAt = tokenRecord?.expiresAt || null;
-    } catch (error: any) {
-      console.error('[ML Health] ❌ Erro ao obter token:', error.message);
+    } catch (error: unknown) {
+      console.error('[ML Health] ❌ Erro ao obter token:', error instanceof Error ? error.message : 'UNKNOWN_ERROR');
       return res.json({
         apiReachable: false,
         authenticationValid: false,
@@ -70,16 +70,16 @@ export const healthCheck = async (_req: Request, res: Response) => {
         authenticationValid = true;
         console.log('[ML Health] ✅ API acessível e token válido');
       }
-    } catch (error: any) {
-      console.error('[ML Health] ❌ Erro ao chamar /users/me:', error.message);
+    } catch (error: unknown) {
+      console.error('[ML Health] ❌ Erro ao chamar /users/me:', error instanceof Error ? error.message : 'UNKNOWN_ERROR');
       
-      if (error.response?.status === 401) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
         apiReachable = true;
         authenticationValid = false;
-      } else if (error.response?.status === 429) {
+      } else if (axios.isAxiosError(error) && error.response?.status === 429) {
         apiReachable = true;
         authenticationValid = true;
-      } else if (['ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_AGAIN'].includes(error.code)) {
+      } else if (axios.isAxiosError(error) && ['ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_AGAIN'].includes(error.code || '')) {
         apiReachable = false;
         authenticationValid = false;
       } else {
@@ -118,11 +118,11 @@ export const healthCheck = async (_req: Request, res: Response) => {
         isActive: account.isActive
       }
     });
-  } catch (error: any) {
-    console.error('[ML Health] ❌ Erro crítico:', error.message);
+  } catch (error: unknown) {
+    console.error('[ML Health] ❌ Erro crítico:', error instanceof Error ? error.message : 'UNKNOWN_ERROR');
     res.status(500).json({ 
       error: 'MERCADO_LIVRE_HEALTH_CHECK_FAILED',
-      message: error.message 
+      message: error instanceof Error ? error.message : 'UNKNOWN_ERROR' 
     });
   }
 };
