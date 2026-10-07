@@ -1,5 +1,18 @@
+type LivroMetadata = {
+  titulo: string;
+  subtitulo?: string;
+  autor?: string;
+  tema: string;
+  paginas?: number;
+  tamanho?: string;
+  capa?: string;
+};
+
+type KeywordMap = Record<string, string>;
+type CategoryMap = Record<string, string[]>;
+
 export class AmazonUploadAssistant {
-  gerarMetadadosKDP(metadataLivro: any) {
+  gerarMetadadosKDP(metadataLivro: LivroMetadata) {
     return {
       titulo_completo: metadataLivro.titulo + (metadataLivro.subtitulo ? ': ' + metadataLivro.subtitulo : ''),
       autor: metadataLivro.autor,
@@ -14,7 +27,7 @@ export class AmazonUploadAssistant {
     };
   }
 
-  private formatarDescricaoAmazon(meta: any): string {
+  private formatarDescricaoAmazon(meta: LivroMetadata): string {
     return '<b>Descubra a magia de ' + meta.tema + ' com este livro de colorir exclusivo!</b><br><br>' +
            'Perfeito para ' + (meta.capa === 'Capa Dura' ? 'presentear' : 'relaxar e se divertir') + ', este livro oferece ' + meta.paginas + ' desenhos únicos e detalhados.<br><br>' +
            '<b>CARACTERÍSTICAS:</b><br>' +
@@ -27,7 +40,7 @@ export class AmazonUploadAssistant {
   }
 
   private gerarKeywordsAmazon(tema: string): string[] {
-    const mapa: any = {
+    const mapa: KeywordMap = {
       animais: 'livro colorir animais, desenho infantil, atividades kids, natureza, bichos',
       mandala: 'livro colorir adulto, anti estresse, relaxamento, mindfulness, meditação',
       default: 'livro para colorir, atividades criativas, presente infantil, arte, lazer'
@@ -37,7 +50,7 @@ export class AmazonUploadAssistant {
   }
 
   private gerarCategoriasAmazon(tema: string): string[] {
-    const mapa: any = {
+    const mapa: CategoryMap = {
       animais: ['Juvenile Nonfiction > Art > Drawing', 'Crafts, Hobbies & Home > Animal Coloring Books'],
       mandala: ['Crafts, Hobbies & Home > Flower Coloring Books', 'Self-Help > Meditation'],
       default: ['Crafts, Hobbies & Home > General Coloring Books', 'Juvenile Nonfiction > Art > Drawing']
