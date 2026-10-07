@@ -44,6 +44,7 @@ async function init() {
 }
 function id(){ return crypto.randomUUID(); }
 function clamp(n:number){ return Math.max(0,Math.min(100,n)); }
+function textInput(value: unknown, max = 2000){ return String(value ?? '').trim().slice(0, max); }
 function classify(text:string){
   const t=text.toLowerCase();
   const rules:[string,string[]][]=[
@@ -94,9 +95,9 @@ Responda em português brasileiro. Retorne JSON puro com: reply, intent, objecti
 
 export const seniorSalesAgentService = {
   async createConversation(input:any){
-    await init(); const conversationId=id();
+    await init(); const source = input && typeof input === 'object' ? input : {}; const conversationId=id();
     await (prisma as any).$executeRawUnsafe('ALTER TABLE "SalesConversation" ADD COLUMN "context" TEXT').catch(()=>{});
-    await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesConversation" ("id","leadId","channel","context") VALUES (?,?,?,?)',conversationId,input.leadId||null,input.channel||'WEB',input.context?JSON.stringify(input.context):null);
+    await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesConversation" ("id","leadId","channel","context") VALUES (?,?,?,?)',conversationId,textInput(source.leadId,120)||null,textInput(source.channel,40)||'WEB',source.context?JSON.stringify(source.context):null);
     return this.getConversation(conversationId);
   },
   async getConversation(idv:string){ await init(); const c=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesConversation" WHERE id=?',idv); if(!c[0]) throw new Error('SALES_CONVERSATION_NOT_FOUND'); const messages=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesConversationMessage" WHERE conversationId=? ORDER BY createdAt ASC',idv); const objections=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesObjection" WHERE conversationId=? ORDER BY createdAt DESC',idv); const followUps=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesFollowUp" WHERE conversationId=? ORDER BY scheduledAt ASC',idv); return {...c[0],messages,objections,followUps}; },
@@ -242,6 +243,6 @@ export const seniorSalesAgentService = {
     const followUp=await this.scheduleFollowUp(conversationId,{scheduledAt,reason,draft});
     return {reused:false,followUp};
   },
-  async scheduleFollowUp(conversationId:string,input:any){ await init(); const when=new Date(input.scheduledAt||Date.now()+86400000); const reason=String(input.reason||'FOLLOW_UP'); const draft=String(input.draft||''); const idv=id(); await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesFollowUp" ("id","conversationId","scheduledAt","reason","draft") VALUES (?,?,?,?,?)',idv,conversationId,when.toISOString(),reason,draft); return (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesFollowUp" WHERE id=?',idv); },
+  async scheduleFollowUp(conversationId:string,input:any){ await init(); const source=input && typeof input === 'object' ? input : {}; const when=new Date(source.scheduledAt||Date.now()+86400000); const reason=textInput(source.reason,120)||'FOLLOW_UP'; const draft=textInput(source.draft,2000); const idv=id(); await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesFollowUp" ("id","conversationId","scheduledAt","reason","draft") VALUES (?,?,?,?,?)',idv,conversationId,when.toISOString(),reason,draft); return (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesFollowUp" WHERE id=?',idv); },
   async dashboard(){ await init(); const q=async(sql:string)=>Number((await (prisma as any).$queryRawUnsafe(sql))[0]?.count||0); const [conversations,hot,pending,followups,objections]=await Promise.all([q('SELECT COUNT(*) count FROM "SalesConversation" WHERE status=\'OPEN\''),q('SELECT COUNT(*) count FROM "SalesConversation" WHERE temperature IN (\'HOT\',\'VERY_HOT\')'),q('SELECT COUNT(*) count FROM "SalesAction" WHERE status=\'PENDING_APPROVAL\''),q('SELECT COUNT(*) count FROM "SalesFollowUp" WHERE status=\'PENDING\''),q('SELECT COUNT(*) count FROM "SalesObjection" WHERE resolved=0')]); return {conversations,hotLeads:hot,pendingActions:pending,pendingFollowUps:followups,openObjections:objections,mode:'SENIOR_SALES_SUPERVISED'}; }
 };
