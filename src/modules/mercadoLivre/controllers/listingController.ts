@@ -40,7 +40,7 @@ export const getListings = async (req: Request, res: Response) => {
     res.json(data);
   } catch (error) {
     const code = safeMessage(error);
-    res.status(code === 'INVALID_PAGINATION' ? 400 : 500).json({ error: code, requestId: (req as any).requestId });
+    res.status(code === 'INVALID_PAGINATION' ? 400 : 500).json({ error: code, requestId: (req as Request & { requestId?: string }).requestId });
   }
 };
 
@@ -53,7 +53,7 @@ export const getItem = async (req: Request, res: Response) => {
     res.json(data);
   } catch (error) {
     const code = safeMessage(error);
-    res.status(code === 'INVALID_MERCADO_LIVRE_ITEM_ID' ? 400 : 500).json({ error: code, requestId: (req as any).requestId });
+    res.status(code === 'INVALID_MERCADO_LIVRE_ITEM_ID' ? 400 : 500).json({ error: code, requestId: (req as Request & { requestId?: string }).requestId });
   }
 };
 
@@ -65,7 +65,7 @@ export const createListing = async (req: Request, res: Response) => {
     const data = await listingService.createListing(account.id, listingData);
     res.status(201).json(data);
   } catch (error) {
-    res.status(400).json({ error: safeMessage(error), requestId: (req as any).requestId });
+    res.status(400).json({ error: safeMessage(error), requestId: (req as Request & { requestId?: string }).requestId });
   }
 };
 
@@ -78,7 +78,7 @@ export const updateListing = async (req: Request, res: Response) => {
     const data = await listingService.updateListing(account.id, id, updateData);
     res.json(data);
   } catch (error) {
-    res.status(400).json({ error: safeMessage(error), requestId: (req as any).requestId });
+    res.status(400).json({ error: safeMessage(error), requestId: (req as Request & { requestId?: string }).requestId });
   }
 };
 
@@ -90,7 +90,7 @@ export const pauseListing = async (req: Request, res: Response) => {
     const data = await listingService.changeStatus(account.id, id, 'paused');
     res.json(data);
   } catch (error) {
-    res.status(400).json({ error: safeMessage(error), requestId: (req as any).requestId });
+    res.status(400).json({ error: safeMessage(error), requestId: (req as Request & { requestId?: string }).requestId });
   }
 };
 
@@ -102,6 +102,6 @@ export const activateListing = async (req: Request, res: Response) => {
     const data = await listingService.changeStatus(account.id, id, 'active');
     res.json(data);
   } catch (error) {
-    res.status(400).json({ error: safeMessage(error), requestId: (req as any).requestId });
+    res.status(400).json({ error: safeMessage(error), requestId: (req as Request & { requestId?: string }).requestId });
   }
 };
