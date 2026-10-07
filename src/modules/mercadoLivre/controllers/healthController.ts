@@ -58,6 +58,7 @@ export const healthCheck = async (_req: Request, res: Response) => {
     // 3. Testar API do Mercado Livre com autenticação
     let apiReachable = false;
     let authenticationValid = false;
+    let rateLimitState: 'OK' | 'LIMITED' = 'OK';
     
     try {
       const userResponse = await axios.get('https://api.mercadolibre.com/users/me', {
@@ -79,6 +80,7 @@ export const healthCheck = async (_req: Request, res: Response) => {
       } else if (axios.isAxiosError(error) && error.response?.status === 429) {
         apiReachable = true;
         authenticationValid = true;
+        rateLimitState = 'LIMITED';
       } else if (axios.isAxiosError(error) && ['ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_AGAIN'].includes(error.code || '')) {
         apiReachable = false;
         authenticationValid = false;
@@ -110,7 +112,7 @@ export const healthCheck = async (_req: Request, res: Response) => {
       authenticationValid,
       tokenExpiresAt,
       lastSync,
-      rateLimitState: 'OK',
+      rateLimitState,
       account: {
         id: account.id,
         nickname: account.nickname,
