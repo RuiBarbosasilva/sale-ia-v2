@@ -70,9 +70,8 @@ export async function fetchMLMetrics(): Promise<MLMetricsData | null> {
     prisma.mercadoLivreShipment.groupBy({ by: ['status'], where: { accountId: account.id }, _count: { status: true } })
   ]);
 
-  const syncDates = [lastItemSync?.lastSyncedAt, lastOrderSync?.lastSyncedAt].filter((date): date is Date => Boolean(date));
-  const lastSync = syncDates.reduce<Date | null>(
-    (latest, date) => (!latest || date.getTime() > latest.getTime() ? date : latest),
+  const lastSync = [lastItemSync?.lastSyncedAt, lastOrderSync?.lastSyncedAt].reduce<Date | null>(
+    (latest, date) => (!date || (latest && latest.getTime() >= date.getTime()) ? latest : date),
     null
   );
 
