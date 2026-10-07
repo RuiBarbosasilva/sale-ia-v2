@@ -48,7 +48,7 @@ export class MercadoLivreOrderSyncService {
       const accessToken = await tokenService.getValidToken(accountId);
       const client = new MercadoLivreClient(
         accessToken,
-        () => tokenService.refreshToken(accountId, 'placeholder')
+        () => tokenService.getValidToken(accountId)
       );
 
       // 3. Definir período de busca (últimos N dias ou histórico)
