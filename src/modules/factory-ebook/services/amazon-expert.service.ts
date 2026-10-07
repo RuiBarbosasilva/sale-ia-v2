@@ -13,8 +13,10 @@ type Niche = {
 export class AmazonExpertService {
 
   async analisarNicho(nicho: string) {
+    const termo = String(nicho || '').trim().slice(0, 120);
+    if (!termo) return { erro: 'Nicho obrigatorio.' };
     const nichos = this.getNichosLucrativos();
-    const encontrado = nichos.find(n => n.nome.toLowerCase() === nicho.toLowerCase());
+    const encontrado = nichos.find(n => n.nome.toLowerCase() === termo.toLowerCase());
     
     if (!encontrado) {
       return {
@@ -211,6 +213,9 @@ export class AmazonExpertService {
   }
 
   async gerarTitulosVendaveis(nicho: string, tipo: string) {
+    const nichoNormalizado = String(nicho || '').trim().slice(0, 120);
+    const tipoNormalizado = String(tipo || '').trim().toLowerCase();
+    if (!nichoNormalizado || !tipoNormalizado) return { erro: 'Nicho e tipo obrigatorios.' };
     const templates = [
       '[TEMA] para Colorir: [NUMERO] Desenhos Incriveis para [PUBLICO]',
       'O Grande Livro de [TEMA]: [NUMERO] Paginas de [BENEFICIO]',
@@ -241,7 +246,7 @@ export class AmazonExpertService {
     };
 
     const titulosGerados = [];
-    const nichoLower = nicho.toLowerCase();
+    const nichoLower = nichoNormalizado.toLowerCase();
     const temaBase = temas[nichoLower] || temas.animais;
 
     for (const tema of temaBase.slice(0, 3)) {
@@ -249,15 +254,15 @@ export class AmazonExpertService {
         const titulo = template
           .replace('[TEMA]', tema)
           .replace('[NUMERO]', String(Math.floor(Math.random() * 30) + 30))
-          .replace('[PUBLICO]', publicos[tipo] || 'Todos')
-          .replace('[BENEFICIO]', beneficios[tipo] || 'Diversao');
+          .replace('[PUBLICO]', publicos[tipoNormalizado] || 'Todos')
+          .replace('[BENEFICIO]', beneficios[tipoNormalizado] || 'Diversao');
         titulosGerados.push(titulo);
       }
     }
 
     return {
-      nicho: nicho,
-      tipo: tipo,
+      nicho: nichoNormalizado,
+      tipo: tipoNormalizado,
       titulosSugeridos: titulosGerados,
       dicas: [
         'Use numeros impares (ex: 51 desenhos) - convertem melhor',
@@ -270,13 +275,16 @@ export class AmazonExpertService {
   }
 
   async calcularPrecificacao(tipo: string, paginas: number, capaDura: boolean) {
-    const custoImpressaoAmazon = 0.85 + (0.02 * paginas); // USD
+    const tipoNormalizado = String(tipo || '').trim().slice(0, 60);
+    const paginasNormalizadas = Math.max(1, Math.min(200, Math.floor(Number(paginas) || 1)));
+    if (!tipoNormalizado) return { erro: 'Tipo de livro obrigatorio.' };
+    const custoImpressaoAmazon = 0.85 + (0.02 * paginasNormalizadas); // USD
     const precoVenda = capaDura ? 12.99 : 7.99; // USD
     const royalty = (precoVenda - custoImpressaoAmazon) * 0.60; // 60% de royalty
     
     return {
       tipo: tipo,
-      paginas: paginas,
+      paginas: paginasNormalizadas,
       capaDura: capaDura,
       custoImpressao: 'US$ ' + custoImpressaoAmazon.toFixed(2),
       precoSugerido: 'US$ ' + precoVenda.toFixed(2),
