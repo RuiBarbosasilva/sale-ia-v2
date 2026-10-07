@@ -33,15 +33,32 @@ export class PDFGeneratorService {
       doc.moveDown(2);
       doc.fontSize(24).text('_________________________________', { align: 'center' });
       
-      // Paginas de desenho
-      const numPaginas = config.numeroPaginas || 10;
+      // Paginas de desenho: usa imagens reais quando fornecidas pelo pipeline.
+      const numPaginas = Math.max(1, Math.min(500, Number(config.numeroPaginas) || 10));
+      const imagens = Array.isArray(config.imagens) ? config.imagens : [];
+      const prompts = Array.isArray(config.promptsImagem) ? config.promptsImagem : [];
       for (let i = 1; i <= numPaginas; i++) {
         doc.addPage();
-        doc.rect(72, 72, width - 144, height - 144).stroke('#cccccc');
-        doc.fontSize(16).fillColor('#999999').text('[DESENHO ' + i + ']', { align: 'center' });
-        doc.moveDown();
-        doc.fontSize(10).text('Prompt: ' + (config.promptsImagem && config.promptsImagem[i-1] ? config.promptsImagem[i-1] : config.tema), { align: 'center' });
-        doc.fontSize(8).fillColor('#666666').text(String(i), 0, height - 30, { align: 'center', width: width });
+        const rawImage = imagens[i - 1];
+        const imagePath = typeof rawImage === 'string'
+          ? path.resolve(process.cwd(), rawImage)
+          : rawImage?.filePath ? path.resolve(process.cwd(), rawImage.filePath) : null;
+        if (imagePath && fs.existsSync(imagePath)) {
+          doc.image(imagePath, 54, 54, {
+            fit: [width - 108, height - 108],
+            align: 'center',
+            valign: 'center'
+          });
+        } else {
+          doc.rect(72, 72, width - 144, height - 144).stroke('#cccccc');
+          doc.fontSize(16).fillColor('#777777').text('Página de colorir ' + i, { align: 'center' });
+          doc.moveDown();
+          doc.fontSize(10).fillColor('#444444').text(
+            prompts[i - 1] || config.tema,
+            { align: 'center', width: width - 120 }
+          );
+        }
+        doc.fontSize(8).fillColor('#666666').text(String(i), 0, height - 30, { align: 'center', width });
       }
 
       doc.end();
