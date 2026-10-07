@@ -16,7 +16,7 @@ function num(v: unknown, fallback=0){ const n=Number(v); return Number.isFinite(
 function clamp(v: number){ return Math.max(0,Math.min(100,v)); }
 function slug(s: string){ return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,50); }
 
-function scoreProduct(p: Record<string, unknown>){
+function scoreProduct(p: Record<string, any>){
   const commission=clamp(num(p.commissionRate,0));
   const demand=clamp(num(p.demandScore,p.popularityScore ?? 50));
   const competition=clamp(num(p.competitionScore,50));
@@ -37,15 +37,15 @@ export const affiliateIntelligenceService = {
     return results;
   },
   async listNetworks(){ return prisma.affiliateNetwork.findMany({orderBy:{name:'asc'},include:{_count:{select:{products:true,actions:true}}}}); },
-  async createNetwork(input: Record<string, unknown>){
+  async createNetwork(input: Record<string, any>){
     const name=String(input.name||'').trim(); if(!name) throw new Error('NETWORK_NAME_REQUIRED');
     return prisma.affiliateNetwork.create({data:{name,slug:slug(String(input.slug||name)),type:String(input.type||'AFFILIATE_NETWORK'),baseUrl:input.baseUrl||null,apiBaseUrl:input.apiBaseUrl||null,status:String(input.status||'CONFIGURED'),metadata:input.metadata?JSON.stringify(input.metadata):null}});
   },
-  async updateNetwork(id: string, input: Record<string, unknown>){
+  async updateNetwork(id: string, input: Record<string, any>){
     const current=await prisma.affiliateNetwork.findUnique({where:{id}}); if(!current) throw new Error('NETWORK_NOT_FOUND');
     return prisma.affiliateNetwork.update({where:{id},data:{...(input.name!==undefined?{name:String(input.name).trim()}:{}),...(input.baseUrl!==undefined?{baseUrl:input.baseUrl||null}:{}),...(input.apiBaseUrl!==undefined?{apiBaseUrl:input.apiBaseUrl||null}:{}),...(input.active!==undefined?{active:Boolean(input.active)}:{}),...(input.status!==undefined?{status:String(input.status)}:{}),...(input.credentialStatus!==undefined?{credentialStatus:String(input.credentialStatus)}:{})}});
   },
-  async ingestProducts(networkId: string, products: Array<Record<string, unknown>>){
+  async ingestProducts(networkId: string, products: Array<Record<string, any>>){
     const network=await prisma.affiliateNetwork.findUnique({where:{id:networkId}}); if(!network) throw new Error('NETWORK_NOT_FOUND');
     let created=0,updated=0;
     for(const raw of products||[]){
@@ -68,7 +68,7 @@ export const affiliateIntelligenceService = {
     await prisma.affiliateNetwork.update({where:{id:networkId},data:{lastScanAt:new Date()}});
     return {created,updated,total:created+updated};
   },
-  async importAffiliateOffer(networkId: string, input: Record<string, unknown>){
+  async importAffiliateOffer(networkId: string, input: Record<string, any>){
     const network=await prisma.affiliateNetwork.findUnique({where:{id:networkId}});
     if(!network) throw new Error('NETWORK_NOT_FOUND');
     const name=String(input.name||'').trim();
@@ -128,7 +128,7 @@ export const affiliateIntelligenceService = {
   async topProducts(take=50){ return prisma.affiliateProduct.findMany({take:Math.min(Math.max(take,1),200),orderBy:{opportunityScore:'desc'},include:{network:{select:{name:true,slug:true}},_count:{select:{campaigns:true,scores:true}}}}); },
   async opportunities(status?:string){ return prisma.affiliateOpportunity.findMany({where:status?{status}:undefined,orderBy:[{score:'desc'},{createdAt:'desc'}],take:200,include:{product:{include:{network:{select:{name:true,slug:true}}}}}}); },
   async campaigns(status?:string){ return prisma.affiliateCampaign.findMany({where:status?{status}:undefined,orderBy:{createdAt:'desc'},take:100,include:{product:{select:{id:true,name:true,opportunityScore:true}},contents:{orderBy:{createdAt:'desc'}},actions:{orderBy:{createdAt:'desc'}}}}); },
-  async createCampaign(input: Record<string, unknown>){
+  async createCampaign(input: Record<string, any>){
     const product=await prisma.affiliateProduct.findUnique({where:{id:input.productId}}); if(!product) throw new Error('PRODUCT_NOT_FOUND');
     const name=String(input.name || (product.name + ' - campanha de vendas')).trim();
     if(!name) throw new Error('CAMPAIGN_NAME_REQUIRED');
