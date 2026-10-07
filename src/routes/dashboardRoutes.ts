@@ -37,8 +37,9 @@ router.get('/overview', adminAuthorization, async (_req, res) => {
         totalOrders: metrics.orders.total
       }
     });
-  } catch (error) {
-    console.error('[Dashboard] Erro ao buscar overview:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('[Dashboard] Erro ao buscar overview:', message);
     res.status(500).json({
       success: false,
       message: 'Erro ao carregar métricas do dashboard'
@@ -51,8 +52,9 @@ router.get('/operations', adminAuthorization, async (_req, res) => {
   const check = async <T>(label: string, fn: () => Promise<T>, fallback: T): Promise<Check<T>> => {
     try {
       return { ok: true, value: await fn() };
-    } catch (error) {
-      console.warn('[Dashboard] Falha em', label, error);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn('[Dashboard] Falha em', label, message);
       return { ok: false, value: fallback };
     }
   };
