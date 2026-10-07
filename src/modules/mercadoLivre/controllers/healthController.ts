@@ -4,7 +4,7 @@ import axios from 'axios';
 import { prisma } from '../lib/prisma';
 import { tokenService } from '../auth/tokenService';
 
-export const healthCheck = async (req: Request, res: Response) => {
+export const healthCheck = async (_req: Request, res: Response) => {
   try {
     console.log('[ML Health] 🟢 Iniciando health check...');
     
