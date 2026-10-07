@@ -102,7 +102,7 @@ export async function fetchMLMetrics(): Promise<MLMetricsData | null> {
   };
 }
 
-export const getMetrics = async (req: Request, res: Response) => {
+export const getMetrics = async (_req: Request, res: Response) => {
   try {
     console.log('[ML Metrics] 🟢 Buscando métricas...');
 
