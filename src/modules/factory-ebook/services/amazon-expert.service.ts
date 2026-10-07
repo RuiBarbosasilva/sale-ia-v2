@@ -1,3 +1,15 @@
+type BookStructure = Record<string, unknown>;
+type Niche = {
+  nome: string;
+  publico: string;
+  precoIdeal: string;
+  margemLucro: string;
+  potencial: number;
+  exemplos: string[];
+  palavrasChave: string[];
+  dicasEspeciais: string;
+};
+
 export class AmazonExpertService {
 
   async analisarNicho(nicho: string) {
@@ -107,7 +119,7 @@ export class AmazonExpertService {
     const analise = await this.analisarNicho(nicho);
     if (analise.erro) return analise;
 
-    const estruturas: any = {
+    const estruturas: Record<string, BookStructure> = {
       'colorir': {
         paginas: 50,
         estrutura: [
@@ -208,7 +220,7 @@ export class AmazonExpertService {
       '[TEMA] em [NUMERO] Paginas: [BENEFICIO] para [PUBLICO]'
     ];
 
-    const temas: any = {
+    const temas: Record<string, string[]> = {
       animais: ['Animais da Floresta', 'Animais Marinhos', 'Dinossauros', 'Borboletas', 'Gatos', 'Cachorros'],
       natureza: ['Flores', 'Jardim Encantado', 'Paisagens', 'Arvores', 'Frutas'],
       fantasia: ['Princesas', 'Fadas', 'Unicornios', 'Sereias', 'Dragoes'],
@@ -216,13 +228,13 @@ export class AmazonExpertService {
       infantil: ['Veiculos', 'Espaco Sideral', 'Super-Herois', 'Desenhos Animados']
     };
 
-    const publicos: any = {
+    const publicos: Record<string, string> = {
       colorir: 'Adultos e Criancas',
       atividade: 'Criancas de 4-8 anos',
       low_content: 'Adultos Organizados'
     };
 
-    const beneficios: any = {
+    const beneficios: Record<string, string> = {
       colorir: 'Relaxamento e Criatividade',
       atividade: 'Diversao e Aprendizado',
       low_content: 'Organizacao e Produtividade'
@@ -294,7 +306,7 @@ export class AmazonExpertService {
   }
 
   private getCategoriasAmazon(nicho: string): string[] {
-    const categorias: any = {
+    const categorias: Record<string, string[]> = {
       animais: ['Crafts, Hobbies & Home > Animal & Nature Coloring Books', 'Childrens Books > Animals'],
       natureza: ['Crafts, Hobbies & Home > Nature Coloring Books', 'Arts & Photography > Landscape'],
       mindfulness: ['Self-Help > Meditation > Coloring Books', 'Health & Wellness > Stress Management'],
@@ -304,7 +316,7 @@ export class AmazonExpertService {
     return categorias[nicho.toLowerCase()] || ['Crafts, Hobbies & Home > General Coloring Books'];
   }
 
-  private getNichosLucrativos(): any[] {
+  private getNichosLucrativos(): Niche[] {
     return [
       {
         nome: 'animais',
