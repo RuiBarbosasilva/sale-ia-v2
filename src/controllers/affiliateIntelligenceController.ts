@@ -28,6 +28,7 @@ function boundedTake(value: unknown, fallback = 50): number {
 function err(res: Response, e: unknown): Response {
   const map: Record<string, number> = {
     NETWORK_NAME_REQUIRED: 400,
+    NETWORK_NAME_TOO_LONG: 400,
     NETWORK_NOT_FOUND: 404,
     PRODUCT_NOT_FOUND: 404,
     CAMPAIGN_NOT_FOUND: 404,
