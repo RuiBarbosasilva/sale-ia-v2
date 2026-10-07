@@ -209,8 +209,8 @@ export class ShipmentService {
         }
       }
 
-      stats.success = true;
-      console.log('[ML Shipments] ✅ Sincronização concluída');
+      stats.success = stats.failed === 0;
+      console.log('[ML Shipments] ' + (stats.success ? '✅ Sincronização concluída' : '⚠️ Sincronização concluída com falhas parciais'));
       console.log(`[ML Shipments] 📊 Estatísticas:`);
       console.log(`[ML Shipments]   Total encontrados: ${stats.totalFound}`);
       console.log(`[ML Shipments]   Criados: ${stats.created}`);
