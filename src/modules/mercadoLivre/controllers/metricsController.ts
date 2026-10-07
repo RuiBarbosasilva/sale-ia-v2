@@ -1,4 +1,4 @@
-﻿// src/modules/mercadoLivre/controllers/metricsController.ts
+// src/modules/mercadoLivre/controllers/metricsController.ts
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
 
@@ -70,7 +70,10 @@ export async function fetchMLMetrics(): Promise<MLMetricsData | null> {
     prisma.mercadoLivreShipment.groupBy({ by: ['status'], where: { accountId: account.id }, _count: { status: true } })
   ]);
 
-  const lastSync = lastItemSync?.lastSyncedAt || lastOrderSync?.lastSyncedAt || null;
+  const syncDates = [lastItemSync?.lastSyncedAt, lastOrderSync?.lastSyncedAt].filter((date): date is Date => Boolean(date));
+  const lastSync = syncDates.length
+    ? new Date(Math.max(...syncDates.map((date) => date.getTime())))
+    : null;
 
   return {
     account: {
