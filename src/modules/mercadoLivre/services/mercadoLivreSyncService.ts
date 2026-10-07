@@ -71,7 +71,7 @@ export class MercadoLivreSyncService {
         }
       }
 
-      stats.success = true;
+      stats.success = stats.failed === 0;
       return stats;
     } catch (error: any) {
       stats.success = false;
