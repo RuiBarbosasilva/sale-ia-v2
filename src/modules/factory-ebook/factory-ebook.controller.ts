@@ -36,6 +36,57 @@ export const gerarLivroPDF = async (req: Request, res: Response) => {
   }
 };
 
+export const gerarLivroCompleto = async (req: Request, res: Response) => {
+  try {
+    const config = req.body || {};
+    if (!String(config.titulo || '').trim() || !String(config.tema || '').trim()) {
+      return res.status(400).json({ sucesso: false, erro: 'Titulo e tema obrigatorios' });
+    }
+
+    const numeroPaginas = Math.max(1, Math.min(200, Number(config.numeroPaginas) || 10));
+    const prompts = Array.isArray(config.promptsImagem) && config.promptsImagem.length
+      ? config.promptsImagem
+      : Array.from({ length: numeroPaginas }, (_, i) =>
+          String(config.tema) + ', desenho original para colorir, página ' + (i + 1)
+        );
+
+    const imagens: any[] = Array.isArray(config.imagens) ? [...config.imagens] : [];
+    if (imagens.length < numeroPaginas) {
+      for (let i = imagens.length; i < numeroPaginas; i++) {
+        const generated = await geminiImage.gerarImagemUnica(
+          String(prompts[i] || config.tema),
+          'livro-' + Date.now() + '-' + (i + 1)
+        );
+        if (!generated.sucesso) {
+          return res.status(503).json({
+            sucesso: false,
+            etapa: 'imagem',
+            pagina: i + 1,
+            erro: generated.erro,
+            promptsImagem: prompts
+          });
+        }
+        imagens.push(generated);
+      }
+    }
+
+    const resultado = await pdfGenerator.gerarLivroColorir({
+      ...config,
+      numeroPaginas,
+      promptsImagem: prompts,
+      imagens
+    });
+    return res.json({
+      sucesso: Boolean(resultado?.sucesso),
+      etapa: 'pdf',
+      dados: resultado,
+      imagensGeradas: imagens.length
+    });
+  } catch (error: any) {
+    return res.status(500).json({ sucesso: false, erro: error?.message || 'Erro ao gerar livro completo' });
+  }
+};
+
 export const gerarImagemComGemini = async (req: Request, res: Response) => {
   try {
     const { prompt, fileName } = req.body;
