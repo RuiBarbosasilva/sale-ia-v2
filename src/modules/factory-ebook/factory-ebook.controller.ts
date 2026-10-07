@@ -15,13 +15,13 @@ export const analisarNichoAmazon = async (req: Request, res: Response) => {
   try {
     const resultado = await amazonExpert.analisarNicho(req.params.nicho);
     return res.json({ sucesso: true, dados: resultado });
-  } catch (error: any) { return res.status(500).json({ sucesso: false, erro: error.message }); }
+  } catch (error: unknown) { return res.status(500).json({ sucesso: false, erro: error instanceof Error ? error.message : 'Erro interno' }); }
 };
 
 export const listarTendenciasAmazon = async (req: Request, res: Response) => {
   try {
     return res.json({ sucesso: true, dados: await amazonExpert.listarTendencias() });
-  } catch (error: any) { return res.status(500).json({ sucesso: false, erro: error.message }); }
+  } catch (error: unknown) { return res.status(500).json({ sucesso: false, erro: error instanceof Error ? error.message : 'Erro interno' }); }
 };
 
 export const gerarLivroPDF = async (req: Request, res: Response) => {
@@ -82,8 +82,8 @@ export const gerarLivroCompleto = async (req: Request, res: Response) => {
       dados: resultado,
       imagensGeradas: imagens.length
     });
-  } catch (error: any) {
-    return res.status(500).json({ sucesso: false, erro: error?.message || 'Erro ao gerar livro completo' });
+  } catch (error: unknown) {
+    return res.status(500).json({ sucesso: false, erro: error instanceof Error ? error.message : 'Erro ao gerar livro completo' });
   }
 };
 
@@ -93,7 +93,7 @@ export const gerarImagemComGemini = async (req: Request, res: Response) => {
     if (!prompt || !fileName) return res.status(400).json({ sucesso: false, erro: 'Prompt e fileName obrigatorios' });
     const resultado = await geminiImage.gerarImagemUnica(prompt, fileName);
     return res.json(resultado);
-  } catch (error: any) { return res.status(500).json({ sucesso: false, erro: error.message }); }
+  } catch (error: unknown) { return res.status(500).json({ sucesso: false, erro: error instanceof Error ? error.message : 'Erro interno' }); }
 };
 
 export const prepararUploadAmazon = async (req: Request, res: Response) => {
@@ -101,7 +101,7 @@ export const prepararUploadAmazon = async (req: Request, res: Response) => {
     const { metadataLivro } = req.body;
     if (!metadataLivro) return res.status(400).json({ sucesso: false, erro: 'Metadata do livro obrigatoria' });
     return res.json({ sucesso: true, dados: amazonUpload.gerarMetadadosKDP(metadataLivro) });
-  } catch (error: any) { return res.status(500).json({ sucesso: false, erro: error.message }); }
+  } catch (error: unknown) { return res.status(500).json({ sucesso: false, erro: error instanceof Error ? error.message : 'Erro interno' }); }
 };
 
 export const gerarCalendarioSocial = async (req: Request, res: Response) => {
@@ -109,11 +109,11 @@ export const gerarCalendarioSocial = async (req: Request, res: Response) => {
     const { metadataLivro } = req.body;
     if (!metadataLivro) return res.status(400).json({ sucesso: false, erro: 'Metadata do livro obrigatoria' });
     return res.json({ sucesso: true, dados: socialPublisher.gerarCalendario30Dias(metadataLivro) });
-  } catch (error: any) { return res.status(500).json({ sucesso: false, erro: error.message }); }
+  } catch (error: unknown) { return res.status(500).json({ sucesso: false, erro: error instanceof Error ? error.message : 'Erro interno' }); }
 };
 
 export const listarLivrosGerados = async (req: Request, res: Response) => {
   try {
     return res.json({ sucesso: true, livros: await pdfGenerator.listarLivrosGerados() });
-  } catch (error: any) { return res.status(500).json({ sucesso: false, erro: error.message }); }
+  } catch (error: unknown) { return res.status(500).json({ sucesso: false, erro: error instanceof Error ? error.message : 'Erro interno' }); }
 };
