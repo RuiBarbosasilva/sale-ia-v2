@@ -18,14 +18,14 @@ function guard(req: Request, res: Response) {
   return true;
 }
 
-function boundedTake(value: unknown, fallback = 50) {
+function boundedTake(value: unknown, fallback = 50): number {
   if (value === undefined) return fallback;
   const n = Number(value);
   if (!Number.isInteger(n) || n < 1 || n > 200) throw new Error('INVALID_TAKE');
   return n;
 }
 
-function err(res: Response, e: unknown) {
+function err(res: Response, e: unknown): Response {
   const map: Record<string, number> = {
     NETWORK_NAME_REQUIRED: 400,
     NETWORK_NOT_FOUND: 404,
