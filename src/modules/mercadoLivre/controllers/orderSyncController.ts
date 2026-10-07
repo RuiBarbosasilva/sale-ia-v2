@@ -25,7 +25,7 @@ export const syncOrders = async (req: Request, res: Response) => {
       stats: { totalFound: stats.totalFound, created: stats.created, updated: stats.updated, failed: stats.failed, syncedAt: stats.syncedAt },
       account: { id: account.id, nickname: account.nickname, mlUserId: account.mlUserId }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     const code = error instanceof Error && error.message === 'INVALID_PAGINATION' ? 'INVALID_PAGINATION' : 'MERCADO_LIVRE_ORDERS_SYNC_ERROR';
     return res.status(code === 'INVALID_PAGINATION' ? 400 : 500).json({ success: false, error: code, requestId: (req as Request & { requestId?: string }).requestId });
   }
