@@ -1,5 +1,12 @@
+type LivroSocialMetadata = {
+  titulo: string;
+  tema: string;
+};
+
+type HookMap = Record<string, string>;
+
 export class SocialPublisherService {
-  gerarCalendario30Dias(metadataLivro: any) {
+  gerarCalendario30Dias(metadataLivro: LivroSocialMetadata) {
     const temas = ['Bastidores da criação', 'Dica de colorir', 'Desafio da semana', 'Depoimento de cliente real', 'Antes e Depois'];
     const dias = [];
     
@@ -19,7 +26,7 @@ export class SocialPublisherService {
   }
 
   private getHook(tema: string, nicho: string): string {
-    const hooks: any = {
+    const hooks: HookMap = {
       'Bastidores da criação': 'Você não vai acreditar em quanto tempo levei para criar este desenho de ' + nicho + '...',
       'Dica de colorir': 'Pare de estragar seus desenhos! Use esta dica simples para ' + nicho + '...',
       'Desafio da semana': 'Duvido você colorir esta página de ' + nicho + ' em menos de 10 minutos!',
