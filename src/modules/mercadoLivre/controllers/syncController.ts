@@ -19,7 +19,7 @@ export const syncItems = async (req: Request, res: Response) => {
       account: { id: account.id, nickname: account.nickname, mlUserId: account.mlUserId }
     });
   } catch (error) {
-    console.error('[ML Sync API] Falha na sincronização', { requestId: (req as any).requestId });
+    console.error('[ML Sync API] Falha na sincronização', { requestId: (req as any).requestId, error });
     return res.status(500).json({ success: false, error: 'MERCADO_LIVRE_SYNC_ERROR', requestId: (req as any).requestId });
   }
 };
