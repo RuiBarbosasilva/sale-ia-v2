@@ -29,7 +29,7 @@ export class MercadoLivreSyncService {
       const accessToken = await tokenService.getValidToken(accountId);
       const client = new MercadoLivreClient(
         accessToken,
-        () => tokenService.refreshToken(accountId, 'placeholder')
+        () => tokenService.getValidToken(accountId)
       );
 
       const itemIds: string[] = [];
@@ -91,7 +91,7 @@ export class MercadoLivreSyncService {
     const accessToken = await tokenService.getValidToken(accountId);
     const client = new MercadoLivreClient(
       accessToken,
-      () => tokenService.refreshToken(accountId, 'placeholder')
+      () => tokenService.getValidToken(accountId)
     );
 
     const item = await client.get<any>(`/items/${mlItemId}`);
