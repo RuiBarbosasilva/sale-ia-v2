@@ -77,11 +77,12 @@ export class PDFGeneratorService {
             arquivoPDF: pdfPath,
             promptsImagem: config.promptsImagem || [],
             checklist: [
-              '1. Gerar imagens reais usando os prompts abaixo (via Gemini/Canva)',
-              '2. Substituir os placeholders no PDF ou usar Canva para montar',
-              '3. Criar capa profissional',
-              '4. Fazer upload no kdp.amazon.com'
-            ]
+              'PDF gerado pelo pipeline',
+              imagens.length >= numPaginas ? 'Todas as páginas receberam imagens geradas' : 'Algumas páginas ainda usam briefing/prompts',
+              config.coverPath ? 'Capa fornecida pelo pipeline' : 'Capa ainda não fornecida',
+              'Publicação KDP requer credenciais e confirmação de publicação'
+            ],
+            status: imagens.length >= numPaginas && Boolean(config.coverPath) ? 'READY_FOR_REVIEW' : 'REVIEW_REQUIRED'
           };
           fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
           resolve({ sucesso: true, pdfPath, metadataPath, metadata });
