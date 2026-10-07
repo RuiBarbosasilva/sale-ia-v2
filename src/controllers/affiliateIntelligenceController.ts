@@ -34,6 +34,7 @@ function err(res: Response, e: unknown) {
     AFFILIATE_PRODUCT_NAME_REQUIRED: 400,
     AFFILIATE_URL_REQUIRED: 400,
     INVALID_TAKE: 400,
+    PRODUCTS_MUST_BE_ARRAY: 400,
     CAMPAIGN_NAME_REQUIRED: 400,
   };
   const raw = e instanceof Error ? e.message : '';
