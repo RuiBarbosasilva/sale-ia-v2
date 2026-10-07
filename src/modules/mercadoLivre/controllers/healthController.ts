@@ -106,7 +106,7 @@ export const healthCheck = async (_req: Request, res: Response) => {
       apiReachable,
       authenticationValid,
       tokenExpiresAt,
-      lastSync: lastSync?.lastSyncedAt || null,
+      lastSync,
       rateLimitState: 'OK',
       account: {
         id: account.id,
