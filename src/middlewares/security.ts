@@ -10,9 +10,10 @@ const rateLimitBuckets = new Map<string, { count: number; resetAt: number }>();
 
 function adminFailureAllowed(ip: string) {
   const now = Date.now();
-  const current = adminFailures.get(ip);
+  const safeIp = String(ip || 'unknown').slice(0, 128);
+  const current = adminFailures.get(safeIp);
   if (!current || current.resetAt <= now) {
-    adminFailures.set(ip, { count: 1, resetAt: now + ADMIN_FAILURE_WINDOW_MS });
+    adminFailures.set(safeIp, { count: 1, resetAt: now + ADMIN_FAILURE_WINDOW_MS });
     return true;
   }
   if (current.count >= ADMIN_FAILURE_LIMIT) return false;
@@ -21,7 +22,7 @@ function adminFailureAllowed(ip: string) {
 }
 
 function adminFailureClear(ip: string) {
-  adminFailures.delete(ip);
+  adminFailures.delete(String(ip || 'unknown').slice(0, 128));
 }
 
 function pruneRateLimitBuckets(now: number) {
