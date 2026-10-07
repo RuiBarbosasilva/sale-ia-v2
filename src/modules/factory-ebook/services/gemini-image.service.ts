@@ -4,7 +4,7 @@ import * as path from 'path';
 
 export class GeminiImageService {
   private apiKey = process.env.GEMINI_API_KEY || '';
-  private baseURL = 'https://generativelanguage.googleapis.com/v1beta';
+  private baseURL = 'https://generativelanguage.googleapis.com/v1';
 
   async gerarImagemUnica(prompt: string, fileName: string) {
     if (!this.apiKey) return { sucesso: false, erro: 'GEMINI_API_KEY nao configurada no .env' };
@@ -15,10 +15,10 @@ export class GeminiImageService {
       
       // Usando o modelo estavel e oficial gemini-1.5-flash
       const response = await axios.post(
-        this.baseURL + '/models/gemini-1.5-flash:generateContent?key=' + this.apiKey,
+        this.baseURL + '/models/gemini-2.5-flash-image:generateContent?key=' + this.apiKey,
         {
           contents: [{ parts: [{ text: promptOtimizado }] }],
-          generationConfig: { responseModalities: ['IMAGE', 'TEXT'] }
+          generationConfig: { responseModalities: ['IMAGE'] }
         }
       );
       
