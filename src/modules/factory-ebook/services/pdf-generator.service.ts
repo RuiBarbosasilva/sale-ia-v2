@@ -114,8 +114,16 @@ export class PDFGeneratorService {
   async listarLivrosGerados() {
     const baseDir = path.resolve(process.cwd(), 'output', 'factory-ebook');
     if (!fs.existsSync(baseDir)) return [];
-    return fs.readdirSync(baseDir).filter(f => f.endsWith('_metadata.json')).map(f => {
-      return JSON.parse(fs.readFileSync(path.join(baseDir, f), 'utf-8'));
-    });
+    const arquivos = fs.readdirSync(baseDir).filter(f => f.endsWith('_metadata.json'));
+    const livros: unknown[] = [];
+    for (const arquivo of arquivos) {
+      try {
+        livros.push(JSON.parse(fs.readFileSync(path.join(baseDir, arquivo), 'utf-8')) as unknown);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'JSON inválido';
+        console.warn(`[PDFGenerator] Metadata ignorada (${arquivo}): ${message}`);
+      }
+    }
+    return livros;
   }
 }
