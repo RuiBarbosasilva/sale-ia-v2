@@ -1,4 +1,4 @@
-﻿// src/modules/mercadoLivre/controllers/syncController.ts
+// src/modules/mercadoLivre/controllers/syncController.ts
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
 import { mercadoLivreSyncService } from '../services/mercadoLivreSyncService';
@@ -18,7 +18,7 @@ export const syncItems = async (req: Request, res: Response) => {
       stats: { totalFound: stats.totalFound, created: stats.created, updated: stats.updated, failed: stats.failed, syncedAt: stats.syncedAt },
       account: { id: account.id, nickname: account.nickname, mlUserId: account.mlUserId }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('[ML Sync API] Falha na sincronização', { requestId: (req as Request & { requestId?: string }).requestId, error });
     return res.status(500).json({ success: false, error: 'MERCADO_LIVRE_SYNC_ERROR', requestId: (req as Request & { requestId?: string }).requestId });
   }
