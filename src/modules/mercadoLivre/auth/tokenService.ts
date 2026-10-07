@@ -75,7 +75,7 @@ export class TokenService {
       throw new Error('MERCADO_LIVRE_INVALID_TOKEN_RESPONSE');
     }
 
-    await prisma.mercadoLivreToken.updateMany({
+    const updated = await prisma.mercadoLivreToken.updateMany({
       where: { accountId },
       data: {
         accessToken: encrypt(access_token),
@@ -83,6 +83,8 @@ export class TokenService {
         expiresAt: new Date(Date.now() + Number(expires_in) * 1000),
       }
     });
+
+    if (updated.count === 0) throw new Error('MERCADO_LIVRE_TOKEN_NOT_FOUND');
 
     return access_token;
   }
