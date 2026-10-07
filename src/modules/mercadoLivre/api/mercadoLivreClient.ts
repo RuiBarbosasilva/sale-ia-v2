@@ -30,7 +30,7 @@ export class MercadoLivreClient {
     this.client.interceptors.response.use(
       (response) => response,
       async (error: AxiosError) => {
-        const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+        const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean; _rateLimitRetryCount?: number };
 
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
@@ -45,8 +45,15 @@ export class MercadoLivreClient {
         }
 
         if (error.response?.status === 429) {
-          const retryAfter = error.response.headers['retry-after'] || 5;
-          await new Promise(resolve => setTimeout(resolve, Number(retryAfter) * 1000));
+          const retryCount = originalRequest._rateLimitRetryCount ?? 0;
+          if (retryCount >= 3) throw new Error('MERCADO_LIVRE_RATE_LIMIT_RETRIES_EXCEEDED');
+          originalRequest._rateLimitRetryCount = retryCount + 1;
+          const retryAfterHeader = error.response.headers['retry-after'];
+          const retryAfterSeconds = Number(retryAfterHeader);
+          const delayMs = Number.isFinite(retryAfterSeconds) && retryAfterSeconds >= 0
+            ? Math.min(retryAfterSeconds * 1000, 30000)
+            : 5000;
+          await new Promise(resolve => setTimeout(resolve, delayMs));
           return this.client(originalRequest);
         }
 
