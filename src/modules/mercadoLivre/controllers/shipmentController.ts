@@ -30,7 +30,7 @@ export const syncShipments = async (req: Request, res: Response) => {
       account: { id: account.id, nickname: account.nickname, mlUserId: account.mlUserId }
     });
   } catch (error) {
-    return res.status(500).json({ success: false, error: 'MERCADO_LIVRE_SHIPMENTS_SYNC_ERROR', requestId: (req as any).requestId });
+    return res.status(500).json({ success: false, error: 'MERCADO_LIVRE_SHIPMENTS_SYNC_ERROR', requestId: (req as Request & { requestId?: string }).requestId });
   }
 };
 
@@ -45,7 +45,7 @@ export const listShipments = async (req: Request, res: Response) => {
     return res.json({ success: true, account: { id: account.id, nickname: account.nickname, mlUserId: account.mlUserId }, ...result });
   } catch (error) {
     const code = error instanceof Error && error.message === 'INVALID_PAGINATION' ? 'INVALID_PAGINATION' : 'MERCADO_LIVRE_SHIPMENTS_ERROR';
-    return res.status(code === 'INVALID_PAGINATION' ? 400 : 500).json({ success: false, error: code, requestId: (req as any).requestId });
+    return res.status(code === 'INVALID_PAGINATION' ? 400 : 500).json({ success: false, error: code, requestId: (req as Request & { requestId?: string }).requestId });
   }
 };
 
@@ -57,7 +57,7 @@ export const getShipment = async (req: Request, res: Response) => {
     return res.json(await shipmentService.getShipment(account.id, id));
   } catch (error) {
     const code = error instanceof Error && error.message === 'INVALID_SHIPMENT_ID' ? 'INVALID_SHIPMENT_ID' : 'MERCADO_LIVRE_SHIPMENT_ERROR';
-    return res.status(code === 'INVALID_SHIPMENT_ID' ? 400 : 500).json({ error: code, requestId: (req as any).requestId });
+    return res.status(code === 'INVALID_SHIPMENT_ID' ? 400 : 500).json({ error: code, requestId: (req as Request & { requestId?: string }).requestId });
   }
 };
 
@@ -69,6 +69,6 @@ export const getShipmentLabel = async (req: Request, res: Response) => {
     return res.json(await shipmentService.getShipmentLabel(account.id, id));
   } catch (error) {
     const code = error instanceof Error && error.message === 'INVALID_SHIPMENT_ID' ? 'INVALID_SHIPMENT_ID' : 'MERCADO_LIVRE_SHIPMENT_LABEL_ERROR';
-    return res.status(code === 'INVALID_SHIPMENT_ID' ? 400 : 500).json({ error: code, requestId: (req as any).requestId });
+    return res.status(code === 'INVALID_SHIPMENT_ID' ? 400 : 500).json({ error: code, requestId: (req as Request & { requestId?: string }).requestId });
   }
 };
