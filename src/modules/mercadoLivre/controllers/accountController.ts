@@ -47,7 +47,7 @@ export const getAccount = async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('[ML Account] Falha ao buscar conta', { requestId: (req as any).requestId });
-    return res.status(500).json({ error: 'MERCADO_LIVRE_ACCOUNT_ERROR', requestId: (req as any).requestId });
+    console.error('[ML Account] Falha ao buscar conta', { requestId: (req as Request & { requestId?: string }).requestId });
+    return res.status(500).json({ error: 'MERCADO_LIVRE_ACCOUNT_ERROR', requestId: (req as Request & { requestId?: string }).requestId });
   }
 };
