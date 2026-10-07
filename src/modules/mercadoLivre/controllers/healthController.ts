@@ -6,7 +6,7 @@ import { tokenService } from '../auth/tokenService';
 
 export const healthCheck = async (_req: Request, res: Response) => {
   try {
-    console.log('[ML Health] 🟢 Iniciando health check...');
+    console.log('[ML Health] Iniciando health check...');
     
     // 1. Buscar conta ativa
     const account = await prisma.mercadoLivreAccount.findFirst({
@@ -15,7 +15,7 @@ export const healthCheck = async (_req: Request, res: Response) => {
     });
 
     if (!account) {
-      console.log('[ML Health] ⚠️ Nenhuma conta ativa');
+      console.log('[ML Health] Nenhuma conta ativa');
       return res.json({
         apiReachable: false,
         authenticationValid: false,
@@ -26,7 +26,7 @@ export const healthCheck = async (_req: Request, res: Response) => {
       });
     }
 
-    console.log('[ML Health] ✅ Conta encontrada:', account.nickname);
+    console.log('[ML Health] Conta encontrada:', account.nickname);
 
     // 2. Buscar token válido
     let accessToken: string | null = null;
@@ -69,7 +69,7 @@ export const healthCheck = async (_req: Request, res: Response) => {
       if (userResponse.status === 200 && userResponse.data?.id) {
         apiReachable = true;
         authenticationValid = true;
-        console.log('[ML Health] ✅ API acessível e token válido');
+        console.log('[ML Health] API acessível e token válido');
       }
     } catch (error: unknown) {
       console.error('[ML Health] ❌ Erro ao chamar /users/me:', error instanceof Error ? error.message : 'UNKNOWN_ERROR');
