@@ -39,10 +39,12 @@ export const affiliateIntelligenceService = {
   async listNetworks(){ return prisma.affiliateNetwork.findMany({orderBy:{name:'asc'},include:{_count:{select:{products:true,actions:true}}}}); },
   async createNetwork(input: Record<string, any>){
     const name=String(input.name||'').trim(); if(!name) throw new Error('NETWORK_NAME_REQUIRED');
+    if (name.length > 120) throw new Error('NETWORK_NAME_TOO_LONG');
     return prisma.affiliateNetwork.create({data:{name,slug:slug(String(input.slug||name)),type:String(input.type||'AFFILIATE_NETWORK'),baseUrl:input.baseUrl||null,apiBaseUrl:input.apiBaseUrl||null,status:String(input.status||'CONFIGURED'),metadata:input.metadata?JSON.stringify(input.metadata):null}});
   },
   async updateNetwork(id: string, input: Record<string, any>){
     const current=await prisma.affiliateNetwork.findUnique({where:{id}}); if(!current) throw new Error('NETWORK_NOT_FOUND');
+    if (input.name !== undefined && String(input.name).trim().length > 120) throw new Error('NETWORK_NAME_TOO_LONG');
     return prisma.affiliateNetwork.update({where:{id},data:{...(input.name!==undefined?{name:String(input.name).trim()}:{}),...(input.baseUrl!==undefined?{baseUrl:input.baseUrl||null}:{}),...(input.apiBaseUrl!==undefined?{apiBaseUrl:input.apiBaseUrl||null}:{}),...(input.active!==undefined?{active:Boolean(input.active)}:{}),...(input.status!==undefined?{status:String(input.status)}:{}),...(input.credentialStatus!==undefined?{credentialStatus:String(input.credentialStatus)}:{})}});
   },
   async ingestProducts(networkId: string, products: Array<Record<string, any>>){
