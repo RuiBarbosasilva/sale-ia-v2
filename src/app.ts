@@ -104,19 +104,18 @@ app.use('/api/sales-orchestration', salesOrchestrationRoutes);
 app.use('/api/opportunity-sales', opportunitySalesBridgeRoutes);
 
 app.use('/api/rb-factory-sales', rbFactorySalesRoutes);
-
 app.use('/api/rb-factory-sales-agent', rbFactorySalesAgentRoutes);
-
 app.use('/api/rb-factory-sales-autonomy', rbFactorySalesAutonomyRoutes);
-
 app.use('/api/rb-factory-maintenance', rbFactorySiteMaintenanceRoutes);
-
 app.use('/api/rb-factory-commercial', rbFactoryCommercialRoutes);
+
 app.use('/go', affiliatePublicRoutes);
 app.use('/api/mercadolivre', mlRoutes);
 app.use('/api/credenciais', credenciaisRoutes);
 app.use('/dashboard', dashboardRoutes);
+
 startRbFactoryMaintenanceJob();
+
 // ==========================================
 // ROTAS DO MÓDULO AFILIADOS IA E OUTROS
 // (DEVEM VIR ANTES DO errorHandler)
@@ -124,6 +123,7 @@ startRbFactoryMaintenanceJob();
 app.post('/api/affiliates/webhook/:provider', handleAffiliateWebhook);
 app.use('/api/factory-ebook', factoryEbookRoutes);
 app.use('/api/afiliados', afiliadosIaRoutes);
+app.use('/api/afiliados/produtos', produtosRoutes); // <-- CORREÇÃO: Rota agora conectada!
 app.use('/api/publishers', publisherRoutes);
 app.use('/api/ml-seller', mlSellerRoutes);
 app.use('/api/content-factory', contentFactoryRoutes);
