@@ -12,9 +12,9 @@ const DEFAULT_NETWORKS = [
   ['Mercado Livre Afiliados','mercado-livre-afiliados','https://www.mercadolivre.com.br','']
 ];
 
-function num(v: unknown, fallback=0){ const n=Number(v); return Number.isFinite(n)?n:fallback; }
-function clamp(v: number){ return Math.max(0,Math.min(100,v)); }
-function slug(s: string){ return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,50); }
+function num(v: unknown, fallback = 0): number { const n = Number(v); return Number.isFinite(n) ? n : fallback; }
+function clamp(v: number): number { return Math.max(0, Math.min(100, v)); }
+function slug(s: string): string { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,50); }
 
 function scoreProduct(p: Record<string, any>){
   const commission=clamp(num(p.commissionRate,0));
