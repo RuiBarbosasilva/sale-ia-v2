@@ -105,9 +105,11 @@ export const salesOrchestrationService = {
   },
   async markFollowUp(idv:string,status:string){
     await init();
+    const safeId = text(idv,120);
+    if (!safeId) throw new Error('INVALID_FOLLOWUP_ID');
     const allowed=['PENDING','READY','DONE','CANCELLED'];
     if(!allowed.includes(status)) throw new Error('INVALID_FOLLOWUP_STATUS');
-    await (prisma as any).$executeRawUnsafe('UPDATE "SalesFollowUp" SET status=? WHERE id=?',status,idv);
-    return (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesFollowUp" WHERE id=?',idv);
+    await (prisma as any).$executeRawUnsafe('UPDATE "SalesFollowUp" SET status=? WHERE id=?',status,safeId);
+    return (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesFollowUp" WHERE id=?',safeId);
   }
 };
