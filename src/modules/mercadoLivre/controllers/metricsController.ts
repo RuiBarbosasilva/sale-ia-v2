@@ -122,12 +122,13 @@ export const getMetrics = async (_req: unknown, res: Response) => {
     });
 
     res.json({ success: true, data: metrics });
-  } catch (error: any) {
-    console.error('[ML Metrics] ❌ Erro ao buscar métricas:', error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Erro desconhecido';
+    console.error('[ML Metrics] ❌ Erro ao buscar métricas:', message);
     res.status(500).json({
       success: false,
       message: 'Erro ao carregar métricas',
-      error: error.message
+      error: message
     });
   }
 };
