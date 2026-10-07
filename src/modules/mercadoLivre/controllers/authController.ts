@@ -21,7 +21,7 @@ export const connect = (req: Request, res: Response) => {
       return res.status(500).json({
         success: false,
         error: 'MERCADO_LIVRE_OAUTH_NOT_CONFIGURED',
-        requestId: (req as any).requestId,
+        requestId: (req as Request & { requestId?: string }).requestId,
       });
     }
 
@@ -38,7 +38,7 @@ export const connect = (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       error: 'MERCADO_LIVRE_OAUTH_INIT_FAILED',
-      requestId: (req as any).requestId,
+      requestId: (req as Request & { requestId?: string }).requestId,
     });
   }
 };
@@ -105,7 +105,7 @@ export const callback = async (req: Request, res: Response) => {
         isActive: true,
       },
       create: {
-        userId: (req as any).user?.id || 'SYSTEM',
+        userId: (req as Request & { user?: { id?: string } }).user?.id || 'SYSTEM',
         mlUserId: String(userData.id),
         nickname: typeof userData.nickname === 'string' ? userData.nickname.slice(0, 120) : null,
         siteId: typeof userData.site_id === 'string' ? userData.site_id.slice(0, 20) : 'MLB',
@@ -120,7 +120,7 @@ export const callback = async (req: Request, res: Response) => {
   } catch (error) {
     const status = axios.isAxiosError(error) ? error.response?.status : undefined;
     console.warn('[ML OAuth] callback failed', {
-      requestId: (req as any).requestId,
+      requestId: (req as Request & { requestId?: string }).requestId,
       providerStatus: status || 'unknown',
     });
     return redirectError(res, 'MERCADO_LIVRE_OAUTH_FAILED');
@@ -131,7 +131,7 @@ export const disconnect = async (req: Request, res: Response) => {
   try {
     const accountId = req.params.accountId;
     if (!/^[A-Za-z0-9_-]{10,100}$/.test(accountId)) {
-      return res.status(400).json({ success: false, error: 'INVALID_ACCOUNT_ID', requestId: (req as any).requestId });
+      return res.status(400).json({ success: false, error: 'INVALID_ACCOUNT_ID', requestId: (req as Request & { requestId?: string }).requestId });
     }
 
     const result = await prisma.mercadoLivreAccount.updateMany({
@@ -140,11 +140,11 @@ export const disconnect = async (req: Request, res: Response) => {
     });
 
     if (result.count === 0) {
-      return res.status(404).json({ success: false, error: 'MERCADO_LIVRE_ACCOUNT_NOT_FOUND', requestId: (req as any).requestId });
+      return res.status(404).json({ success: false, error: 'MERCADO_LIVRE_ACCOUNT_NOT_FOUND', requestId: (req as Request & { requestId?: string }).requestId });
     }
 
     return res.json({ success: true, message: 'MERCADO_LIVRE_ACCOUNT_DISCONNECTED' });
   } catch {
-    return res.status(500).json({ success: false, error: 'MERCADO_LIVRE_DISCONNECT_FAILED', requestId: (req as any).requestId });
+    return res.status(500).json({ success: false, error: 'MERCADO_LIVRE_DISCONNECT_FAILED', requestId: (req as Request & { requestId?: string }).requestId });
   }
 };
