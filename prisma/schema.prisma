@@ -216,6 +216,7 @@ model WebsiteProspect {
   updatedAt DateTime @updatedAt
 
   demos     WebsiteDemo[]
+  rbFactoryClients RbFactorySiteClient[]
   proposals WebsiteProposal[]
   projects  WebsiteProject[]
 
@@ -1442,4 +1443,86 @@ model AfiliadoPublicacao {
   @@index([produtoId])
   @@index([canal, status])
   @@index([postIdExterno])
+}
+
+
+model RbFactorySiteClient {
+  id String @id @default(uuid())
+  prospectId String
+  projectId String?
+  currentDemoId String?
+  companyName String
+  domainName String?
+  contactName String?
+  contactPhone String?
+  contactEmail String?
+  status String @default("ACTIVE")
+  maintenancePlan String @default("MONITORING")
+  suggestionIntervalDays Int @default(30)
+  nextSuggestionAt DateTime?
+  lastSuggestionAt DateTime?
+  lastChangeAt DateTime?
+  currentSourceCode String?
+  contentSnapshot String?
+  metadata String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  prospect WebsiteProspect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+  changeRequests RbFactorySiteChangeRequest[]
+  suggestions RbFactorySiteSuggestion[]
+  snapshots RbFactorySiteSnapshot[]
+  @@index([status])
+  @@index([prospectId])
+  @@index([nextSuggestionAt])
+}
+
+model RbFactorySiteChangeRequest {
+  id String @id @default(uuid())
+  clientId String
+  type String @default("CONTENT")
+  title String
+  description String
+  priority String @default("NORMAL")
+  status String @default("OPEN")
+  requestedBy String?
+  source String @default("CLIENT")
+  appliedDemoId String?
+  resolutionNotes String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  client RbFactorySiteClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  @@index([clientId])
+  @@index([status])
+}
+
+model RbFactorySiteSuggestion {
+  id String @id @default(uuid())
+  clientId String
+  category String
+  title String
+  reason String
+  proposal String
+  priority String @default("NORMAL")
+  status String @default("DRAFT")
+  scheduledFor DateTime?
+  sentAt DateTime?
+  createdAt DateTime @default(now())
+  client RbFactorySiteClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  @@index([clientId])
+  @@index([status])
+  @@index([scheduledFor])
+}
+
+model RbFactorySiteSnapshot {
+  id String @id @default(uuid())
+  clientId String
+  demoId String?
+  version Int @default(1)
+  sourceCode String?
+  contentSnapshot String?
+  changeRequestId String?
+  createdAt DateTime @default(now())
+  client RbFactorySiteClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  @@index([clientId])
+  @@index([createdAt])
 }
