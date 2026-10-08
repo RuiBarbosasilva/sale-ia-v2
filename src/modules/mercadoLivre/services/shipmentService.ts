@@ -1,4 +1,3 @@
-﻿// src/modules/mercadoLivre/services/shipmentService.ts
 import { prisma } from '../lib/prisma';
 import { MercadoLivreClient } from '../api/mercadoLivreClient';
 import { tokenService } from '../auth/tokenService';
@@ -15,64 +14,82 @@ export interface ShipmentSyncStats {
   errors?: string[];
 }
 
-export class ShipmentService {
-  /**
-   * Obtém detalhes de UM shipment específico (método original - preservado)
-   */
-  async getShipment(accountId: string, shipmentId: string) {
-    const accessToken = await tokenService.getValidToken(accountId);
-    const client = new MercadoLivreClient(
-      accessToken,
-      () => tokenService.getValidToken(accountId)
-    );
+const safeId = (value: unknown, max = 100): string =>
+  typeof value === 'string' || typeof value === 'number' ? String(value).trim().slice(0, max) : '';
 
-    const data = await client.getShipment<any>(shipmentId);
+const safeText = (value: unknown, max = 160): string =>
+  typeof value === 'string' ? value.trim().slice(0, max) : '';
+
+const safeError = (error: unknown): string =>
+  error instanceof Error ? error.message.slice(0, 500) : 'UNKNOWN_ERROR';
+
+const safeDateOrNull = (value: unknown): Date | null => {
+  if (typeof value !== 'string') return null;
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date : null;
+};
+
+const boundedInt = (value: unknown, fallback: number, max: number): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(1, Math.min(max, Math.floor(parsed))) : fallback;
+};
+
+export class ShipmentService {
+  async getShipment(accountId: string, shipmentId: string) {
+    const safeAccountId = safeId(accountId);
+    const safeShipmentId = safeId(shipmentId);
+    if (!safeAccountId) throw new Error('ACCOUNT_ID_REQUIRED');
+    if (!safeShipmentId) throw new Error('SHIPMENT_ID_REQUIRED');
+
+    const accessToken = await tokenService.getValidToken(safeAccountId);
+    const client = new MercadoLivreClient(accessToken, () => tokenService.getValidToken(safeAccountId));
+    const data = await client.getShipment<any>(safeShipmentId);
+
+    if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('INVALID_SHIPMENT_RESPONSE');
 
     await prisma.mercadoLivreShipment.upsert({
-      where: { mlShipmentId: String(shipmentId) },
-      update: { status: data.status, trackingNumber: data.tracking_number },
+      where: { mlShipmentId: safeShipmentId },
+      update: {
+        status: safeText(data.status, 80) || 'unknown',
+        trackingNumber: safeText(data.tracking_number, 120) || null
+      },
       create: {
-        accountId,
-        mlShipmentId: String(shipmentId),
-        mlOrderId: String(data.order_id),
-        status: data.status,
-        trackingNumber: data.tracking_number,
-        labelUrl: data.labels?.[0]?.url || null,
-        dateFirstPrinted: data.date_first_printed ? new Date(data.date_first_printed) : null
+        accountId: safeAccountId,
+        mlShipmentId: safeShipmentId,
+        mlOrderId: safeId(data.order_id),
+        status: safeText(data.status, 80) || 'unknown',
+        trackingNumber: safeText(data.tracking_number, 120) || null,
+        labelUrl: safeText(data.labels?.[0]?.url, 2048) || null,
+        dateFirstPrinted: safeDateOrNull(data.date_first_printed)
       }
     });
 
     return data;
   }
 
-  /**
-   * Obtém etiqueta de UM shipment específico (método original - preservado)
-   */
   async getShipmentLabel(accountId: string, shipmentId: string) {
     const shipment = await this.getShipment(accountId, shipmentId);
-
-    if (!shipment.labels || shipment.labels.length === 0) {
+    if (!Array.isArray(shipment.labels) || shipment.labels.length === 0) {
       throw new Error('MERCADO_LIVRE_LABEL_NOT_AVAILABLE');
     }
 
-    const label = shipment.labels.find((l: any) => l.type === 'ZPL_10x15') || shipment.labels[0];
+    const label = shipment.labels.find((item: any) => item && item.type === 'ZPL_10x15') || shipment.labels[0];
+    if (!label || typeof label !== 'object' || !safeText(label.url, 2048)) {
+      throw new Error('MERCADO_LIVRE_LABEL_INVALID');
+    }
 
     return {
-      url: label.url,
-      format: label.type,
+      url: safeText(label.url, 2048),
+      format: safeText(label.type, 80) || 'UNKNOWN',
       dateFirstPrinted: shipment.date_first_printed || new Date().toISOString()
     };
   }
 
-  /**
-   * NOVO: Sincroniza TODOS os shipments dos pedidos da conta
-   * Estratégia: para cada MercadoLivreOrder sincronizado, obtém shipping.id
-   * via /orders/{mlOrderId} e depois chama /shipments/{id} para detalhes
-   */
   async syncShipments(accountId: string): Promise<ShipmentSyncStats> {
+    const safeAccountId = safeId(accountId);
     const stats: ShipmentSyncStats = {
       success: false,
-      accountId,
+      accountId: safeAccountId,
       totalFound: 0,
       created: 0,
       updated: 0,
@@ -83,188 +100,124 @@ export class ShipmentService {
     };
 
     try {
-      console.log('[ML Shipments] 🟢 Iniciando sincronização de envios...');
+      if (!safeAccountId) throw new Error('ACCOUNT_ID_REQUIRED');
 
-      // 1. Validar conta
-      const account = await prisma.mercadoLivreAccount.findUnique({
-        where: { id: accountId }
-      });
+      const account = await prisma.mercadoLivreAccount.findUnique({ where: { id: safeAccountId } });
+      if (!account) throw new Error('ACCOUNT_NOT_FOUND');
 
-      if (!account) {
-        throw new Error('Conta não encontrada');
-      }
+      const accessToken = await tokenService.getValidToken(safeAccountId);
+      const client = new MercadoLivreClient(accessToken, () => tokenService.getValidToken(safeAccountId));
 
-      console.log(`[ML Shipments] ✅ Conta: ${account.nickname} (${account.mlUserId})`);
-
-      // 2. Obter token válido
-      const accessToken = await tokenService.getValidToken(accountId);
-      const client = new MercadoLivreClient(
-        accessToken,
-        () => tokenService.getValidToken(accountId)
-      );
-
-      // 3. Buscar todos os pedidos sincronizados
       const orders = await prisma.mercadoLivreOrder.findMany({
-        where: { accountId },
+        where: { accountId: safeAccountId },
         select: { mlOrderId: true, status: true },
-        orderBy: { lastSyncedAt: 'desc' }
+        orderBy: { lastSyncedAt: 'desc' },
+        take: 5000
       });
 
-      console.log(`[ML Shipments] 📦 ${orders.length} pedidos encontrados para processar`);
-
-      if (orders.length === 0) {
-        console.log('[ML Shipments] ⚠️ Nenhum pedido sincronizado. Sincronize pedidos primeiro.');
-        stats.success = true;
-        return stats;
-      }
-
-      // 4. Para cada pedido, obter shipping.id e depois detalhes do shipment
-      const shipmentIds = new Map<string, string>(); // mlOrderId -> shipmentId
-
+      const shipmentIds = new Map<string, string>();
       for (const order of orders) {
         try {
-          // Buscar dados do pedido para obter shipping.id
-          const orderData = await client.get<any>(`/orders/${order.mlOrderId}`);
-          
-          const shippingId = orderData?.shipping?.id;
-          
-          if (!shippingId) {
-            console.log(`[ML Shipments] ⏭️  Pedido ${order.mlOrderId} sem shipment (status: ${order.status})`);
+          const orderId = safeId(order.mlOrderId);
+          if (!orderId) {
             stats.skipped++;
             continue;
           }
 
-          shipmentIds.set(order.mlOrderId, String(shippingId));
-          
-          // Pequeno delay para respeitar rate limit
-          await new Promise(resolve => setTimeout(resolve, 150));
+          const orderData = await client.get<any>(`/orders/${encodeURIComponent(orderId)}`);
+          const shippingId = safeId(orderData?.shipping?.id);
+          if (!shippingId) {
+            stats.skipped++;
+            continue;
+          }
 
-        } catch (error: any) {
-          console.error(`[ML Shipments] ❌ Erro ao buscar pedido ${order.mlOrderId}:`, error.message);
+          shipmentIds.set(orderId, shippingId);
+          await new Promise(resolve => setTimeout(resolve, 150));
+        } catch (error: unknown) {
           stats.failed++;
-          stats.errors?.push(`Pedido ${order.mlOrderId}: ${error.message}`);
+          if ((stats.errors?.length || 0) < 20) {
+            stats.errors?.push(`Pedido ${safeId(order.mlOrderId) || 'UNKNOWN'}: ${safeError(error)}`);
+          }
         }
       }
 
       stats.totalFound = shipmentIds.size;
-      console.log(`[ML Shipments] 📦 ${shipmentIds.size} shipments únicos encontrados`);
-
-      if (shipmentIds.size === 0) {
-        console.log('[ML Shipments] ⚠️ Nenhum shipment encontrado nos pedidos');
-        stats.success = true;
+      if (!stats.totalFound) {
+        stats.success = stats.failed === 0;
         return stats;
       }
 
-      // 5. Para cada shipment, buscar detalhes e fazer upsert
       for (const [mlOrderId, shipmentId] of shipmentIds.entries()) {
         try {
-          console.log(`[ML Shipments] 🔍 Buscando detalhes do shipment ${shipmentId}...`);
-          
-          // Usa método especializado com x-format-new: true
           const shipmentData = await client.getShipment<any>(shipmentId);
-
-          if (!shipmentData || !shipmentData.id) {
-            throw new Error('Resposta inválida da API');
+          if (!shipmentData || typeof shipmentData !== 'object' || Array.isArray(shipmentData) || !safeId(shipmentData.id)) {
+            throw new Error('INVALID_SHIPMENT_RESPONSE');
           }
 
-          // Preparar dados para upsert
           const dbData = {
-            accountId,
-            mlOrderId: mlOrderId,
-            status: shipmentData.status || 'unknown',
-            trackingNumber: shipmentData.tracking_number || null,
-            labelUrl: shipmentData.labels?.[0]?.url || null,
-            dateFirstPrinted: shipmentData.date_first_printed 
-              ? new Date(shipmentData.date_first_printed) 
-              : null
+            accountId: safeAccountId,
+            mlOrderId,
+            status: safeText(shipmentData.status, 80) || 'unknown',
+            trackingNumber: safeText(shipmentData.tracking_number, 120) || null,
+            labelUrl: safeText(shipmentData.labels?.[0]?.url, 2048) || null,
+            dateFirstPrinted: safeDateOrNull(shipmentData.date_first_printed)
           };
 
-          // Verificar se já existe
-          const existing = await prisma.mercadoLivreShipment.findUnique({
-            where: { mlShipmentId: String(shipmentId) }
-          });
-
+          const existing = await prisma.mercadoLivreShipment.findUnique({ where: { mlShipmentId: shipmentId } });
           if (existing) {
-            await prisma.mercadoLivreShipment.update({
-              where: { mlShipmentId: String(shipmentId) },
-              data: dbData
-            });
+            await prisma.mercadoLivreShipment.update({ where: { mlShipmentId: shipmentId }, data: dbData });
             stats.updated++;
           } else {
-            await prisma.mercadoLivreShipment.create({
-              data: {
-                mlShipmentId: String(shipmentId),
-                ...dbData
-              }
-            });
+            await prisma.mercadoLivreShipment.create({ data: { mlShipmentId: shipmentId, ...dbData } });
             stats.created++;
           }
 
-          // Delay entre requisições
           await new Promise(resolve => setTimeout(resolve, 200));
-
-        } catch (error: any) {
-          console.error(`[ML Shipments] ❌ Erro no shipment ${shipmentId}:`, error.message);
+        } catch (error: unknown) {
           stats.failed++;
-          stats.errors?.push(`Shipment ${shipmentId}: ${error.message}`);
+          if ((stats.errors?.length || 0) < 20) {
+            stats.errors?.push(`Shipment ${shipmentId}: ${safeError(error)}`);
+          }
         }
       }
 
       stats.success = stats.failed === 0;
-      console.log('[ML Shipments] ' + (stats.success ? '✅ Sincronização concluída' : '⚠️ Sincronização concluída com falhas parciais'));
-      console.log(`[ML Shipments] 📊 Estatísticas:`);
-      console.log(`[ML Shipments]   Total encontrados: ${stats.totalFound}`);
-      console.log(`[ML Shipments]   Criados: ${stats.created}`);
-      console.log(`[ML Shipments]   Atualizados: ${stats.updated}`);
-      console.log(`[ML Shipments]   Pulados (sem shipment): ${stats.skipped}`);
-      console.log(`[ML Shipments]   Falhas: ${stats.failed}`);
-
       return stats;
-
-    } catch (error: any) {
-      console.error('[ML Shipments] ❌ Erro crítico:', error.message);
+    } catch (error: unknown) {
       stats.success = false;
-      stats.errors?.push(error.message);
+      stats.errors?.push(safeError(error));
       return stats;
     }
   }
 
-  /**
-   * NOVO: Lista shipments da conta a partir do banco local
-   */
   async listShipments(
     accountId: string,
     filters?: { status?: string; page?: number; limit?: number }
   ) {
-    const page = filters?.page || 1;
-    const limit = filters?.limit || 50;
-    const offset = (page - 1) * limit;
+    const safeAccountId = safeId(accountId);
+    if (!safeAccountId) throw new Error('ACCOUNT_ID_REQUIRED');
 
-    const where: any = { accountId };
-    if (filters?.status) {
-      where.status = filters.status;
-    }
+    const page = boundedInt(filters?.page, 1, 100000);
+    const limit = boundedInt(filters?.limit, 50, 200);
+    const status = safeText(filters?.status, 80);
+    const where: { accountId: string; status?: string } = { accountId: safeAccountId };
+    if (status) where.status = status;
 
     const shipments = await prisma.mercadoLivreShipment.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       take: limit,
-      skip: offset
+      skip: (page - 1) * limit
     });
-
     const total = await prisma.mercadoLivreShipment.count({ where });
-
-    // Contagens por status
     const statusCounts = await prisma.mercadoLivreShipment.groupBy({
       by: ['status'],
-      where: { accountId },
+      where: { accountId: safeAccountId },
       _count: { status: true }
     });
 
     const statusMap: Record<string, number> = {};
-    statusCounts.forEach(s => {
-      statusMap[s.status] = s._count.status;
-    });
+    statusCounts.forEach(item => { statusMap[item.status] = item._count.status; });
 
     return {
       shipments: shipments.map(s => ({
