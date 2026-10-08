@@ -21,13 +21,15 @@ async function init(): Promise<void> {
       "status" TEXT NOT NULL,
       "message" TEXT NOT NULL,
       "result" TEXT
-    );
+    )
+  `);
+  await prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS "RbFactorySalesAutonomyAlert" (
       "id" TEXT PRIMARY KEY NOT NULL,
       "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "message" TEXT NOT NULL,
       "status" TEXT NOT NULL DEFAULT 'OPEN'
-    );
+    )
   `);
   initialized = true;
 }
@@ -118,10 +120,10 @@ export const rbFactorySalesAutonomyService = {
     return this.status();
   },
 
-  stop() {
+  async stop() {
     status = 'STOPPED';
     if (timer) { clearInterval(timer); timer = null; }
-    return { status, lastRun: null, intervalMs: 5 * 60 * 1000 };
+    return this.status();
   },
 
   async acknowledge(id: string) {
