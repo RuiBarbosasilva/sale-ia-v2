@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
 
 function safeLimit(value: number, fallback = 50) {
@@ -128,12 +129,33 @@ export const rbFactorySalesAgentService = {
   },
 
   async ensureConversation(prospectId: string, channel: string = 'WHATSAPP') {
-    const prospect = await (prisma as any).websiteProspect.findUnique({ where: { id: prospectId }, select: { id: true } });
+    const prospect = await (prisma as any).websiteProspect.findUnique({
+      where: { id: prospectId },
+      select: { id: true, linkedLeadId: true }
+    });
     if (!prospect) throw new Error('WEBSITE_PROSPECT_NOT_FOUND');
-    return {
-      conversation: { id: 'conv_' + prospectId, prospectId, channel, stage: 'INITIAL', temperature: 'COLD', context: '{}' },
-      reused: true
-    };
+
+    const leadId = prospect.linkedLeadId || null;
+    let conversation = await prisma.salesConversation.findFirst({
+      where: { leadId, channel, status: 'OPEN' },
+      orderBy: { updatedAt: 'desc' }
+    });
+
+    if (!conversation) {
+      conversation = await prisma.salesConversation.create({
+        data: {
+          id: crypto.randomUUID(),
+          leadId,
+          channel,
+          context: JSON.stringify({ prospectId }),
+          stage: 'INITIAL',
+          temperature: 'COLD',
+          status: 'OPEN'
+        }
+      });
+    }
+
+    return { conversation, reused: Boolean(conversation.updatedAt) };
   },
 
   async prepareInitialApproach(prospectId: string, channel: string = 'WHATSAPP') {
@@ -182,10 +204,17 @@ export const rbFactorySalesAgentService = {
   },
 
   async conversationHistory(prospectId: string, conversationId: string) {
-    return { prospectId, conversationId, messages: [] };
+    const prospect = await (prisma as any).websiteProspect.findUnique({ where: { id: prospectId }, select: { id: true } });
+    if (!prospect) throw new Error('WEBSITE_PROSPECT_NOT_FOUND');
+    const conversation = await prisma.salesConversation.findUnique({
+      where: { id: conversationId },
+      include: { messages: { orderBy: { createdAt: 'asc' }, take: 200 } }
+    });
+    if (!conversation) throw new Error('SALES_CONVERSATION_NOT_FOUND');
+    return conversation;
   },
 
-  async respond(prospectId: string, conversationId: string, message: string) {
+  async respond(prospectId: string, conversationId: string, message: string)(prospectId: string, conversationId: string, message: string) {
     const normalized = String(message || '').toLowerCase();
     let response = 'Recebi sua mensagem. Posso te mostrar a demonstração e explicar como funciona.';
     if (/preço|valor|quanto custa/.test(normalized)) response = 'Posso te enviar a proposta com investimento, prazo e o que está incluído. Quer que eu envie?';
