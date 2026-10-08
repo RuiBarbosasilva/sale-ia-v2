@@ -1,9 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../../modules/mercadoLivre/lib/prisma';
 
 const router = Router();
-const prisma = new PrismaClient();
-
 const text = (value: unknown, max = 255): string => {
   if (typeof value !== 'string') return '';
   return value.trim().slice(0, max);
