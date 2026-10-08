@@ -1,6 +1,16 @@
 import crypto from 'crypto';
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
 
+function conversationBelongsToProspect(context: unknown, prospectId: string): boolean {
+  if (typeof context !== 'string' || !context.trim()) return false;
+  try {
+    const parsed = JSON.parse(context);
+    return Boolean(parsed && typeof parsed === 'object' && parsed.prospectId === prospectId);
+  } catch {
+    return false;
+  }
+}
+
 function safeLimit(value: number, fallback = 50) {
   return Number.isFinite(value) ? Math.min(200, Math.max(1, Math.trunc(value))) : fallback;
 }
@@ -145,10 +155,14 @@ export const rbFactorySalesAgentService = {
     if (!prospect) throw new Error('WEBSITE_PROSPECT_NOT_FOUND');
 
     const leadId = prospect.linkedLeadId || null;
-    let conversation = await prisma.salesConversation.findFirst({
-      where: { leadId, channel, status: 'OPEN', context: { contains: prospectId } },
-      orderBy: { updatedAt: 'desc' }
+    const openConversations = await prisma.salesConversation.findMany({
+      where: { leadId, channel, status: 'OPEN' },
+      orderBy: { updatedAt: 'desc' },
+      take: 100
     });
+    let conversation = openConversations.find((item) =>
+      conversationBelongsToProspect(item.context, prospectId)
+    ) || null;
 
     if (!conversation) {
       conversation = await prisma.salesConversation.create({
@@ -164,7 +178,7 @@ export const rbFactorySalesAgentService = {
       });
     }
 
-    return { conversation, reused: Boolean(conversation && conversation.context?.includes(prospectId)) };
+    return { conversation, reused: Boolean(conversation && conversationBelongsToProspect(conversation.context, prospectId)) };
   },
 
   async prepareInitialApproach(prospectId: string, channel: string = 'WHATSAPP') {
@@ -220,7 +234,7 @@ export const rbFactorySalesAgentService = {
       include: { messages: { orderBy: { createdAt: 'asc' }, take: 200 } }
     });
     if (!conversation) throw new Error('SALES_CONVERSATION_NOT_FOUND');
-    if (!conversation.context?.includes(prospectId)) throw new Error('SALES_CONVERSATION_PROSPECT_MISMATCH');
+    if (!conversationBelongsToProspect(conversation.context, prospectId)) throw new Error('SALES_CONVERSATION_PROSPECT_MISMATCH');
     return conversation;
   },
 
