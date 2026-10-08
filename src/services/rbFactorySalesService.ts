@@ -51,7 +51,7 @@ export const rbFactorySalesService={
       );
       return (await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE id=?', existing[0].id))[0];
     }
-    const v=[id(),prospectId,prospect.currentWebsite?'AUDITED':'DISCOVERED',auditScore,priority,null,null,'GENERATE_DEMO','OPEN',JSON.stringify({audit,source:'official_prospecting_pipeline'})];
+    const v=[id(),prospectId,prospect.currentWebsite?'AUDITED':'DISCOVERED',auditScore,priority,'GENERATE_DEMO','OPEN',JSON.stringify({audit,source:'official_prospecting_pipeline'})];
     await (prisma as any).$executeRawUnsafe('INSERT INTO "RbFactorySalesPipeline" ("id","prospectId","stage","auditScore","priority","nextAction","status","notes") VALUES (?,?,?,?,?,?,?,?)',...v);
     return (await (prisma as any).$queryRawUnsafe('SELECT * FROM "RbFactorySalesPipeline" WHERE id=?',v[0]))[0];
   },
