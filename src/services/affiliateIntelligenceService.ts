@@ -36,7 +36,7 @@ export const affiliateIntelligenceService = {
     }
     return results;
   },
-  async listNetworks(){ return prisma.affiliateNetwork.findMany({orderBy:{name:'asc'},include:{_count:{select:{products:true,actions:true}}}}); },
+  async listNetworks(){ return prisma.affiliateNetwork.findMany({orderBy:{name:'asc'},select:{id:true,name:true,slug:true,type:true,baseUrl:true,status:true,apiBaseUrl:true,credentialStatus:true,metadata:true,active:true,lastScanAt:true,createdAt:true,updatedAt:true,_count:{select:{products:true,actions:true}}}}); },
   async createNetwork(input: Record<string, any>){
     const name=String(input.name||'').trim(); if(!name) throw new Error('NETWORK_NAME_REQUIRED');
     if (name.length > 120) throw new Error('NETWORK_NAME_TOO_LONG');
