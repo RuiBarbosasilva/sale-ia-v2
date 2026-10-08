@@ -233,7 +233,9 @@ export const seniorSalesAgentService = {
     const rows=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE id=? LIMIT 1',actionId);
     if(!rows[0]) throw new Error('SALES_ACTION_NOT_FOUND');
     if(rows[0].status!=='PENDING_APPROVAL') throw new Error('SALES_ACTION_NOT_PENDING');
-    const payload=JSON.stringify({rejectionReason:reason||'REJECTED_BY_OPERATOR',originalPayload:rows[0].payload?JSON.parse(rows[0].payload):null});
+    let originalPayload: unknown = null;
+    try { originalPayload = rows[0].payload ? JSON.parse(rows[0].payload) : null; } catch { originalPayload = null; }
+    const payload=JSON.stringify({rejectionReason:textInput(reason,500)||'REJECTED_BY_OPERATOR',originalPayload});
     await (prisma as any).$executeRawUnsafe('UPDATE "SalesAction" SET status=\'REJECTED\',payload=? WHERE id=?',payload,actionId);
     return (await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesAction" WHERE id=?',actionId))[0];
   },
