@@ -7,7 +7,9 @@ const message = (error: unknown): string =>
 const statusFor = (error: unknown): number => {
   const code = message(error);
   if (code === 'MESSAGE_REQUIRED' || code === 'INVALID_CONVERSATION_ID') return 400;
-  if (code === 'SALES_CONVERSATION_NOT_FOUND') return 404;
+  if (code === 'SALES_CONVERSATION_NOT_FOUND' || code === 'SALES_ACTION_NOT_FOUND') return 404;
+  if (code === 'SALES_ACTION_NOT_PENDING' || code === 'SALES_ACTION_NOT_APPROVED') return 409;
+  if (code === 'INVALID_ACTION_ID') return 400;
   return 500;
 };
 
@@ -65,7 +67,7 @@ export const seniorSalesController = {
       return res.json(await seniorSalesAgentService.approveAction(req.params.id));
     } catch (error: unknown) {
       console.error('[Senior Sales] Approve error:', message(error));
-      return res.status(500).json({ success: false, error: 'SENIOR_SALES_APPROVE_FAILED' });
+      return res.status(statusFor(error)).json({ success: false, error: message(error) });
     }
   },
 
@@ -74,7 +76,7 @@ export const seniorSalesController = {
       return res.json(await seniorSalesAgentService.rejectAction(req.params.id, req.body?.reason));
     } catch (error: unknown) {
       console.error('[Senior Sales] Reject error:', message(error));
-      return res.status(500).json({ success: false, error: 'SENIOR_SALES_REJECT_FAILED' });
+      return res.status(statusFor(error)).json({ success: false, error: message(error) });
     }
   },
 
@@ -83,7 +85,7 @@ export const seniorSalesController = {
       return res.json(await seniorSalesAgentService.markActionSent(req.params.id, req.body || {}));
     } catch (error: unknown) {
       console.error('[Senior Sales] Mark-sent error:', message(error));
-      return res.status(500).json({ success: false, error: 'SENIOR_SALES_MARK_SENT_FAILED' });
+      return res.status(statusFor(error)).json({ success: false, error: message(error) });
     }
   },
 };
