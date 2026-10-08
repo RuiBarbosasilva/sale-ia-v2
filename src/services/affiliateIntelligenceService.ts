@@ -57,8 +57,21 @@ export const affiliateIntelligenceService = {
       const ext=raw.externalId==null?null:String(raw.externalId);
       const data:any={name,url:raw.url||null,affiliateUrl:raw.affiliateUrl||null,category:raw.category||null,subcategory:raw.subcategory||null,price:raw.price==null?null:num(raw.price),commissionRate:raw.commissionRate==null?null:num(raw.commissionRate),commissionAmount:raw.commissionAmount==null?null:num(raw.commissionAmount),recurring:Boolean(raw.recurring),gravity:raw.gravity==null?null:num(raw.gravity),popularityScore:raw.popularityScore==null?null:num(raw.popularityScore),demandScore:raw.demandScore==null?null:num(raw.demandScore),competitionScore:raw.competitionScore==null?null:num(raw.competitionScore),contentScore:raw.contentScore==null?null:num(raw.contentScore),conversionScore:raw.conversionScore==null?null:num(raw.conversionScore),saturationScore:raw.saturationScore==null?null:num(raw.saturationScore),description:raw.description||null,salesPageUrl:raw.salesPageUrl||null,metadata:raw.metadata?JSON.stringify(raw.metadata):null,lastScannedAt:new Date()};
       let p:any;
-      if(ext){ p=await prisma.affiliateProduct.upsert({where:{networkId_externalId:{networkId,externalId:ext}},update:data,create:{networkId,externalId:ext,...data}}); updated++; }
-      else { p=await prisma.affiliateProduct.create({data:{networkId,...data}}); created++; }
+      if(ext){
+        const existing = await prisma.affiliateProduct.findUnique({
+          where: { networkId_externalId: { networkId, externalId: ext } },
+          select: { id: true }
+        });
+        p = await prisma.affiliateProduct.upsert({
+          where: { networkId_externalId: { networkId, externalId: ext } },
+          update: data,
+          create: { networkId, externalId: ext, ...data }
+        });
+        if (existing) updated++; else created++;
+      } else {
+        p = await prisma.affiliateProduct.create({ data: { networkId, ...data } });
+        created++;
+      }
       const s=scoreProduct(p);
       await prisma.affiliateProduct.update({where:{id:p.id},data:{demandScore:s.demand,competitionScore:s.competition,contentScore:s.content,conversionScore:s.conversion,popularityScore:s.trend,saturationScore:s.saturation,opportunityScore:s.score,status:s.score>=75?'SHORTLISTED':s.score>=55?'ANALYZED':'LOW_PRIORITY'}});
       await prisma.affiliateProductScore.create({data:{productId:p.id,score:s.score,demand:s.demand,competition:s.competition,commission:s.commission,contentFit:s.content,trend:s.trend,reasoning:'Score calculado por comissão, demanda, tendência, conteúdo, conversão, concorrência e saturação.'}});
