@@ -11,6 +11,7 @@ let status: SellerStatus = 'STOPPED';
 const AUTOSTART = String(process.env.RB_FACTORY_AUTOSTART || '').toLowerCase() === 'true';
 let timer: NodeJS.Timeout | null = null;
 let initialized = false;
+let cycleInProgress = false;
 
 async function init(): Promise<void> {
   if (initialized) return;
@@ -78,7 +79,8 @@ async function readAlerts(limit: number): Promise<Alert[]> {
 }
 
 async function cycle(): Promise<void> {
-  if (status !== 'RUNNING') return;
+  if (status !== 'RUNNING' || cycleInProgress) return;
+  cycleInProgress = true;
   try {
     const [result, maintenance] = await Promise.all([
       rbFactorySalesAgentService.prepareNextSellerAction(),
@@ -93,8 +95,14 @@ async function cycle(): Promise<void> {
     });
   } catch (error: any) {
     const message = String(error?.message || error || 'Erro no ciclo do vendedor');
-    await pushRun({ id: randomUUID(), createdAt: new Date().toISOString(), status: 'ERROR', message });
-    await pushAlert({ id: randomUUID(), createdAt: new Date().toISOString(), message, status: 'OPEN' });
+    try {
+      await pushRun({ id: randomUUID(), createdAt: new Date().toISOString(), status: 'ERROR', message });
+      await pushAlert({ id: randomUUID(), createdAt: new Date().toISOString(), message, status: 'OPEN' });
+    } catch (persistenceError: any) {
+      console.error('[RB Factory Autonomy] Falha ao persistir erro do ciclo:', String(persistenceError?.message || persistenceError));
+    }
+  } finally {
+    cycleInProgress = false;
   }
 }
 
