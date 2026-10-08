@@ -201,7 +201,8 @@ export const seniorSalesAgentService = {
   },
   async prepareActionChannel(actionId:string){
     await init();
-    const rows=await (prisma as any).$queryRawUnsafe('SELECT a.*,c.channel,c.context FROM "SalesAction" a JOIN "SalesConversation" c ON c.id=a.conversationId WHERE a.id=? LIMIT 1',actionId);
+    const key=textInput(actionId,100); if(!key) throw new Error('INVALID_ACTION_ID');
+    const rows=await (prisma as any).$queryRawUnsafe('SELECT a.*,c.channel,c.context FROM "SalesAction" a JOIN "SalesConversation" c ON c.id=a.conversationId WHERE a.id=? LIMIT 1',key);
     const row=rows[0];
     if(!row) throw new Error('SALES_ACTION_NOT_FOUND');
     let context:any={}; try{context=row.context?JSON.parse(row.context):{};}catch{}
