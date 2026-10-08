@@ -1,4 +1,3 @@
-﻿// src/modules/mercadoLivre/services/mercadoLivreOrderSyncService.ts
 import { prisma } from '../lib/prisma';
 import { MercadoLivreClient } from '../api/mercadoLivreClient';
 import { tokenService } from '../auth/tokenService';
@@ -14,14 +13,26 @@ export interface OrderSyncStats {
   errors?: string[];
 }
 
+const boundedPositiveInt = (value: unknown, fallback: number, max: number): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(1, Math.min(max, Math.floor(parsed))) : fallback;
+};
+
+const safeDate = (value: unknown, fallback = new Date()): Date => {
+  if (typeof value !== 'string' && !(value instanceof Date)) return fallback;
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date : fallback;
+};
+
+const safeError = (error: unknown): string =>
+  error instanceof Error ? error.message.slice(0, 500) : 'UNKNOWN_ERROR';
+
 export class MercadoLivreOrderSyncService {
-  /**
-   * Sincroniza pedidos reais do Mercado Livre
-   */
   async syncOrders(accountId: string, options?: { daysBack?: number }): Promise<OrderSyncStats> {
+    const safeAccountId = typeof accountId === 'string' ? accountId.trim().slice(0, 100) : '';
     const stats: OrderSyncStats = {
       success: false,
-      accountId,
+      accountId: safeAccountId,
       totalFound: 0,
       created: 0,
       updated: 0,
@@ -31,204 +42,124 @@ export class MercadoLivreOrderSyncService {
     };
 
     try {
-      console.log('[ML Orders Sync] 🟢 Iniciando sincronização de pedidos...');
+      if (!safeAccountId) throw new Error('ACCOUNT_ID_REQUIRED');
 
-      // 1. Buscar conta
-      const account = await prisma.mercadoLivreAccount.findUnique({
-        where: { id: accountId }
-      });
+      const account = await prisma.mercadoLivreAccount.findUnique({ where: { id: safeAccountId } });
+      if (!account) throw new Error('ACCOUNT_NOT_FOUND');
 
-      if (!account) {
-        throw new Error('Conta não encontrada');
-      }
+      const accessToken = await tokenService.getValidToken(safeAccountId);
+      const client = new MercadoLivreClient(accessToken, () => tokenService.getValidToken(safeAccountId));
 
-      console.log(`[ML Orders Sync] ✅ Conta encontrada: ${account.nickname} (${account.mlUserId})`);
-
-      // 2. Obter token válido
-      const accessToken = await tokenService.getValidToken(accountId);
-      const client = new MercadoLivreClient(
-        accessToken,
-        () => tokenService.getValidToken(accountId)
-      );
-
-      // 3. Definir período de busca (últimos N dias ou histórico)
-      const daysBack = options?.daysBack || 90; // Padrão: últimos 90 dias
+      const daysBack = boundedPositiveInt(options?.daysBack, 90, 3650);
       const fromDate = new Date();
       fromDate.setDate(fromDate.getDate() - daysBack);
       const fromDateStr = fromDate.toISOString();
 
-      console.log(`[ML Orders Sync] 📅 Buscando pedidos desde: ${fromDateStr}`);
-
-      // 4. Buscar pedidos com paginação
-      const allOrders: any[] = [];
+      const allOrders: unknown[] = [];
       let offset = 0;
       const limit = 50;
       let hasMore = true;
+      const maxOrders = 5000;
 
-      console.log('[ML Orders Sync] 📦 Buscando pedidos...');
-
-      while (hasMore) {
-        // Endpoint oficial: /orders/search?seller={seller_id}&order.date_last_updated.from={date}
-        const endpoint = '/orders/search';
-        const params = {
+      while (hasMore && allOrders.length < maxOrders) {
+        const searchResponse = await client.get<any>('/orders/search', {
           seller: account.mlUserId,
           'order.date_last_updated.from': fromDateStr,
           limit,
           offset,
           sort: 'date_desc'
-        };
+        });
 
-        console.log(`[ML Orders Sync]   Chamando: GET ${endpoint}`, { offset, limit });
+        const orders = searchResponse?.results;
+        if (!Array.isArray(orders)) throw new Error('INVALID_ORDERS_RESPONSE');
 
-        try {
-          const searchResponse = await client.get<any>(endpoint, params);
+        allOrders.push(...orders.slice(0, maxOrders - allOrders.length));
+        hasMore = orders.length === limit;
+        offset += limit;
 
-          console.log(`[ML Orders Sync]   Resposta:`, {
-            total: searchResponse.paging?.total,
-            results: searchResponse.results?.length || 0
-          });
-
-          const orders = searchResponse.results || [];
-          
-          if (!Array.isArray(orders)) {
-            console.error('[ML Orders Sync] ❌ results não é um array');
-            throw new Error('Resposta inválida da API');
-          }
-
-          allOrders.push(...orders);
-          console.log(`[ML Orders Sync]   Lote ${offset / limit + 1}: ${orders.length} pedidos`);
-
-          if (orders.length < limit) {
-            hasMore = false;
-          } else {
-            offset += limit;
-          }
-
-          await new Promise(resolve => setTimeout(resolve, 300));
-
-        } catch (error: any) {
-          console.error(`[ML Orders Sync] ❌ Erro na busca (offset ${offset}):`, {
-            message: error.message,
-            status: error.response?.status,
-            data: error.response?.data
-          });
-          
-          throw error;
-        }
+        if (hasMore) await new Promise(resolve => setTimeout(resolve, 300));
       }
 
       stats.totalFound = allOrders.length;
-      console.log(`[ML Orders Sync] ✅ Total de ${stats.totalFound} pedidos encontrados`);
-
-      if (stats.totalFound === 0) {
-        console.log('[ML Orders Sync] ⚠️ Nenhum pedido encontrado no período');
+      if (!stats.totalFound) {
         stats.success = true;
         return stats;
       }
 
-      // 5. Processar cada pedido e fazer upsert
-      console.log('[ML Orders Sync] 🔄 Processando pedidos...');
-
-      for (let i = 0; i < allOrders.length; i++) {
-        const orderData = allOrders[i];
-        
+      for (const rawOrder of allOrders) {
         try {
-          if (orderData?.id === undefined || orderData?.id === null || orderData?.id === '') {
-            console.error('[ML Orders Sync] ❌ Pedido sem ID');
+          if (!rawOrder || typeof rawOrder !== 'object' || Array.isArray(rawOrder)) {
             stats.failed++;
             continue;
           }
 
-          const orderId = String(orderData.id);
+          const orderData = rawOrder as Record<string, unknown>;
+          const rawId = orderData.id;
+          if (rawId === undefined || rawId === null || String(rawId).trim() === '') {
+            stats.failed++;
+            continue;
+          }
 
-          // Mapear dados do pedido
+          const orderId = String(rawId).trim().slice(0, 100);
+          const status = typeof orderData.status === 'string' ? orderData.status.trim().slice(0, 80) || 'unknown' : 'unknown';
+          const rawAmount = Number(orderData.total_amount);
+          const totalAmount = Number.isFinite(rawAmount) && rawAmount >= 0 ? rawAmount : 0;
+          const dateCreated = safeDate(orderData.date_created);
+
           const dbData = {
-            accountId,
+            accountId: safeAccountId,
             mlOrderId: orderId,
-            status: orderData.status || 'unknown',
-            totalAmount: parseFloat(orderData.total_amount) || 0,
-            dateCreated: orderData.date_created ? new Date(orderData.date_created) : new Date(),
+            status,
+            totalAmount,
+            dateCreated,
             lastSyncedAt: new Date()
           };
 
-          // Upsert no banco
-          const existingOrder = await prisma.mercadoLivreOrder.findUnique({
-            where: { mlOrderId: orderId }
-          });
-
+          const existingOrder = await prisma.mercadoLivreOrder.findUnique({ where: { mlOrderId: orderId } });
           if (existingOrder) {
-            await prisma.mercadoLivreOrder.update({
-              where: { mlOrderId: orderId },
-              data: dbData
-            });
+            await prisma.mercadoLivreOrder.update({ where: { mlOrderId: orderId }, data: dbData });
             stats.updated++;
           } else {
-            await prisma.mercadoLivreOrder.create({
-              data: {
-                mlOrderId: orderId,
-                ...dbData
-              }
-            });
+            await prisma.mercadoLivreOrder.create({ data: dbData });
             stats.created++;
           }
-
-          // Log de progresso a cada 10 pedidos
-          if ((i + 1) % 10 === 0) {
-            console.log(`[ML Orders Sync]   Progresso: ${i + 1}/${allOrders.length}`);
-          }
-
-        } catch (orderError: any) {
-          console.error(`[ML Orders Sync] ❌ Erro ao processar pedido ${orderData?.id}:`, orderError.message);
+        } catch (orderError: unknown) {
           stats.failed++;
-          stats.errors?.push(`Pedido ${orderData?.id}: ${orderError.message}`);
+          if ((stats.errors?.length || 0) < 20) {
+            stats.errors?.push(`Pedido ${typeof (rawOrder as any)?.id === 'undefined' ? 'UNKNOWN' : String((rawOrder as any).id).slice(0, 100)}: ${safeError(orderError)}`);
+          }
         }
       }
 
       stats.success = stats.failed === 0;
-      console.log('[ML Orders Sync] ' + (stats.success ? '✅ Sincronização concluída com sucesso' : '⚠️ Sincronização concluída com falhas parciais'));
-      console.log(`[ML Orders Sync] 📊 Estatísticas:`);
-      console.log(`[ML Orders Sync]   Total encontrados: ${stats.totalFound}`);
-      console.log(`[ML Orders Sync]   Criados: ${stats.created}`);
-      console.log(`[ML Orders Sync]   Atualizados: ${stats.updated}`);
-      console.log(`[ML Orders Sync]   Falhas: ${stats.failed}`);
-
       return stats;
-
-    } catch (error: any) {
-      console.error('[ML Orders Sync] ❌ Erro crítico na sincronização:', {
-        message: error.message,
-        stack: error.stack
-      });
+    } catch (error: unknown) {
       stats.success = false;
-      stats.errors?.push(error.message);
+      stats.errors?.push(safeError(error));
       return stats;
     }
   }
 
-  /**
-   * Lista pedidos sincronizados do banco local
-   */
   async listOrders(
-    accountId: string, 
+    accountId: string,
     filters?: { status?: string; page?: number; limit?: number }
   ) {
-    const page = filters?.page || 1;
-    const limit = filters?.limit || 50;
-    const offset = (page - 1) * limit;
+    const safeAccountId = typeof accountId === 'string' ? accountId.trim().slice(0, 100) : '';
+    if (!safeAccountId) throw new Error('ACCOUNT_ID_REQUIRED');
 
-    const where: any = { accountId };
-    
-    if (filters?.status) {
-      where.status = filters.status;
-    }
+    const page = boundedPositiveInt(filters?.page, 1, 100000);
+    const limit = boundedPositiveInt(filters?.limit, 50, 200);
+    const status = typeof filters?.status === 'string' ? filters.status.trim().slice(0, 80) : '';
+
+    const where: { accountId: string; status?: string } = { accountId: safeAccountId };
+    if (status) where.status = status;
 
     const orders = await prisma.mercadoLivreOrder.findMany({
       where,
       orderBy: { dateCreated: 'desc' },
       take: limit,
-      skip: offset
+      skip: (page - 1) * limit
     });
-
     const total = await prisma.mercadoLivreOrder.count({ where });
 
     return {
