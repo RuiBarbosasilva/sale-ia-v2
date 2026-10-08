@@ -48,7 +48,7 @@ export class ListingService {
     const accountKey = validateAccountId(accountId);
     const itemId = validateItemId(mlItemId);
     const accessToken = await tokenService.getValidToken(accountKey);
-    const client = new MercadoLivreClient(accessToken, () => tokenService.getValidToken(accountId));
+    const client = new MercadoLivreClient(accessToken, () => tokenService.getValidToken(accountKey));
     return await client.get<any>(`/items/${encodeURIComponent(itemId)}`);
   }
 
