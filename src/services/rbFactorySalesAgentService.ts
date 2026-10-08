@@ -93,6 +93,19 @@ export const rbFactorySalesAgentService = {
       }
     }
 
+    if (outreach.status === 'REJECTED') {
+      outreach = await (prisma as any).websiteOutreach.update({
+        where: { id: outreach.id },
+        data: {
+          status: 'PENDING_APPROVAL',
+          subject: action.title,
+          body: message,
+          recipient: action.phone || null,
+          error: null
+        }
+      });
+    }
+
     return {
       hasAction: true,
       prepared: true,
