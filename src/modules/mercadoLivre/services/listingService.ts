@@ -13,6 +13,9 @@ function normalizePagination(limit: number, offset: number) {
   };
 }
 
+function validateAccountId(value: string) { if (typeof value !== 'string' || !value.trim() || value.length > 100) throw new Error('INVALID_MERCADO_LIVRE_ACCOUNT_ID'); return value.trim(); }
+function validatePayload(value: unknown) { if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('INVALID_MERCADO_LIVRE_LISTING_PAYLOAD'); const raw = JSON.stringify(value); if (!raw || raw.length > 100000) throw new Error('MERCADO_LIVRE_LISTING_PAYLOAD_TOO_LARGE'); return value; }
+
 function validateItemId(value: string) {
   if (!/^[A-Za-z0-9_-]{3,80}$/.test(value)) throw new Error('INVALID_MERCADO_LIVRE_ITEM_ID');
   return value;
@@ -20,11 +23,12 @@ function validateItemId(value: string) {
 
 export class ListingService {
   async getListings(accountId: string, limit: number = 50, offset: number = 0) {
+    const accountKey = validateAccountId(accountId);
     const page = normalizePagination(limit, offset);
-    const accessToken = await tokenService.getValidToken(accountId);
-    const client = new MercadoLivreClient(accessToken, () => tokenService.getValidToken(accountId));
+    const accessToken = await tokenService.getValidToken(accountKey);
+    const client = new MercadoLivreClient(accessToken, () => tokenService.getValidToken(accountKey));
 
-    const account = await prisma.mercadoLivreAccount.findUnique({ where: { id: accountId } });
+    const account = await prisma.mercadoLivreAccount.findUnique({ where: { id: accountKey } });
     if (!account || !account.isActive) throw new Error('ACCOUNT_NOT_FOUND');
 
     const response = await client.get<any>(`/users/${encodeURIComponent(account.mlUserId)}/items/search`, {
@@ -34,35 +38,40 @@ export class ListingService {
     });
 
     for (const itemId of response.results || []) {
-      if (typeof itemId === 'string') await this.syncItem(accountId, itemId);
+      if (typeof itemId === 'string') await this.syncItem(accountKey, itemId);
     }
 
     return response;
   }
 
   async getItem(accountId: string, mlItemId: string) {
+    const accountKey = validateAccountId(accountId);
     const itemId = validateItemId(mlItemId);
-    const accessToken = await tokenService.getValidToken(accountId);
+    const accessToken = await tokenService.getValidToken(accountKey);
     const client = new MercadoLivreClient(accessToken, () => tokenService.getValidToken(accountId));
     return await client.get<any>(`/items/${encodeURIComponent(itemId)}`);
   }
 
   async createListing(accountId: string, listingData: any) {
+    const accountKey = validateAccountId(accountId);
+    const payload = validatePayload(listingData);
     const accessToken = await tokenService.getValidToken(accountId);
     const client = new MercadoLivreClient(accessToken, () => tokenService.getValidToken(accountId));
 
-    const response = await client.post<any>('/items', listingData);
-    if (response?.id) await this.syncItem(accountId, response.id);
+    const response = await client.post<any>('/items', payload);
+    if (response?.id) await this.syncItem(accountKey, response.id);
     return response;
   }
 
   async updateListing(accountId: string, mlItemId: string, updateData: any) {
+    const accountKey = validateAccountId(accountId);
+    const payload = validatePayload(updateData);
     const itemId = validateItemId(mlItemId);
     const accessToken = await tokenService.getValidToken(accountId);
     const client = new MercadoLivreClient(accessToken, () => tokenService.getValidToken(accountId));
 
-    const response = await client.put<any>(`/items/${encodeURIComponent(itemId)}`, updateData);
-    await this.syncItem(accountId, itemId);
+    const response = await client.put<any>(`/items/${encodeURIComponent(itemId)}`, payload);
+    await this.syncItem(accountKey, itemId);
     return response;
   }
 
