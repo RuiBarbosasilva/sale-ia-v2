@@ -211,16 +211,48 @@ export const rbFactorySalesAgentService = {
       include: { messages: { orderBy: { createdAt: 'asc' }, take: 200 } }
     });
     if (!conversation) throw new Error('SALES_CONVERSATION_NOT_FOUND');
+    if (!conversation.context?.includes(prospectId)) throw new Error('SALES_CONVERSATION_PROSPECT_MISMATCH');
     return conversation;
   },
 
   async respond(prospectId: string, conversationId: string, message: string) {
-    const normalized = String(message || '').toLowerCase();
+    const normalized = String(message || '').trim().toLowerCase();
+    if (!normalized) throw new Error('SALES_MESSAGE_REQUIRED');
+    const conversation = await prisma.salesConversation.findUnique({ where: { id: conversationId } });
+    if (!conversation) throw new Error('SALES_CONVERSATION_NOT_FOUND');
+    if (!conversation.context?.includes(prospectId)) throw new Error('SALES_CONVERSATION_PROSPECT_MISMATCH');
+    if (conversation.status !== 'OPEN') throw new Error('SALES_CONVERSATION_CLOSED');
+
+    let intent = 'INFO';
     let response = 'Recebi sua mensagem. Posso te mostrar a demonstração e explicar como funciona.';
-    if (/preço|valor|quanto custa/.test(normalized)) response = 'Posso te enviar a proposta com investimento, prazo e o que está incluído. Quer que eu envie?';
-    else if (/sim|pode|manda|enviar/.test(normalized)) response = 'Perfeito. Vou te enviar a demonstração e a proposta para você avaliar sem compromisso.';
-    else if (/não|nao|agora/.test(normalized)) response = 'Sem problema. Posso deixar a demonstração disponível e retomamos quando for conveniente.';
-    return { prospectId, conversationId, response };
+    if (/preço|valor|quanto custa/.test(normalized)) {
+      intent = 'PRICE';
+      response = 'Posso te enviar a proposta com investimento, prazo e o que está incluído. Quer que eu envie?';
+    } else if (/sim|pode|manda|enviar/.test(normalized)) {
+      intent = 'POSITIVE';
+      response = 'Perfeito. Vou te enviar a demonstração e a proposta para você avaliar sem compromisso.';
+    } else if (/não|nao|agora/.test(normalized)) {
+      intent = 'DEFERRED';
+      response = 'Sem problema. Posso deixar a demonstração disponível e retomamos quando for conveniente.';
+    }
+
+    const now = new Date();
+    await prisma.salesConversationMessage.create({
+      data: { id: crypto.randomUUID(), conversationId, role: 'USER', content: String(message).trim(), intent }
+    });
+    await prisma.salesConversationMessage.create({
+      data: { id: crypto.randomUUID(), conversationId, role: 'ASSISTANT', content: response, intent }
+    });
+    await prisma.salesConversation.update({
+      where: { id: conversationId },
+      data: {
+        lastIntent: intent,
+        intentScore: intent === 'POSITIVE' ? 0.8 : intent === 'PRICE' ? 0.6 : intent === 'DEFERRED' ? 0.2 : conversation.intentScore,
+        temperature: intent === 'POSITIVE' ? 'HOT' : intent === 'PRICE' ? 'WARM' : conversation.temperature,
+        nextBestAction: intent === 'POSITIVE' ? 'SEND_DEMO_AND_PROPOSAL' : intent === 'PRICE' ? 'SEND_PRICING' : intent === 'DEFERRED' ? 'SCHEDULE_FOLLOW_UP' : 'CONTINUE_CONVERSATION'
+      }
+    });
+    return { prospectId, conversationId, intent, response, createdAt: now.toISOString() };
   },
 
   async prepareActionChannel(actionId: string) {
