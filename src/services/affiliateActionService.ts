@@ -77,7 +77,20 @@ export const affiliateActionService = {
     }
 
     if (action.type === 'REQUEST_AFFILIATION' || action.type === 'AFFILIATE_PRODUCT') {
-      throw new Error('ACTION_MANUAL_REQUIRED');
+      return prisma.affiliateAction.update({
+        where: { id },
+        data: {
+          status: 'MANUAL_REQUIRED',
+          result: JSON.stringify({
+            type: action.type,
+            actionId: action.id,
+            status: 'MANUAL_REQUIRED',
+            reason: 'EXTERNAL_NETWORK_API_REQUIRED',
+            payload,
+            nextStep: 'Complete the partner-network operation and register the resulting affiliate link in Sale-IA.',
+          }),
+        },
+      });
     }
 
     throw new Error('ACTION_TYPE_NOT_SUPPORTED');
