@@ -214,7 +214,7 @@ export const rbFactorySalesAgentService = {
     return conversation;
   },
 
-  async respond(prospectId: string, conversationId: string, message: string)(prospectId: string, conversationId: string, message: string) {
+  async respond(prospectId: string, conversationId: string, message: string) {
     const normalized = String(message || '').toLowerCase();
     let response = 'Recebi sua mensagem. Posso te mostrar a demonstração e explicar como funciona.';
     if (/preço|valor|quanto custa/.test(normalized)) response = 'Posso te enviar a proposta com investimento, prazo e o que está incluído. Quer que eu envie?';
