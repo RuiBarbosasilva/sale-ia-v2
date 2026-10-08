@@ -123,7 +123,8 @@ export const rbFactorySalesAutonomyService = {
   async stop() {
     status = 'STOPPED';
     if (timer) { clearInterval(timer); timer = null; }
-    return this.status();
+    const runs = await readRuns(1);
+    return { status, lastRun: runs[0] || null, intervalMs: 5 * 60 * 1000 };
   },
 
   async acknowledge(id: string) {
