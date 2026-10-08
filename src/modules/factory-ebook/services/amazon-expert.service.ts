@@ -119,7 +119,7 @@ export class AmazonExpertService {
 
   async gerarEstruturaLivro(nicho: string, tipo: string) {
     const analise = await this.analisarNicho(nicho);
-    if (analise.erro) return analise;
+    if ('erro' in analise) return analise;
 
     const estruturas: Record<string, BookStructure> = {
       'colorir': {
