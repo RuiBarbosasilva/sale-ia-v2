@@ -16,27 +16,26 @@ async function main() {
     },
   });
 
-  const product = await prisma.affiliateProduct.upsert({
-    where: {
-      networkId_externalId: {
+  let product = await prisma.affiliateProduct.findFirst({
+    where: { networkId: network.id, externalId: 'seed-prod-1' },
+  });
+
+  if (!product) {
+    product = await prisma.affiliateProduct.create({
+      data: {
         networkId: network.id,
         externalId: 'seed-prod-1',
+        name: 'Curso Completo de Automação com IA',
+        price: 497.9,
+        commissionRate: 50,
+        category: 'Tecnologia',
+        opportunityScore: 8.5,
+        status: 'DISCOVERED',
+        affiliationStatus: 'NOT_AFFILIATED',
+        affiliationMode: 'MANUAL',
       },
-    },
-    update: {},
-    create: {
-      networkId: network.id,
-      externalId: 'seed-prod-1',
-      name: 'Curso Completo de Automação com IA',
-      price: 497.9,
-      commissionRate: 50,
-      category: 'Tecnologia',
-      opportunityScore: 8.5,
-      status: 'DISCOVERED',
-      affiliationStatus: 'NOT_AFFILIATED',
-      affiliationMode: 'MANUAL',
-    },
-  });
+    });
+  }
 
   await prisma.affiliateProductScore.upsert({
     where: { id: 'seed-score-1' },
