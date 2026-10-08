@@ -95,9 +95,25 @@ Responda em português brasileiro. Retorne JSON puro com: reply, intent, objecti
 
 export const seniorSalesAgentService = {
   async createConversation(input:any){
-    await init(); const source = input && typeof input === 'object' ? input : {}; const conversationId=id();
-    await (prisma as any).$executeRawUnsafe('ALTER TABLE "SalesConversation" ADD COLUMN "context" TEXT').catch(()=>{});
-    await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesConversation" ("id","leadId","channel","context") VALUES (?,?,?,?)',conversationId,textInput(source.leadId,120)||null,textInput(source.channel,40)||'WEB',source.context?JSON.stringify(source.context):null);
+    await init();
+    const source = input && typeof input === 'object' ? input : {};
+    const conversationId=id();
+    let context: string | null = null;
+    if (source.context !== undefined) {
+      try {
+        const raw = JSON.stringify(source.context);
+        context = raw.length <= 10000 ? raw : raw.slice(0, 10000);
+      } catch {
+        context = null;
+      }
+    }
+    await (prisma as any).$executeRawUnsafe(
+      'INSERT INTO "SalesConversation" ("id","leadId","channel","context") VALUES (?,?,?,?)',
+      conversationId,
+      textInput(source.leadId,120)||null,
+      textInput(source.channel,40)||'WEB',
+      context
+    );
     return this.getConversation(conversationId);
   },
   async getConversation(idv:string){ await init(); const c=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesConversation" WHERE id=?',idv); if(!c[0]) throw new Error('SALES_CONVERSATION_NOT_FOUND'); const messages=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesConversationMessage" WHERE conversationId=? ORDER BY createdAt ASC',idv); const objections=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesObjection" WHERE conversationId=? ORDER BY createdAt DESC',idv); const followUps=await (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesFollowUp" WHERE conversationId=? ORDER BY scheduledAt ASC',idv); return {...c[0],messages,objections,followUps}; },
