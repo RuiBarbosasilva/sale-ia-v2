@@ -55,14 +55,14 @@ async function cycle(): Promise<void> {
     const message = String(error?.message || error || 'Erro no ciclo do vendedor');
 
     pushRun({
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       createdAt: new Date().toISOString(),
       status: 'ERROR',
       message,
     });
 
     alerts.unshift({
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       createdAt: new Date().toISOString(),
       message,
       status: 'OPEN',
@@ -135,9 +135,13 @@ export const rbFactorySalesAutonomyService = {
   },
 };
 
-
 if (AUTOSTART) {
   void rbFactorySalesAutonomyService.start().catch((error) => {
-    alerts.unshift({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), message: String(error?.message || error), status: 'OPEN' });
+    alerts.unshift({
+      id: randomUUID(),
+      createdAt: new Date().toISOString(),
+      message: String(error?.message || error),
+      status: 'OPEN',
+    });
   });
 }
