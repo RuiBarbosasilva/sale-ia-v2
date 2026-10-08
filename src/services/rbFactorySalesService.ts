@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
 import { websiteDemoFactoryService } from './prospecting/websiteDemoFactoryService';
 import { websiteService } from './website/websiteService';
@@ -27,7 +28,7 @@ async function init(){
   `);
   initialized=true;
 }
-function id(){return crypto.randomUUID();}
+function id(){return randomUUID();}
 
 export const rbFactorySalesService={
   async list(){
