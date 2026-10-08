@@ -59,20 +59,29 @@ export const rbFactorySalesAgentService = {
     const message = action.type === 'FOLLOW_UP'
       ? await this.prepareFollowUpApproach(action.prospectId, 'WHATSAPP').then(x => x.message).catch(() => '')
       : await this.prepareInitialApproach(action.prospectId, 'WHATSAPP').then(x => x.message).catch(() => '');
+    if (!message.trim()) throw new Error('SALES_MESSAGE_PREPARATION_FAILED');
 
     const idempotencyKey = `RBFACTORY:${action.type}:${action.prospectId}:${new Date().toISOString().slice(0, 10)}`;
-    const existing = await (prisma as any).websiteOutreach.findUnique({ where: { idempotencyKey } });
-    const outreach = existing || await (prisma as any).websiteOutreach.create({
-      data: {
-        prospectId: action.prospectId,
-        channel: 'WHATSAPP',
-        status: 'PENDING_APPROVAL',
-        subject: action.title,
-        body: message,
-        recipient: action.phone || null,
-        idempotencyKey,
+    let outreach = await (prisma as any).websiteOutreach.findUnique({ where: { idempotencyKey } });
+    if (!outreach) {
+      try {
+        outreach = await (prisma as any).websiteOutreach.create({
+          data: {
+            prospectId: action.prospectId,
+            channel: 'WHATSAPP',
+            status: 'PENDING_APPROVAL',
+            subject: action.title,
+            body: message,
+            recipient: action.phone || null,
+            idempotencyKey,
+          }
+        });
+      } catch (error: any) {
+        // Another worker may have created the same idempotent action concurrently.
+        outreach = await (prisma as any).websiteOutreach.findUnique({ where: { idempotencyKey } });
+        if (!outreach) throw error;
       }
-    });
+    }
 
     return {
       hasAction: true,
@@ -82,7 +91,7 @@ export const rbFactorySalesAgentService = {
         id: outreach.id,
         outreachId: outreach.id,
         channel: action.phone ? 'WHATSAPP_OR_MANUAL' : 'MANUAL',
-        requiresApproval: true,
+        requiresApproval: outreach.status !== 'SENT',
         status: outreach.status,
         message: outreach.body || message
       }
