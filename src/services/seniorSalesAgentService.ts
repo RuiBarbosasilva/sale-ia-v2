@@ -243,6 +243,19 @@ export const seniorSalesAgentService = {
     const followUp=await this.scheduleFollowUp(conversationId,{scheduledAt,reason,draft});
     return {reused:false,followUp};
   },
-  async scheduleFollowUp(conversationId:string,input:any){ await init(); const source=input && typeof input === 'object' ? input : {}; const when=new Date(source.scheduledAt||Date.now()+86400000); const reason=textInput(source.reason,120)||'FOLLOW_UP'; const draft=textInput(source.draft,2000); const idv=id(); await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesFollowUp" ("id","conversationId","scheduledAt","reason","draft") VALUES (?,?,?,?,?)',idv,conversationId,when.toISOString(),reason,draft); return (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesFollowUp" WHERE id=?',idv); },
+  async scheduleFollowUp(conversationId:string,input:any){
+    await init();
+    await this.getConversation(conversationId);
+    const source=input && typeof input === 'object' ? input : {};
+    const parsed = source.scheduledAt ? new Date(String(source.scheduledAt)) : new Date(Date.now()+86400000);
+    const when = Number.isNaN(parsed.getTime()) ? new Date(Date.now()+86400000) : parsed;
+    const maxSchedule = new Date(Date.now() + 365*86400000);
+    const scheduledAt = when < new Date() ? new Date(Date.now()+60000) : (when > maxSchedule ? maxSchedule : when);
+    const reason=textInput(source.reason,120)||'FOLLOW_UP';
+    const draft=textInput(source.draft,2000);
+    const idv=id();
+    await (prisma as any).$executeRawUnsafe('INSERT INTO "SalesFollowUp" ("id","conversationId","scheduledAt","reason","draft") VALUES (?,?,?,?,?)',idv,conversationId,scheduledAt.toISOString(),reason,draft);
+    return (prisma as any).$queryRawUnsafe('SELECT * FROM "SalesFollowUp" WHERE id=?',idv);
+  },
   async dashboard(){ await init(); const q=async(sql:string)=>Number((await (prisma as any).$queryRawUnsafe(sql))[0]?.count||0); const [conversations,hot,pending,followups,objections]=await Promise.all([q('SELECT COUNT(*) count FROM "SalesConversation" WHERE status=\'OPEN\''),q('SELECT COUNT(*) count FROM "SalesConversation" WHERE temperature IN (\'HOT\',\'VERY_HOT\')'),q('SELECT COUNT(*) count FROM "SalesAction" WHERE status=\'PENDING_APPROVAL\''),q('SELECT COUNT(*) count FROM "SalesFollowUp" WHERE status=\'PENDING\''),q('SELECT COUNT(*) count FROM "SalesObjection" WHERE resolved=0')]); return {conversations,hotLeads:hot,pendingActions:pending,pendingFollowUps:followups,openObjections:objections,mode:'SENIOR_SALES_SUPERVISED'}; }
 };
