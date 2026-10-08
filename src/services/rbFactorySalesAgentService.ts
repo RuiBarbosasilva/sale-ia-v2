@@ -137,7 +137,7 @@ export const rbFactorySalesAgentService = {
 
     const leadId = prospect.linkedLeadId || null;
     let conversation = await prisma.salesConversation.findFirst({
-      where: { leadId, channel, status: 'OPEN' },
+      where: { leadId, channel, status: 'OPEN', context: { contains: prospectId } },
       orderBy: { updatedAt: 'desc' }
     });
 
@@ -155,7 +155,7 @@ export const rbFactorySalesAgentService = {
       });
     }
 
-    return { conversation, reused: Boolean(conversation.updatedAt) };
+    return { conversation, reused: Boolean(conversation && conversation.context?.includes(prospectId)) };
   },
 
   async prepareInitialApproach(prospectId: string, channel: string = 'WHATSAPP') {
