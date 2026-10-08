@@ -108,23 +108,26 @@ router.get('/operations', adminAuthorization, async (_req, res) => {
 
   const overallScore = Math.round(modules.reduce((sum, module) => sum + module.score, 0) / modules.length);
 
-  const completenessModules = [
-      { id: 'core', name: 'Núcleo / infraestrutura', weight: 10, score: 100 },
-      { id: 'rb-factory', name: 'RB Factory Sites', weight: 15, score: 90 },
-      { id: 'afiliados', name: 'Afiliados + IA', weight: 15, score: 85 },
-      { id: 'sales', name: 'Senior Sales Agent', weight: 10, score: 85 },
-      { id: 'hunter', name: 'Hunter / Oportunidades', weight: 10, score: 90 },
-      { id: 'editorial', name: 'Editorial / E-book', weight: 10, score: 75 },
-      { id: 'mercadolivre', name: 'Mercado Livre', weight: 10, score: 75 },
-      { id: 'autonomy', name: 'Automações / autonomia', weight: 10, score: 80 },
-      { id: 'dashboard', name: 'Dashboards / operação', weight: 5, score: 95 },
-      { id: 'production', name: 'Produção / segurança / integrações', weight: 5, score: 80 }
-    ];
+  const completionChecks = [
+    { id: 'rb-factory', name: 'RB Factory Sites', ok: rbFactory.ok },
+    { id: 'afiliados-networks', name: 'Afiliados - redes', ok: affiliates.ok },
+    { id: 'afiliados-products', name: 'Afiliados - produtos', ok: affiliateProducts.ok },
+    { id: 'afiliados-opportunities', name: 'Afiliados - oportunidades', ok: affiliateOpportunities.ok },
+    { id: 'hunter', name: 'Hunter', ok: hunter.ok },
+    { id: 'sales', name: 'Sales Agent', ok: sales.ok },
+    { id: 'opportunity-plans', name: 'Planos de oportunidade', ok: plans.ok },
+    { id: 'editorial', name: 'Editorial Factory', ok: editorialProjects.ok }
+  ];
   const projectCompleteness = {
-    score: Math.round(completenessModules.reduce((total, module) => total + module.weight * module.score / 100, 0) * 100 / completenessModules.reduce((total, module) => total + module.weight, 0)),
-    label: 'COMPLETUDE DO ECOSSISTEMA',
-    definition: 'Índice de implementação do SALE-IA-V2 por módulos e capacidades planejadas. É independente da saúde operacional.',
-    modules: completenessModules
+    score: Math.round(completionChecks.filter((item) => item.ok).length / completionChecks.length * 100),
+    label: 'COMPLETUDE FUNCIONAL ATUAL',
+    definition: 'Percentual objetivo das verificações funcionais executadas nesta operação. Uma capacidade só conta como concluída quando sua verificação operacional responde com sucesso.',
+    modules: completionChecks.map((item) => ({
+      id: item.id,
+      name: item.name,
+      score: item.ok ? 100 : 0,
+      status: item.ok ? 'OPERACIONAL' : 'FALHA'
+    }))
   };
 
   return res.json({
