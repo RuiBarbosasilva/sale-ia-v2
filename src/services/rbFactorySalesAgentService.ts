@@ -273,20 +273,22 @@ export const rbFactorySalesAgentService = {
     }
 
     const now = new Date();
-    await prisma.salesConversationMessage.create({
-      data: { id: crypto.randomUUID(), conversationId, role: 'USER', content: String(message).trim(), intent }
-    });
-    await prisma.salesConversationMessage.create({
-      data: { id: crypto.randomUUID(), conversationId, role: 'ASSISTANT', content: response, intent }
-    });
-    await prisma.salesConversation.update({
-      where: { id: conversationId },
-      data: {
-        lastIntent: intent,
-        intentScore: intent === 'POSITIVE' ? 0.8 : intent === 'PRICE' ? 0.6 : intent === 'DEFERRED' ? 0.2 : conversation.intentScore,
-        temperature: intent === 'POSITIVE' ? 'HOT' : intent === 'PRICE' ? 'WARM' : conversation.temperature,
-        nextBestAction: intent === 'POSITIVE' ? 'SEND_DEMO_AND_PROPOSAL' : intent === 'PRICE' ? 'SEND_PRICING' : intent === 'DEFERRED' ? 'SCHEDULE_FOLLOW_UP' : 'CONTINUE_CONVERSATION'
-      }
+    await prisma.$transaction(async (tx) => {
+      await tx.salesConversationMessage.create({
+        data: { id: crypto.randomUUID(), conversationId, role: 'USER', content: String(message).trim(), intent }
+      });
+      await tx.salesConversationMessage.create({
+        data: { id: crypto.randomUUID(), conversationId, role: 'ASSISTANT', content: response, intent }
+      });
+      await tx.salesConversation.update({
+        where: { id: conversationId },
+        data: {
+          lastIntent: intent,
+          intentScore: intent === 'POSITIVE' ? 0.8 : intent === 'PRICE' ? 0.6 : intent === 'DEFERRED' ? 0.2 : conversation.intentScore,
+          temperature: intent === 'POSITIVE' ? 'HOT' : intent === 'PRICE' ? 'WARM' : conversation.temperature,
+          nextBestAction: intent === 'POSITIVE' ? 'SEND_DEMO_AND_PROPOSAL' : intent === 'PRICE' ? 'SEND_PRICING' : intent === 'DEFERRED' ? 'SCHEDULE_FOLLOW_UP' : 'CONTINUE_CONVERSATION'
+        }
+      });
     });
     return { prospectId, conversationId, intent, response, createdAt: now.toISOString() };
   },
