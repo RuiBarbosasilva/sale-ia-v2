@@ -170,6 +170,7 @@ export const affiliateIntelligenceService = {
   },
   async generateContent(campaignId:string,platforms:string[]=['INSTAGRAM','TIKTOK','YOUTUBE_SHORTS']){
     const campaign=await prisma.affiliateCampaign.findUnique({where:{id:campaignId},include:{product:true}}); if(!campaign) throw new Error('CAMPAIGN_NOT_FOUND');
+    if (campaign.status !== 'DRAFT' && campaign.status !== 'ACTIVE') throw new Error('CAMPAIGN_NOT_CONTENT_READY');
     const p=campaign.product, created=[], requested=[...new Set((Array.isArray(platforms) ? platforms : []).map((value) => String(value).trim().toUpperCase()).filter(Boolean))];
     if (!requested.length) throw new Error('CONTENT_PLATFORM_REQUIRED');
     if (requested.length > 10) throw new Error('TOO_MANY_CONTENT_PLATFORMS');
