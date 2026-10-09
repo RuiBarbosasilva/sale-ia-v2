@@ -38,6 +38,9 @@ export const affiliateActionService = {
   async execute(id: string) {
     const action = await prisma.affiliateAction.findUnique({ where: { id } });
     if (!action) throw new Error('ACTION_NOT_FOUND');
+    if (action.status === 'EXECUTED' || action.status === 'MANUAL_REQUIRED') {
+      return action;
+    }
     if (action.status !== 'APPROVED') throw new Error('ACTION_NOT_APPROVED');
 
     const payload = parsePayload(action.payload);
