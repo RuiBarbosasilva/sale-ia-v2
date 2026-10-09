@@ -337,35 +337,37 @@ export const rbFactorySalesAgentService = {
       throw new Error('SALES_ACTION_NOT_APPROVED');
     }
 
-    await (prisma as any).websiteOutreach.update({
-      where: { id: actionId },
-      data: {
-        status: 'SENT',
-        sentAt,
-        recipient: data?.recipient || outreach.recipient || null,
-        provider: data?.provider || 'MANUAL',
-        messageId: data?.messageId || null,
-        error: null,
-      },
-    });
+    await (prisma as any).$transaction(async (tx: any) => {
+      await tx.websiteOutreach.update({
+        where: { id: actionId },
+        data: {
+          status: 'SENT',
+          sentAt,
+          recipient: data?.recipient || outreach.recipient || null,
+          provider: data?.provider || 'MANUAL',
+          messageId: data?.messageId || null,
+          error: null,
+        },
+      });
 
-    await (prisma as any).websiteProspect.update({
-      where: { id: outreach.prospectId },
-      data: {
-        contactedAt: sentAt,
-        lastContactAt: sentAt,
-        nextFollowUpAt,
-        status: 'CONTACTED',
-      },
-    });
+      await tx.websiteProspect.update({
+        where: { id: outreach.prospectId },
+        data: {
+          contactedAt: sentAt,
+          lastContactAt: sentAt,
+          nextFollowUpAt,
+          status: 'CONTACTED',
+        },
+      });
 
-    await (prisma as any).websiteOutreachEvent.create({
-      data: {
-        outreachId: actionId,
-        type: 'SENT',
-        metadata: JSON.stringify({ nextFollowUpAt: nextFollowUpAt.toISOString(), provider: data?.provider || 'MANUAL' })
-      }
-    }).catch(() => undefined);
+      await tx.websiteOutreachEvent.create({
+        data: {
+          outreachId: actionId,
+          type: 'SENT',
+          metadata: JSON.stringify({ nextFollowUpAt: nextFollowUpAt.toISOString(), provider: data?.provider || 'MANUAL' })
+        }
+      });
+    });
 
     return {
       id: actionId,
