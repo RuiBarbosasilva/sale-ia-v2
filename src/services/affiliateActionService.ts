@@ -45,6 +45,31 @@ export const affiliateActionService = {
 
     const payload = parsePayload(action.payload);
 
+    if (action.type === 'CAMPAIGN_CREATED') {
+      const campaignId = action.campaignId;
+      if (!campaignId) throw new Error('ACTION_CAMPAIGN_REQUIRED');
+
+      const campaign = await prisma.affiliateCampaign.findUnique({
+        where: { id: campaignId },
+        select: { id: true, name: true, status: true },
+      });
+      if (!campaign) throw new Error('CAMPAIGN_NOT_FOUND');
+
+      return prisma.affiliateAction.update({
+        where: { id },
+        data: {
+          status: 'EXECUTED',
+          executedAt: new Date(),
+          result: JSON.stringify({
+            type: 'CAMPAIGN_CREATED',
+            campaignId: campaign.id,
+            status: campaign.status,
+            confirmed: true,
+          }),
+        },
+      });
+    }
+
     if (action.type === 'CREATE_CAMPAIGN') {
       if (!payload.productId) throw new Error('ACTION_PRODUCT_REQUIRED');
 
