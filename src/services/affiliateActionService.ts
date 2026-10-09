@@ -29,6 +29,9 @@ export const affiliateActionService = {
   async reject(id: string, reason?: string) {
     const a = await prisma.affiliateAction.findUnique({ where: { id } });
     if (!a) throw new Error('ACTION_NOT_FOUND');
+    if (a.status !== 'PENDING_APPROVAL' && a.status !== 'READY' && a.status !== 'APPROVED') {
+      throw new Error('ACTION_NOT_REJECTABLE');
+    }
     return prisma.affiliateAction.update({
       where: { id },
       data: { status: 'REJECTED', result: reason || 'Rejeitada pelo supervisor' },
