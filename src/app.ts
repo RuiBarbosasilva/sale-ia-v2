@@ -15,6 +15,7 @@ import hotmartRoutes from './routes/hotmartRoutes';
 import braipRoutes from './routes/braipRoutes';
 import hunterRoutes from './routes/hunterRoutes';
 import mlRoutes from './modules/mercadoLivre/routes/mercadoLivreRoutes';
+import { startDropshippingResearchScheduler } from './modules/mercadoLivre/services/dropshippingResearchScheduler';
 import cookieParser from 'cookie-parser';
 import express from 'express';
 import templateImportRoutes from './routes/templateImportRoutes';
@@ -65,7 +66,7 @@ app.use((req, res, next) => {
 
 // Força UTF-8 nas páginas HTML para evitar mojibake em ambientes Windows/proxies.
 app.use((req, res, next) => {
-  const htmlRoutes = ['/affiliates', '/affiliates/admin', '/affiliates/intelligence', '/editorial', '/sales', '/dashboard', '/dashboard/', '/rb-factory', '/rb-factory-benchmark', '/rb-factory-maintenance', '/rb-factory-commercial'];
+  const htmlRoutes = ['/affiliates', '/affiliates/admin', '/affiliates/intelligence', '/editorial', '/sales', '/dashboard', '/dashboard/', '/rb-factory', '/rb-factory-benchmark', '/rb-factory-maintenance', '/rb-factory-commercial', '/mercadolivre', '/mercadolivre/dropshipping'];
   if (htmlRoutes.includes(req.path) || req.path.endsWith('.html')) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
   }
@@ -84,6 +85,7 @@ app.get(['/dashboard', '/dashboard/'], (_req, res) => res.sendFile('dashboard/in
 app.get('/rb-factory-benchmark', (_req, res) => res.sendFile('rb-factory-benchmark/index.html', { root: 'public' }));
 app.get('/rb-factory-maintenance', (_req, res) => res.sendFile('rb-factory-maintenance.html', { root: 'public' }));
 app.get('/rb-factory-commercial', (_req, res) => res.sendFile('rb-factory-commercial.html', { root: 'public' }));
+app.get(['/mercadolivre', '/mercadolivre/dropshipping'], (_req, res) => res.sendFile('dropshipping-lab.html', { root: 'public' }));
 app.use('/generated-images', express.static('storage/generated-images'));
 
 app.use('/api', apiRoutes);
@@ -115,6 +117,11 @@ app.use('/api/credenciais', credenciaisRoutes);
 app.use('/dashboard', dashboardRoutes);
 
 startRbFactoryMaintenanceJob();
+
+if (String(process.env.DROPSHIPPING_AUTORESEARCH_ENABLED || '').toLowerCase() === 'true') {
+  const tickMs = Number(process.env.DROPSHIPPING_AUTORESEARCH_TICK_MS || 60000);
+  startDropshippingResearchScheduler(Number.isFinite(tickMs) ? tickMs : 60000);
+}
 
 // ==========================================
 // ROTAS DO MÓDULO AFILIADOS IA E OUTROS
