@@ -479,3 +479,42 @@ export async function resolveDropshippingAlert(req: Request, res: Response): Pro
     return res.status(500).json({ success: false, error: 'DROPSHIPPING_ALERT_RESOLVE_ERROR' });
   }
 }
+
+export async function getDropshippingPriceHistory(req: Request, res: Response): Promise<Response> {
+  const itemId = typeof req.params.itemId === 'string' ? req.params.itemId.trim() : '';
+  const rawLimit = req.query.limit === undefined ? 30 : Number(req.query.limit);
+  if (!/^MLB-?\d{6,15}$/i.test(itemId) || !Number.isInteger(rawLimit) || rawLimit < 2 || rawLimit > 100) {
+    return res.status(400).json({ success: false, error: 'INVALID_PRICE_HISTORY_FILTER' });
+  }
+  try {
+    const snapshots = await prisma.dropshippingCatalogSnapshot.findMany({
+      where: { itemId },
+      take: rawLimit,
+      orderBy: { observedAt: 'desc' },
+      select: {
+        itemId: true, title: true, price: true, availableQuantity: true,
+        soldQuantity: true, url: true, observedAt: true, runId: true,
+      },
+    });
+    const chronological = [...snapshots].reverse();
+    const first = chronological[0];
+    const last = chronological[chronological.length - 1];
+    const priceChange = first && last ? Number((last.price - first.price).toFixed(2)) : 0;
+    const priceChangePct = first && first.price > 0
+      ? Number((priceChange / first.price * 100).toFixed(2))
+      : null;
+    return res.json({
+      success: true,
+      itemId,
+      snapshotCount: snapshots.length,
+      priceChange,
+      priceChangePct,
+      firstObservedAt: first?.observedAt ?? null,
+      lastObservedAt: last?.observedAt ?? null,
+      snapshots: chronological,
+      note: 'Histórico disponível somente para coletas feitas pelo Sale-IA; não representa todo o mercado.',
+    });
+  } catch {
+    return res.status(500).json({ success: false, error: 'DROPSHIPPING_PRICE_HISTORY_ERROR' });
+  }
+}
