@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma';
 import {
   assessProductCandidate,
   assessSupplierCandidate,
+  validateEvidence,
   type ProductCandidate,
   type SupplierCandidate,
 } from '../services/dropshippingResearch';
@@ -569,9 +570,30 @@ export async function validateDropshippingSupplierCandidate(req: Request, res: R
   try {
     const existing = await prisma.dropshippingSupplierCandidate.findUnique({ where: { id } });
     if (!existing) return res.status(404).json({ success: false, error: 'SUPPLIER_CANDIDATE_NOT_FOUND' });
-    const score = scoreSupplier(req.body as unknown as SupplierSignals);
+    const baseScore = scoreSupplier(req.body as unknown as SupplierSignals);
+    const submittedEvidence = req.body.evidence as Array<Record<string, unknown>>;
+    const evidenceBlockers: string[] = [];
+    const evidenceValidation = submittedEvidence.map((item) => ({
+      item,
+      errors: validateEvidence(item as any),
+    }));
+    for (const field of booleanFields) {
+      if (req.body[field] !== true) continue;
+      const matching = evidenceValidation.filter(({ item, errors }) =>
+        item.field === field && item.value === true && errors.length === 0 &&
+        typeof item.confidencePct === 'number' && item.confidencePct >= 70 &&
+        (item.sourceKind === 'MANUAL_VERIFICATION'
+          ? typeof item.notes === 'string' && item.notes.trim().length >= 10
+          : typeof item.sourceUrl === 'string' && /^https?:\/\//i.test(item.sourceUrl)));
+      if (matching.length === 0) evidenceBlockers.push('Evidência verificável ausente para: ' + field);
+    }
+    const blockers = [...new Set([...baseScore.blockers, ...evidenceBlockers])];
+    const validationStatus = baseScore.status === 'VALIDATED' && evidenceBlockers.length > 0
+      ? 'CONDITIONALLY_VALIDATED'
+      : baseScore.status;
+    const score = { ...baseScore, status: validationStatus, blockers };
     const priorEvidence: unknown[] = JSON.parse(existing.evidence);
-    const evidence = [...priorEvidence, ...req.body.evidence];
+    const evidence = [...priorEvidence, ...submittedEvidence];
     const updated = await prisma.$transaction(async (tx) => {
       const candidate = await tx.dropshippingSupplierCandidate.update({
         where: { id },
