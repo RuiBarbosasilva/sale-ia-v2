@@ -173,3 +173,6 @@ A comparação de custo usa o custo posto (produto + frete do fornecedor), para 
 
 
 - `POST /api/mercadolivre/dropshipping/research/watches/bootstrap` cria/reativa oito pesquisas iniciais de hipóteses de organização e acessórios para análise de catálogo. Elas são termos de pesquisa, não recomendações de compra nem campeões validados.
+
+
+O worker também varre ofertas ativas de fornecedores a cada 15 minutos e cria WARNING quando o estoque não foi observado ou a última observação tem mais de 24 horas. Ao cadastrar uma nova oferta para o mesmo produto/fornecedor/SKU, a anterior passa a `SUPERSEDED` para não gerar alertas de stale em versões antigas.
