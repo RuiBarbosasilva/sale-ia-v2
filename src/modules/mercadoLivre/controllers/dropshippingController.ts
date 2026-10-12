@@ -923,3 +923,128 @@ export async function getDropshippingDashboardSummary(req: Request, res: Respons
     return res.status(500).json({ success: false, error: 'DROPSHIPPING_DASHBOARD_SUMMARY_ERROR' });
   }
 }
+
+export async function evaluateDropshippingProductLifecycle(req: Request, res: Response): Promise<Response> {
+  const id = typeof req.params.id === 'string' ? req.params.id.trim() : '';
+  if (!id || id.length > 100 || !isObject(req.body) ||
+      typeof req.body.supplierCandidateId !== 'string' || !req.body.supplierCandidateId.trim()) {
+    return res.status(400).json({ success: false, error: 'INVALID_PRODUCT_EVALUATION_REQUEST' });
+  }
+  const scoreFields = ['competitionScore', 'listingQualityScore', 'deliveryRiskScore', 'returnRiskScore'];
+  if (scoreFields.some((key) => typeof req.body[key] !== 'number' ||
+      !Number.isFinite(req.body[key] as number) || (req.body[key] as number) < 0 || (req.body[key] as number) > 100) ||
+      ['prohibitedOrRestricted', 'brandOrAuthenticityConcern'].some((key) => typeof req.body[key] !== 'boolean')) {
+    return res.status(400).json({ success: false, error: 'INVALID_PRODUCT_EVALUATION_SIGNALS' });
+  }
+  try {
+    const candidate = await prisma.dropshippingProductCandidate.findUnique({ where: { id } });
+    if (!candidate) return res.status(404).json({ success: false, error: 'PRODUCT_CANDIDATE_NOT_FOUND' });
+    if (!candidate.externalId || !candidate.estimatedProfit || candidate.estimatedProfit <= 0 ||
+        candidate.marginPct === null) {
+      return res.status(409).json({
+        success: false,
+        error: 'PRODUCT_ECONOMICS_REQUIRED',
+        message: 'Informe uma margem positiva antes de avaliar escala.',
+      });
+    }
+    const supplier = await prisma.dropshippingSupplierCandidate.findUnique({
+      where: { id: req.body.supplierCandidateId.trim() },
+    });
+    if (!supplier) return res.status(404).json({ success: false, error: 'SUPPLIER_CANDIDATE_NOT_FOUND' });
+    if (supplier.validationStatus !== 'VALIDATED' || supplier.reliabilityScore < 65) {
+      return res.status(409).json({
+        success: false,
+        error: 'SUPPLIER_NOT_VALIDATED',
+        message: 'Somente fornecedor VALIDATED com score mínimo 65 pode ser usado para avaliar escala.',
+      });
+    }
+    const firstSnapshot = await prisma.dropshippingCatalogSnapshot.findFirst({
+      where: { itemId: candidate.externalId },
+      orderBy: { observedAt: 'asc' },
+      select: { soldQuantity: true, observedAt: true },
+    });
+    const latestSnapshot = await prisma.dropshippingCatalogSnapshot.findFirst({
+      where: { itemId: candidate.externalId },
+      orderBy: { observedAt: 'desc' },
+      select: { soldQuantity: true, availableQuantity: true, observedAt: true },
+    });
+    if (!firstSnapshot || !latestSnapshot || firstSnapshot.id === latestSnapshot.id ||
+        firstSnapshot.soldQuantity === null || latestSnapshot.soldQuantity === null) {
+      return res.status(409).json({
+        success: false,
+        error: 'INSUFFICIENT_SALES_HISTORY',
+        message: 'São necessárias pelo menos duas coletas com vendas informadas para o mesmo anúncio.',
+      });
+    }
+    const daysObserved = Math.floor((latestSnapshot.observedAt.getTime() - firstSnapshot.observedAt.getTime()) / 86400000);
+    const observedSales = latestSnapshot.soldQuantity - firstSnapshot.soldQuantity;
+    if (daysObserved < 1 || observedSales < 0) {
+      return res.status(409).json({ success: false, error: 'INVALID_SALES_HISTORY' });
+    }
+    let evidenceConfidencePct = 0;
+    try {
+      const evidence = JSON.parse(candidate.evidence) as Array<{ confidencePct?: number }>;
+      if (Array.isArray(evidence) && evidence.length) {
+        evidenceConfidencePct = evidence.reduce((sum, item) =>
+          sum + (typeof item.confidencePct === 'number' ? Math.max(0, Math.min(100, item.confidencePct)) : 0), 0) / evidence.length;
+      }
+    } catch {
+      evidenceConfidencePct = 0;
+    }
+    const signals: ProductSignals = {
+      demandScore: Math.min(100, daysObserved > 0 ? (observedSales / daysObserved) * 10 : 0),
+      competitionScore: req.body.competitionScore as number,
+      supplierReliabilityScore: supplier.reliabilityScore,
+      marginPct: candidate.marginPct,
+      listingQualityScore: req.body.listingQualityScore as number,
+      deliveryRiskScore: req.body.deliveryRiskScore as number,
+      returnRiskScore: req.body.returnRiskScore as number,
+      evidenceConfidencePct,
+      observedSales,
+      daysObserved,
+      hasStableStock: supplier.stockFeedAvailable === true && latestSnapshot.availableQuantity !== null &&
+        latestSnapshot.availableQuantity > 0,
+      prohibitedOrRestricted: req.body.prohibitedOrRestricted as boolean,
+      brandOrAuthenticityConcern: req.body.brandOrAuthenticityConcern as boolean,
+    };
+    const score = scoreProduct(signals);
+    const updated = await prisma.dropshippingProductCandidate.update({
+      where: { id },
+      data: {
+        supplierCandidateId: supplier.id,
+        status: score.verdict,
+        suitabilityScore: score.score,
+        candidateForTesting: ['TEST', 'SCALE', 'CHAMPION'].includes(score.verdict),
+        blockers: JSON.stringify(score.blockers),
+        updatedAt: new Date(),
+      },
+      select: {
+        id: true, title: true, status: true, suitabilityScore: true, candidateForTesting: true,
+        estimatedProfit: true, marginPct: true, supplierCandidateId: true, updatedAt: true,
+      },
+    });
+    if (score.verdict === 'SCALE' || score.verdict === 'CHAMPION' || score.verdict === 'REJECT') {
+      const title = 'Avaliação de produto ' + score.verdict + ': ' + candidate.title;
+      const prior = await prisma.dropshippingAlert.findFirst({
+        where: { type: 'PRODUCT_VERDICT', title, status: 'OPEN' },
+        select: { id: true },
+      });
+      const alertData = {
+        severity: score.verdict === 'CHAMPION' || score.verdict === 'SCALE' ? 'INFO' : 'WARNING',
+        message: score.blockers.join('; ') || score.reasons.join('; '),
+        payload: JSON.stringify({ candidateId: id, verdict: score.verdict, score: score.score, observedSales, daysObserved }),
+      };
+      if (prior) await prisma.dropshippingAlert.update({ where: { id: prior.id }, data: alertData });
+      else await prisma.dropshippingAlert.create({ data: { type: 'PRODUCT_VERDICT', title, ...alertData } });
+    }
+    return res.json({
+      success: true,
+      candidate: updated,
+      evaluation: score,
+      observed: { observedSales, daysObserved, evidenceConfidencePct, supplierReliabilityScore: supplier.reliabilityScore },
+      note: 'Veredito calculado com vendas observadas entre snapshots, margem salva e fornecedor validado. Não é garantia de vendas futuras.',
+    });
+  } catch {
+    return res.status(500).json({ success: false, error: 'PRODUCT_LIFECYCLE_EVALUATION_FAILED' });
+  }
+}
