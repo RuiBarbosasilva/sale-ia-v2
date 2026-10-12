@@ -649,7 +649,7 @@ export async function importLatestDropshippingResearchAsCandidates(req: Request,
       }
       const evidence = [{
         sourceName: 'API pública oficial do Mercado Livre Brasil',
-        sourceKind: 'MARKETPLACE_OFFICIAL_API',
+        sourceKind: 'MARKETPLACE_OFFICIAL_API' as const,
         collectedAt: run.collectedAt.toISOString(),
         observedAt: item.observedAt.toISOString(),
         field: 'observedPrice',
