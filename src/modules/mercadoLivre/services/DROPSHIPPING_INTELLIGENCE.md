@@ -132,3 +132,7 @@ O laboratório inclui checklist de revalidação para fornecedores já cadastrad
 - Cada revalidação grava um registro imutável em `DropshippingSupplierValidation` na mesma transação da atualização do candidato.
 - `GET /api/mercadolivre/dropshipping/suppliers/candidates/:id/validations` retorna sinais, evidências, bloqueios, checks aprovados, score e timestamp das avaliações anteriores.
 - A revalidação exige ao menos uma evidência válida. A trilha registra o que o operador informou, mas não verifica automaticamente a veracidade dos documentos.
+
+
+- `GET /api/mercadolivre/dropshipping/research/scheduler-status` informa se a automação está habilitada no processo atual, intervalo do worker, consultas ativas/vencidas e status recentes.
+- Erros de execução do ciclo são capturados para evitar rejeições não tratadas no processo do servidor.

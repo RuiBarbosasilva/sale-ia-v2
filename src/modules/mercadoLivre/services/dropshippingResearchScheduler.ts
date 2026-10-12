@@ -150,8 +150,8 @@ export async function runDueDropshippingResearchWatches(): Promise<void> {
 export function startDropshippingResearchScheduler(intervalMs = 60_000): void {
   if (timer || process.env.NODE_ENV === 'test') return;
   const safeInterval = Number.isFinite(intervalMs) ? Math.max(15_000, Math.min(intervalMs, 300_000)) : 60_000;
-  void runDueDropshippingResearchWatches();
-  timer = setInterval(() => { void runDueDropshippingResearchWatches(); }, safeInterval);
+  void runDueDropshippingResearchWatches().catch(() => undefined);
+  timer = setInterval(() => { void runDueDropshippingResearchWatches().catch(() => undefined); }, safeInterval);
   if (typeof timer === 'object' && 'unref' in timer && typeof timer.unref === 'function') timer.unref();
 }
 

@@ -1179,3 +1179,39 @@ export async function listDropshippingSupplierValidationHistory(req: Request, re
     return res.status(500).json({ success: false, error: 'SUPPLIER_VALIDATION_HISTORY_ERROR' });
   }
 }
+
+export async function getDropshippingResearchSchedulerStatus(req: Request, res: Response): Promise<Response> {
+  const enabled = String(process.env.DROPSHIPPING_AUTORESEARCH_ENABLED || '').toLowerCase() === 'true';
+  const rawTick = Number(process.env.DROPSHIPPING_AUTORESEARCH_TICK_MS || 60000);
+  const tickMs = Number.isFinite(rawTick) ? Math.max(15000, Math.min(rawTick, 300000)) : 60000;
+  const now = new Date();
+  try {
+    const [activeWatches, dueWatches, recentWatches] = await Promise.all([
+      prisma.dropshippingResearchWatch.count({ where: { enabled: true } }),
+      prisma.dropshippingResearchWatch.count({
+        where: { enabled: true, OR: [{ nextRunAt: null }, { nextRunAt: { lte: now } }] },
+      }),
+      prisma.dropshippingResearchWatch.findMany({
+        take: 10,
+        orderBy: [{ updatedAt: 'desc' }],
+        select: {
+          id: true, query: true, enabled: true, intervalMinutes: true,
+          lastRunAt: true, nextRunAt: true, lastStatus: true, lastError: true,
+        },
+      }),
+    ]);
+    return res.json({
+      success: true,
+      enabled,
+      tickMs,
+      activeWatches,
+      dueWatches,
+      recentWatches,
+      note: enabled
+        ? 'O worker está habilitado neste processo; confira lastStatus/nextRunAt para acompanhar as coletas.'
+        : 'O worker está desligado. Defina DROPSHIPPING_AUTORESEARCH_ENABLED=true e reinicie o servidor.',
+    });
+  } catch {
+    return res.status(500).json({ success: false, error: 'DROPSHIPPING_SCHEDULER_STATUS_ERROR' });
+  }
+}
