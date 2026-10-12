@@ -107,6 +107,23 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
   "brandOrAuthenticityConcern": false
 }</textarea><div class="buttonrow"><button id="evaluateProductButton">Reavaliar produto</button></div><pre id="productEvaluationOutput">O veredito e os bloqueios aparecerão aqui.</pre></section>
 <section class="panel wide"><h2>Agendar pesquisa automática</h2><p>Crie uma palavra-chave para o Sale-IA pesquisar periodicamente e registrar snapshots/alertas. O servidor também precisa estar com <code>DROPSHIPPING_AUTORESEARCH_ENABLED=true</code>.</p><label for="watchQuery">Produto ou palavra-chave</label><input id="watchQuery" minlength="2" maxlength="120" placeholder="ex.: organizador de cabos"><label for="watchInterval">Intervalo em minutos (15–1440)</label><input id="watchInterval" type="number" min="15" max="1440" value="60"><div class="buttonrow"><button id="saveWatchButton">Salvar consulta agendada</button></div><divider /><h3>Alterar consulta existente</h3><label for="watchId">ID da consulta agendada</label><input id="watchId" placeholder="UUID da consulta"><label><input id="watchEnabled" type="checkbox" checked> Consulta habilitada</label><label for="watchEditInterval">Novo intervalo em minutos (opcional)</label><input id="watchEditInterval" type="number" min="15" max="1440" placeholder="deixe vazio para manter"><div class="buttonrow"><button id="updateWatchButton" class="secondary">Atualizar consulta</button></div><pre id="watchOutput">As consultas agendadas e seu último status aparecerão aqui.</pre></section>
+<section class="panel wide"><h2>Vincular oferta real de fornecedor</h2><p>Exige fornecedor já VALIDATED. Use preço e estoque observados no catálogo do fornecedor e adicione evidência verificável. O sistema calcula o custo posto e a margem do anúncio.</p><label for="offerProductId">ID do candidato Mercado Livre</label><input id="offerProductId" placeholder="UUID do produto salvo"><label for="offerJson">Oferta e custos (JSON)</label><textarea id="offerJson" rows="17">{
+  "supplierCandidateId": "",
+  "supplierSku": "",
+  "supplierTitle": "",
+  "supplierUrl": "",
+  "unitCost": 0,
+  "supplierShippingCost": 0,
+  "availableQuantity": 0,
+  "marketplaceFeeRatePct": 15,
+  "fixedMarketplaceFee": 8,
+  "shippingCost": 5,
+  "taxRatePct": 5,
+  "packagingCost": 2,
+  "returnReserveRatePct": 3,
+  "otherVariableCosts": 1,
+  "evidence": []
+}</textarea><div class="buttonrow"><button id="saveOfferButton">Vincular oferta e calcular margem</button><button id="listOffersButton" class="secondary">Ver ofertas vinculadas</button></div><pre id="offerOutput">Ofertas vinculadas e margem calculada aparecerão aqui.</pre></section>
 <section class="panel wide"><h2>Limites operacionais</h2><p>Esta interface executa os endpoints de cálculo e triagem. Pesquisa real, persistência de resultados, conexão com fornecedores, pedidos automáticos, publicação de anúncios e adaptador Shopee precisam de integração própria e validação.</p><div class="notice">Nunca coloque tokens do Mercado Livre ou senhas de fornecedores nos campos de evidência. Não use dados inventados como vendas, reputação ou validação de fornecedor.</div></section>
 </div><div class="foot">Sale-IA V2 · Dropshipping Intelligence · Ações de escrita/publicação não são executadas por esta página.</div>
 </main>
@@ -143,6 +160,19 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
    run('marginButton','marginOutput',()=>call('/dropshipping/calculate-margin','POST',payload));
  });
  $('importProductsButton').addEventListener('click',()=>run('importProductsButton','historyOutput',()=>call('/dropshipping/research/import-latest','POST')));
+ $('saveOfferButton').addEventListener('click',()=>run('saveOfferButton','offerOutput',()=>{
+   const id=$('offerProductId').value.trim();
+   if(!id) throw new Error('Informe o ID do candidato Mercado Livre.');
+   let payload;
+   try { payload=JSON.parse($('offerJson').value); }
+   catch { throw new Error('JSON da oferta inválido.'); }
+   return call('/dropshipping/products/candidates/'+encodeURIComponent(id)+'/supplier-offers','POST',payload);
+ }));
+ $('listOffersButton').addEventListener('click',()=>run('listOffersButton','offerOutput',()=>{
+   const id=$('offerProductId').value.trim();
+   if(!id) throw new Error('Informe o ID do candidato Mercado Livre.');
+   return call('/dropshipping/products/candidates/'+encodeURIComponent(id)+'/supplier-offers?limit=100');
+ }));
  $('evaluateProductButton').addEventListener('click',()=>run('evaluateProductButton','productEvaluationOutput',()=>{
    const id=$('productEvaluationId').value.trim();
    if(!id) throw new Error('Informe o ID do produto candidato.');
