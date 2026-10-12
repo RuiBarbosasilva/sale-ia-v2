@@ -115,3 +115,13 @@ O laboratório inclui checklist de revalidação para fornecedores já cadastrad
 - Vendas observadas são calculadas como diferença entre contagens de vendas da primeira e última captura; a duração é calculada pelos timestamps.
 - Concorrência, qualidade do anúncio e riscos operacionais continuam sinais administrativos informados no pedido; devem ter base verificável.
 - O endpoint salva o veredito e gera alerta para SCALE, CHAMPION ou REJECT. Nenhum anúncio é publicado automaticamente.
+
+
+## Pesquisa automática por watchlist
+
+- `POST /api/mercadolivre/dropshipping/research/watches` cria/atualiza uma palavra-chave com intervalo de 15 a 1440 minutos.
+- `GET /api/mercadolivre/dropshipping/research/watches` lista estado, última execução, próxima execução e erro.
+- `PATCH /api/mercadolivre/dropshipping/research/watches/:id` permite habilitar/desabilitar ou mudar o intervalo.
+- O worker processa até três consultas vencidas por ciclo, grava execuções/snapshots e cria alertas de variação de preço/estoque.
+- Para iniciar no servidor, configure `DROPSHIPPING_AUTORESEARCH_ENABLED=true`; o ciclo padrão é 60 segundos e pode ser ajustado por `DROPSHIPPING_AUTORESEARCH_TICK_MS`.
+- A automação consulta apenas a API pública do Mercado Livre. Não pesquisa fornecedores automaticamente, não compra, não publica anúncios e não integra a Shopee.
