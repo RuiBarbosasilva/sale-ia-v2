@@ -414,6 +414,24 @@ export async function validateDropshippingSupplierCandidate(req: Request, res: R
       },
       select: { id: true, name: true, validationStatus: true, reliabilityScore: true, blockers: true, lastVerifiedAt: true },
     });
+    if (score.status !== 'VALIDATED') {
+      const title = 'Fornecedor exige validação: ' + existing.name;
+      const priorAlert = await prisma.dropshippingAlert.findFirst({
+        where: { type: 'SUPPLIER_VALIDATION', title, status: 'OPEN' },
+      });
+      const alertData = {
+        severity: score.status === 'REJECTED' ? 'WARNING' : 'INFO',
+        message: score.blockers.join('; ') || 'Fornecedor requer revisão manual.',
+        payload: JSON.stringify({ candidateId: id, validationStatus: score.status, score: score.score }),
+      };
+      if (priorAlert) {
+        await prisma.dropshippingAlert.update({ where: { id: priorAlert.id }, data: alertData });
+      } else {
+        await prisma.dropshippingAlert.create({
+          data: { type: 'SUPPLIER_VALIDATION', title, ...alertData },
+        });
+      }
+    }
     return res.json({
       success: true,
       candidate: { ...updated, blockers: updated.blockers ? JSON.parse(updated.blockers) : [] },
