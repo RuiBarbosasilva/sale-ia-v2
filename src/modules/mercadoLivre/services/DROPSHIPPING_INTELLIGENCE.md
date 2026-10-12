@@ -145,3 +145,14 @@ O laboratório inclui checklist de revalidação para fornecedores já cadastrad
 - O custo posto é calculado como custo unitário + frete do fornecedor; o motor calcula lucro/margem com taxas de marketplace, frete do vendedor, impostos, embalagem e reservas informadas.
 - Margem não positiva marca a oferta como `REJECTED_MARGIN`, bloqueia o candidato e cria/atualiza alerta. Uma margem positiva ainda exige reavaliação do ciclo de vida para escala/campeão.
 - `GET /api/mercadolivre/dropshipping/products/candidates/:id/supplier-offers` lista ofertas vinculadas e o status do fornecedor.
+
+
+## Validação de fornecedor com evidência por indicador
+
+A revalidação não deve aprovar fornecedor apenas porque o payload contém flags booleanas positivas. Para cada indicador marcado como verdadeiro, a API exige pelo menos um registro de evidência correspondente ao nome do campo, valor `true`, metadados válidos e confiança mínima de 70%.
+
+- Fontes oficiais/licenciadas devem informar URL HTTP(S) rastreável.
+- `MANUAL_VERIFICATION` deve incluir nota de inspeção com pelo menos 10 caracteres.
+- Se faltar evidência para qualquer indicador positivo, o status máximo fica `CONDITIONALLY_VALIDATED`; a aprovação integral é bloqueada.
+- Essa checagem valida estrutura e rastreabilidade declarada, não verifica automaticamente a autenticidade externa da fonte. Pedido-teste, nota fiscal e identidade legal continuam exigindo conferência humana.
+- Os testes de regressão ficam em `services/__tests__/dropshippingResearch.test.ts`.
