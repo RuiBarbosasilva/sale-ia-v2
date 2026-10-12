@@ -1,6 +1,7 @@
 import {
   assessProductCandidate,
   assessSupplierCandidate,
+  assessSupplierValidationEvidence,
   validateEvidence,
   type EvidenceRecord,
 } from '../dropshippingResearch';
@@ -55,4 +56,44 @@ describe('Dropshipping research provenance contracts', () => {
     expect(result.candidateForTesting).toBe(false);
     expect(result.warnings).toContain('Vendas não observadas; não classificar como campeão');
   });
+
+  test('does not validate positive supplier claims without field-linked evidence', () => {
+    const signals = {
+      hasCnpjOrLegalIdentity: true, hasPublicContact: true,
+      hasWrittenDropshippingPolicy: true, confirmsStockSync: true,
+      providesInvoice: true, providesTracking: true,
+      hasClearReturnPolicy: true, hasVerifiableReputation: true,
+      sampleOrderPassed: true,
+    };
+    const blockers = assessSupplierValidationEvidence(signals, [evidence]);
+    expect(blockers).toHaveLength(8);
+    expect(blockers).toContain('Evidência verificável ausente para: sampleOrderPassed');
+  });
+
+  test('accepts all required claims only when every field has valid evidence', () => {
+    const fields = [
+      'hasCnpjOrLegalIdentity', 'hasPublicContact', 'hasWrittenDropshippingPolicy',
+      'confirmsStockSync', 'providesInvoice', 'providesTracking',
+      'hasClearReturnPolicy', 'hasVerifiableReputation', 'sampleOrderPassed',
+    ];
+    const signals = Object.fromEntries(fields.map((field) => [field, true]));
+    const evidenceSet: EvidenceRecord[] = fields.map((field) => ({
+      ...evidence, field, value: true, sourceUrl: 'https://example.com/evidence/' + field,
+    }));
+    expect(assessSupplierValidationEvidence(signals, evidenceSet)).toEqual([]);
+  });
+
+  test('requires a detailed note for manual verification evidence', () => {
+    const signals = { sampleOrderPassed: true };
+    const manual: EvidenceRecord = {
+      sourceName: 'Verificação manual', sourceKind: 'MANUAL_VERIFICATION',
+      collectedAt: '2026-10-12T10:00:00.000Z', field: 'sampleOrderPassed',
+      value: true, confidencePct: 90, notes: 'ok',
+    };
+    expect(assessSupplierValidationEvidence(signals, [manual])).toHaveLength(1);
+    expect(assessSupplierValidationEvidence(signals, [{
+      ...manual, notes: 'Pedido de teste recebido e inspecionado.',
+    }])).toEqual([]);
+  });
+
 });
