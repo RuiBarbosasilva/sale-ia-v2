@@ -961,12 +961,12 @@ export async function evaluateDropshippingProductLifecycle(req: Request, res: Re
     const firstSnapshot = await prisma.dropshippingCatalogSnapshot.findFirst({
       where: { itemId: candidate.externalId },
       orderBy: { observedAt: 'asc' },
-      select: { soldQuantity: true, observedAt: true },
+      select: { id: true, soldQuantity: true, observedAt: true },
     });
     const latestSnapshot = await prisma.dropshippingCatalogSnapshot.findFirst({
       where: { itemId: candidate.externalId },
       orderBy: { observedAt: 'desc' },
-      select: { soldQuantity: true, availableQuantity: true, observedAt: true },
+      select: { id: true, soldQuantity: true, availableQuantity: true, observedAt: true },
     });
     if (!firstSnapshot || !latestSnapshot || firstSnapshot.id === latestSnapshot.id ||
         firstSnapshot.soldQuantity === null || latestSnapshot.soldQuantity === null) {
