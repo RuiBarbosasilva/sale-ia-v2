@@ -623,3 +623,82 @@ export async function getDropshippingPriceHistory(req: Request, res: Response): 
     return res.status(500).json({ success: false, error: 'DROPSHIPPING_PRICE_HISTORY_ERROR' });
   }
 }
+
+export async function importLatestDropshippingResearchAsCandidates(req: Request, res: Response): Promise<Response> {
+  try {
+    const run = await prisma.dropshippingResearchRun.findFirst({
+      orderBy: { createdAt: 'desc' },
+      include: { snapshots: { take: 100, orderBy: { observedAt: 'desc' } } },
+    });
+    if (!run) return res.status(404).json({ success: false, error: 'NO_RESEARCH_RUN_FOUND' });
+    if (!run.snapshots.length) {
+      return res.json({ success: true, runId: run.id, imported: 0, skippedExisting: 0, message: 'A última pesquisa não contém anúncios para importar.' });
+    }
+    const ids = run.snapshots.map((item) => item.itemId);
+    const existing = await prisma.dropshippingProductCandidate.findMany({
+      where: { marketplace: 'MERCADOLIVRE', externalId: { in: ids } },
+      select: { externalId: true },
+    });
+    const existingIds = new Set(existing.map((item) => item.externalId).filter((id): id is string => Boolean(id)));
+    let imported = 0;
+    let skippedExisting = 0;
+    for (const item of run.snapshots) {
+      if (existingIds.has(item.itemId)) {
+        skippedExisting += 1;
+        continue;
+      }
+      const evidence = [{
+        sourceName: 'API pública oficial do Mercado Livre Brasil',
+        sourceKind: 'MARKETPLACE_OFFICIAL_API' as const,
+        collectedAt: run.collectedAt.toISOString(),
+        observedAt: item.observedAt.toISOString(),
+        field: 'observedPrice',
+        value: item.price,
+        sourceUrl: item.url,
+        confidencePct: item.evidenceConfidencePct,
+      }];
+      const candidateInput: ProductCandidate = {
+        externalId: item.itemId,
+        title: item.title,
+        canonicalUrl: item.url,
+        marketplace: 'MERCADOLIVRE',
+        observedPrice: item.price,
+        observedSales: item.soldQuantity ?? undefined,
+        observedStock: item.availableQuantity ?? undefined,
+        evidence,
+      };
+      const assessment = assessProductCandidate(candidateInput);
+      const status = assessment.blockers.length ? 'REJECT' : assessment.suitabilityScore >= 60 ? 'TEST' : 'WATCH';
+      await prisma.dropshippingProductCandidate.create({
+        data: {
+          title: item.title,
+          externalId: item.itemId,
+          canonicalUrl: item.url,
+          marketplace: 'MERCADOLIVRE',
+          observedPrice: item.price,
+          observedSales: item.soldQuantity,
+          observedStock: item.availableQuantity,
+          evidence: JSON.stringify(evidence),
+          suitabilityScore: assessment.suitabilityScore,
+          candidateForTesting: assessment.candidateForTesting,
+          status,
+          blockers: JSON.stringify(assessment.blockers),
+          warnings: JSON.stringify(assessment.warnings),
+        },
+      });
+      existingIds.add(item.itemId);
+      imported += 1;
+    }
+    return res.json({
+      success: true,
+      runId: run.id,
+      query: run.query,
+      imported,
+      skippedExisting,
+      totalSnapshots: run.snapshots.length,
+      note: 'Importação cria candidatos WATCH/TEST/REJECT com evidências da coleta. Não comprova demanda nem promove produtos a campeões.',
+    });
+  } catch {
+    return res.status(500).json({ success: false, error: 'DROPSHIPPING_CANDIDATE_IMPORT_FAILED' });
+  }
+}

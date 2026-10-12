@@ -71,3 +71,11 @@ Enviar o cabeçalho `x-mercado-livre-admin-key` (ou o cabeçalho alternativo ace
 O payload de `POST /api/mercadolivre/dropshipping/assess-product-candidate` pode incluir `economics` com `salePrice`, `supplierCost`, `marketplaceFeeRatePct`, `fixedMarketplaceFee`, `shippingCost`, `taxRatePct` e, opcionalmente, `packagingCost`, `returnReserveRatePct`, `otherVariableCosts`.
 
 Quando informada, a economia é calculada pelo motor de margem compartilhado e ficam persistidos lucro estimado, margem percentual e preço de equilíbrio. Taxas inválidas são rejeitadas; lucro estimado nulo ou negativo bloqueia o teste do produto. Os valores continuam estimativas e dependem de taxas/fretes corretos.
+
+
+## Importação da pesquisa para ranking
+
+- `POST /api/mercadolivre/dropshipping/research/import-latest` importa os anúncios da última coleta oficial para o ranking persistente de candidatos.
+- A importação é idempotente por marketplace + ID externo na lógica do endpoint: anúncios já registrados são ignorados.
+- Cada candidato recebe evidência de origem com data de coleta e URL da listagem; vendas ausentes continuam `null`.
+- A importação não calcula margem sem custos do fornecedor e não promove automaticamente candidatos a campeões.
