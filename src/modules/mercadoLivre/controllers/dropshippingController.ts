@@ -222,19 +222,89 @@ export async function assessDropshippingSupplierCandidate(req: Request, res: Res
   }
 }
 
-export function assessDropshippingProductCandidate(req: Request, res: Response): Response {
+export async function assessDropshippingProductCandidate(req: Request, res: Response): Promise<Response> {
   if (!isObject(req.body) || typeof req.body.title !== 'string' ||
-      typeof req.body.canonicalUrl !== 'string' ||
+      !req.body.title.trim() || req.body.title.length > 300 ||
+      typeof req.body.canonicalUrl !== 'string' || req.body.canonicalUrl.length > 2000 ||
       !['MERCADOLIVRE', 'SHOPEE', 'OTHER'].includes(String(req.body.marketplace)) ||
       !Array.isArray(req.body.evidence) || !req.body.evidence.every(hasValidEvidenceShape)) {
     return res.status(400).json({ error: 'INVALID_PRODUCT_CANDIDATE' });
   }
+  const optionalNumbers = ['observedPrice', 'observedSales', 'observedReviews', 'observedStock', 'shippingWeightGrams'];
+  if (optionalNumbers.some((key) => req.body[key] !== undefined &&
+      (typeof req.body[key] !== 'number' || !Number.isFinite(req.body[key] as number) ||
+       (req.body[key] as number) < 0))) {
+    return res.status(400).json({ error: 'INVALID_PRODUCT_METRICS' });
+  }
+  if (req.body.observedSales !== undefined && !Number.isInteger(req.body.observedSales) ||
+      req.body.observedReviews !== undefined && !Number.isInteger(req.body.observedReviews) ||
+      req.body.observedStock !== undefined && !Number.isInteger(req.body.observedStock) ||
+      req.body.shippingWeightGrams !== undefined && !Number.isInteger(req.body.shippingWeightGrams) ||
+      ['fragile', 'hasSizeVariants'].some((key) => req.body[key] !== undefined && typeof req.body[key] !== 'boolean')) {
+    return res.status(400).json({ error: 'INVALID_PRODUCT_METRICS' });
+  }
   const result = assessProductCandidate(req.body as unknown as ProductCandidate);
-  return res.json({
-    result,
-    champion: false,
-    note: 'Triagem inicial apenas; valide fornecedor, custos e vendas observadas antes de investir.',
-  });
+  const status = result.blockers.length ? 'REJECT' : result.suitabilityScore >= 60 ? 'TEST' : 'WATCH';
+  try {
+    const candidate = await prisma.dropshippingProductCandidate.create({
+      data: {
+        title: req.body.title.trim(),
+        externalId: typeof req.body.externalId === 'string' ? req.body.externalId.slice(0, 100) : null,
+        canonicalUrl: req.body.canonicalUrl.trim(),
+        marketplace: req.body.marketplace,
+        observedPrice: typeof req.body.observedPrice === 'number' ? req.body.observedPrice : null,
+        observedSales: typeof req.body.observedSales === 'number' ? req.body.observedSales : null,
+        observedReviews: typeof req.body.observedReviews === 'number' ? req.body.observedReviews : null,
+        observedStock: typeof req.body.observedStock === 'number' ? req.body.observedStock : null,
+        shippingWeightGrams: typeof req.body.shippingWeightGrams === 'number' ? req.body.shippingWeightGrams : null,
+        fragile: typeof req.body.fragile === 'boolean' ? req.body.fragile : null,
+        hasSizeVariants: typeof req.body.hasSizeVariants === 'boolean' ? req.body.hasSizeVariants : null,
+        evidence: JSON.stringify(req.body.evidence),
+        suitabilityScore: result.suitabilityScore,
+        candidateForTesting: result.candidateForTesting,
+        status,
+        blockers: JSON.stringify(result.blockers),
+        warnings: JSON.stringify(result.warnings),
+      },
+      select: { id: true, title: true, marketplace: true, suitabilityScore: true, status: true, createdAt: true },
+    });
+    return res.status(201).json({
+      candidate,
+      result,
+      champion: false,
+      note: 'Candidato salvo. A pontuação é uma triagem; campeão exige vendas reais, margem positiva e fornecedor validado.',
+    });
+  } catch {
+    return res.status(500).json({ error: 'PRODUCT_CANDIDATE_SAVE_FAILED' });
+  }
+}
+
+export async function listDropshippingProductCandidates(req: Request, res: Response): Promise<Response> {
+  const rawLimit = req.query.limit === undefined ? 50 : Number(req.query.limit);
+  const status = typeof req.query.status === 'string' ? req.query.status.trim() : '';
+  const allowed = ['WATCH', 'TEST', 'SCALE', 'CHAMPION', 'REJECT'];
+  if (!Number.isInteger(rawLimit) || rawLimit < 1 || rawLimit > 100 || (status && !allowed.includes(status))) {
+    return res.status(400).json({ success: false, error: 'INVALID_PRODUCT_FILTER' });
+  }
+  try {
+    const candidates = await prisma.dropshippingProductCandidate.findMany({
+      where: status ? { status } : undefined,
+      take: rawLimit,
+      orderBy: [{ suitabilityScore: 'desc' }, { createdAt: 'desc' }],
+    });
+    return res.json({
+      success: true,
+      count: candidates.length,
+      candidates: candidates.map((item) => ({
+        ...item,
+        evidence: JSON.parse(item.evidence),
+        blockers: item.blockers ? JSON.parse(item.blockers) : [],
+        warnings: item.warnings ? JSON.parse(item.warnings) : [],
+      })),
+    });
+  } catch {
+    return res.status(500).json({ success: false, error: 'PRODUCT_CANDIDATES_ERROR' });
+  }
 }
 import { searchMercadoLivreCatalog } from '../services/mercadoLivreResearchAdapter';
 
