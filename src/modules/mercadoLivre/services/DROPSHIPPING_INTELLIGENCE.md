@@ -164,3 +164,6 @@ A revalidação não deve aprovar fornecedor apenas porque o payload contém fla
 - A pesquisa de catálogo público do Mercado Livre está disponível em modo somente leitura.
 - O adaptador oficial Shopee ainda não está implementado; a rota informa esse estado mesmo que variáveis de credencial existam.
 - A descoberta externa automatizada de fornecedores ainda não está conectada. Cadastro, revisão documental e histórico de validação são fluxos disponíveis, não prova de pesquisa automática concluída.
+
+
+Ao registrar novamente uma oferta para o mesmo produto/fornecedor/SKU, o sistema compara o custo unitário e estoque com a oferta anterior. Variações de custo de 10% ou mais e estoque zerado geram alertas operacionais para revisão da margem e disponibilidade.
