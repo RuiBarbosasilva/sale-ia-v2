@@ -1048,3 +1048,86 @@ export async function evaluateDropshippingProductLifecycle(req: Request, res: Re
     return res.status(500).json({ success: false, error: 'PRODUCT_LIFECYCLE_EVALUATION_FAILED' });
   }
 }
+
+export async function upsertDropshippingResearchWatch(req: Request, res: Response): Promise<Response> {
+  if (!isObject(req.body) || typeof req.body.query !== 'string') {
+    return res.status(400).json({ success: false, error: 'INVALID_RESEARCH_WATCH' });
+  }
+  const query = req.body.query.trim().replace(/\s+/g, ' ');
+  const intervalMinutes = req.body.intervalMinutes === undefined ? 60 : req.body.intervalMinutes;
+  const enabled = req.body.enabled === undefined ? true : req.body.enabled;
+  if (query.length < 2 || query.length > 120 || /[\u0000-\u001f<>]/.test(query) ||
+      typeof intervalMinutes !== 'number' || !Number.isInteger(intervalMinutes) ||
+      intervalMinutes < 15 || intervalMinutes > 1440 || typeof enabled !== 'boolean') {
+    return res.status(400).json({ success: false, error: 'INVALID_RESEARCH_WATCH_SETTINGS' });
+  }
+  try {
+    const watch = await prisma.dropshippingResearchWatch.upsert({
+      where: { query },
+      create: {
+        query, intervalMinutes, enabled,
+        nextRunAt: enabled ? new Date() : null,
+        lastStatus: 'PENDING',
+      },
+      update: {
+        intervalMinutes, enabled,
+        nextRunAt: enabled ? new Date() : null,
+        lastError: null,
+      },
+    });
+    return res.status(201).json({
+      success: true,
+      watch,
+      note: 'A execução automática requer DROPSHIPPING_AUTORESEARCH_ENABLED=true no servidor.',
+    });
+  } catch {
+    return res.status(500).json({ success: false, error: 'RESEARCH_WATCH_SAVE_FAILED' });
+  }
+}
+
+export async function listDropshippingResearchWatches(req: Request, res: Response): Promise<Response> {
+  const rawLimit = req.query.limit === undefined ? 50 : Number(req.query.limit);
+  if (!Number.isInteger(rawLimit) || rawLimit < 1 || rawLimit > 100) {
+    return res.status(400).json({ success: false, error: 'INVALID_PAGINATION' });
+  }
+  try {
+    const watches = await prisma.dropshippingResearchWatch.findMany({
+      take: rawLimit,
+      orderBy: [{ enabled: 'desc' }, { updatedAt: 'desc' }],
+    });
+    return res.json({ success: true, count: watches.length, watches });
+  } catch {
+    return res.status(500).json({ success: false, error: 'RESEARCH_WATCH_LIST_ERROR' });
+  }
+}
+
+export async function updateDropshippingResearchWatch(req: Request, res: Response): Promise<Response> {
+  const id = typeof req.params.id === 'string' ? req.params.id.trim() : '';
+  if (!id || id.length > 100 || !isObject(req.body)) {
+    return res.status(400).json({ success: false, error: 'INVALID_RESEARCH_WATCH_UPDATE' });
+  }
+  const data: { enabled?: boolean; intervalMinutes?: number; nextRunAt?: Date | null } = {};
+  if (req.body.enabled !== undefined) {
+    if (typeof req.body.enabled !== 'boolean') return res.status(400).json({ success: false, error: 'INVALID_WATCH_ENABLED' });
+    data.enabled = req.body.enabled;
+    data.nextRunAt = req.body.enabled ? new Date() : null;
+  }
+  if (req.body.intervalMinutes !== undefined) {
+    if (typeof req.body.intervalMinutes !== 'number' || !Number.isInteger(req.body.intervalMinutes) ||
+        req.body.intervalMinutes < 15 || req.body.intervalMinutes > 1440) {
+      return res.status(400).json({ success: false, error: 'INVALID_WATCH_INTERVAL' });
+    }
+    data.intervalMinutes = req.body.intervalMinutes;
+    data.nextRunAt = new Date();
+  }
+  if (!Object.keys(data).length) return res.status(400).json({ success: false, error: 'NO_WATCH_CHANGES' });
+  try {
+    const watch = await prisma.dropshippingResearchWatch.update({
+      where: { id },
+      data: { ...data, lastError: null },
+    });
+    return res.json({ success: true, watch });
+  } catch {
+    return res.status(404).json({ success: false, error: 'RESEARCH_WATCH_NOT_FOUND' });
+  }
+}

@@ -30,6 +30,9 @@ import {
   updateDropshippingProductEconomics,
   getDropshippingDashboardSummary,
   evaluateDropshippingProductLifecycle,
+  upsertDropshippingResearchWatch,
+  listDropshippingResearchWatches,
+  updateDropshippingResearchWatch,
 } from '../controllers/dropshippingController';
 import { mercadoLivreAdminGuard } from '../middleware/adminGuard';
 
@@ -57,6 +60,9 @@ router.get('/dropshipping/rules', getDropshippingRules);
 router.get('/dropshipping/dashboard/summary', getDropshippingDashboardSummary);
 router.get('/dropshipping/research/marketplace', searchDropshippingMarketplace);
 router.get('/dropshipping/research/runs', listDropshippingResearchRuns);
+router.get('/dropshipping/research/watches', listDropshippingResearchWatches);
+router.post('/dropshipping/research/watches', upsertDropshippingResearchWatch);
+router.patch('/dropshipping/research/watches/:id', updateDropshippingResearchWatch);
 router.get('/dropshipping/research/snapshots', listDropshippingSnapshots);
 router.get('/dropshipping/research/price-history/:itemId', getDropshippingPriceHistory);
 router.get('/dropshipping/suppliers/candidates', listDropshippingSupplierCandidates);
