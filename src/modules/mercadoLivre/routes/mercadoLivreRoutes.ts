@@ -35,6 +35,7 @@ import {
   updateDropshippingResearchWatch,
   listDropshippingSupplierValidationHistory,
   getDropshippingResearchSchedulerStatus,
+  getDropshippingProviderReadiness,
   createDropshippingSupplierOffer,
   listDropshippingSupplierOffers,
 } from '../controllers/dropshippingController';
@@ -61,6 +62,7 @@ router.use(mercadoLivreAdminGuard);
 // --- INTELIGÊNCIA DE DROPSHIPPING ---
 // Estes endpoints calculam scores; não publicam anúncios nem criam pedidos.
 router.get('/dropshipping/rules', getDropshippingRules);
+router.get('/dropshipping/providers/status', getDropshippingProviderReadiness);
 router.get('/dropshipping/dashboard/summary', getDropshippingDashboardSummary);
 router.get('/dropshipping/research/marketplace', searchDropshippingMarketplace);
 router.get('/dropshipping/research/runs', listDropshippingResearchRuns);
