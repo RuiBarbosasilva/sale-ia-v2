@@ -18,6 +18,8 @@ import {
   assessDropshippingSupplierCandidate,
   assessDropshippingProductCandidate,
   searchDropshippingMarketplace,
+  listDropshippingResearchRuns,
+  listDropshippingSnapshots,
 } from '../controllers/dropshippingController';
 import { mercadoLivreAdminGuard } from '../middleware/adminGuard';
 
@@ -43,6 +45,8 @@ router.use(mercadoLivreAdminGuard);
 // Estes endpoints calculam scores; não publicam anúncios nem criam pedidos.
 router.get('/dropshipping/rules', getDropshippingRules);
 router.get('/dropshipping/research/marketplace', searchDropshippingMarketplace);
+router.get('/dropshipping/research/runs', listDropshippingResearchRuns);
+router.get('/dropshipping/research/snapshots', listDropshippingSnapshots);
 router.post('/dropshipping/assess-supplier-candidate', assessDropshippingSupplierCandidate);
 router.post('/dropshipping/assess-product-candidate', assessDropshippingProductCandidate);
 router.post('/dropshipping/calculate-margin', calculateDropshippingMargin);
