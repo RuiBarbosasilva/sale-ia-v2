@@ -127,9 +127,9 @@
     if (!button || !output) return;
 
     button.disabled = true;
-    button.textContent = 'Pesquisandoâ€¦';
+    button.textContent = 'Pesquisando…';
     output.className = 'prospect-result show';
-    output.textContent = 'Consultando a base de prospecÃ§Ã£oâ€¦';
+    output.textContent = 'Consultando a base de prospecção…';
 
     try {
       const payload = {
@@ -153,18 +153,18 @@
 
       output.className = 'prospect-result show ok';
       output.innerHTML =
-        '<b>Pesquisa concluÃ­da.</b><br>' +
+        '<b>Pesquisa concluída.</b><br>' +
         'Encontrados: ' + escapeHtml(data.totalFound || 0) +
-        ' Â· Qualificados: ' + escapeHtml(data.totalQualified || 0) +
-        ' Â· Criados: ' + escapeHtml(data.totalCreated || 0) +
-        ' Â· Auditados: ' + escapeHtml(data.totalAudited || 0);
+        ' · Qualificados: ' + escapeHtml(data.totalQualified || 0) +
+        ' · Criados: ' + escapeHtml(data.totalCreated || 0) +
+        ' · Auditados: ' + escapeHtml(data.totalAudited || 0);
 
-      toast('ProspecÃ§Ã£o concluÃ­da');
+      toast('Prospecção concluída');
       await refreshAll();
     } catch (error) {
       output.className = 'prospect-result show err';
-      output.textContent = 'NÃ£o foi possÃ­vel concluir: ' + error.message;
-      toast('Falha na prospecÃ§Ã£o');
+      output.textContent = 'Não foi possível concluir: ' + error.message;
+      toast('Falha na prospecção');
     } finally {
       button.disabled = false;
       button.textContent = 'Pesquisar agora';
@@ -186,7 +186,7 @@
   async function loadProspectBrowser() {
     const box = $('prospectBrowserTable');
     if (!box) return;
-    box.innerHTML = '<div class="empty">Carregandoâ€¦</div>';
+    box.innerHTML = '<div class="empty">Carregando…</div>';
 
     try {
       const response = await apiFetch(API + '/websites/prospecting/prospects?limit=50');
@@ -200,14 +200,14 @@
       }
 
       box.innerHTML =
-        '<table><thead><tr><th>Empresa</th><th>Cidade</th><th>Segmento</th><th>Score</th><th>Oportunidade</th><th>AÃ§Ã£o</th></tr></thead><tbody>' +
+        '<table><thead><tr><th>Empresa</th><th>Cidade</th><th>Segmento</th><th>Score</th><th>Oportunidade</th><th>Ação</th></tr></thead><tbody>' +
         rows.map((p) =>
           '<tr>' +
-          '<td><b>' + escapeHtml(p.companyName || 'â€”') + '</b><br><span style="color:#9299a3">' + escapeHtml(p.phone || p.whatsapp || '') + '</span></td>' +
-          '<td>' + escapeHtml(p.city || 'â€”') + '</td>' +
-          '<td>' + escapeHtml(p.segment || p.category || 'â€”') + '</td>' +
-          '<td>' + escapeHtml(p.websiteOpportunityScore == null ? (p.websiteScore == null ? (p.score == null ? 'â€”' : p.score) : p.websiteScore) : p.websiteOpportunityScore) + '</td>' +
-          '<td><span class="badge">' + escapeHtml(p.websiteOpportunityStatus || p.status || 'â€”') + '</span></td>' +
+          '<td><b>' + escapeHtml(p.companyName || '—') + '</b><br><span style="color:#9299a3">' + escapeHtml(p.phone || p.whatsapp || '') + '</span></td>' +
+          '<td>' + escapeHtml(p.city || '—') + '</td>' +
+          '<td>' + escapeHtml(p.segment || p.category || '—') + '</td>' +
+          '<td>' + escapeHtml(p.websiteOpportunityScore == null ? (p.websiteScore == null ? (p.score == null ? '—' : p.score) : p.websiteScore) : p.websiteOpportunityScore) + '</td>' +
+          '<td><span class="badge">' + escapeHtml(p.websiteOpportunityStatus || p.status || '—') + '</span></td>' +
           '<td><button class="btn" data-rb-action="process-prospect" data-id="' + escapeHtml(p.id) + '" style="padding:6px 8px;font-size:9px">âš™ Processar</button></td>' +
           '</tr>'
         ).join('') +
@@ -235,7 +235,7 @@
       if ($('sProspects')) $('sProspects').textContent = (data.totalProspects == null ? 0 : data.totalProspects) + ' cadastrados';
       if ($('sDemos')) $('sDemos').textContent = (data.totalDemos == null ? 0 : data.totalDemos) + ' prontos';
     } catch (error) {
-      if ($('sProspects')) $('sProspects').textContent = 'API indisponÃ­vel';
+      if ($('sProspects')) $('sProspects').textContent = 'API indisponível';
       if ($('sDemos')) $('sDemos').textContent = 'verifique a chave';
     }
   }
@@ -270,22 +270,22 @@
       const recent = rows.slice(0, 8);
       if ($('prospectsTable')) {
         $('prospectsTable').innerHTML = recent.length
-          ? '<table><thead><tr><th>Empresa</th><th>Cidade</th><th>Segmento</th><th>Score</th><th>Status</th><th>AÃ§Ãµes</th></tr></thead><tbody>' +
+          ? '<table><thead><tr><th>Empresa</th><th>Cidade</th><th>Segmento</th><th>Score</th><th>Status</th><th>Ações</th></tr></thead><tbody>' +
             recent.map((p) =>
-              '<tr><td><b>' + escapeHtml(p.companyName || 'â€”') + '</b></td>' +
-              '<td>' + escapeHtml(p.city || 'â€”') + '</td>' +
-              '<td>' + escapeHtml(p.segment || p.category || 'â€”') + '</td>' +
-              '<td>' + escapeHtml(p.websiteScore == null ? (p.score == null ? 'â€”' : p.score) : p.websiteScore) + '</td>' +
-              '<td><span class="badge">' + escapeHtml(p.websiteOpportunityStatus || p.status || 'â€”') + '</span></td>' +
+              '<tr><td><b>' + escapeHtml(p.companyName || '—') + '</b></td>' +
+              '<td>' + escapeHtml(p.city || '—') + '</td>' +
+              '<td>' + escapeHtml(p.segment || p.category || '—') + '</td>' +
+              '<td>' + escapeHtml(p.websiteScore == null ? (p.score == null ? '—' : p.score) : p.websiteScore) + '</td>' +
+              '<td><span class="badge">' + escapeHtml(p.websiteOpportunityStatus || p.status || '—') + '</span></td>' +
               '<td><button class="btn" data-rb-action="process-prospect" data-id="' + escapeHtml(p.id) + '" style="padding:6px 8px;font-size:9px">âš™ Processar</button></td></tr>'
             ).join('') +
             '</tbody></table>'
           : '<div class="empty">Nenhum prospect encontrado.</div>';
       }
     } catch (error) {
-      if ($('prospectState')) $('prospectState').textContent = 'indisponÃ­vel';
-      if ($('pipeline')) $('pipeline').innerHTML = '<div class="empty">NÃ£o foi possÃ­vel carregar o funil.</div>';
-      if ($('prospectsTable')) $('prospectsTable').innerHTML = '<div class="empty">NÃ£o foi possÃ­vel carregar os prospects.</div>';
+      if ($('prospectState')) $('prospectState').textContent = 'indisponível';
+      if ($('pipeline')) $('pipeline').innerHTML = '<div class="empty">Não foi possível carregar o funil.</div>';
+      if ($('prospectsTable')) $('prospectsTable').innerHTML = '<div class="empty">Não foi possível carregar os prospects.</div>';
     }
   }
 
@@ -307,7 +307,7 @@
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || ('demo HTTP ' + response.status));
 
-      toast('Demo enviada para geraÃ§Ã£o');
+      toast('Demo enviada para geração');
       await refreshAll();
     } catch (error) {
       toast('Falha: ' + error.message);
@@ -323,8 +323,8 @@
 
       if ($('sellerStatus')) $('sellerStatus').textContent = running ? 'TRABALHANDO' : 'PARADO';
       if ($('sellerToggle')) $('sellerToggle').textContent = running ? 'â–  DESLIGAR VENDEDOR IA' : 'â–¶ VENDEDOR IA';
-      if ($('sellerCommandTitle')) $('sellerCommandTitle').textContent = running ? 'Vendedor IA estÃ¡ LIGADO' : 'Vendedor IA estÃ¡ DESLIGADO';
-      if ($('sellerCommandText')) $('sellerCommandText').textContent = running ? 'O vendedor estÃ¡ trabalhando a fila comercial.' : 'Clique em LIGAR para iniciar o trabalho comercial da Factory.';
+      if ($('sellerCommandTitle')) $('sellerCommandTitle').textContent = running ? 'Vendedor IA está LIGADO' : 'Vendedor IA está DESLIGADO';
+      if ($('sellerCommandText')) $('sellerCommandText').textContent = running ? 'O vendedor está trabalhando a fila comercial.' : 'Clique em LIGAR para iniciar o trabalho comercial da Factory.';
       if ($('sellerCommandStatus')) $('sellerCommandStatus').textContent = running ? 'â— LIGADO' : 'â— DESLIGADO';
       if ($('sellerCommandToggle')) {
         $('sellerCommandToggle').textContent = running ? 'â–  DESLIGAR VENDEDOR IA' : 'â–¶ LIGAR VENDEDOR IA';
@@ -333,7 +333,7 @@
       if ($('sellerStart')) $('sellerStart').style.display = running ? 'none' : 'inline-block';
       if ($('sellerStop')) $('sellerStop').style.display = running ? 'inline-block' : 'none';
     } catch (error) {
-      if ($('sellerStatus')) $('sellerStatus').textContent = 'INDISPONÃVEL';
+      if ($('sellerStatus')) $('sellerStatus').textContent = 'INDISPONÍVEL';
     }
   }
 
@@ -349,9 +349,9 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          city: 'PoÃ§os de Caldas',
+          city: 'Poços de Caldas',
           state: 'MG',
-          niches: ['clÃ­nicas', 'hamburguerias', 'restaurantes', 'advogados', 'odontologia'],
+          niches: ['clínicas', 'hamburguerias', 'restaurantes', 'advogados', 'odontologia'],
           maxResults: 10,
           batchSize: 10
         })
@@ -361,7 +361,7 @@
       toast('Vendedor IA iniciado');
       await sellerStatus();
     } catch (error) {
-      toast('NÃ£o foi possÃ­vel iniciar: ' + error.message);
+      toast('Não foi possível iniciar: ' + error.message);
     }
   }
 
@@ -373,12 +373,12 @@
       toast('Vendedor IA parado');
       await sellerStatus();
     } catch (error) {
-      toast('NÃ£o foi possÃ­vel parar: ' + error.message);
+      toast('Não foi possível parar: ' + error.message);
     }
   }
 
   async function refreshAll() {
-    if ($('updated')) $('updated').textContent = 'Atualizandoâ€¦';
+    if ($('updated')) $('updated').textContent = 'Atualizando…';
     await Promise.allSettled([overview(), prospects(), sellerStatus()]);
     if ($('updated')) $('updated').textContent = 'Atualizado em ' + new Date().toLocaleString('pt-BR');
     toast('Dashboard atualizado');
