@@ -121,3 +121,35 @@ export function getDropshippingRules(_req: Request, res: Response): Response {
     ],
   });
 }
+
+import {
+  assessProductCandidate,
+  assessSupplierCandidate,
+  type ProductCandidate,
+  type SupplierCandidate,
+} from '../services/dropshippingResearch';
+
+export function assessDropshippingSupplierCandidate(req: Request, res: Response): Response {
+  if (!isObject(req.body) || typeof req.body.name !== 'string' ||
+      typeof req.body.country !== 'string' || typeof req.body.shipsFromBrazil !== 'boolean' ||
+      typeof req.body.offersDropshipping !== 'boolean' || !Array.isArray(req.body.evidence)) {
+    return res.status(400).json({ error: 'INVALID_SUPPLIER_CANDIDATE' });
+  }
+  const result = assessSupplierCandidate(req.body as unknown as SupplierCandidate);
+  return res.json({ result, validationAllowed: result.eligibleForValidation });
+}
+
+export function assessDropshippingProductCandidate(req: Request, res: Response): Response {
+  if (!isObject(req.body) || typeof req.body.title !== 'string' ||
+      typeof req.body.canonicalUrl !== 'string' ||
+      !['MERCADOLIVRE', 'SHOPEE', 'OTHER'].includes(String(req.body.marketplace)) ||
+      !Array.isArray(req.body.evidence)) {
+    return res.status(400).json({ error: 'INVALID_PRODUCT_CANDIDATE' });
+  }
+  const result = assessProductCandidate(req.body as unknown as ProductCandidate);
+  return res.json({
+    result,
+    champion: false,
+    note: 'Triagem inicial apenas; valide fornecedor, custos e vendas observadas antes de investir.',
+  });
+}
