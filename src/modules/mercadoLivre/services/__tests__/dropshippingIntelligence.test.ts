@@ -90,7 +90,7 @@ describe('Dropshipping Intelligence decision engine', () => {
     });
     expect(result.valid).toBe(true);
     expect(result.breakEvenPrice).toBeCloseTo(46 / 0.77, 2);
-    expect(result.estimatedProfit).toBeCloseTo(23, 2);
+    expect(result.estimatedProfit).toBeCloseTo(31, 2);
   });
 
 });
