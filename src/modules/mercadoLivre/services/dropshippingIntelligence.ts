@@ -217,37 +217,25 @@ export function scoreProduct(signals: ProductSignals): ProductScore {
   if (signals.supplierReliabilityScore < 65) blockers.push('Fornecedor abaixo do mínimo de confiabilidade (65/100).');
   if (signals.marginPct <= 0) blockers.push('Produto não gera lucro estimado.');
   if (signals.evidenceConfidencePct < 35) blockers.push('Evidência insuficiente para classificar como campeão.');
-  // A classificação de escala/campeão exige sinais observáveis; ausência de vendas
-  // não deve ser mascarada por um score heurístico alto.
-  if ((signals.observedSales ?? 0) < 5) blockers.push('Vendas observadas insuficientes para escalar.');
-  if ((signals.daysObserved ?? 0) < 7) blockers.push('Janela de observação inferior a 7 dias para escalar.');
+  const observedSales = Math.max(0, signals.observedSales ?? 0);
+  const daysObserved = Math.max(0, signals.daysObserved ?? 0);
+  const scaleReady = observedSales >= 5 && daysObserved >= 7;
+  const championReady = observedSales >= 20 && daysObserved >= 14 && signals.evidenceConfidencePct >= 75;
 
-  const score = normalizeScore(
-    normalizeScore(signals.demandScore) * 0.25 +
-    (100 - normalizeScore(signals.competitionScore)) * 0.12 +
-    normalizeScore(signals.supplierReliabilityScore) * 0.18 +
-    normalizeScore((signals.marginPct / 35) * 100) * 0.20 +
-    normalizeScore(signals.listingQualityScore) * 0.08 +
-    (100 - normalizeScore(signals.deliveryRiskScore)) * 0.07 +
-    (100 - normalizeScore(signals.returnRiskScore)) * 0.05 +
-    normalizeScore(signals.evidenceConfidencePct) * 0.05
-  );
-
-  if ((signals.observedSales ?? 0) > 0 && (signals.daysObserved ?? 0) >= 7) {
+  if (observedSales > 0 && daysObserved >= 7) {
     reasons.push('Há vendas observadas em pelo menos sete dias de acompanhamento.');
   } else {
     reasons.push('Ainda precisa de validação com vendas reais e janela de observação suficiente.');
   }
+  if (!scaleReady) reasons.push('Ainda não está liberado para escala; completar a janela mínima de observação.');
   if (signals.marginPct >= 25) reasons.push('Margem estimada acima de 25%.');
   if (signals.supplierReliabilityScore >= 85) reasons.push('Fornecedor com score de confiabilidade alto.');
   if (signals.competitionScore >= 75) reasons.push('Concorrência intensa; diferenciar oferta e kit.');
 
   let verdict: ProductVerdict;
   if (blockers.length) verdict = 'REJECT';
-  else if (score >= 85 && (signals.observedSales ?? 0) >= 20 && (signals.daysObserved ?? 0) >= 14 &&
-    signals.evidenceConfidencePct >= 75) verdict = 'CHAMPION';
-  else if (score >= 75 && (signals.observedSales ?? 0) >= 5 && (signals.daysObserved ?? 0) >= 7)
-    verdict = 'SCALE';
+  else if (score >= 85 && championReady) verdict = 'CHAMPION';
+  else if (score >= 75 && scaleReady) verdict = 'SCALE';
   else if (score >= 60) verdict = 'TEST';
   else if (score >= 40) verdict = 'WATCH';
   else verdict = 'REJECT';
