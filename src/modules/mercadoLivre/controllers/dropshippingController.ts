@@ -1406,9 +1406,9 @@ export async function listDropshippingSupplierOffers(req: Request, res: Response
 
 export function getDropshippingProviderReadiness(_req: Request, res: Response): Response {
   const mercadoLivreCredentials = [
-    'MERCADOLIVRE_APP_ID',
-    'MERCADOLIVRE_CLIENT_SECRET',
-    'MERCADOLIVRE_REDIRECT_URI',
+    'MERCADO_LIVRE_APP_ID',
+    'MERCADO_LIVRE_CLIENT_SECRET',
+    'MERCADO_LIVRE_REDIRECT_URI',
   ];
   const shopeeCredentials = [
     'SHOPEE_PARTNER_ID',
