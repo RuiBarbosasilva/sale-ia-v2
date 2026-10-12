@@ -18,3 +18,17 @@ Importe `scoreSupplier`, `calculateMargin` e `scoreProduct` nos serviços/contro
 ## Validação
 
 Testes em `__tests__/dropshippingIntelligence.test.ts`. Executar com o comando de testes Jest do projeto. Este commit não declara os testes executados em ambiente local.
+
+
+## Endpoints administrativos
+
+Os endpoints abaixo são montados no router do Mercado Livre e herdam `mercadoLivreAdminGuard`:
+
+- `GET /api/mercadolivre/dropshipping/rules` — pesos, limites e regras atuais.
+- `POST /api/mercadolivre/dropshipping/calculate-margin` — economia unitária.
+- `POST /api/mercadolivre/dropshipping/score-supplier` — score de evidências do fornecedor.
+- `POST /api/mercadolivre/dropshipping/score-product` — score e veredito do produto.
+- `POST /api/mercadolivre/dropshipping/assess-supplier-candidate` — triagem de candidato com proveniência.
+- `POST /api/mercadolivre/dropshipping/assess-product-candidate` — triagem de produto com evidências.
+
+Enviar o cabeçalho `x-mercado-livre-admin-key` (ou o cabeçalho alternativo aceito pelo guard). Os percentuais são pontos percentuais. As rotas de triagem não fazem chamadas externas e não persistem resultados; adapters e persistência precisam ser integrados antes de considerar a pesquisa autônoma operacional.
