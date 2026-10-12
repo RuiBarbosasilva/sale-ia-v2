@@ -1562,3 +1562,91 @@ model SalesConversationMessage {
 
   @@index([conversationId])
 }
+
+
+// ==========================================
+// DROPSHIPPING INTELLIGENCE - RESEARCH AUDIT
+// ==========================================
+model DropshippingResearchRun {
+  id            String   @id @default(uuid())
+  query         String
+  source        String
+  status        String   @default("COMPLETED")
+  totalResults  Int      @default(0)
+  resultCount   Int      @default(0)
+  collectedAt   DateTime @default(now())
+  resultSummary String?
+  createdAt     DateTime @default(now())
+
+  snapshots DropshippingCatalogSnapshot[]
+
+  @@index([query, createdAt])
+  @@index([source, createdAt])
+  @@index([status])
+}
+
+model DropshippingCatalogSnapshot {
+  id                    String   @id @default(uuid())
+  runId                 String
+  run                   DropshippingResearchRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  itemId                String
+  title                 String
+  price                 Float
+  currency              String   @default("BRL")
+  availableQuantity     Int?
+  soldQuantity          Int?
+  condition             String?
+  url                   String
+  categoryId            String?
+  freeShipping          Boolean?
+  sellerId              Int?
+  evidenceConfidencePct Int      @default(0)
+  warnings              String?
+  observedAt            DateTime @default(now())
+
+  @@unique([runId, itemId])
+  @@index([itemId, observedAt])
+  @@index([title])
+  @@index([price])
+}
+
+model DropshippingSupplierCandidate {
+  id                    String   @id @default(uuid())
+  name                  String
+  legalName             String?
+  website               String?
+  contactUrl            String?
+  country               String   @default("BR")
+  shipsFromBrazil       Boolean  @default(false)
+  offersDropshipping    Boolean  @default(false)
+  issuesInvoice         Boolean?
+  stockFeedAvailable    Boolean?
+  trackingAvailable     Boolean?
+  returnPolicyUrl       String?
+  validationStatus      String   @default("PENDING_VALIDATION")
+  reliabilityScore      Float    @default(0)
+  evidence              String
+  blockers              String?
+  lastVerifiedAt        DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([validationStatus])
+  @@index([reliabilityScore])
+  @@index([name])
+}
+
+model DropshippingAlert {
+  id          String   @id @default(uuid())
+  type        String
+  severity    String   @default("INFO")
+  title       String
+  message     String
+  payload     String?
+  status      String   @default("OPEN")
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+
+  @@index([status, createdAt])
+  @@index([type, severity])
+}

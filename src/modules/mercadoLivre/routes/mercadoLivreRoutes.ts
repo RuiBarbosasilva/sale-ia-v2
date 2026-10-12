@@ -10,6 +10,22 @@ import { syncItems } from '../controllers/syncController';
 import { listItems } from '../controllers/itemsController';
 import { syncOrders, listOrders } from '../controllers/orderSyncController';
 import { getMetrics } from '../controllers/metricsController';
+import {
+  calculateDropshippingMargin,
+  evaluateDropshippingProduct,
+  evaluateDropshippingSupplier,
+  getDropshippingRules,
+  assessDropshippingSupplierCandidate,
+  assessDropshippingProductCandidate,
+  searchDropshippingMarketplace,
+  listDropshippingResearchRuns,
+  listDropshippingSnapshots,
+  listDropshippingSupplierCandidates,
+  validateDropshippingSupplierCandidate,
+  listDropshippingAlerts,
+  resolveDropshippingAlert,
+  getDropshippingPriceHistory,
+} from '../controllers/dropshippingController';
 import { mercadoLivreAdminGuard } from '../middleware/adminGuard';
 
 const router = Router();
@@ -29,6 +45,23 @@ router.post('/webhooks', handleWebhook);
 // O accountId continua sendo resolvido no backend; o cliente nunca é considerado
 // uma fonte de autorização por si só.
 router.use(mercadoLivreAdminGuard);
+
+// --- INTELIGÊNCIA DE DROPSHIPPING ---
+// Estes endpoints calculam scores; não publicam anúncios nem criam pedidos.
+router.get('/dropshipping/rules', getDropshippingRules);
+router.get('/dropshipping/research/marketplace', searchDropshippingMarketplace);
+router.get('/dropshipping/research/runs', listDropshippingResearchRuns);
+router.get('/dropshipping/research/snapshots', listDropshippingSnapshots);
+router.get('/dropshipping/research/price-history/:itemId', getDropshippingPriceHistory);
+router.get('/dropshipping/suppliers/candidates', listDropshippingSupplierCandidates);
+router.post('/dropshipping/suppliers/candidates/:id/validate', validateDropshippingSupplierCandidate);
+router.get('/dropshipping/alerts', listDropshippingAlerts);
+router.post('/dropshipping/alerts/:id/resolve', resolveDropshippingAlert);
+router.post('/dropshipping/assess-supplier-candidate', assessDropshippingSupplierCandidate);
+router.post('/dropshipping/assess-product-candidate', assessDropshippingProductCandidate);
+router.post('/dropshipping/calculate-margin', calculateDropshippingMargin);
+router.post('/dropshipping/score-supplier', evaluateDropshippingSupplier);
+router.post('/dropshipping/score-product', evaluateDropshippingProduct);
 
 // --- CONTA ---
 router.get('/account', getAccount);
