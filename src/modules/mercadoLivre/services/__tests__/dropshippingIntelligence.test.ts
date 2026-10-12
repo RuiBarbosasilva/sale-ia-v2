@@ -106,7 +106,7 @@ describe('Dropshipping Intelligence decision engine', () => {
 
 
 
-  test('blocks lifecycle promotion when observed sales are insufficient', () => {
+  test('keeps high-scoring products in TEST until scale evidence exists', () => {
     const result = scoreProduct({
       demandScore: 100, competitionScore: 0, supplierReliabilityScore: 100,
       marginPct: 40, listingQualityScore: 100, deliveryRiskScore: 0,
@@ -114,6 +114,9 @@ describe('Dropshipping Intelligence decision engine', () => {
       daysObserved: 14, hasStableStock: true, prohibitedOrRestricted: false,
       brandOrAuthenticityConcern: false,
     });
-    expect(result.verdict).toBe('REJECT');
+    expect(result.verdict).toBe('TEST');
+    expect(result.blockers).toHaveLength(0);
+    expect(result.reasons).toContain('Ainda não está liberado para escala; completar a janela mínima de observação.');
+  });    expect(result.verdict).toBe('REJECT');
     expect(result.blockers).toContain('Vendas observadas insuficientes para escalar.');
   });\n});
