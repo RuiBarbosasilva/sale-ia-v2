@@ -34,6 +34,7 @@ import {
   listDropshippingResearchWatches,
   updateDropshippingResearchWatch,
   listDropshippingSupplierValidationHistory,
+  getDropshippingResearchSchedulerStatus,
 } from '../controllers/dropshippingController';
 import { mercadoLivreAdminGuard } from '../middleware/adminGuard';
 
