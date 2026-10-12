@@ -381,7 +381,7 @@ async function analyzeResponse() {
 }
 
 // ==========================================================
-// FUNÃ‡Ã•ES DE SEGMENTOS (COM EDITAR E EXCLUIR)
+// FUNÇÕES DE SEGMENTOS (COM EDITAR E EXCLUIR)
 // ==========================================================
 async function loadSegments() {
     try {
@@ -402,9 +402,9 @@ async function loadSegments() {
         filterSelect.innerHTML = '<option value="">Todos os segmentos</option>';
         
         data.segments.forEach(seg => {
-            const emoji = seg.icon || 'ðŸ“¦';
+            const emoji = seg.icon || '📦';
             const color = seg.color || '#2563eb';
-            // Escapar aspas simples para nÃ£o quebrar o onclick
+            // Escapar aspas simples para não quebrar o onclick
             const safeName = seg.name.replace(/'/g, "\\'");
             const safeDesc = (seg.description || '').replace(/'/g, "\\'");
             const safeIcon = (seg.icon || '').replace(/'/g, "\\'");
