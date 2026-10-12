@@ -15,7 +15,6 @@ import hotmartRoutes from './routes/hotmartRoutes';
 import braipRoutes from './routes/braipRoutes';
 import hunterRoutes from './routes/hunterRoutes';
 import mlRoutes from './modules/mercadoLivre/routes/mercadoLivreRoutes';
-import { startDropshippingResearchScheduler } from './modules/mercadoLivre/services/dropshippingResearchScheduler';
 import cookieParser from 'cookie-parser';
 import express from 'express';
 import templateImportRoutes from './routes/templateImportRoutes';
@@ -117,11 +116,6 @@ app.use('/api/credenciais', credenciaisRoutes);
 app.use('/dashboard', dashboardRoutes);
 
 startRbFactoryMaintenanceJob();
-
-if (String(process.env.DROPSHIPPING_AUTORESEARCH_ENABLED || '').toLowerCase() === 'true') {
-  const tickMs = Number(process.env.DROPSHIPPING_AUTORESEARCH_TICK_MS || 60000);
-  startDropshippingResearchScheduler(Number.isFinite(tickMs) ? tickMs : 60000);
-}
 
 // ==========================================
 // ROTAS DO MÓDULO AFILIADOS IA E OUTROS
