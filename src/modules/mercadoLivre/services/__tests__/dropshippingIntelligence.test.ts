@@ -56,4 +56,41 @@ describe('Dropshipping Intelligence decision engine', () => {
     expect(result.verdict).toBe('REJECT');
     expect(result.blockers.length).toBeGreaterThan(0);
   });
+
+  test('validates a supplier only when all checks are evidenced', () => {
+    const result = scoreSupplier({
+      hasCnpjOrLegalIdentity: true, hasPublicContact: true,
+      hasWrittenDropshippingPolicy: true, confirmsStockSync: true,
+      providesInvoice: true, providesTracking: true,
+      hasClearReturnPolicy: true, hasVerifiableReputation: true,
+      sampleOrderPassed: true, repeatedDeliveryFailures: 0, unresolvedComplaints: 0,
+    });
+    expect(result.status).toBe('VALIDATED');
+    expect(result.score).toBe(100);
+    expect(result.blockers).toHaveLength(0);
+  });
+
+  test('classifies a tested product as SCALE only after minimum sales evidence', () => {
+    const result = scoreProduct({
+      demandScore: 90, competitionScore: 20, supplierReliabilityScore: 90,
+      marginPct: 30, listingQualityScore: 90, deliveryRiskScore: 5,
+      returnRiskScore: 5, evidenceConfidencePct: 80, observedSales: 10,
+      daysObserved: 8, hasStableStock: true, prohibitedOrRestricted: false,
+      brandOrAuthenticityConcern: false,
+    });
+    expect(result.verdict).toBe('SCALE');
+    expect(result.blockers).toHaveLength(0);
+  });
+
+  test('calculates a break-even price that includes fixed fees and costs', () => {
+    const result = calculateMargin({
+      salePrice: 100, supplierCost: 30, marketplaceFeeRatePct: 15,
+      fixedMarketplaceFee: 8, shippingCost: 5, taxRatePct: 5,
+      packagingCost: 2, returnReserveRatePct: 3, otherVariableCosts: 1,
+    });
+    expect(result.valid).toBe(true);
+    expect(result.breakEvenPrice).toBeCloseTo(46 / 0.77, 2);
+    expect(result.estimatedProfit).toBeCloseTo(23, 2);
+  });
+
 });
