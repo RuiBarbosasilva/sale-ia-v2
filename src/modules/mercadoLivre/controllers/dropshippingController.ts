@@ -376,3 +376,53 @@ export async function listDropshippingSupplierCandidates(req: Request, res: Resp
     return res.status(500).json({ success: false, error: 'SUPPLIER_CANDIDATES_ERROR' });
   }
 }
+
+export async function validateDropshippingSupplierCandidate(req: Request, res: Response): Promise<Response> {
+  const id = typeof req.params.id === 'string' ? req.params.id.trim() : '';
+  if (!id || id.length > 100 || !isObject(req.body)) {
+    return res.status(400).json({ success: false, error: 'INVALID_SUPPLIER_VALIDATION_REQUEST' });
+  }
+  const booleanFields = [
+    'hasCnpjOrLegalIdentity', 'hasPublicContact', 'hasWrittenDropshippingPolicy',
+    'confirmsStockSync', 'providesInvoice', 'providesTracking',
+    'hasClearReturnPolicy', 'hasVerifiableReputation', 'sampleOrderPassed',
+  ];
+  if (!booleanFields.every((key) => typeof req.body[key] === 'boolean') ||
+      !Array.isArray(req.body.evidence) || !req.body.evidence.every(hasValidEvidenceShape)) {
+    return res.status(400).json({ success: false, error: 'INVALID_SUPPLIER_VALIDATION_SIGNALS' });
+  }
+  const counters = ['repeatedDeliveryFailures', 'unresolvedComplaints'];
+  if (counters.some((key) => req.body[key] !== undefined &&
+      (typeof req.body[key] !== 'number' || !Number.isInteger(req.body[key] as number) ||
+       (req.body[key] as number) < 0 || (req.body[key] as number) > 10000))) {
+    return res.status(400).json({ success: false, error: 'INVALID_SUPPLIER_VALIDATION_COUNTERS' });
+  }
+  try {
+    const existing = await prisma.dropshippingSupplierCandidate.findUnique({ where: { id } });
+    if (!existing) return res.status(404).json({ success: false, error: 'SUPPLIER_CANDIDATE_NOT_FOUND' });
+    const score = scoreSupplier(req.body as unknown as SupplierSignals);
+    const priorEvidence: unknown[] = JSON.parse(existing.evidence);
+    const evidence = [...priorEvidence, ...req.body.evidence];
+    const updated = await prisma.dropshippingSupplierCandidate.update({
+      where: { id },
+      data: {
+        validationStatus: score.status,
+        reliabilityScore: score.score,
+        blockers: JSON.stringify(score.blockers),
+        evidence: JSON.stringify(evidence),
+        lastVerifiedAt: new Date(),
+      },
+      select: { id: true, name: true, validationStatus: true, reliabilityScore: true, blockers: true, lastVerifiedAt: true },
+    });
+    return res.json({
+      success: true,
+      candidate: { ...updated, blockers: updated.blockers ? JSON.parse(updated.blockers) : [] },
+      score,
+      note: score.status === 'VALIDATED'
+        ? 'Fornecedor aprovado pelas regras atuais; mantenha monitoramento de estoque, entrega e reclamações.'
+        : 'Fornecedor não aprovado para publicação automática. Resolva os bloqueios e revalide.',
+    });
+  } catch {
+    return res.status(500).json({ success: false, error: 'SUPPLIER_CANDIDATE_VALIDATION_FAILED' });
+  }
+}
