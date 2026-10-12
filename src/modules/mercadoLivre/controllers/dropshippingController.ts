@@ -556,7 +556,8 @@ export async function validateDropshippingSupplierCandidate(req: Request, res: R
     'hasClearReturnPolicy', 'hasVerifiableReputation', 'sampleOrderPassed',
   ];
   if (!booleanFields.every((key) => typeof req.body[key] === 'boolean') ||
-      !Array.isArray(req.body.evidence) || !req.body.evidence.every(hasValidEvidenceShape)) {
+      !Array.isArray(req.body.evidence) || req.body.evidence.length === 0 ||
+      !req.body.evidence.every(hasValidEvidenceShape)) {
     return res.status(400).json({ success: false, error: 'INVALID_SUPPLIER_VALIDATION_SIGNALS' });
   }
   const counters = ['repeatedDeliveryFailures', 'unresolvedComplaints'];
@@ -571,16 +572,30 @@ export async function validateDropshippingSupplierCandidate(req: Request, res: R
     const score = scoreSupplier(req.body as unknown as SupplierSignals);
     const priorEvidence: unknown[] = JSON.parse(existing.evidence);
     const evidence = [...priorEvidence, ...req.body.evidence];
-    const updated = await prisma.dropshippingSupplierCandidate.update({
-      where: { id },
-      data: {
-        validationStatus: score.status,
-        reliabilityScore: score.score,
-        blockers: JSON.stringify(score.blockers),
-        evidence: JSON.stringify(evidence),
-        lastVerifiedAt: new Date(),
-      },
-      select: { id: true, name: true, validationStatus: true, reliabilityScore: true, blockers: true, lastVerifiedAt: true },
+    const updated = await prisma.$transaction(async (tx) => {
+      const candidate = await tx.dropshippingSupplierCandidate.update({
+        where: { id },
+        data: {
+          validationStatus: score.status,
+          reliabilityScore: score.score,
+          blockers: JSON.stringify(score.blockers),
+          evidence: JSON.stringify(evidence),
+          lastVerifiedAt: new Date(),
+        },
+        select: { id: true, name: true, validationStatus: true, reliabilityScore: true, blockers: true, lastVerifiedAt: true },
+      });
+      await tx.dropshippingSupplierValidation.create({
+        data: {
+          supplierCandidateId: id,
+          validationStatus: score.status,
+          reliabilityScore: score.score,
+          signals: JSON.stringify(req.body),
+          evidence: JSON.stringify(evidence),
+          blockers: JSON.stringify(score.blockers),
+          passedChecks: JSON.stringify(score.passedChecks),
+        },
+      });
+      return candidate;
     });
     if (score.status !== 'VALIDATED') {
       const title = 'Fornecedor exige validação: ' + existing.name;
@@ -1129,5 +1144,38 @@ export async function updateDropshippingResearchWatch(req: Request, res: Respons
     return res.json({ success: true, watch });
   } catch {
     return res.status(404).json({ success: false, error: 'RESEARCH_WATCH_NOT_FOUND' });
+  }
+}
+
+export async function listDropshippingSupplierValidationHistory(req: Request, res: Response): Promise<Response> {
+  const id = typeof req.params.id === 'string' ? req.params.id.trim() : '';
+  const rawLimit = req.query.limit === undefined ? 50 : Number(req.query.limit);
+  if (!id || id.length > 100 || !Number.isInteger(rawLimit) || rawLimit < 1 || rawLimit > 100) {
+    return res.status(400).json({ success: false, error: 'INVALID_SUPPLIER_VALIDATION_HISTORY_FILTER' });
+  }
+  try {
+    const candidate = await prisma.dropshippingSupplierCandidate.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!candidate) return res.status(404).json({ success: false, error: 'SUPPLIER_CANDIDATE_NOT_FOUND' });
+    const validations = await prisma.dropshippingSupplierValidation.findMany({
+      where: { supplierCandidateId: id },
+      take: rawLimit,
+      orderBy: { createdAt: 'desc' },
+    });
+    return res.json({
+      success: true,
+      count: validations.length,
+      validations: validations.map((item) => ({
+        ...item,
+        signals: JSON.parse(item.signals),
+        evidence: JSON.parse(item.evidence),
+        blockers: JSON.parse(item.blockers),
+        passedChecks: JSON.parse(item.passedChecks),
+      })),
+    });
+  } catch {
+    return res.status(500).json({ success: false, error: 'SUPPLIER_VALIDATION_HISTORY_ERROR' });
   }
 }
