@@ -156,3 +156,6 @@ A revalidação não deve aprovar fornecedor apenas porque o payload contém fla
 - Se faltar evidência para qualquer indicador positivo, o status máximo fica `CONDITIONALLY_VALIDATED`; a aprovação integral é bloqueada.
 - Essa checagem valida estrutura e rastreabilidade declarada, não verifica automaticamente a autenticidade externa da fonte. Pedido-teste, nota fiscal e identidade legal continuam exigindo conferência humana.
 - Os testes de regressão ficam em `services/__tests__/dropshippingResearch.test.ts`.
+
+
+Ao registrar novamente uma oferta para o mesmo produto/fornecedor/SKU, o sistema compara o custo unitário e estoque com a oferta anterior. Variações de custo de 10% ou mais e estoque zerado geram alertas operacionais para revisão da margem e disponibilidade.
