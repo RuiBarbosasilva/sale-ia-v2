@@ -42,3 +42,16 @@ Enviar o cabeçalho `x-mercado-livre-admin-key` (ou o cabeçalho alternativo ace
 - Limite de 1 a 50 resultados, timeout de 10 segundos e tratamento de rate limit.
 - Não é uma prova de demanda ou de vendas: campos ausentes permanecem `null`; a pesquisa não publica nem altera anúncios.
 - A pesquisa de fornecedores, validação de pedido-teste, persistência de snapshots e conector Shopee ainda são etapas separadas.
+
+
+## Persistência e ciclo de fornecedores
+
+- Execuções de pesquisa e snapshots são gravados em `DropshippingResearchRun` e `DropshippingCatalogSnapshot`.
+- `GET /api/mercadolivre/dropshipping/research/runs` lista coletas anteriores.
+- `GET /api/mercadolivre/dropshipping/research/snapshots` lista anúncios capturados.
+- `GET /api/mercadolivre/dropshipping/research/price-history/MLB1234567890` compara preço e estoque observado nas coletas Sale-IA.
+- `POST /api/mercadolivre/dropshipping/assess-supplier-candidate` salva fornecedor como `PENDING_VALIDATION`.
+- `GET /api/mercadolivre/dropshipping/suppliers/candidates` lista candidatos.
+- `POST /api/mercadolivre/dropshipping/suppliers/candidates/:id/validate` atualiza score a partir de indicadores e evidências fornecidos.
+- `GET /api/mercadolivre/dropshipping/alerts` lista alertas abertos; `POST /api/mercadolivre/dropshipping/alerts/:id/resolve` encerra um alerta.
+- Bloqueios de validação geram alertas para revisão humana. Um score é uma regra de decisão, não uma garantia comercial.
