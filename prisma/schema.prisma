@@ -1634,6 +1634,8 @@ model DropshippingSupplierCandidate {
   @@index([validationStatus])
   @@index([reliabilityScore])
   @@index([name])
+
+  productCandidates DropshippingProductCandidate[]
 }
 
 model DropshippingAlert {
@@ -1658,6 +1660,8 @@ model DropshippingProductCandidate {
   externalId         String?
   canonicalUrl       String
   marketplace        String
+  supplierCandidateId String?
+  supplierCandidate DropshippingSupplierCandidate? @relation(fields: [supplierCandidateId], references: [id], onDelete: SetNull)
   observedPrice      Float?
   salePrice          Float?
   supplierCost       Float?
@@ -1690,4 +1694,5 @@ model DropshippingProductCandidate {
   @@index([suitabilityScore])
   @@index([status])
   @@index([externalId])
+  @@index([supplierCandidateId])
 }
