@@ -1696,3 +1696,20 @@ model DropshippingProductCandidate {
   @@index([externalId])
   @@index([supplierCandidateId])
 }
+
+
+model DropshippingResearchWatch {
+  id             String   @id @default(uuid())
+  query          String   @unique
+  intervalMinutes Int     @default(60)
+  enabled        Boolean  @default(true)
+  lastRunAt      DateTime?
+  nextRunAt      DateTime?
+  lastStatus     String   @default("PENDING")
+  lastError      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([enabled, nextRunAt])
+  @@index([lastStatus, updatedAt])
+}
