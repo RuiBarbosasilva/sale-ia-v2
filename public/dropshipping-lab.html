@@ -71,7 +71,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
   "offersDropshipping": false,
   "evidence": []
 }</textarea><div class="buttonrow"><button id="candidateButton">Fazer triagem</button><button class="secondary" id="candidateExample">Carregar exemplo</button></div><pre id="candidateOutput">Resultado aparecerá aqui.</pre></section>
-<section class="panel wide"><h2>Histórico persistido</h2><p>Consulte pesquisas anteriores e fornecedores candidatos salvos para validação humana.</p><div class="buttonrow"><button id="runsButton">Histórico de pesquisas</button><button id="snapshotsButton" class="secondary">Snapshots de catálogo</button><button id="suppliersButton" class="secondary">Fornecedores candidatos</button></div><pre id="historyOutput">Clique em uma opção para carregar os registros salvos no banco de dados.</pre></section>
+<section class="panel wide"><h2>Histórico persistido</h2><p>Consulte pesquisas anteriores e fornecedores candidatos salvos para validação humana.</p><div class="buttonrow"><button id="runsButton">Histórico de pesquisas</button><button id="snapshotsButton" class="secondary">Snapshots de catálogo</button><button id="suppliersButton" class="secondary">Fornecedores candidatos</button><button id="alertsButton" class="secondary">Alertas abertos</button></div><pre id="historyOutput">Clique em uma opção para carregar os registros salvos no banco de dados.</pre></section>
 <section class="panel wide"><h2>Limites operacionais</h2><p>Esta interface executa os endpoints de cálculo e triagem. Pesquisa real, persistência de resultados, conexão com fornecedores, pedidos automáticos, publicação de anúncios e adaptador Shopee precisam de integração própria e validação.</p><div class="notice">Nunca coloque tokens do Mercado Livre ou senhas de fornecedores nos campos de evidência. Não use dados inventados como vendas, reputação ou validação de fornecedor.</div></section>
 </div><div class="foot">Sale-IA V2 · Dropshipping Intelligence · Ações de escrita/publicação não são executadas por esta página.</div>
 </main>
@@ -107,6 +107,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
    const payload={}; for(const [key,value] of Object.entries(values)) if(value!=='') payload[key]=Number(value);
    run('marginButton','marginOutput',()=>call('/dropshipping/calculate-margin','POST',payload));
  });
+ $('alertsButton').addEventListener('click',()=>run('alertsButton','historyOutput',()=>call('/dropshipping/alerts?status=OPEN&limit=100')));
  $('runsButton').addEventListener('click',()=>run('runsButton','historyOutput',()=>call('/dropshipping/research/runs?limit=50')));
  $('snapshotsButton').addEventListener('click',()=>run('snapshotsButton','historyOutput',()=>call('/dropshipping/research/snapshots?limit=100')));
  $('suppliersButton').addEventListener('click',()=>run('suppliersButton','historyOutput',()=>call('/dropshipping/suppliers/candidates?limit=100')));
