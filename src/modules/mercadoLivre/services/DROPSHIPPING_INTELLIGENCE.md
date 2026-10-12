@@ -103,3 +103,6 @@ Cada pesquisa compara anúncios com a última captura salva do mesmo item:
 - `GET /api/mercadolivre/dropshipping/dashboard/summary` retorna contagem de candidatos por estado, produtos sem economia cadastrada, margens não positivas, status de fornecedores, alertas abertos, última pesquisa e top 10 candidatos.
 - O laboratório disponibiliza botão de consulta do resumo.
 - Estados SCALE/CHAMPION aparecem como zero até que um fluxo explícito com evidências suficientes promova candidatos; o ranking inicial não promove automaticamente.
+
+
+O laboratório inclui checklist de revalidação para fornecedores já cadastrados. A API exige ao menos uma evidência com origem, campo, data de coleta e confiança. O checklist continua sendo uma avaliação administrativa: a fonte deve ser conferida e o pedido-teste só pode ser marcado como aprovado após teste real.
