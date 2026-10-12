@@ -106,7 +106,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
   "prohibitedOrRestricted": false,
   "brandOrAuthenticityConcern": false
 }</textarea><div class="buttonrow"><button id="evaluateProductButton">Reavaliar produto</button></div><pre id="productEvaluationOutput">O veredito e os bloqueios aparecerão aqui.</pre></section>
-<section class="panel wide"><h2>Agendar pesquisa automática</h2><p>Crie uma palavra-chave para o Sale-IA pesquisar periodicamente e registrar snapshots/alertas. O servidor também precisa estar com <code>DROPSHIPPING_AUTORESEARCH_ENABLED=true</code>.</p><label for="watchQuery">Produto ou palavra-chave</label><input id="watchQuery" minlength="2" maxlength="120" placeholder="ex.: organizador de cabos"><label for="watchInterval">Intervalo em minutos (15–1440)</label><input id="watchInterval" type="number" min="15" max="1440" value="60"><div class="buttonrow"><button id="saveWatchButton">Salvar consulta agendada</button></div><pre id="watchOutput">As consultas agendadas e seu último status aparecerão aqui.</pre></section>
+<section class="panel wide"><h2>Agendar pesquisa automática</h2><p>Crie uma palavra-chave para o Sale-IA pesquisar periodicamente e registrar snapshots/alertas. O servidor também precisa estar com <code>DROPSHIPPING_AUTORESEARCH_ENABLED=true</code>.</p><label for="watchQuery">Produto ou palavra-chave</label><input id="watchQuery" minlength="2" maxlength="120" placeholder="ex.: organizador de cabos"><label for="watchInterval">Intervalo em minutos (15–1440)</label><input id="watchInterval" type="number" min="15" max="1440" value="60"><div class="buttonrow"><button id="saveWatchButton">Salvar consulta agendada</button></div><divider /><h3>Alterar consulta existente</h3><label for="watchId">ID da consulta agendada</label><input id="watchId" placeholder="UUID da consulta"><label><input id="watchEnabled" type="checkbox" checked> Consulta habilitada</label><label for="watchEditInterval">Novo intervalo em minutos (opcional)</label><input id="watchEditInterval" type="number" min="15" max="1440" placeholder="deixe vazio para manter"><div class="buttonrow"><button id="updateWatchButton" class="secondary">Atualizar consulta</button></div><pre id="watchOutput">As consultas agendadas e seu último status aparecerão aqui.</pre></section>
 <section class="panel wide"><h2>Limites operacionais</h2><p>Esta interface executa os endpoints de cálculo e triagem. Pesquisa real, persistência de resultados, conexão com fornecedores, pedidos automáticos, publicação de anúncios e adaptador Shopee precisam de integração própria e validação.</p><div class="notice">Nunca coloque tokens do Mercado Livre ou senhas de fornecedores nos campos de evidência. Não use dados inventados como vendas, reputação ou validação de fornecedor.</div></section>
 </div><div class="foot">Sale-IA V2 · Dropshipping Intelligence · Ações de escrita/publicação não são executadas por esta página.</div>
 </main>
@@ -176,6 +176,14 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
  $('alertsButton').addEventListener('click',()=>run('alertsButton','historyOutput',()=>call('/dropshipping/alerts?status=OPEN&limit=100')));
  $('schedulerStatusButton').addEventListener('click',()=>run('schedulerStatusButton','historyOutput',()=>call('/dropshipping/research/scheduler-status')));
  $('watchesButton').addEventListener('click',()=>run('watchesButton','historyOutput',()=>call('/dropshipping/research/watches?limit=100')));
+ $('updateWatchButton').addEventListener('click',()=>run('updateWatchButton','watchOutput',()=>{
+   const id=$('watchId').value.trim();
+   if(!id) throw new Error('Informe o ID da consulta agendada.');
+   const payload={enabled:$('watchEnabled').checked};
+   const intervalText=$('watchEditInterval').value.trim();
+   if(intervalText) payload.intervalMinutes=Number(intervalText);
+   return call('/dropshipping/research/watches/'+encodeURIComponent(id),'PATCH',payload);
+ }));
  $('saveWatchButton').addEventListener('click',()=>run('saveWatchButton','watchOutput',()=>{
    const query=$('watchQuery').value.trim();
    const intervalMinutes=Number($('watchInterval').value);
