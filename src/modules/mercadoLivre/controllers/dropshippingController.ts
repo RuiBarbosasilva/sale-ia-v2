@@ -341,3 +341,38 @@ export async function listDropshippingSnapshots(req: Request, res: Response): Pr
     return res.status(500).json({ success: false, error: 'DROPSHIPPING_SNAPSHOTS_ERROR' });
   }
 }
+
+export async function listDropshippingSupplierCandidates(req: Request, res: Response): Promise<Response> {
+  const rawLimit = req.query.limit === undefined ? 50 : Number(req.query.limit);
+  const status = typeof req.query.status === 'string' ? req.query.status.trim() : '';
+  const allowedStatuses = ['PENDING_VALIDATION', 'VALIDATING', 'VALIDATED', 'CONDITIONALLY_VALIDATED', 'REJECTED', 'SUSPENDED'];
+  if (!Number.isInteger(rawLimit) || rawLimit < 1 || rawLimit > 100 ||
+      (status && !allowedStatuses.includes(status))) {
+    return res.status(400).json({ success: false, error: 'INVALID_SUPPLIER_FILTER' });
+  }
+  try {
+    const candidates = await prisma.dropshippingSupplierCandidate.findMany({
+      where: status ? { validationStatus: status } : undefined,
+      take: rawLimit,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true, name: true, legalName: true, website: true, contactUrl: true,
+        country: true, shipsFromBrazil: true, offersDropshipping: true,
+        issuesInvoice: true, stockFeedAvailable: true, trackingAvailable: true,
+        returnPolicyUrl: true, validationStatus: true, reliabilityScore: true,
+        evidence: true, blockers: true, lastVerifiedAt: true, createdAt: true, updatedAt: true,
+      },
+    });
+    return res.json({
+      success: true,
+      count: candidates.length,
+      candidates: candidates.map((candidate) => ({
+        ...candidate,
+        evidence: JSON.parse(candidate.evidence),
+        blockers: candidate.blockers ? JSON.parse(candidate.blockers) : [],
+      })),
+    });
+  } catch {
+    return res.status(500).json({ success: false, error: 'SUPPLIER_CANDIDATES_ERROR' });
+  }
+}
