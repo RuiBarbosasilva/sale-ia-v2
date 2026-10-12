@@ -217,6 +217,16 @@ export function scoreProduct(signals: ProductSignals): ProductScore {
   if (signals.supplierReliabilityScore < 65) blockers.push('Fornecedor abaixo do mínimo de confiabilidade (65/100).');
   if (signals.marginPct <= 0) blockers.push('Produto não gera lucro estimado.');
   if (signals.evidenceConfidencePct < 35) blockers.push('Evidência insuficiente para classificar como campeão.');
+  const score = (
+    signals.demandScore * 0.25 +
+    (100 - signals.competitionScore) * 0.12 +
+    signals.supplierReliabilityScore * 0.18 +
+    Math.min(100, Math.max(0, signals.marginPct / 35 * 100)) * 0.20 +
+    signals.listingQualityScore * 0.08 +
+    (100 - signals.deliveryRiskScore) * 0.07 +
+    (100 - signals.returnRiskScore) * 0.05 +
+    signals.evidenceConfidencePct * 0.05
+  );
   const observedSales = Math.max(0, signals.observedSales ?? 0);
   const daysObserved = Math.max(0, signals.daysObserved ?? 0);
   const scaleReady = observedSales >= 5 && daysObserved >= 7;
