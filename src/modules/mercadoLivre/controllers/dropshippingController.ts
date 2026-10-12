@@ -227,7 +227,7 @@ export async function assessDropshippingProductCandidate(req: Request, res: Resp
       !req.body.title.trim() || req.body.title.length > 300 ||
       typeof req.body.canonicalUrl !== 'string' || req.body.canonicalUrl.length > 2000 ||
       !['MERCADOLIVRE', 'SHOPEE', 'OTHER'].includes(String(req.body.marketplace)) ||
-      !Array.isArray(req.body.evidence) || !req.body.evidence.every(hasValidEvidenceShape)) {
+      !Array.isArray(req.body.evidence) || req.body.evidence.length === 0 || !req.body.evidence.every(hasValidEvidenceShape)) {
     return res.status(400).json({ error: 'INVALID_PRODUCT_CANDIDATE' });
   }
   const optionalNumbers = ['observedPrice', 'observedSales', 'observedReviews', 'observedStock', 'shippingWeightGrams'];
