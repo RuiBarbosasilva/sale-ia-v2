@@ -71,7 +71,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
   "offersDropshipping": false,
   "evidence": []
 }</textarea><div class="buttonrow"><button id="candidateButton">Fazer triagem</button><button class="secondary" id="candidateExample">Carregar exemplo</button></div><pre id="candidateOutput">Resultado aparecerá aqui.</pre></section>
-<section class="panel wide"><h2>Histórico persistido</h2><p>Consulte pesquisas anteriores e fornecedores candidatos salvos para validação humana.</p><div class="buttonrow"><button id="runsButton">Histórico de pesquisas</button><button id="snapshotsButton" class="secondary">Snapshots de catálogo</button><button id="suppliersButton" class="secondary">Fornecedores candidatos</button><button id="alertsButton" class="secondary">Alertas abertos</button><button id="productsButton" class="secondary">Ranking de produtos salvos</button><button id="importProductsButton">Importar última pesquisa como candidatos</button></div><pre id="historyOutput">Clique em uma opção para carregar os registros salvos no banco de dados.</pre></section>
+<section class="panel wide"><h2>Histórico persistido</h2><p>Consulte pesquisas anteriores e fornecedores candidatos salvos para validação humana.</p><div class="buttonrow"><button id="dashboardButton">Resumo do painel</button><button id="runsButton" class="secondary">Histórico de pesquisas</button><button id="snapshotsButton" class="secondary">Snapshots de catálogo</button><button id="suppliersButton" class="secondary">Fornecedores candidatos</button><button id="alertsButton" class="secondary">Alertas abertos</button><button id="productsButton" class="secondary">Ranking de produtos salvos</button><button id="importProductsButton">Importar última pesquisa como candidatos</button></div><pre id="historyOutput">Clique em uma opção para carregar os registros salvos no banco de dados.</pre></section>
 <section class="panel wide"><h2>Atualizar margem de produto salvo</h2><p>Informe o ID de um candidato exibido no ranking e os custos reais/estimados. Lucro não positivo cria alerta e bloqueia o teste.</p><label for="economicsCandidateId">ID do candidato</label><input id="economicsCandidateId" placeholder="UUID do candidato salvo"><label for="economicsJson">Economia unitária (JSON)</label><textarea id="economicsJson" rows="8">{
   "salePrice": 79.90,
   "supplierCost": 25,
@@ -129,6 +129,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
  }));
  $('productsButton').addEventListener('click',()=>run('productsButton','historyOutput',()=>call('/dropshipping/products/candidates?limit=100')));
  $('alertsButton').addEventListener('click',()=>run('alertsButton','historyOutput',()=>call('/dropshipping/alerts?status=OPEN&limit=100')));
+ $('dashboardButton').addEventListener('click',()=>run('dashboardButton','historyOutput',()=>call('/dropshipping/dashboard/summary')));
  $('runsButton').addEventListener('click',()=>run('runsButton','historyOutput',()=>call('/dropshipping/research/runs?limit=50')));
  $('snapshotsButton').addEventListener('click',()=>run('snapshotsButton','historyOutput',()=>call('/dropshipping/research/snapshots?limit=100')));
  $('suppliersButton').addEventListener('click',()=>run('suppliersButton','historyOutput',()=>call('/dropshipping/suppliers/candidates?limit=100')));
