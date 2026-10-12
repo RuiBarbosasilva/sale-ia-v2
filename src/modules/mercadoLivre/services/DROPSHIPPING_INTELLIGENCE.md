@@ -167,3 +167,6 @@ A revalidação não deve aprovar fornecedor apenas porque o payload contém fla
 
 
 Ao registrar novamente uma oferta para o mesmo produto/fornecedor/SKU, o sistema compara o custo unitário e estoque com a oferta anterior. Variações de custo de 10% ou mais e estoque zerado geram alertas operacionais para revisão da margem e disponibilidade.
+
+
+A comparação de custo usa o custo posto (produto + frete do fornecedor), para detectar alterações em qualquer um desses componentes. Quedas de estoque de 50% ou mais também geram alerta INFO; estoque zerado gera WARNING.
