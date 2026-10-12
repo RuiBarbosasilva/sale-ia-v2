@@ -96,7 +96,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
   "repeatedDeliveryFailures": 0,
   "unresolvedComplaints": 0,
   "evidence": []
-}</textarea><div class="buttonrow"><button id="validateSupplierButton">Salvar e validar fornecedor</button></div><pre id="supplierValidationOutput">Resultado da validação aparecerá aqui.</pre></section>
+}</textarea><div class="buttonrow"><button id="validateSupplierButton">Salvar e validar fornecedor</button><button id="supplierHistoryButton" class="secondary">Histórico de validações</button></div><pre id="supplierValidationOutput">Resultado da validação aparecerá aqui.</pre></section>
 <section class="panel wide"><h2>Reavaliar produto para teste/escala/campeão</h2><p>Exige margem positiva salva, fornecedor VALIDATED e pelo menos duas coletas com vendas informadas. O sistema calcula as vendas incrementais entre snapshots.</p><label for="productEvaluationId">ID do produto candidato</label><input id="productEvaluationId" placeholder="UUID do produto salvo"><label for="productEvaluationJson">Sinais de risco/concorrência (JSON)</label><textarea id="productEvaluationJson" rows="9">{
   "supplierCandidateId": "",
   "competitionScore": 50,
@@ -150,6 +150,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
    try { payload=JSON.parse($('productEvaluationJson').value); }
    catch { throw new Error('JSON de avaliação inválido.'); }
    return call('/dropshipping/products/candidates/'+encodeURIComponent(id)+'/evaluate','POST',payload);
+ }));
+ $('supplierHistoryButton').addEventListener('click',()=>run('supplierHistoryButton','supplierValidationOutput',()=>{
+   const id=$('supplierValidationId').value.trim();
+   if(!id) throw new Error('Informe o ID do fornecedor.');
+   return call('/dropshipping/suppliers/candidates/'+encodeURIComponent(id)+'/validations?limit=100');
  }));
  $('validateSupplierButton').addEventListener('click',()=>run('validateSupplierButton','supplierValidationOutput',()=>{
    const id=$('supplierValidationId').value.trim();
