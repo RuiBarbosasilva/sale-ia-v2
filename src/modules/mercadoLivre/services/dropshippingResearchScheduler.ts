@@ -3,6 +3,7 @@ import { searchMercadoLivreCatalog } from './mercadoLivreResearchAdapter';
 
 let timer: ReturnType<typeof setInterval> | null = null;
 let running = false;
+let lastStaleOfferScanAt = 0;
 
 async function upsertAlert(input: {
   type: string;
@@ -127,6 +128,52 @@ async function collectWatch(query: string): Promise<void> {
   }
 }
 
+
+async function scanStaleSupplierOffers(): Promise<void> {
+  if (Date.now() - lastStaleOfferScanAt < 15 * 60_000) return;
+  try {
+    const cutoff = new Date(Date.now() - 24 * 60 * 60_000);
+    const staleOffers = await prisma.dropshippingSupplierOffer.findMany({
+      where: {
+        status: 'ACTIVE',
+        OR: [{ stockObservedAt: null }, { stockObservedAt: { lt: cutoff } }],
+      },
+      take: 100,
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true, productCandidateId: true, supplierCandidateId: true,
+        supplierUrl: true, stockObservedAt: true, availableQuantity: true,
+        productCandidate: { select: { title: true } },
+        supplierCandidate: { select: { name: true } },
+      },
+    });
+    for (const offer of staleOffers) {
+      const title = 'Estoque de fornecedor desatualizado: ' +
+        offer.productCandidate.title + ' / ' + offer.supplierCandidate.name;
+      const message = offer.stockObservedAt
+        ? 'Última observação de estoque ocorreu em ' + offer.stockObservedAt.toISOString() + '; confirme estoque e preço antes de vender.'
+        : 'A oferta não tem observação de estoque registrada; confirme estoque e preço antes de vender.';
+      await upsertAlert({
+        type: 'SUPPLIER_OFFER_STALE',
+        title,
+        severity: 'WARNING',
+        message,
+        payload: JSON.stringify({
+          offerId: offer.id,
+          productCandidateId: offer.productCandidateId,
+          supplierCandidateId: offer.supplierCandidateId,
+          availableQuantity: offer.availableQuantity,
+          stockObservedAt: offer.stockObservedAt,
+          supplierUrl: offer.supplierUrl,
+        }),
+      });
+    }
+    lastStaleOfferScanAt = Date.now();
+  } catch {
+    // A falha na varredura de ofertas não deve interromper pesquisas de catálogo.
+  }
+}
+
 export async function runDueDropshippingResearchWatches(): Promise<void> {
   if (running) return;
   running = true;
@@ -142,6 +189,7 @@ export async function runDueDropshippingResearchWatches(): Promise<void> {
       select: { query: true },
     });
     for (const watch of due) await collectWatch(watch.query);
+    await scanStaleSupplierOffers();
   } finally {
     running = false;
   }
