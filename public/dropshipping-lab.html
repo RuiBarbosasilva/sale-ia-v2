@@ -83,6 +83,20 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
   "returnReserveRatePct": 3,
   "otherVariableCosts": 1
 }</textarea><div class="buttonrow"><button id="updateEconomicsButton">Calcular e salvar margem</button></div><pre id="economicsOutput">Resultado do cálculo de margem aparecerá aqui.</pre></section>
+<section class="panel wide"><h2>Validar fornecedor salvo</h2><p>Preencha apenas sinais verificados documentalmente. Marque pedido-teste aprovado somente após receber e testar um pedido real.</p><label for="supplierValidationId">ID do fornecedor candidato</label><input id="supplierValidationId" placeholder="UUID do fornecedor salvo"><label for="supplierValidationJson">Checklist de validação (JSON)</label><textarea id="supplierValidationJson" rows="12">{
+  "hasCnpjOrLegalIdentity": false,
+  "hasPublicContact": false,
+  "hasWrittenDropshippingPolicy": false,
+  "confirmsStockSync": false,
+  "providesInvoice": false,
+  "providesTracking": false,
+  "hasClearReturnPolicy": false,
+  "hasVerifiableReputation": false,
+  "sampleOrderPassed": false,
+  "repeatedDeliveryFailures": 0,
+  "unresolvedComplaints": 0,
+  "evidence": []
+}</textarea><div class="buttonrow"><button id="validateSupplierButton">Salvar e validar fornecedor</button></div><pre id="supplierValidationOutput">Resultado da validação aparecerá aqui.</pre></section>
 <section class="panel wide"><h2>Limites operacionais</h2><p>Esta interface executa os endpoints de cálculo e triagem. Pesquisa real, persistência de resultados, conexão com fornecedores, pedidos automáticos, publicação de anúncios e adaptador Shopee precisam de integração própria e validação.</p><div class="notice">Nunca coloque tokens do Mercado Livre ou senhas de fornecedores nos campos de evidência. Não use dados inventados como vendas, reputação ou validação de fornecedor.</div></section>
 </div><div class="foot">Sale-IA V2 · Dropshipping Intelligence · Ações de escrita/publicação não são executadas por esta página.</div>
 </main>
@@ -119,6 +133,14 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
    run('marginButton','marginOutput',()=>call('/dropshipping/calculate-margin','POST',payload));
  });
  $('importProductsButton').addEventListener('click',()=>run('importProductsButton','historyOutput',()=>call('/dropshipping/research/import-latest','POST')));
+ $('validateSupplierButton').addEventListener('click',()=>run('validateSupplierButton','supplierValidationOutput',()=>{
+   const id=$('supplierValidationId').value.trim();
+   if(!id) throw new Error('Informe o ID do fornecedor.');
+   let payload;
+   try { payload=JSON.parse($('supplierValidationJson').value); }
+   catch { throw new Error('JSON de validação inválido.'); }
+   return call('/dropshipping/suppliers/candidates/'+encodeURIComponent(id)+'/validate','POST',payload);
+ }));
  $('updateEconomicsButton').addEventListener('click',()=>run('updateEconomicsButton','economicsOutput',()=>{
    const id=$('economicsCandidateId').value.trim();
    if(!id) throw new Error('Informe o ID do candidato.');
