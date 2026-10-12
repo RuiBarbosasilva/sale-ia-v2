@@ -18,7 +18,8 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
 <body><main>
 <header class="top"><div><div class="eyebrow">Sale-IA V2 / Mercado Livre</div><h1>Dropshipping Intelligence</h1><p>Margem unitária, validação de fornecedor e triagem baseada em evidências.</p></div><div class="status"><strong id="connection">Não conectado</strong><div id="baseLabel" style="color:var(--muted);font-size:12px">API: /api/mercadolivre</div></div></header>
 <section class="panel"><h2>Conexão administrativa</h2><p>A chave fica somente na memória desta página e não é gravada no navegador.</p><div class="apirow"><div><label for="base">Prefixo da API</label><input id="base" value="/api/mercadolivre" autocomplete="url"></div><div><label for="key">Chave administrativa</label><input id="key" type="password" placeholder="Chave SALE-IA" autocomplete="off"></div></div><div class="buttonrow"><button id="check">Verificar regras/API</button><button class="secondary" id="clear">Limpar chave</button></div><pre id="rulesOutput">Clique em “Verificar regras/API” para consultar o servidor.</pre></section>
-<div class="grid">
+<div class="grid">\n<section class="panel wide"><h2>Pesquisa real no catálogo Mercado Livre</h2><p>Consulta a API pública oficial e retorna anúncios observados, preços, estoque informado e sinais disponíveis. Não inventa vendas ausentes.</p><form id="researchForm"><div class="apirow"><div><label for="researchQuery">Produto ou palavra-chave</label><input id="researchQuery" minlength="2" maxlength="120" value="organizador de cabos" required></div><div><label for="researchLimit">Quantidade de resultados (1–50)</label><input id="researchLimit" type="number" min="1" max="50" value="20" required></div></div><div class="buttonrow"><button id="researchButton" type="submit">Pesquisar catálogo oficial</button></div></form><pre id="researchOutput">Os resultados da pesquisa aparecerão aqui.</pre></section>
+
 <section class="panel"><h2>Calculadora de margem</h2><p>Calcule lucro estimado, custos totais e preço de equilíbrio.</p>
 <form id="marginForm"><div class="fields">
 <div><label>Preço de venda (R$)</label><input name="salePrice" type="number" min="0.01" step=".01" value="79.90" required></div>
@@ -104,6 +105,12 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
    const values=Object.fromEntries(new FormData(event.currentTarget).entries());
    const payload={}; for(const [key,value] of Object.entries(values)) if(value!=='') payload[key]=Number(value);
    run('marginButton','marginOutput',()=>call('/dropshipping/calculate-margin','POST',payload));
+ });
+ $('researchForm').addEventListener('submit',event=>{
+   event.preventDefault();
+   const query=$('researchQuery').value.trim();
+   const limit=$('researchLimit').value;
+   run('researchButton','researchOutput',()=>call('/dropshipping/research/marketplace?q='+encodeURIComponent(query)+'&limit='+encodeURIComponent(limit)));
  });
  $('supplierButton').addEventListener('click',()=>run('supplierButton','supplierOutput',()=>call('/dropshipping/score-supplier','POST',JSON.parse($('supplierJson').value))));
  $('productButton').addEventListener('click',()=>run('productButton','productOutput',()=>call('/dropshipping/score-product','POST',JSON.parse($('productJson').value))));
