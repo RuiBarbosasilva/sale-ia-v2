@@ -50,6 +50,21 @@ export function calculateDropshippingMargin(req: Request, res: Response): Respon
       message: 'Informe preço, custo, taxas, frete e impostos como números finitos não negativos.',
     });
   }
+  const optionalCosts = ['packagingCost', 'otherVariableCosts'];
+  const optionalRates = ['returnReserveRatePct'];
+  if (optionalCosts.some((key) => body[key] !== undefined &&
+      (typeof body[key] !== 'number' || !Number.isFinite(body[key] as number) || (body[key] as number) < 0)) ||
+      optionalRates.some((key) => body[key] !== undefined &&
+      (typeof body[key] !== 'number' || !Number.isFinite(body[key] as number) || (body[key] as number) < 0 || (body[key] as number) >= 100))) {
+    return res.status(400).json({ error: 'INVALID_OPTIONAL_ECONOMICS' });
+  }
+  if (Number(body.marketplaceFeeRatePct) >= 100 || Number(body.taxRatePct) >= 100 ||
+      Number(body.marketplaceFeeRatePct) + Number(body.taxRatePct) + Number(body.returnReserveRatePct ?? 0) >= 100) {
+    return res.status(422).json({ error: 'NON_POSITIVE_REVENUE_FACTOR', message: 'A soma das taxas percentuais deve ser inferior a 100%.' });
+  }
+  if (required.some((key) => (body[key] as number) < 0) || Number(body.salePrice) <= 0) {
+    return res.status(400).json({ error: 'NEGATIVE_OR_ZERO_ECONOMICS' });
+  }
   const result = calculateMargin(body as unknown as ProductEconomics);
   if (!result.valid) return res.status(422).json({ result });
   return res.json({ result });
@@ -67,6 +82,12 @@ export function evaluateDropshippingSupplier(req: Request, res: Response): Respo
       error: 'INVALID_SUPPLIER_SIGNALS',
       message: 'Todos os indicadores de validação do fornecedor devem ser booleanos.',
     });
+  }
+  const optionalCounters = ['repeatedDeliveryFailures', 'unresolvedComplaints'];
+  if (optionalCounters.some((key) => req.body[key] !== undefined &&
+      (typeof req.body[key] !== 'number' || !Number.isFinite(req.body[key] as number) ||
+       (req.body[key] as number) < 0 || !Number.isInteger(req.body[key] as number)))) {
+    return res.status(400).json({ error: 'INVALID_SUPPLIER_COUNTERS' });
   }
   const result = scoreSupplier(req.body as unknown as SupplierSignals);
   return res.json({ result, publicationAllowed: result.status === 'VALIDATED' });
@@ -87,6 +108,13 @@ export function evaluateDropshippingProduct(req: Request, res: Response): Respon
       error: 'INVALID_PRODUCT_SIGNALS',
       message: 'Indicadores de pontuação inválidos ou incompletos.',
     });
+  }
+  const boundedScores = ['demandScore', 'competitionScore', 'supplierReliabilityScore', 'listingQualityScore', 'deliveryRiskScore', 'returnRiskScore', 'evidenceConfidencePct'];
+  if (boundedScores.some((key) => (req.body[key] as number) < 0 || (req.body[key] as number) > 100) ||
+      (req.body.marginPct as number) < -100 ||
+      (req.body.observedSales !== undefined && (typeof req.body.observedSales !== 'number' || !Number.isFinite(req.body.observedSales) || req.body.observedSales < 0)) ||
+      (req.body.daysObserved !== undefined && (typeof req.body.daysObserved !== 'number' || !Number.isFinite(req.body.daysObserved) || req.body.daysObserved < 0))) {
+    return res.status(400).json({ error: 'OUT_OF_RANGE_PRODUCT_SIGNALS' });
   }
   const result = scoreProduct(req.body as unknown as ProductSignals);
   return res.json({ result, publicationAllowed: false, note: 'A pontuação não publica anúncios nem faz pedidos automaticamente.' });
