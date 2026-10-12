@@ -1286,7 +1286,7 @@ export async function createDropshippingSupplierOffer(req: Request, res: Respons
     const previousOffer = await prisma.dropshippingSupplierOffer.findFirst({
       where: { productCandidateId, supplierCandidateId: supplier.id, supplierSku, status: { in: ['ACTIVE', 'REJECTED_MARGIN'] } },
       orderBy: { createdAt: 'desc' },
-      select: { id: true, unitCost: true, availableQuantity: true },
+      select: { id: true, unitCost: true, supplierShippingCost: true, landedCost: true, availableQuantity: true },
     });
     const landedCost = (req.body.unitCost as number) + (req.body.supplierShippingCost as number);
     const economics: ProductEconomics = {
@@ -1372,8 +1372,8 @@ export async function createDropshippingSupplierOffer(req: Request, res: Respons
       await prisma.dropshippingAlert.update({ where: { id: priorAlert.id }, data: { status: 'RESOLVED', resolvedAt: new Date() } });
     }
     if (previousOffer) {
-      const costChangePct = previousOffer.unitCost > 0
-        ? ((created.offer.unitCost - previousOffer.unitCost) / previousOffer.unitCost) * 100
+      const costChangePct = previousOffer.landedCost > 0
+        ? ((created.offer.landedCost - previousOffer.landedCost) / previousOffer.landedCost) * 100
         : 0;
       if (Math.abs(costChangePct) >= 10) {
         const title = 'Custo do fornecedor alterado: ' + candidate.title;
@@ -1384,9 +1384,9 @@ export async function createDropshippingSupplierOffer(req: Request, res: Respons
         const rounded = Number(costChangePct.toFixed(2));
         const alertData = {
           severity: Math.abs(costChangePct) >= 25 ? 'WARNING' : 'INFO',
-          message: 'Custo unitário mudou de R$ ' + previousOffer.unitCost.toFixed(2) + ' para R$ ' +
-            created.offer.unitCost.toFixed(2) + ' (' + rounded + '%). Reavalie a margem.',
-          payload: JSON.stringify({ productCandidateId, supplierCandidateId: supplier.id, previousOfferId: previousOffer.id, offerId: created.offer.id, costChangePct: rounded }),
+          message: 'Custo posto mudou de R$ ' + previousOffer.landedCost.toFixed(2) + ' para R$ ' +
+            created.offer.landedCost.toFixed(2) + ' (' + rounded + '%). Reavalie a margem.',
+          payload: JSON.stringify({ productCandidateId, supplierCandidateId: supplier.id, previousOfferId: previousOffer.id, offerId: created.offer.id, previousLandedCost: previousOffer.landedCost, currentLandedCost: created.offer.landedCost, costChangePct: rounded }),
         };
         if (existingAlert) await prisma.dropshippingAlert.update({ where: { id: existingAlert.id }, data: alertData });
         else await prisma.dropshippingAlert.create({ data: { type: 'SUPPLIER_OFFER_COST', title, ...alertData } });
@@ -1405,6 +1405,21 @@ export async function createDropshippingSupplierOffer(req: Request, res: Respons
         };
         if (existingAlert) await prisma.dropshippingAlert.update({ where: { id: existingAlert.id }, data: alertData });
         else await prisma.dropshippingAlert.create({ data: { type: 'SUPPLIER_OFFER_STOCK', title, ...alertData } });
+      } else if (previousOffer.availableQuantity !== null && previousOffer.availableQuantity > 0 &&
+          created.offer.availableQuantity !== null && created.offer.availableQuantity > 0 &&
+          created.offer.availableQuantity <= previousOffer.availableQuantity * 0.5) {
+        const title = 'Queda de estoque do fornecedor: ' + candidate.title;
+        const existingAlert = await prisma.dropshippingAlert.findFirst({
+          where: { type: 'SUPPLIER_OFFER_STOCK_DROP', title, status: 'OPEN' },
+          select: { id: true },
+        });
+        const alertData = {
+          severity: 'INFO',
+          message: 'Estoque da oferta caiu de ' + previousOffer.availableQuantity + ' para ' + created.offer.availableQuantity + '.',
+          payload: JSON.stringify({ productCandidateId, supplierCandidateId: supplier.id, previousOfferId: previousOffer.id, offerId: created.offer.id, previousStock: previousOffer.availableQuantity, currentStock: created.offer.availableQuantity }),
+        };
+        if (existingAlert) await prisma.dropshippingAlert.update({ where: { id: existingAlert.id }, data: alertData });
+        else await prisma.dropshippingAlert.create({ data: { type: 'SUPPLIER_OFFER_STOCK_DROP', title, ...alertData } });
       }
     }
     return res.status(201).json({
