@@ -1271,6 +1271,12 @@ export async function createDropshippingSupplierOffer(req: Request, res: Respons
     if (salePrice === null || salePrice === undefined || salePrice <= 0) {
       return res.status(409).json({ success: false, error: 'PRODUCT_SALE_PRICE_REQUIRED' });
     }
+    const supplierSku = typeof req.body.supplierSku === 'string' ? req.body.supplierSku.trim() || null : null;
+    const previousOffer = await prisma.dropshippingSupplierOffer.findFirst({
+      where: { productCandidateId, supplierCandidateId: supplier.id, supplierSku, status: 'ACTIVE' },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, unitCost: true, availableQuantity: true },
+    });
     const landedCost = (req.body.unitCost as number) + (req.body.supplierShippingCost as number);
     const economics: ProductEconomics = {
       salePrice,
@@ -1302,7 +1308,7 @@ export async function createDropshippingSupplierOffer(req: Request, res: Respons
         data: {
           productCandidateId,
           supplierCandidateId: supplier.id,
-          supplierSku: typeof req.body.supplierSku === 'string' ? req.body.supplierSku.trim() || null : null,
+          supplierSku,
           supplierTitle: req.body.supplierTitle.trim(),
           supplierUrl: supplierUrl.toString(),
           unitCost: req.body.unitCost as number,
@@ -1353,6 +1359,42 @@ export async function createDropshippingSupplierOffer(req: Request, res: Respons
       else await prisma.dropshippingAlert.create({ data: { type: 'PRODUCT_MARGIN', title: alertTitle, ...alertData } });
     } else if (priorAlert) {
       await prisma.dropshippingAlert.update({ where: { id: priorAlert.id }, data: { status: 'RESOLVED', resolvedAt: new Date() } });
+    }
+    if (previousOffer) {
+      const costChangePct = previousOffer.unitCost > 0
+        ? ((created.offer.unitCost - previousOffer.unitCost) / previousOffer.unitCost) * 100
+        : 0;
+      if (Math.abs(costChangePct) >= 10) {
+        const title = 'Custo do fornecedor alterado: ' + candidate.title;
+        const existingAlert = await prisma.dropshippingAlert.findFirst({
+          where: { type: 'SUPPLIER_OFFER_COST', title, status: 'OPEN' },
+          select: { id: true },
+        });
+        const rounded = Number(costChangePct.toFixed(2));
+        const alertData = {
+          severity: Math.abs(costChangePct) >= 25 ? 'WARNING' : 'INFO',
+          message: 'Custo unitário mudou de R$ ' + previousOffer.unitCost.toFixed(2) + ' para R$ ' +
+            created.offer.unitCost.toFixed(2) + ' (' + rounded + '%). Reavalie a margem.',
+          payload: JSON.stringify({ productCandidateId, supplierCandidateId: supplier.id, previousOfferId: previousOffer.id, offerId: created.offer.id, costChangePct: rounded }),
+        };
+        if (existingAlert) await prisma.dropshippingAlert.update({ where: { id: existingAlert.id }, data: alertData });
+        else await prisma.dropshippingAlert.create({ data: { type: 'SUPPLIER_OFFER_COST', title, ...alertData } });
+      }
+      if (previousOffer.availableQuantity !== null && previousOffer.availableQuantity > 0 &&
+          created.offer.availableQuantity === 0) {
+        const title = 'Estoque do fornecedor zerado: ' + candidate.title;
+        const existingAlert = await prisma.dropshippingAlert.findFirst({
+          where: { type: 'SUPPLIER_OFFER_STOCK', title, status: 'OPEN' },
+          select: { id: true },
+        });
+        const alertData = {
+          severity: 'WARNING',
+          message: 'A oferta do fornecedor passou de estoque ' + previousOffer.availableQuantity + ' para zero.',
+          payload: JSON.stringify({ productCandidateId, supplierCandidateId: supplier.id, previousOfferId: previousOffer.id, offerId: created.offer.id }),
+        };
+        if (existingAlert) await prisma.dropshippingAlert.update({ where: { id: existingAlert.id }, data: alertData });
+        else await prisma.dropshippingAlert.create({ data: { type: 'SUPPLIER_OFFER_STOCK', title, ...alertData } });
+      }
     }
     return res.status(201).json({
       success: true,
