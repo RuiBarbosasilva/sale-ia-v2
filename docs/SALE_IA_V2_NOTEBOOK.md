@@ -99,3 +99,14 @@ O usuário executou `git status --short` e `git diff`. Os itens abaixo ainda est
 
 **Regra de integração:** aplicar mudanças específicas ao GitHub em commits pequenos e rastreáveis. Nunca reconstruir os novos arquivos locais por suposição nem afirmar que foram enviados sem que seu conteúdo tenha sido obtido e o commit confirmado.
 
+## Correção de codificação do dashboard RB Factory — 12/10/2026
+
+- [x] Corrigido em `public/rb-factory-dashboard.js` o texto com mojibake que afetava mensagens de carregamento, prospecção, status, erros, nomes de ações e a localidade Poços de Caldas.
+- [x] Preservada a lógica do dashboard; a alteração foi direcionada às strings exibidas ao usuário.
+- [x] Verificada a ausência dos padrões conhecidos de mojibake no arquivo atualizado.
+- [x] Commit no GitHub: `803fc7bde0156db3a1a1fb9b9213cac31fe7fd9d`.
+- [ ] Validar no navegador o dashboard e confirmar se há erros funcionais além da codificação. A inspeção do texto não comprova funcionamento de todas as chamadas API.
+- [ ] Sincronizar a cópia local com o commit remoto sem descartar alterações locais.
+
+**Importante:** `public/site-factory.html` no GitHub já contém `<meta charset="UTF-8">` e não apresentou mojibake na inspeção remota. O defeito de caracteres identificado estava no JavaScript do dashboard RB Factory. Se a interface continuar exibindo caracteres estranhos depois de sincronizar, fazer recarga forçada do navegador e conferir se o servidor está servindo a versão atual do arquivo, não uma cópia antiga em cache.
+
