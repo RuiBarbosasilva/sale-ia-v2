@@ -1,5 +1,11 @@
 import { Request, Response } from 'express';
 import {
+  assessProductCandidate,
+  assessSupplierCandidate,
+  type ProductCandidate,
+  type SupplierCandidate,
+} from '../services/dropshippingResearch';
+import {
   calculateMargin,
   scoreProduct,
   scoreSupplier,
@@ -140,12 +146,6 @@ export function getDropshippingRules(_req: Request, res: Response): Response {
   });
 }
 
-import {
-  assessProductCandidate,
-  assessSupplierCandidate,
-  type ProductCandidate,
-  type SupplierCandidate,
-} from '../services/dropshippingResearch';
 
 export function assessDropshippingSupplierCandidate(req: Request, res: Response): Response {
   if (!isObject(req.body) || typeof req.body.name !== 'string' ||
