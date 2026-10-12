@@ -251,7 +251,7 @@ export async function assessDropshippingProductCandidate(req: Request, res: Resp
         title: req.body.title.trim(),
         externalId: typeof req.body.externalId === 'string' ? req.body.externalId.slice(0, 100) : null,
         canonicalUrl: req.body.canonicalUrl.trim(),
-        marketplace: req.body.marketplace,
+        marketplace: req.body.marketplace as ProductCandidate['marketplace'],
         observedPrice: typeof req.body.observedPrice === 'number' ? req.body.observedPrice : null,
         observedSales: typeof req.body.observedSales === 'number' ? req.body.observedSales : null,
         observedReviews: typeof req.body.observedReviews === 'number' ? req.body.observedReviews : null,
