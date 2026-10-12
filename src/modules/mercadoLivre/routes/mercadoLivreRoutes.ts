@@ -17,6 +17,7 @@ import {
   getDropshippingRules,
   assessDropshippingSupplierCandidate,
   assessDropshippingProductCandidate,
+  searchDropshippingMarketplace,
 } from '../controllers/dropshippingController';
 import { mercadoLivreAdminGuard } from '../middleware/adminGuard';
 
@@ -41,6 +42,7 @@ router.use(mercadoLivreAdminGuard);
 // --- INTELIGÊNCIA DE DROPSHIPPING ---
 // Estes endpoints calculam scores; não publicam anúncios nem criam pedidos.
 router.get('/dropshipping/rules', getDropshippingRules);
+router.get('/dropshipping/research/marketplace', searchDropshippingMarketplace);
 router.post('/dropshipping/assess-supplier-candidate', assessDropshippingSupplierCandidate);
 router.post('/dropshipping/assess-product-candidate', assessDropshippingProductCandidate);
 router.post('/dropshipping/calculate-margin', calculateDropshippingMargin);
