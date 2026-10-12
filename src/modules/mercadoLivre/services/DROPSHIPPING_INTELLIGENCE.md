@@ -106,3 +106,12 @@ Cada pesquisa compara anúncios com a última captura salva do mesmo item:
 
 
 O laboratório inclui checklist de revalidação para fornecedores já cadastrados. A API exige ao menos uma evidência com origem, campo, data de coleta e confiança. O checklist continua sendo uma avaliação administrativa: a fonte deve ser conferida e o pedido-teste só pode ser marcado como aprovado após teste real.
+
+
+## Avaliação de ciclo de vida do produto
+
+- `POST /api/mercadolivre/dropshipping/products/candidates/:id/evaluate` avalia WATCH/TEST/SCALE/CHAMPION/REJECT usando a função determinística `scoreProduct`.
+- Exige margem positiva salva, fornecedor ligado e `VALIDATED` com score mínimo 65, além de pelo menos duas capturas com vendas informadas.
+- Vendas observadas são calculadas como diferença entre contagens de vendas da primeira e última captura; a duração é calculada pelos timestamps.
+- Concorrência, qualidade do anúncio e riscos operacionais continuam sinais administrativos informados no pedido; devem ter base verificável.
+- O endpoint salva o veredito e gera alerta para SCALE, CHAMPION ou REJECT. Nenhum anúncio é publicado automaticamente.
