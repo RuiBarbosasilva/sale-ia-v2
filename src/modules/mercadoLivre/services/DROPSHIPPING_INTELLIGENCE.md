@@ -145,3 +145,6 @@ O laboratório inclui checklist de revalidação para fornecedores já cadastrad
 - O custo posto é calculado como custo unitário + frete do fornecedor; o motor calcula lucro/margem com taxas de marketplace, frete do vendedor, impostos, embalagem e reservas informadas.
 - Margem não positiva marca a oferta como `REJECTED_MARGIN`, bloqueia o candidato e cria/atualiza alerta. Uma margem positiva ainda exige reavaliação do ciclo de vida para escala/campeão.
 - `GET /api/mercadolivre/dropshipping/products/candidates/:id/supplier-offers` lista ofertas vinculadas e o status do fornecedor.
+
+
+Ao registrar novamente uma oferta para o mesmo produto/fornecedor/SKU, o sistema compara o custo unitário e estoque com a oferta anterior. Variações de custo de 10% ou mais e estoque zerado geram alertas operacionais para revisão da margem e da disponibilidade.
