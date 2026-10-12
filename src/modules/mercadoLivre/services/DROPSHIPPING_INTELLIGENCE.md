@@ -156,3 +156,11 @@ A revalidação não deve aprovar fornecedor apenas porque o payload contém fla
 - Se faltar evidência para qualquer indicador positivo, o status máximo fica `CONDITIONALLY_VALIDATED`; a aprovação integral é bloqueada.
 - Essa checagem valida estrutura e rastreabilidade declarada, não verifica automaticamente a autenticidade externa da fonte. Pedido-teste, nota fiscal e identidade legal continuam exigindo conferência humana.
 - Os testes de regressão ficam em `services/__tests__/dropshippingResearch.test.ts`.
+
+
+## Readiness das integrações
+
+- `GET /api/mercadolivre/dropshipping/providers/status` mostra se as variáveis necessárias estão configuradas, sem retornar segredos.
+- A pesquisa de catálogo público do Mercado Livre está disponível em modo somente leitura.
+- O adaptador oficial Shopee ainda não está implementado; a rota informa esse estado mesmo que variáveis de credencial existam.
+- A descoberta externa automatizada de fornecedores ainda não está conectada. Cadastro, revisão documental e histórico de validação são fluxos disponíveis, não prova de pesquisa automática concluída.
