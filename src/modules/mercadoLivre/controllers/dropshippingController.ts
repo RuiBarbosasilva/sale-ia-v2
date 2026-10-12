@@ -1530,9 +1530,7 @@ export async function bootstrapDropshippingResearchWatches(req: Request, res: Re
           lastStatus: 'PENDING',
         },
         update: {
-          intervalMinutes: 60,
-          enabled: true,
-          nextRunAt: new Date(),
+          // Preserve existing operator configuration; only clear a stale error.
           lastError: null,
         },
       });
