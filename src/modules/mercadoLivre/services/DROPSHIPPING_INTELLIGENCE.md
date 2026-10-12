@@ -32,3 +32,13 @@ Os endpoints abaixo são montados no router do Mercado Livre e herdam `mercadoLi
 - `POST /api/mercadolivre/dropshipping/assess-product-candidate` — triagem de produto com evidências.
 
 Enviar o cabeçalho `x-mercado-livre-admin-key` (ou o cabeçalho alternativo aceito pelo guard). Os percentuais são pontos percentuais. As rotas de triagem não fazem chamadas externas e não persistem resultados; adapters e persistência precisam ser integrados antes de considerar a pesquisa autônoma operacional.
+
+
+## Pesquisa real de catálogo
+
+- `GET /api/mercadolivre/dropshipping/research/marketplace?q=organizador%20de%20cabos&limit=20`
+- Consulta a API pública oficial do Mercado Livre Brasil (`api.mercadolibre.com/sites/MLB/search`).
+- Retorna título, preço, URL, quantidade disponível e vendas apenas quando a fonte informar esses campos.
+- Limite de 1 a 50 resultados, timeout de 10 segundos e tratamento de rate limit.
+- Não é uma prova de demanda ou de vendas: campos ausentes permanecem `null`; a pesquisa não publica nem altera anúncios.
+- A pesquisa de fornecedores, validação de pedido-teste, persistência de snapshots e conector Shopee ainda são etapas separadas.
