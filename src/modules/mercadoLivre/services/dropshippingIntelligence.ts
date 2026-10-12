@@ -217,6 +217,10 @@ export function scoreProduct(signals: ProductSignals): ProductScore {
   if (signals.supplierReliabilityScore < 65) blockers.push('Fornecedor abaixo do mínimo de confiabilidade (65/100).');
   if (signals.marginPct <= 0) blockers.push('Produto não gera lucro estimado.');
   if (signals.evidenceConfidencePct < 35) blockers.push('Evidência insuficiente para classificar como campeão.');
+  // A classificação de escala/campeão exige sinais observáveis; ausência de vendas
+  // não deve ser mascarada por um score heurístico alto.
+  if ((signals.observedSales ?? 0) < 5) blockers.push('Vendas observadas insuficientes para escalar.');
+  if ((signals.daysObserved ?? 0) < 7) blockers.push('Janela de observação inferior a 7 dias para escalar.');
 
   const score = normalizeScore(
     normalizeScore(signals.demandScore) * 0.25 +
