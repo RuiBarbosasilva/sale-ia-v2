@@ -200,3 +200,32 @@ export function assessDropshippingProductCandidate(req: Request, res: Response):
     note: 'Triagem inicial apenas; valide fornecedor, custos e vendas observadas antes de investir.',
   });
 }
+import { searchMercadoLivreCatalog } from '../services/mercadoLivreResearchAdapter';
+
+export async function searchDropshippingMarketplace(req: Request, res: Response): Promise<Response> {
+  try {
+    const result = await searchMercadoLivreCatalog(req.query.q, req.query.limit);
+    return res.json({
+      success: true,
+      result,
+      note: 'Resultados observados no catálogo público; não representam vendas confirmadas nem previsão de demanda.',
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'MARKETPLACE_RESEARCH_ERROR';
+    const status = message === 'INVALID_RESEARCH_QUERY' || message === 'INVALID_RESEARCH_LIMIT'
+      ? 400
+      : message === 'MARKETPLACE_RATE_LIMITED'
+        ? 429
+        : (typeof error === 'object' && error !== null && 'status' in error &&
+           typeof (error as { status?: unknown }).status === 'number')
+          ? (error as { status: number }).status
+          : message === 'AbortError' || message === 'TimeoutError'
+            ? 504
+            : 502;
+    return res.status(status).json({
+      success: false,
+      error: status === 400 ? message : status === 429 ? 'MARKETPLACE_RATE_LIMITED' : 'MARKETPLACE_RESEARCH_UNAVAILABLE',
+      requestId: (req as any).requestId,
+    });
+  }
+}
