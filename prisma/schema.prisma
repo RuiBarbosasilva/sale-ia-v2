@@ -1650,3 +1650,32 @@ model DropshippingAlert {
   @@index([status, createdAt])
   @@index([type, severity])
 }
+
+
+model DropshippingProductCandidate {
+  id                 String   @id @default(uuid())
+  title              String
+  externalId         String?
+  canonicalUrl       String
+  marketplace        String
+  observedPrice      Float?
+  observedSales      Int?
+  observedReviews    Int?
+  observedStock      Int?
+  shippingWeightGrams Int?
+  fragile            Boolean?
+  hasSizeVariants    Boolean?
+  evidence           String
+  suitabilityScore   Float    @default(0)
+  candidateForTesting Boolean @default(false)
+  status             String   @default("WATCH")
+  blockers           String?
+  warnings           String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([marketplace, createdAt])
+  @@index([suitabilityScore])
+  @@index([status])
+  @@index([externalId])
+}

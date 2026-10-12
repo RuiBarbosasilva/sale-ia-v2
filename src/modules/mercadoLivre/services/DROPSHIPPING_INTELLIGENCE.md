@@ -55,3 +55,12 @@ Enviar o cabeçalho `x-mercado-livre-admin-key` (ou o cabeçalho alternativo ace
 - `POST /api/mercadolivre/dropshipping/suppliers/candidates/:id/validate` atualiza score a partir de indicadores e evidências fornecidos.
 - `GET /api/mercadolivre/dropshipping/alerts` lista alertas abertos; `POST /api/mercadolivre/dropshipping/alerts/:id/resolve` encerra um alerta.
 - Bloqueios de validação geram alertas para revisão humana. Um score é uma regra de decisão, não uma garantia comercial.
+
+
+## Ranking persistente de candidatos a produto
+
+- `POST /api/mercadolivre/dropshipping/assess-product-candidate` avalia e salva cada candidato.
+- `GET /api/mercadolivre/dropshipping/products/candidates?limit=100` lista candidatos ordenados por score, com filtro opcional por `status`.
+- Estados iniciais: `REJECT` quando há bloqueios, `TEST` quando a triagem permite investigar, ou `WATCH` quando a evidência é insuficiente.
+- Nenhum registro é promovido automaticamente a `CHAMPION` ou `SCALE`: isso exige fluxo adicional com margem calculada, fornecedor validado e vendas reais observadas durante período suficiente.
+- Evidências e sinais recebidos são armazenados para auditoria; dados fornecidos manualmente não são tratados como prova independente.
