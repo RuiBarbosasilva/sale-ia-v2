@@ -1315,6 +1315,12 @@ export async function createDropshippingSupplierOffer(req: Request, res: Respons
     blockers = [...new Set(blockers)];
     const status = blockers.length ? 'REJECT' : candidate.suitabilityScore >= 60 ? 'TEST' : 'WATCH';
     const created = await prisma.$transaction(async (tx) => {
+      if (previousOffer) {
+        await tx.dropshippingSupplierOffer.update({
+          where: { id: previousOffer.id },
+          data: { status: 'SUPERSEDED' },
+        });
+      }
       const offer = await tx.dropshippingSupplierOffer.create({
         data: {
           productCandidateId,
