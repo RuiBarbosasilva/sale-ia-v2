@@ -765,3 +765,98 @@ export async function importLatestDropshippingResearchAsCandidates(req: Request,
     return res.status(500).json({ success: false, error: 'DROPSHIPPING_CANDIDATE_IMPORT_FAILED' });
   }
 }
+
+export async function updateDropshippingProductEconomics(req: Request, res: Response): Promise<Response> {
+  const id = typeof req.params.id === 'string' ? req.params.id.trim() : '';
+  if (!id || id.length > 100 || !isObject(req.body) || !isObject(req.body.economics)) {
+    return res.status(400).json({ success: false, error: 'INVALID_PRODUCT_ECONOMICS_REQUEST' });
+  }
+  const input = req.body.economics;
+  const required = ['salePrice', 'supplierCost', 'marketplaceFeeRatePct', 'fixedMarketplaceFee', 'shippingCost', 'taxRatePct'];
+  const optional = ['packagingCost', 'returnReserveRatePct', 'otherVariableCosts'];
+  if (required.some((key) => typeof input[key] !== 'number' || !Number.isFinite(input[key] as number) ||
+      (input[key] as number) < 0) ||
+      optional.some((key) => input[key] !== undefined &&
+      (typeof input[key] !== 'number' || !Number.isFinite(input[key] as number) || (input[key] as number) < 0))) {
+    return res.status(400).json({ success: false, error: 'INVALID_PRODUCT_ECONOMICS' });
+  }
+  const economics = input as unknown as ProductEconomics;
+  const margin = calculateMargin(economics);
+  if (!margin.valid) {
+    return res.status(400).json({ success: false, error: 'INVALID_PRODUCT_ECONOMICS', reasons: margin.reasons });
+  }
+  try {
+    const existing = await prisma.dropshippingProductCandidate.findUnique({ where: { id } });
+    if (!existing) return res.status(404).json({ success: false, error: 'PRODUCT_CANDIDATE_NOT_FOUND' });
+    let blockers: string[] = [];
+    try {
+      blockers = existing.blockers ? JSON.parse(existing.blockers) as string[] : [];
+      if (!Array.isArray(blockers)) blockers = [];
+    } catch {
+      blockers = [];
+    }
+    blockers = blockers.filter((item) => !item.startsWith('Margem estimada nula ou negativa'));
+    if (margin.estimatedProfit <= 0) {
+      blockers.push('Margem estimada nula ou negativa; rever custos antes de testar.');
+    }
+    blockers = [...new Set(blockers)];
+    const candidateForTesting = blockers.length === 0;
+    const status = blockers.length ? 'REJECT' : existing.suitabilityScore >= 60 ? 'TEST' : 'WATCH';
+    const updated = await prisma.dropshippingProductCandidate.update({
+      where: { id },
+      data: {
+        salePrice: economics.salePrice,
+        supplierCost: economics.supplierCost,
+        marketplaceFeeRatePct: economics.marketplaceFeeRatePct,
+        fixedMarketplaceFee: economics.fixedMarketplaceFee,
+        shippingCost: economics.shippingCost,
+        taxRatePct: economics.taxRatePct,
+        packagingCost: economics.packagingCost ?? null,
+        returnReserveRatePct: economics.returnReserveRatePct ?? null,
+        otherVariableCosts: economics.otherVariableCosts ?? null,
+        estimatedProfit: margin.estimatedProfit,
+        marginPct: margin.marginPct,
+        breakEvenPrice: margin.breakEvenPrice,
+        candidateForTesting,
+        status,
+        blockers: JSON.stringify(blockers),
+      },
+    });
+    const alertTitle = 'Margem não positiva: ' + existing.title;
+    const openAlert = await prisma.dropshippingAlert.findFirst({
+      where: { type: 'PRODUCT_MARGIN', title: alertTitle, status: 'OPEN' },
+      select: { id: true },
+    });
+    if (margin.estimatedProfit <= 0) {
+      const alertData = {
+        severity: 'WARNING',
+        message: 'Lucro estimado de R$ ' + margin.estimatedProfit.toFixed(2) + '. Não testar até rever preço, taxas e custos.',
+        payload: JSON.stringify({ candidateId: id, estimatedProfit: margin.estimatedProfit, marginPct: margin.marginPct }),
+      };
+      if (openAlert) await prisma.dropshippingAlert.update({ where: { id: openAlert.id }, data: alertData });
+      else await prisma.dropshippingAlert.create({ data: { type: 'PRODUCT_MARGIN', title: alertTitle, ...alertData } });
+    } else if (openAlert) {
+      await prisma.dropshippingAlert.update({
+        where: { id: openAlert.id },
+        data: { status: 'RESOLVED', resolvedAt: new Date() },
+      });
+    }
+    return res.json({
+      success: true,
+      candidate: {
+        id: updated.id,
+        title: updated.title,
+        status: updated.status,
+        candidateForTesting: updated.candidateForTesting,
+        estimatedProfit: updated.estimatedProfit,
+        marginPct: updated.marginPct,
+        breakEvenPrice: updated.breakEvenPrice,
+        blockers,
+      },
+      margin,
+      note: 'Margem estimada atualizada. Lucro calculado depende da precisão dos custos e taxas informados.',
+    });
+  } catch {
+    return res.status(500).json({ success: false, error: 'PRODUCT_ECONOMICS_UPDATE_FAILED' });
+  }
+}
