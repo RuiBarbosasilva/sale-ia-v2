@@ -62,6 +62,7 @@ router.get('/dropshipping/dashboard/summary', getDropshippingDashboardSummary);
 router.get('/dropshipping/research/marketplace', searchDropshippingMarketplace);
 router.get('/dropshipping/research/runs', listDropshippingResearchRuns);
 router.get('/dropshipping/research/watches', listDropshippingResearchWatches);
+router.get('/dropshipping/research/scheduler-status', getDropshippingResearchSchedulerStatus);
 router.post('/dropshipping/research/watches', upsertDropshippingResearchWatch);
 router.patch('/dropshipping/research/watches/:id', updateDropshippingResearchWatch);
 router.get('/dropshipping/research/snapshots', listDropshippingSnapshots);
