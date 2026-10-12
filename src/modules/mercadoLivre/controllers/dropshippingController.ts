@@ -346,6 +346,14 @@ import { searchMercadoLivreCatalog } from '../services/mercadoLivreResearchAdapt
 export async function searchDropshippingMarketplace(req: Request, res: Response): Promise<Response> {
   try {
     const result = await searchMercadoLivreCatalog(req.query.q, req.query.limit);
+    const previousSnapshots = await Promise.all(result.results.map(async (item) => ({
+      item,
+      previous: await prisma.dropshippingCatalogSnapshot.findFirst({
+        where: { itemId: item.id },
+        orderBy: { observedAt: 'desc' },
+        select: { price: true, availableQuantity: true, observedAt: true },
+      }),
+    })));
     const run = await prisma.dropshippingResearchRun.create({
       data: {
         query: result.query,
@@ -376,9 +384,64 @@ export async function searchDropshippingMarketplace(req: Request, res: Response)
       },
       select: { id: true, query: true, source: true, totalResults: true, resultCount: true, collectedAt: true },
     });
+    let alertsCreatedOrUpdated = 0;
+    for (const { item, previous } of previousSnapshots) {
+      if (!previous) continue;
+      const priceChangePct = previous.price > 0
+        ? ((item.price - previous.price) / previous.price) * 100
+        : 0;
+      const alertSpecs: Array<{ type: string; title: string; severity: string; message: string; payload: string }> = [];
+      if (Math.abs(priceChangePct) >= 10) {
+        const roundedPct = Number(priceChangePct.toFixed(2));
+        alertSpecs.push({
+          type: 'PRICE_MOVEMENT',
+          title: 'Mudança de preço observada: ' + item.id,
+          severity: Math.abs(priceChangePct) >= 25 ? 'WARNING' : 'INFO',
+          message: 'Preço observado mudou de R$ ' + previous.price.toFixed(2) + ' para R$ ' +
+            item.price.toFixed(2) + ' (' + roundedPct + '%). Verifique novamente antes de precificar.',
+          payload: JSON.stringify({ itemId: item.id, previousPrice: previous.price, currentPrice: item.price, changePct: roundedPct, url: item.url }),
+        });
+      }
+      if (previous.availableQuantity !== null && previous.availableQuantity > 0 &&
+          item.availableQuantity === 0) {
+        alertSpecs.push({
+          type: 'STOCK_RISK',
+          title: 'Estoque zerado observado: ' + item.id,
+          severity: 'WARNING',
+          message: 'A coleta anterior indicava estoque ' + previous.availableQuantity + '; a coleta atual indica zero.',
+          payload: JSON.stringify({ itemId: item.id, previousStock: previous.availableQuantity, currentStock: 0, url: item.url }),
+        });
+      } else if (previous.availableQuantity !== null && previous.availableQuantity > 0 &&
+          item.availableQuantity !== null && item.availableQuantity > 0 &&
+          item.availableQuantity <= previous.availableQuantity * 0.5) {
+        alertSpecs.push({
+          type: 'STOCK_RISK',
+          title: 'Queda de estoque observada: ' + item.id,
+          severity: 'INFO',
+          message: 'Estoque observado caiu de ' + previous.availableQuantity + ' para ' + item.availableQuantity + '.',
+          payload: JSON.stringify({ itemId: item.id, previousStock: previous.availableQuantity, currentStock: item.availableQuantity, url: item.url }),
+        });
+      }
+      for (const spec of alertSpecs) {
+        const existingAlert = await prisma.dropshippingAlert.findFirst({
+          where: { type: spec.type, title: spec.title, status: 'OPEN' },
+          select: { id: true },
+        });
+        if (existingAlert) {
+          await prisma.dropshippingAlert.update({
+            where: { id: existingAlert.id },
+            data: { severity: spec.severity, message: spec.message, payload: spec.payload },
+          });
+        } else {
+          await prisma.dropshippingAlert.create({ data: spec });
+        }
+        alertsCreatedOrUpdated += 1;
+      }
+    }
     return res.json({
       success: true,
       researchRun: run,
+      alertsCreatedOrUpdated,
       result,
       note: 'Resultados observados no catálogo público e persistidos para comparação histórica; não representam vendas confirmadas nem previsão de demanda.',
     });

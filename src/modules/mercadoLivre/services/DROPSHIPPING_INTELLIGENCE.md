@@ -79,3 +79,12 @@ Quando informada, a economia é calculada pelo motor de margem compartilhado e f
 - A importação é idempotente por marketplace + ID externo na lógica do endpoint: anúncios já registrados são ignorados.
 - Cada candidato recebe evidência de origem com data de coleta e URL da listagem; vendas ausentes continuam `null`.
 - A importação não calcula margem sem custos do fornecedor e não promove automaticamente candidatos a campeões.
+
+
+## Alertas de mudanças observadas
+
+Cada pesquisa compara anúncios com a última captura salva do mesmo item:
+- Mudança absoluta de preço de 10% ou mais gera alerta; 25% ou mais recebe severidade WARNING.
+- Estoque observado zerado gera WARNING; queda de estoque de 50% ou mais gera INFO.
+- Alertas abertos do mesmo tipo/item são atualizados em vez de duplicados em coletas sequenciais.
+- Alertas usam somente snapshots observados pelo Sale-IA e não garantem que o anúncio ou estoque do fornecedor permaneça igual entre coletas.
