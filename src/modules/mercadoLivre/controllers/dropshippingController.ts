@@ -1215,3 +1215,180 @@ export async function getDropshippingResearchSchedulerStatus(req: Request, res: 
     return res.status(500).json({ success: false, error: 'DROPSHIPPING_SCHEDULER_STATUS_ERROR' });
   }
 }
+
+export async function createDropshippingSupplierOffer(req: Request, res: Response): Promise<Response> {
+  const productCandidateId = typeof req.params.id === 'string' ? req.params.id.trim() : '';
+  if (!productCandidateId || productCandidateId.length > 100 || !isObject(req.body) ||
+      typeof req.body.supplierCandidateId !== 'string' || typeof req.body.supplierTitle !== 'string' ||
+      !req.body.supplierTitle.trim() || req.body.supplierTitle.length > 300 ||
+      typeof req.body.supplierUrl !== 'string' || req.body.supplierUrl.length > 2000) {
+    return res.status(400).json({ success: false, error: 'INVALID_SUPPLIER_OFFER' });
+  }
+  let supplierUrl: URL;
+  try {
+    supplierUrl = new URL(req.body.supplierUrl);
+    if (supplierUrl.protocol !== 'https:' || supplierUrl.username || supplierUrl.password ||
+        !supplierUrl.hostname || supplierUrl.hostname === 'localhost') {
+      return res.status(400).json({ success: false, error: 'INVALID_SUPPLIER_OFFER_URL' });
+    }
+  } catch {
+    return res.status(400).json({ success: false, error: 'INVALID_SUPPLIER_OFFER_URL' });
+  }
+  const numberFields = ['unitCost', 'supplierShippingCost', 'fixedMarketplaceFee', 'marketplaceFeeRatePct', 'shippingCost', 'taxRatePct'];
+  if (numberFields.some((key) => typeof req.body[key] !== 'number' || !Number.isFinite(req.body[key] as number) ||
+      (req.body[key] as number) < 0) ||
+      (req.body.unitCost as number) <= 0 ||
+      ['packagingCost', 'returnReserveRatePct', 'otherVariableCosts'].some((key) => req.body[key] !== undefined &&
+      (typeof req.body[key] !== 'number' || !Number.isFinite(req.body[key] as number) || (req.body[key] as number) < 0)) ||
+      (req.body.availableQuantity !== undefined && (typeof req.body.availableQuantity !== 'number' ||
+       !Number.isInteger(req.body.availableQuantity as number) || (req.body.availableQuantity as number) < 0)) ||
+      (req.body.supplierSku !== undefined && (typeof req.body.supplierSku !== 'string' || req.body.supplierSku.length > 120))) {
+    return res.status(400).json({ success: false, error: 'INVALID_SUPPLIER_OFFER_NUMBERS' });
+  }
+  if ((req.body.marketplaceFeeRatePct as number) >= 100 || (req.body.taxRatePct as number) >= 100 ||
+      (req.body.marketplaceFeeRatePct as number) + (req.body.taxRatePct as number) +
+      Number(req.body.returnReserveRatePct ?? 0) >= 100) {
+    return res.status(422).json({ success: false, error: 'NON_POSITIVE_REVENUE_FACTOR' });
+  }
+  if (!Array.isArray(req.body.evidence) || req.body.evidence.length === 0 ||
+      !req.body.evidence.every(hasValidEvidenceShape)) {
+    return res.status(400).json({ success: false, error: 'SUPPLIER_OFFER_EVIDENCE_REQUIRED' });
+  }
+  try {
+    const candidate = await prisma.dropshippingProductCandidate.findUnique({ where: { id: productCandidateId } });
+    if (!candidate) return res.status(404).json({ success: false, error: 'PRODUCT_CANDIDATE_NOT_FOUND' });
+    if (candidate.marketplace !== 'MERCADOLIVRE') {
+      return res.status(409).json({ success: false, error: 'MERCADOLIVRE_CANDIDATE_REQUIRED' });
+    }
+    const supplier = await prisma.dropshippingSupplierCandidate.findUnique({
+      where: { id: req.body.supplierCandidateId.trim() },
+    });
+    if (!supplier) return res.status(404).json({ success: false, error: 'SUPPLIER_CANDIDATE_NOT_FOUND' });
+    if (supplier.validationStatus !== 'VALIDATED' || supplier.reliabilityScore < 65) {
+      return res.status(409).json({ success: false, error: 'SUPPLIER_NOT_VALIDATED' });
+    }
+    const salePrice = candidate.salePrice ?? candidate.observedPrice;
+    if (salePrice === null || salePrice === undefined || salePrice <= 0) {
+      return res.status(409).json({ success: false, error: 'PRODUCT_SALE_PRICE_REQUIRED' });
+    }
+    const landedCost = (req.body.unitCost as number) + (req.body.supplierShippingCost as number);
+    const economics: ProductEconomics = {
+      salePrice,
+      supplierCost: landedCost,
+      marketplaceFeeRatePct: req.body.marketplaceFeeRatePct as number,
+      fixedMarketplaceFee: req.body.fixedMarketplaceFee as number,
+      shippingCost: req.body.shippingCost as number,
+      taxRatePct: req.body.taxRatePct as number,
+      packagingCost: typeof req.body.packagingCost === 'number' ? req.body.packagingCost : 0,
+      returnReserveRatePct: typeof req.body.returnReserveRatePct === 'number' ? req.body.returnReserveRatePct : 0,
+      otherVariableCosts: typeof req.body.otherVariableCosts === 'number' ? req.body.otherVariableCosts : 0,
+    };
+    const margin = calculateMargin(economics);
+    if (!margin.valid) return res.status(422).json({ success: false, error: 'INVALID_SUPPLIER_OFFER_ECONOMICS', reasons: margin.reasons });
+    const marginBlocker = 'Margem estimada nula ou negativa; rever custos antes de testar.';
+    let blockers: string[] = [];
+    try {
+      blockers = candidate.blockers ? JSON.parse(candidate.blockers) as string[] : [];
+      if (!Array.isArray(blockers)) blockers = [];
+    } catch {
+      blockers = [];
+    }
+    blockers = blockers.filter((item) => !item.startsWith('Margem estimada nula ou negativa'));
+    if (margin.estimatedProfit <= 0) blockers.push(marginBlocker);
+    blockers = [...new Set(blockers)];
+    const status = blockers.length ? 'REJECT' : candidate.suitabilityScore >= 60 ? 'TEST' : 'WATCH';
+    const created = await prisma.$transaction(async (tx) => {
+      const offer = await tx.dropshippingSupplierOffer.create({
+        data: {
+          productCandidateId,
+          supplierCandidateId: supplier.id,
+          supplierSku: typeof req.body.supplierSku === 'string' ? req.body.supplierSku.trim() || null : null,
+          supplierTitle: req.body.supplierTitle.trim(),
+          supplierUrl: supplierUrl.toString(),
+          unitCost: req.body.unitCost as number,
+          supplierShippingCost: req.body.supplierShippingCost as number,
+          landedCost,
+          availableQuantity: typeof req.body.availableQuantity === 'number' ? req.body.availableQuantity : null,
+          stockObservedAt: typeof req.body.availableQuantity === 'number' ? new Date() : null,
+          evidence: JSON.stringify(req.body.evidence),
+          status: margin.estimatedProfit > 0 ? 'ACTIVE' : 'REJECTED_MARGIN',
+        },
+      });
+      const updatedCandidate = await tx.dropshippingProductCandidate.update({
+        where: { id: productCandidateId },
+        data: {
+          supplierCandidateId: supplier.id,
+          supplierCost: landedCost,
+          salePrice,
+          marketplaceFeeRatePct: economics.marketplaceFeeRatePct,
+          fixedMarketplaceFee: economics.fixedMarketplaceFee,
+          shippingCost: economics.shippingCost,
+          taxRatePct: economics.taxRatePct,
+          packagingCost: economics.packagingCost,
+          returnReserveRatePct: economics.returnReserveRatePct,
+          otherVariableCosts: economics.otherVariableCosts,
+          estimatedProfit: margin.estimatedProfit,
+          marginPct: margin.marginPct,
+          breakEvenPrice: margin.breakEvenPrice,
+          candidateForTesting: blockers.length === 0 && candidate.suitabilityScore >= 60,
+          status,
+          blockers: JSON.stringify(blockers),
+        },
+        select: { id: true, title: true, status: true, suitabilityScore: true, estimatedProfit: true, marginPct: true, breakEvenPrice: true },
+      });
+      return { offer, candidate: updatedCandidate };
+    });
+    const alertTitle = 'Margem não positiva: ' + candidate.title;
+    const priorAlert = await prisma.dropshippingAlert.findFirst({
+      where: { type: 'PRODUCT_MARGIN', title: alertTitle, status: 'OPEN' },
+      select: { id: true },
+    });
+    if (margin.estimatedProfit <= 0) {
+      const alertData = {
+        severity: 'WARNING',
+        message: 'Oferta de fornecedor gera lucro estimado de R$ ' + margin.estimatedProfit.toFixed(2) + '.',
+        payload: JSON.stringify({ productCandidateId, supplierCandidateId: supplier.id, offerId: created.offer.id, estimatedProfit: margin.estimatedProfit }),
+      };
+      if (priorAlert) await prisma.dropshippingAlert.update({ where: { id: priorAlert.id }, data: alertData });
+      else await prisma.dropshippingAlert.create({ data: { type: 'PRODUCT_MARGIN', title: alertTitle, ...alertData } });
+    } else if (priorAlert) {
+      await prisma.dropshippingAlert.update({ where: { id: priorAlert.id }, data: { status: 'RESOLVED', resolvedAt: new Date() } });
+    }
+    return res.status(201).json({
+      success: true,
+      offer: { ...created.offer, evidence: JSON.parse(created.offer.evidence) },
+      candidate: created.candidate,
+      margin,
+      note: margin.estimatedProfit > 0
+        ? 'Oferta ligada ao candidato; confira fretes, taxas e estoque antes de testar.'
+        : 'Oferta salva para auditoria, mas margem não positiva bloqueia o teste.',
+    });
+  } catch {
+    return res.status(500).json({ success: false, error: 'SUPPLIER_OFFER_SAVE_FAILED' });
+  }
+}
+
+export async function listDropshippingSupplierOffers(req: Request, res: Response): Promise<Response> {
+  const productCandidateId = typeof req.params.id === 'string' ? req.params.id.trim() : '';
+  const rawLimit = req.query.limit === undefined ? 50 : Number(req.query.limit);
+  if (!productCandidateId || productCandidateId.length > 100 || !Number.isInteger(rawLimit) || rawLimit < 1 || rawLimit > 100) {
+    return res.status(400).json({ success: false, error: 'INVALID_SUPPLIER_OFFER_FILTER' });
+  }
+  try {
+    const offers = await prisma.dropshippingSupplierOffer.findMany({
+      where: { productCandidateId },
+      take: rawLimit,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        supplierCandidate: { select: { id: true, name: true, validationStatus: true, reliabilityScore: true } },
+      },
+    });
+    return res.json({
+      success: true,
+      count: offers.length,
+      offers: offers.map((offer) => ({ ...offer, evidence: JSON.parse(offer.evidence) })),
+    });
+  } catch {
+    return res.status(500).json({ success: false, error: 'SUPPLIER_OFFERS_LIST_ERROR' });
+  }
+}

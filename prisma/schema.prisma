@@ -1637,6 +1637,31 @@ model DropshippingSupplierCandidate {
 
   productCandidates DropshippingProductCandidate[]
   validationHistory DropshippingSupplierValidation[]
+  offers DropshippingSupplierOffer[]
+}
+
+model DropshippingSupplierOffer {
+  id                  String   @id @default(uuid())
+  productCandidateId  String
+  productCandidate    DropshippingProductCandidate @relation(fields: [productCandidateId], references: [id], onDelete: Cascade)
+  supplierCandidateId String
+  supplierCandidate   DropshippingSupplierCandidate @relation(fields: [supplierCandidateId], references: [id], onDelete: Cascade)
+  supplierSku         String?
+  supplierTitle       String
+  supplierUrl         String
+  unitCost            Float
+  supplierShippingCost Float @default(0)
+  landedCost          Float
+  availableQuantity   Int?
+  stockObservedAt     DateTime?
+  evidence            String
+  status              String   @default("ACTIVE")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([productCandidateId, supplierCandidateId, createdAt])
+  @@index([supplierCandidateId, status])
+  @@index([status, updatedAt])
 }
 
 model DropshippingSupplierValidation {
@@ -1712,8 +1737,9 @@ model DropshippingProductCandidate {
   @@index([status])
   @@index([externalId])
   @@index([supplierCandidateId])
-}
 
+  supplierOffers DropshippingSupplierOffer[]
+}
 
 model DropshippingResearchWatch {
   id             String   @id @default(uuid())
