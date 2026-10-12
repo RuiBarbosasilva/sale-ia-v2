@@ -1505,3 +1505,46 @@ export function getDropshippingProviderReadiness(_req: Request, res: Response): 
     note: 'Somente presença das variáveis é verificada. Nenhum valor secreto é retornado e credenciais configuradas não significam que uma API foi testada.',
   });
 }
+
+export async function bootstrapDropshippingResearchWatches(req: Request, res: Response): Promise<Response> {
+  const starterQueries = [
+    'organizador de cabos',
+    'organizador de gaveta',
+    'organizador de porta-malas',
+    'organizador de cozinha',
+    'organizador de ferramentas',
+    'suporte para notebook',
+    'suporte para celular veicular',
+    'caixa organizadora multiuso',
+  ];
+  try {
+    const watches = [];
+    for (const query of starterQueries) {
+      const watch = await prisma.dropshippingResearchWatch.upsert({
+        where: { query },
+        create: {
+          query,
+          intervalMinutes: 60,
+          enabled: true,
+          nextRunAt: new Date(),
+          lastStatus: 'PENDING',
+        },
+        update: {
+          intervalMinutes: 60,
+          enabled: true,
+          nextRunAt: new Date(),
+          lastError: null,
+        },
+      });
+      watches.push(watch);
+    }
+    return res.status(201).json({
+      success: true,
+      count: watches.length,
+      watches,
+      note: 'Lista inicial de hipóteses de pesquisa, não de campeões confirmados. O worker exige DROPSHIPPING_AUTORESEARCH_ENABLED=true.',
+    });
+  } catch {
+    return res.status(500).json({ success: false, error: 'DROPSHIPPING_STARTER_WATCHLIST_ERROR' });
+  }
+}
