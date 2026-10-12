@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { prisma } from '../lib/prisma';
 import {
   assessProductCandidate,
   assessSupplierCandidate,
@@ -205,10 +206,41 @@ import { searchMercadoLivreCatalog } from '../services/mercadoLivreResearchAdapt
 export async function searchDropshippingMarketplace(req: Request, res: Response): Promise<Response> {
   try {
     const result = await searchMercadoLivreCatalog(req.query.q, req.query.limit);
+    const run = await prisma.dropshippingResearchRun.create({
+      data: {
+        query: result.query,
+        source: result.source,
+        status: 'COMPLETED',
+        totalResults: result.totalResults,
+        resultCount: result.results.length,
+        collectedAt: new Date(result.collectedAt),
+        resultSummary: JSON.stringify({ warnings: result.results.reduce((n, item) => n + item.warnings.length, 0) }),
+        snapshots: {
+          create: result.results.map((item) => ({
+            itemId: item.id,
+            title: item.title,
+            price: item.price,
+            currency: item.currency,
+            availableQuantity: item.availableQuantity,
+            soldQuantity: item.soldQuantity,
+            condition: item.condition,
+            url: item.url,
+            categoryId: item.categoryId,
+            freeShipping: item.freeShipping,
+            sellerId: item.sellerId,
+            evidenceConfidencePct: item.evidenceConfidencePct,
+            warnings: JSON.stringify(item.warnings),
+            observedAt: new Date(result.collectedAt),
+          })),
+        },
+      },
+      select: { id: true, query: true, source: true, totalResults: true, resultCount: true, collectedAt: true },
+    });
     return res.json({
       success: true,
+      researchRun: run,
       result,
-      note: 'Resultados observados no catálogo público; não representam vendas confirmadas nem previsão de demanda.',
+      note: 'Resultados observados no catálogo público e persistidos para comparação histórica; não representam vendas confirmadas nem previsão de demanda.',
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'MARKETPLACE_RESEARCH_ERROR';
@@ -227,5 +259,50 @@ export async function searchDropshippingMarketplace(req: Request, res: Response)
       error: status === 400 ? message : status === 429 ? 'MARKETPLACE_RATE_LIMITED' : 'MARKETPLACE_RESEARCH_UNAVAILABLE',
       requestId: (req as any).requestId,
     });
+  }
+}
+
+export async function listDropshippingResearchRuns(req: Request, res: Response): Promise<Response> {
+  const rawLimit = req.query.limit === undefined ? 20 : Number(req.query.limit);
+  if (!Number.isInteger(rawLimit) || rawLimit < 1 || rawLimit > 100) {
+    return res.status(400).json({ success: false, error: 'INVALID_PAGINATION' });
+  }
+  try {
+    const runs = await prisma.dropshippingResearchRun.findMany({
+      take: rawLimit,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true, query: true, source: true, status: true,
+        totalResults: true, resultCount: true, collectedAt: true, createdAt: true,
+      },
+    });
+    return res.json({ success: true, count: runs.length, runs });
+  } catch {
+    return res.status(500).json({ success: false, error: 'DROPSHIPPING_RESEARCH_HISTORY_ERROR' });
+  }
+}
+
+export async function listDropshippingSnapshots(req: Request, res: Response): Promise<Response> {
+  const runId = typeof req.query.runId === 'string' ? req.query.runId.trim() : '';
+  const rawLimit = req.query.limit === undefined ? 50 : Number(req.query.limit);
+  if (!Number.isInteger(rawLimit) || rawLimit < 1 || rawLimit > 100) {
+    return res.status(400).json({ success: false, error: 'INVALID_PAGINATION' });
+  }
+  try {
+    const snapshots = await prisma.dropshippingCatalogSnapshot.findMany({
+      where: runId ? { runId } : undefined,
+      take: rawLimit,
+      orderBy: { observedAt: 'desc' },
+    });
+    return res.json({
+      success: true,
+      count: snapshots.length,
+      snapshots: snapshots.map((item) => ({
+        ...item,
+        warnings: item.warnings ? JSON.parse(item.warnings) : [],
+      })),
+    });
+  } catch {
+    return res.status(500).json({ success: false, error: 'DROPSHIPPING_SNAPSHOTS_ERROR' });
   }
 }
