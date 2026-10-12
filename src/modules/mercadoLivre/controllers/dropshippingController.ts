@@ -176,15 +176,50 @@ export function getDropshippingRules(_req: Request, res: Response): Response {
 }
 
 
-export function assessDropshippingSupplierCandidate(req: Request, res: Response): Response {
+export async function assessDropshippingSupplierCandidate(req: Request, res: Response): Promise<Response> {
   if (!isObject(req.body) || typeof req.body.name !== 'string' ||
+      !req.body.name.trim() || req.body.name.length > 200 ||
       typeof req.body.country !== 'string' || typeof req.body.shipsFromBrazil !== 'boolean' ||
       typeof req.body.offersDropshipping !== 'boolean' || !Array.isArray(req.body.evidence) ||
       !req.body.evidence.every(hasValidEvidenceShape)) {
     return res.status(400).json({ error: 'INVALID_SUPPLIER_CANDIDATE' });
   }
+  const optionalStrings = ['legalName', 'website', 'contactUrl', 'returnPolicyUrl'];
+  if (optionalStrings.some((key) => req.body[key] !== undefined &&
+      (typeof req.body[key] !== 'string' || (req.body[key] as string).length > 1000))) {
+    return res.status(400).json({ error: 'INVALID_SUPPLIER_METADATA' });
+  }
   const result = assessSupplierCandidate(req.body as unknown as SupplierCandidate);
-  return res.json({ result, validationAllowed: result.eligibleForValidation });
+  try {
+    const saved = await prisma.dropshippingSupplierCandidate.create({
+      data: {
+        name: req.body.name.trim(),
+        legalName: typeof req.body.legalName === 'string' ? req.body.legalName : null,
+        website: typeof req.body.website === 'string' ? req.body.website : null,
+        contactUrl: typeof req.body.contactUrl === 'string' ? req.body.contactUrl : null,
+        country: req.body.country.trim().slice(0, 80),
+        shipsFromBrazil: req.body.shipsFromBrazil,
+        offersDropshipping: req.body.offersDropshipping,
+        issuesInvoice: typeof req.body.issuesInvoice === 'boolean' ? req.body.issuesInvoice : null,
+        stockFeedAvailable: typeof req.body.stockFeedAvailable === 'boolean' ? req.body.stockFeedAvailable : null,
+        trackingAvailable: typeof req.body.trackingAvailable === 'boolean' ? req.body.trackingAvailable : null,
+        returnPolicyUrl: typeof req.body.returnPolicyUrl === 'string' ? req.body.returnPolicyUrl : null,
+        validationStatus: 'PENDING_VALIDATION',
+        reliabilityScore: 0,
+        evidence: JSON.stringify(req.body.evidence),
+        blockers: JSON.stringify(result.blockers),
+      },
+      select: { id: true, name: true, validationStatus: true, reliabilityScore: true, createdAt: true },
+    });
+    return res.status(201).json({
+      candidate: saved,
+      result,
+      validationAllowed: result.eligibleForValidation,
+      note: 'Candidato salvo como PENDING_VALIDATION. A triagem não comprova confiabilidade nem aprova o fornecedor.',
+    });
+  } catch {
+    return res.status(500).json({ error: 'SUPPLIER_CANDIDATE_SAVE_FAILED' });
+  }
 }
 
 export function assessDropshippingProductCandidate(req: Request, res: Response): Response {
