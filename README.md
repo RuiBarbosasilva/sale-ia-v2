@@ -144,3 +144,29 @@ O workflow `.github/workflows/affiliate-ci.yml` executa:
 ## Proxima camada de monetizacao
 
 A base atual nao finge ter integracao com uma rede de afiliados especifica. A proxima camada e conectar programas reais, importar ofertas/catalogos, gerar paginas de conversao, atribuir vendas por webhook/API e reconciliar comissoes antes de liberar saques reais.
+
+
+## Dropshipping Intelligence — Mercado Livre
+
+O laboratório administrativo está disponível em `/dropshipping-lab.html`. As rotas de pesquisa usam a API pública oficial do catálogo Mercado Livre e exigem a chave administrativa do módulo.
+
+### Pesquisa agendada (opt-in)
+
+Adicione ao `.env`:
+
+```env
+DROPSHIPPING_AUTORESEARCH_ENABLED="true"
+DROPSHIPPING_AUTORESEARCH_TICK_MS=60000
+```
+
+Depois reinicie o servidor. No laboratório, crie consultas em **Agendar pesquisa automática** e consulte o estado em **Consultas agendadas** / **Status da automação**. Cada consulta pode rodar a cada 15 minutos até 24 horas; o worker verifica consultas vencidas a cada 60 segundos por padrão, processa até três por ciclo e grava snapshots históricos e alertas de preço/estoque.
+
+### Endpoints principais
+
+- `GET /api/mercadolivre/dropshipping/research/marketplace?q=organizador&limit=20` — consulta o catálogo oficial.
+- `POST /api/mercadolivre/dropshipping/research/watches` — cria/atualiza uma consulta agendada.
+- `GET /api/mercadolivre/dropshipping/research/watches` — lista consultas e estado.
+- `GET /api/mercadolivre/dropshipping/research/scheduler-status` — informa se o worker está habilitado no processo.
+- `GET /api/mercadolivre/dropshipping/dashboard/summary` — resume candidatos, fornecedores, margens, alertas e última pesquisa.
+
+A pesquisa automática atual cobre o catálogo do Mercado Livre. A integração de fornecedores externos e Shopee ainda exige adapters específicos; o sistema não compra nem publica anúncios automaticamente. Campos de vendas ausentes permanecem desconhecidos e scores não garantem demanda ou lucro.
