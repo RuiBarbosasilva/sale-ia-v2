@@ -1273,7 +1273,7 @@ export async function createDropshippingSupplierOffer(req: Request, res: Respons
     }
     const supplierSku = typeof req.body.supplierSku === 'string' ? req.body.supplierSku.trim() || null : null;
     const previousOffer = await prisma.dropshippingSupplierOffer.findFirst({
-      where: { productCandidateId, supplierCandidateId: supplier.id, supplierSku, status: 'ACTIVE' },
+      where: { productCandidateId, supplierCandidateId: supplier.id, supplierSku, status: { in: ['ACTIVE', 'REJECTED_MARGIN'] } },
       orderBy: { createdAt: 'desc' },
       select: { id: true, unitCost: true, availableQuantity: true },
     });
