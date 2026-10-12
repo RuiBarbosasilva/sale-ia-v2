@@ -10,6 +10,11 @@ import { syncItems } from '../controllers/syncController';
 import { listItems } from '../controllers/itemsController';
 import { syncOrders, listOrders } from '../controllers/orderSyncController';
 import { getMetrics } from '../controllers/metricsController';
+import {
+  calculateDropshippingMargin,
+  evaluateDropshippingProduct,
+  evaluateDropshippingSupplier,
+} from '../controllers/dropshippingController';
 import { mercadoLivreAdminGuard } from '../middleware/adminGuard';
 
 const router = Router();
@@ -29,6 +34,12 @@ router.post('/webhooks', handleWebhook);
 // O accountId continua sendo resolvido no backend; o cliente nunca é considerado
 // uma fonte de autorização por si só.
 router.use(mercadoLivreAdminGuard);
+
+// --- INTELIGÊNCIA DE DROPSHIPPING ---
+// Estes endpoints calculam scores; não publicam anúncios nem criam pedidos.
+router.post('/dropshipping/calculate-margin', calculateDropshippingMargin);
+router.post('/dropshipping/score-supplier', evaluateDropshippingSupplier);
+router.post('/dropshipping/score-product', evaluateDropshippingProduct);
 
 // --- CONTA ---
 router.get('/account', getAccount);
