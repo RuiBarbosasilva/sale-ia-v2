@@ -65,9 +65,10 @@ describe('Dropshipping research provenance contracts', () => {
       hasClearReturnPolicy: true, hasVerifiableReputation: true,
       sampleOrderPassed: true,
     };
-    const blockers = assessSupplierValidationEvidence(signals, [evidence]);
+    const blockers = assessSupplierValidationEvidence(signals, [{ ...evidence, field: 'sampleOrderPassed' }]);
     expect(blockers).toHaveLength(8);
-    expect(blockers).toContain('Evidência verificável ausente para: sampleOrderPassed');
+    expect(blockers).toContain('Evidência verificável ausente para: hasCnpjOrLegalIdentity');
+    expect(blockers).not.toContain('Evidência verificável ausente para: sampleOrderPassed');
   });
 
   test('accepts all required claims only when every field has valid evidence', () => {
