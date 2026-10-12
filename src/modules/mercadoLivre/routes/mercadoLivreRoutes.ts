@@ -28,6 +28,7 @@ import {
   listDropshippingProductCandidates,
   importLatestDropshippingResearchAsCandidates,
   updateDropshippingProductEconomics,
+  getDropshippingDashboardSummary,
 } from '../controllers/dropshippingController';
 import { mercadoLivreAdminGuard } from '../middleware/adminGuard';
 
@@ -52,6 +53,7 @@ router.use(mercadoLivreAdminGuard);
 // --- INTELIGÊNCIA DE DROPSHIPPING ---
 // Estes endpoints calculam scores; não publicam anúncios nem criam pedidos.
 router.get('/dropshipping/rules', getDropshippingRules);
+router.get('/dropshipping/dashboard/summary', getDropshippingDashboardSummary);
 router.get('/dropshipping/research/marketplace', searchDropshippingMarketplace);
 router.get('/dropshipping/research/runs', listDropshippingResearchRuns);
 router.get('/dropshipping/research/snapshots', listDropshippingSnapshots);

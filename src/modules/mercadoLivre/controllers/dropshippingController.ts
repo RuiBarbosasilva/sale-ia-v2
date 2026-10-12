@@ -860,3 +860,66 @@ export async function updateDropshippingProductEconomics(req: Request, res: Resp
     return res.status(500).json({ success: false, error: 'PRODUCT_ECONOMICS_UPDATE_FAILED' });
   }
 }
+
+export async function getDropshippingDashboardSummary(req: Request, res: Response): Promise<Response> {
+  try {
+    const [
+      totalProducts, watchProducts, testProducts, rejectedProducts, scaleProducts, championProducts,
+      productsMissingEconomics, productsNonPositiveMargin, totalSuppliers, pendingSuppliers,
+      validatedSuppliers, rejectedSuppliers, openAlerts, latestResearch, topProducts,
+    ] = await Promise.all([
+      prisma.dropshippingProductCandidate.count(),
+      prisma.dropshippingProductCandidate.count({ where: { status: 'WATCH' } }),
+      prisma.dropshippingProductCandidate.count({ where: { status: 'TEST' } }),
+      prisma.dropshippingProductCandidate.count({ where: { status: 'REJECT' } }),
+      prisma.dropshippingProductCandidate.count({ where: { status: 'SCALE' } }),
+      prisma.dropshippingProductCandidate.count({ where: { status: 'CHAMPION' } }),
+      prisma.dropshippingProductCandidate.count({ where: { estimatedProfit: null } }),
+      prisma.dropshippingProductCandidate.count({ where: { estimatedProfit: { lte: 0 } } }),
+      prisma.dropshippingSupplierCandidate.count(),
+      prisma.dropshippingSupplierCandidate.count({ where: { validationStatus: 'PENDING_VALIDATION' } }),
+      prisma.dropshippingSupplierCandidate.count({ where: { validationStatus: 'VALIDATED' } }),
+      prisma.dropshippingSupplierCandidate.count({ where: { validationStatus: 'REJECTED' } }),
+      prisma.dropshippingAlert.count({ where: { status: 'OPEN' } }),
+      prisma.dropshippingResearchRun.findFirst({
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, query: true, collectedAt: true, totalResults: true, resultCount: true },
+      }),
+      prisma.dropshippingProductCandidate.findMany({
+        take: 10,
+        orderBy: [{ suitabilityScore: 'desc' }, { createdAt: 'desc' }],
+        select: {
+          id: true, title: true, marketplace: true, status: true, suitabilityScore: true,
+          observedPrice: true, estimatedProfit: true, marginPct: true, externalId: true,
+          candidateForTesting: true, createdAt: true,
+        },
+      }),
+    ]);
+    return res.json({
+      success: true,
+      generatedAt: new Date().toISOString(),
+      products: {
+        total: totalProducts,
+        watch: watchProducts,
+        test: testProducts,
+        scale: scaleProducts,
+        champion: championProducts,
+        rejected: rejectedProducts,
+        missingEconomics: productsMissingEconomics,
+        nonPositiveMargin: productsNonPositiveMargin,
+        topCandidates: topProducts,
+      },
+      suppliers: {
+        total: totalSuppliers,
+        pendingValidation: pendingSuppliers,
+        validated: validatedSuppliers,
+        rejected: rejectedSuppliers,
+      },
+      openAlerts,
+      latestResearch,
+      note: 'Scores e margens são sinais de triagem baseados nos dados disponíveis, não garantias de vendas ou lucro.',
+    });
+  } catch {
+    return res.status(500).json({ success: false, error: 'DROPSHIPPING_DASHBOARD_SUMMARY_ERROR' });
+  }
+}

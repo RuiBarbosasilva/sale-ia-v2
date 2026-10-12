@@ -96,3 +96,10 @@ Cada pesquisa compara anúncios com a última captura salva do mesmo item:
 - Lucro não positivo mantém o candidato em `REJECT`, adiciona bloqueio e abre/atualiza alerta `PRODUCT_MARGIN`.
 - Ao corrigir os custos e obter lucro positivo, o bloqueio de margem é removido e o alerta aberto é resolvido; outros bloqueios continuam ativos.
 - O laboratório permite editar a economia usando o ID do candidato exibido no ranking.
+
+
+## Resumo operacional do painel
+
+- `GET /api/mercadolivre/dropshipping/dashboard/summary` retorna contagem de candidatos por estado, produtos sem economia cadastrada, margens não positivas, status de fornecedores, alertas abertos, última pesquisa e top 10 candidatos.
+- O laboratório disponibiliza botão de consulta do resumo.
+- Estados SCALE/CHAMPION aparecem como zero até que um fluxo explícito com evidências suficientes promova candidatos; o ranking inicial não promove automaticamente.
