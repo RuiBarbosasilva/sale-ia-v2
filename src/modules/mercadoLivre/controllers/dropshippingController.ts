@@ -426,3 +426,38 @@ export async function validateDropshippingSupplierCandidate(req: Request, res: R
     return res.status(500).json({ success: false, error: 'SUPPLIER_CANDIDATE_VALIDATION_FAILED' });
   }
 }
+
+export async function listDropshippingAlerts(req: Request, res: Response): Promise<Response> {
+  const rawLimit = req.query.limit === undefined ? 50 : Number(req.query.limit);
+  const status = typeof req.query.status === 'string' ? req.query.status.trim() : '';
+  if (!Number.isInteger(rawLimit) || rawLimit < 1 || rawLimit > 100 ||
+      (status && !['OPEN', 'RESOLVED'].includes(status))) {
+    return res.status(400).json({ success: false, error: 'INVALID_ALERT_FILTER' });
+  }
+  try {
+    const alerts = await prisma.dropshippingAlert.findMany({
+      where: status ? { status } : undefined,
+      take: rawLimit,
+      orderBy: { createdAt: 'desc' },
+    });
+    return res.json({ success: true, count: alerts.length, alerts });
+  } catch {
+    return res.status(500).json({ success: false, error: 'DROPSHIPPING_ALERTS_ERROR' });
+  }
+}
+
+export async function resolveDropshippingAlert(req: Request, res: Response): Promise<Response> {
+  const id = typeof req.params.id === 'string' ? req.params.id.trim() : '';
+  if (!id || id.length > 100) return res.status(400).json({ success: false, error: 'INVALID_ALERT_ID' });
+  try {
+    const existing = await prisma.dropshippingAlert.findUnique({ where: { id } });
+    if (!existing) return res.status(404).json({ success: false, error: 'DROPSHIPPING_ALERT_NOT_FOUND' });
+    const alert = await prisma.dropshippingAlert.update({
+      where: { id },
+      data: { status: 'RESOLVED', resolvedAt: new Date() },
+    });
+    return res.json({ success: true, alert });
+  } catch {
+    return res.status(500).json({ success: false, error: 'DROPSHIPPING_ALERT_RESOLVE_ERROR' });
+  }
+}
