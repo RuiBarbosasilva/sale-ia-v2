@@ -33,6 +33,7 @@ import {
   upsertDropshippingResearchWatch,
   listDropshippingResearchWatches,
   updateDropshippingResearchWatch,
+  listDropshippingSupplierValidationHistory,
 } from '../controllers/dropshippingController';
 import { mercadoLivreAdminGuard } from '../middleware/adminGuard';
 
@@ -66,6 +67,7 @@ router.patch('/dropshipping/research/watches/:id', updateDropshippingResearchWat
 router.get('/dropshipping/research/snapshots', listDropshippingSnapshots);
 router.get('/dropshipping/research/price-history/:itemId', getDropshippingPriceHistory);
 router.get('/dropshipping/suppliers/candidates', listDropshippingSupplierCandidates);
+router.get('/dropshipping/suppliers/candidates/:id/validations', listDropshippingSupplierValidationHistory);
 router.post('/dropshipping/suppliers/candidates/:id/validate', validateDropshippingSupplierCandidate);
 router.get('/dropshipping/alerts', listDropshippingAlerts);
 router.post('/dropshipping/alerts/:id/resolve', resolveDropshippingAlert);

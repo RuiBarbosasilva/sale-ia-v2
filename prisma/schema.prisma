@@ -1636,6 +1636,23 @@ model DropshippingSupplierCandidate {
   @@index([name])
 
   productCandidates DropshippingProductCandidate[]
+  validationHistory DropshippingSupplierValidation[]
+}
+
+model DropshippingSupplierValidation {
+  id                  String   @id @default(uuid())
+  supplierCandidateId String
+  supplierCandidate   DropshippingSupplierCandidate @relation(fields: [supplierCandidateId], references: [id], onDelete: Cascade)
+  validationStatus    String
+  reliabilityScore    Float
+  signals             String
+  evidence            String
+  blockers            String
+  passedChecks        String
+  createdAt           DateTime @default(now())
+
+  @@index([supplierCandidateId, createdAt])
+  @@index([validationStatus, createdAt])
 }
 
 model DropshippingAlert {

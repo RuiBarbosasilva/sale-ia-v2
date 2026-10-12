@@ -125,3 +125,10 @@ O laboratório inclui checklist de revalidação para fornecedores já cadastrad
 - O worker processa até três consultas vencidas por ciclo, grava execuções/snapshots e cria alertas de variação de preço/estoque.
 - Para iniciar no servidor, configure `DROPSHIPPING_AUTORESEARCH_ENABLED=true`; o ciclo padrão é 60 segundos e pode ser ajustado por `DROPSHIPPING_AUTORESEARCH_TICK_MS`.
 - A automação consulta apenas a API pública do Mercado Livre. Não pesquisa fornecedores automaticamente, não compra, não publica anúncios e não integra a Shopee.
+
+
+## Auditoria de validações de fornecedores
+
+- Cada revalidação grava um registro imutável em `DropshippingSupplierValidation` na mesma transação da atualização do candidato.
+- `GET /api/mercadolivre/dropshipping/suppliers/candidates/:id/validations` retorna sinais, evidências, bloqueios, checks aprovados, score e timestamp das avaliações anteriores.
+- A revalidação exige ao menos uma evidência válida. A trilha registra o que o operador informou, mas não verifica automaticamente a veracidade dos documentos.
