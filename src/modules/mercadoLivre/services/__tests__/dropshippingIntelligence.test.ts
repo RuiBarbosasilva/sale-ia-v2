@@ -93,4 +93,15 @@ describe('Dropshipping Intelligence decision engine', () => {
     expect(result.estimatedProfit).toBeCloseTo(31, 2);
   });
 
+
+  test('rejects combined percentage rates at or above 100%', () => {
+    const result = calculateMargin({
+      salePrice: 100, supplierCost: 10, marketplaceFeeRatePct: 70,
+      fixedMarketplaceFee: 0, shippingCost: 0, taxRatePct: 25,
+      returnReserveRatePct: 5,
+    });
+    expect(result.valid).toBe(false);
+    expect(result.reasons[0]).toContain('inferior a 100%');
+  });
+
 });
