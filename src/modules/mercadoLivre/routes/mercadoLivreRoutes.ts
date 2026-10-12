@@ -25,6 +25,7 @@ import {
   listDropshippingAlerts,
   resolveDropshippingAlert,
   getDropshippingPriceHistory,
+  listDropshippingProductCandidates,
 } from '../controllers/dropshippingController';
 import { mercadoLivreAdminGuard } from '../middleware/adminGuard';
 
@@ -59,6 +60,7 @@ router.get('/dropshipping/alerts', listDropshippingAlerts);
 router.post('/dropshipping/alerts/:id/resolve', resolveDropshippingAlert);
 router.post('/dropshipping/assess-supplier-candidate', assessDropshippingSupplierCandidate);
 router.post('/dropshipping/assess-product-candidate', assessDropshippingProductCandidate);
+router.get('/dropshipping/products/candidates', listDropshippingProductCandidates);
 router.post('/dropshipping/calculate-margin', calculateDropshippingMargin);
 router.post('/dropshipping/score-supplier', evaluateDropshippingSupplier);
 router.post('/dropshipping/score-product', evaluateDropshippingProduct);
