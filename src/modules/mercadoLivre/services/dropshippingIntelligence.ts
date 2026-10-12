@@ -173,6 +173,17 @@ export function calculateMargin(input: ProductEconomics): MarginResult {
 
   const variableRate = (input.marketplaceFeeRatePct + input.taxRatePct +
     (input.returnReserveRatePct ?? 0)) / 100;
+  if (variableRate >= 1) {
+    return {
+      valid: false,
+      grossRevenue: round2(input.salePrice),
+      totalCosts: 0,
+      estimatedProfit: 0,
+      marginPct: 0,
+      breakEvenPrice: 0,
+      reasons: ['A soma das taxas percentuais deve ser inferior a 100% para calcular um ponto de equilíbrio finito.'],
+    };
+  }
   const fixedCosts = input.supplierCost + input.fixedMarketplaceFee +
     input.shippingCost + (input.packagingCost ?? 0) + (input.otherVariableCosts ?? 0);
   const profit = input.salePrice * (1 - variableRate) - fixedCosts;
