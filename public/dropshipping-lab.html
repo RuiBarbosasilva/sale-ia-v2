@@ -97,6 +97,15 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
   "unresolvedComplaints": 0,
   "evidence": []
 }</textarea><div class="buttonrow"><button id="validateSupplierButton">Salvar e validar fornecedor</button></div><pre id="supplierValidationOutput">Resultado da validação aparecerá aqui.</pre></section>
+<section class="panel wide"><h2>Reavaliar produto para teste/escala/campeão</h2><p>Exige margem positiva salva, fornecedor VALIDATED e pelo menos duas coletas com vendas informadas. O sistema calcula as vendas incrementais entre snapshots.</p><label for="productEvaluationId">ID do produto candidato</label><input id="productEvaluationId" placeholder="UUID do produto salvo"><label for="productEvaluationJson">Sinais de risco/concorrência (JSON)</label><textarea id="productEvaluationJson" rows="9">{
+  "supplierCandidateId": "",
+  "competitionScore": 50,
+  "listingQualityScore": 50,
+  "deliveryRiskScore": 30,
+  "returnRiskScore": 30,
+  "prohibitedOrRestricted": false,
+  "brandOrAuthenticityConcern": false
+}</textarea><div class="buttonrow"><button id="evaluateProductButton">Reavaliar produto</button></div><pre id="productEvaluationOutput">O veredito e os bloqueios aparecerão aqui.</pre></section>
 <section class="panel wide"><h2>Limites operacionais</h2><p>Esta interface executa os endpoints de cálculo e triagem. Pesquisa real, persistência de resultados, conexão com fornecedores, pedidos automáticos, publicação de anúncios e adaptador Shopee precisam de integração própria e validação.</p><div class="notice">Nunca coloque tokens do Mercado Livre ou senhas de fornecedores nos campos de evidência. Não use dados inventados como vendas, reputação ou validação de fornecedor.</div></section>
 </div><div class="foot">Sale-IA V2 · Dropshipping Intelligence · Ações de escrita/publicação não são executadas por esta página.</div>
 </main>
@@ -133,6 +142,14 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
    run('marginButton','marginOutput',()=>call('/dropshipping/calculate-margin','POST',payload));
  });
  $('importProductsButton').addEventListener('click',()=>run('importProductsButton','historyOutput',()=>call('/dropshipping/research/import-latest','POST')));
+ $('evaluateProductButton').addEventListener('click',()=>run('evaluateProductButton','productEvaluationOutput',()=>{
+   const id=$('productEvaluationId').value.trim();
+   if(!id) throw new Error('Informe o ID do produto candidato.');
+   let payload;
+   try { payload=JSON.parse($('productEvaluationJson').value); }
+   catch { throw new Error('JSON de avaliação inválido.'); }
+   return call('/dropshipping/products/candidates/'+encodeURIComponent(id)+'/evaluate','POST',payload);
+ }));
  $('validateSupplierButton').addEventListener('click',()=>run('validateSupplierButton','supplierValidationOutput',()=>{
    const id=$('supplierValidationId').value.trim();
    if(!id) throw new Error('Informe o ID do fornecedor.');
