@@ -20,6 +20,7 @@ import {
   searchDropshippingMarketplace,
   listDropshippingResearchRuns,
   listDropshippingSnapshots,
+  listDropshippingSupplierCandidates,
 } from '../controllers/dropshippingController';
 import { mercadoLivreAdminGuard } from '../middleware/adminGuard';
 
@@ -47,6 +48,7 @@ router.get('/dropshipping/rules', getDropshippingRules);
 router.get('/dropshipping/research/marketplace', searchDropshippingMarketplace);
 router.get('/dropshipping/research/runs', listDropshippingResearchRuns);
 router.get('/dropshipping/research/snapshots', listDropshippingSnapshots);
+router.get('/dropshipping/suppliers/candidates', listDropshippingSupplierCandidates);
 router.post('/dropshipping/assess-supplier-candidate', assessDropshippingSupplierCandidate);
 router.post('/dropshipping/assess-product-candidate', assessDropshippingProductCandidate);
 router.post('/dropshipping/calculate-margin', calculateDropshippingMargin);
