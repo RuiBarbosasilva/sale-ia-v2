@@ -170,3 +170,6 @@ Ao registrar novamente uma oferta para o mesmo produto/fornecedor/SKU, o sistema
 
 
 A comparação de custo usa o custo posto (produto + frete do fornecedor), para detectar alterações em qualquer um desses componentes. Quedas de estoque de 50% ou mais também geram alerta INFO; estoque zerado gera WARNING.
+
+
+- `POST /api/mercadolivre/dropshipping/research/watches/bootstrap` cria/reativa oito pesquisas iniciais de hipóteses de organização e acessórios para análise de catálogo. Elas são termos de pesquisa, não recomendações de compra nem campeões validados.
