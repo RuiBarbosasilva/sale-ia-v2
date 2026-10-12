@@ -88,3 +88,11 @@ Cada pesquisa compara anúncios com a última captura salva do mesmo item:
 - Estoque observado zerado gera WARNING; queda de estoque de 50% ou mais gera INFO.
 - Alertas abertos do mesmo tipo/item são atualizados em vez de duplicados em coletas sequenciais.
 - Alertas usam somente snapshots observados pelo Sale-IA e não garantem que o anúncio ou estoque do fornecedor permaneça igual entre coletas.
+
+
+## Recalcular margem de um candidato existente
+
+- `PATCH /api/mercadolivre/dropshipping/products/candidates/:id/economics` atualiza os custos e recalcula lucro, margem e preço de equilíbrio.
+- Lucro não positivo mantém o candidato em `REJECT`, adiciona bloqueio e abre/atualiza alerta `PRODUCT_MARGIN`.
+- Ao corrigir os custos e obter lucro positivo, o bloqueio de margem é removido e o alerta aberto é resolvido; outros bloqueios continuam ativos.
+- O laboratório permite editar a economia usando o ID do candidato exibido no ranking.
