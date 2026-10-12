@@ -190,3 +190,35 @@ export function assessProductCandidate(candidate: ProductCandidate): {
     warnings,
   };
 }
+
+
+/**
+ * A supplier signal cannot count as evidenced merely because a request body says
+ * it is true. Each positive validation signal needs a matching, well-formed
+ * evidence record with reasonable confidence and source provenance.
+ */
+export function assessSupplierValidationEvidence(
+  signals: Record<string, unknown>,
+  evidence: EvidenceRecord[],
+  minimumConfidencePct = 70,
+): string[] {
+  const requiredFields = [
+    'hasCnpjOrLegalIdentity', 'hasPublicContact', 'hasWrittenDropshippingPolicy',
+    'confirmsStockSync', 'providesInvoice', 'providesTracking',
+    'hasClearReturnPolicy', 'hasVerifiableReputation', 'sampleOrderPassed',
+  ];
+  const blockers: string[] = [];
+  for (const field of requiredFields) {
+    if (signals[field] !== true) continue;
+    const supported = evidence.some((record) => {
+      if (record.field !== field || record.value !== true ||
+          record.confidencePct < minimumConfidencePct || validateEvidence(record).length > 0) return false;
+      if (record.sourceKind === 'MANUAL_VERIFICATION') {
+        return typeof record.notes === 'string' && record.notes.trim().length >= 10;
+      }
+      return typeof record.sourceUrl === 'string' && /^https?:\/\//i.test(record.sourceUrl);
+    });
+    if (!supported) blockers.push('Evidência verificável ausente para: ' + field);
+  }
+  return blockers;
+}
