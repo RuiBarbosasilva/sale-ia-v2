@@ -136,3 +136,12 @@ O laboratório inclui checklist de revalidação para fornecedores já cadastrad
 
 - `GET /api/mercadolivre/dropshipping/research/scheduler-status` informa se a automação está habilitada no processo atual, intervalo do worker, consultas ativas/vencidas e status recentes.
 - Erros de execução do ciclo são capturados para evitar rejeições não tratadas no processo do servidor.
+
+
+## Ofertas de fornecedor ligadas ao produto
+
+- `POST /api/mercadolivre/dropshipping/products/candidates/:id/supplier-offers` registra uma oferta específica de um fornecedor validado para um anúncio do Mercado Livre.
+- O registro guarda SKU, URL, custo unitário, frete do fornecedor, estoque observado e evidências.
+- O custo posto é calculado como custo unitário + frete do fornecedor; o motor calcula lucro/margem com taxas de marketplace, frete do vendedor, impostos, embalagem e reservas informadas.
+- Margem não positiva marca a oferta como `REJECTED_MARGIN`, bloqueia o candidato e cria/atualiza alerta. Uma margem positiva ainda exige reavaliação do ciclo de vida para escala/campeão.
+- `GET /api/mercadolivre/dropshipping/products/candidates/:id/supplier-offers` lista ofertas vinculadas e o status do fornecedor.
