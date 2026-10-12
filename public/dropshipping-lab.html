@@ -30,7 +30,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
 <div><label>Embalagem (R$)</label><input name="packagingCost" type="number" min="0" step=".01" value="0"></div>
 <div><label>Reserva para devoluções (%)</label><input name="returnReserveRatePct" type="number" min="0" max="99.99" step=".01" value="2"></div>
 <div><label>Outros custos variáveis (R$)</label><input name="otherVariableCosts" type="number" min="0" step=".01" value="0"></div>
-</div><div class="buttonrow"><button type="submit">Calcular margem</button></div></form><pre id="marginOutput">Resultado aparecerá aqui.</pre></section>
+</div><div class="buttonrow"><button id="marginButton" type="submit">Calcular margem</button></div></form><pre id="marginOutput">Resultado aparecerá aqui.</pre></section>
 <section class="panel"><h2>Score de fornecedor</h2><p>Use somente fatos verificados. Identidade legal, nota fiscal e pedido-teste são críticos.</p>
 <textarea id="supplierJson" spellcheck="false">{
   "hasCnpjOrLegalIdentity": false,
@@ -103,7 +103,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
    event.preventDefault();
    const values=Object.fromEntries(new FormData(event.currentTarget).entries());
    const payload={}; for(const [key,value] of Object.entries(values)) if(value!=='') payload[key]=Number(value);
-   run('marginForm','marginOutput',()=>call('/dropshipping/calculate-margin','POST',payload));
+   run('marginButton','marginOutput',()=>call('/dropshipping/calculate-margin','POST',payload));
  });
  $('supplierButton').addEventListener('click',()=>run('supplierButton','supplierOutput',()=>call('/dropshipping/score-supplier','POST',JSON.parse($('supplierJson').value))));
  $('productButton').addEventListener('click',()=>run('productButton','productOutput',()=>call('/dropshipping/score-product','POST',JSON.parse($('productJson').value))));
