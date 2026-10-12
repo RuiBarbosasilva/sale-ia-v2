@@ -117,7 +117,7 @@ describe('Dropshipping Intelligence decision engine', () => {
     expect(result.verdict).toBe('TEST');
     expect(result.blockers).toHaveLength(0);
     expect(result.reasons).toContain('Ainda não está liberado para escala; completar a janela mínima de observação.');
-  });    expect(result.verdict).toBe('REJECT');
   });
 });
+
 
