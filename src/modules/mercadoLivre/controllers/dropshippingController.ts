@@ -12,6 +12,24 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
+
+function hasValidEvidenceShape(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  const sourceKinds = [
+    'SUPPLIER_OFFICIAL_CATALOG', 'MARKETPLACE_OFFICIAL_API',
+    'LICENSED_RESEARCH_PROVIDER', 'MANUAL_VERIFICATION',
+  ];
+  return typeof value.sourceName === 'string' &&
+    typeof value.sourceKind === 'string' && sourceKinds.includes(value.sourceKind) &&
+    typeof value.collectedAt === 'string' &&
+    typeof value.field === 'string' &&
+    ['string', 'number', 'boolean'].includes(typeof value.value) &&
+    typeof value.confidencePct === 'number' && Number.isFinite(value.confidencePct) &&
+    (value.sourceUrl === undefined || typeof value.sourceUrl === 'string') &&
+    (value.observedAt === undefined || typeof value.observedAt === 'string') &&
+    (value.notes === undefined || typeof value.notes === 'string');
+}
+
 function numericFieldsPresent(value: Record<string, unknown>, fields: string[]): boolean {
   return fields.every((field) => typeof value[field] === 'number' && Number.isFinite(value[field] as number));
 }
@@ -132,7 +150,8 @@ import {
 export function assessDropshippingSupplierCandidate(req: Request, res: Response): Response {
   if (!isObject(req.body) || typeof req.body.name !== 'string' ||
       typeof req.body.country !== 'string' || typeof req.body.shipsFromBrazil !== 'boolean' ||
-      typeof req.body.offersDropshipping !== 'boolean' || !Array.isArray(req.body.evidence)) {
+      typeof req.body.offersDropshipping !== 'boolean' || !Array.isArray(req.body.evidence) ||
+      !req.body.evidence.every(hasValidEvidenceShape)) {
     return res.status(400).json({ error: 'INVALID_SUPPLIER_CANDIDATE' });
   }
   const result = assessSupplierCandidate(req.body as unknown as SupplierCandidate);
@@ -143,7 +162,7 @@ export function assessDropshippingProductCandidate(req: Request, res: Response):
   if (!isObject(req.body) || typeof req.body.title !== 'string' ||
       typeof req.body.canonicalUrl !== 'string' ||
       !['MERCADOLIVRE', 'SHOPEE', 'OTHER'].includes(String(req.body.marketplace)) ||
-      !Array.isArray(req.body.evidence)) {
+      !Array.isArray(req.body.evidence) || !req.body.evidence.every(hasValidEvidenceShape)) {
     return res.status(400).json({ error: 'INVALID_PRODUCT_CANDIDATE' });
   }
   const result = assessProductCandidate(req.body as unknown as ProductCandidate);
