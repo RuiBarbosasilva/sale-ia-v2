@@ -83,7 +83,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
   "returnReserveRatePct": 3,
   "otherVariableCosts": 1
 }</textarea><div class="buttonrow"><button id="updateEconomicsButton">Calcular e salvar margem</button></div><pre id="economicsOutput">Resultado do cálculo de margem aparecerá aqui.</pre></section>
-<section class="panel wide"><h2>Validar fornecedor salvo</h2><p>Preencha apenas sinais verificados documentalmente. Marque pedido-teste aprovado somente após receber e testar um pedido real.</p><label for="supplierValidationId">ID do fornecedor candidato</label><input id="supplierValidationId" placeholder="UUID do fornecedor salvo"><label for="supplierValidationJson">Checklist de validação (JSON)</label><textarea id="supplierValidationJson" rows="12">{
+<section class="panel wide"><h2>Validar fornecedor salvo</h2><p>Preencha apenas sinais verificados documentalmente. Para cada sinal marcado como verdadeiro, anexe uma evidência com o mesmo nome em <code>field</code>, <code>value: true</code>, confiança mínima de 70 e URL HTTP(S) verificável. Para <code>MANUAL_VERIFICATION</code>, inclua nota detalhada (mínimo 10 caracteres). Pedido-teste aprovado somente após receber e testar um pedido real.</p><label for="supplierValidationId">ID do fornecedor candidato</label><input id="supplierValidationId" placeholder="UUID do fornecedor salvo"><label for="supplierValidationJson">Checklist de validação (JSON)</label><textarea id="supplierValidationJson" rows="12">{
   "hasCnpjOrLegalIdentity": false,
   "hasPublicContact": false,
   "hasWrittenDropshippingPolicy": false,
