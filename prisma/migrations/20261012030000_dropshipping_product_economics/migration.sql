@@ -1,0 +1,12 @@
+ALTER TABLE "DropshippingProductCandidate" ADD COLUMN "salePrice" REAL;
+ALTER TABLE "DropshippingProductCandidate" ADD COLUMN "supplierCost" REAL;
+ALTER TABLE "DropshippingProductCandidate" ADD COLUMN "marketplaceFeeRatePct" REAL;
+ALTER TABLE "DropshippingProductCandidate" ADD COLUMN "fixedMarketplaceFee" REAL;
+ALTER TABLE "DropshippingProductCandidate" ADD COLUMN "shippingCost" REAL;
+ALTER TABLE "DropshippingProductCandidate" ADD COLUMN "taxRatePct" REAL;
+ALTER TABLE "DropshippingProductCandidate" ADD COLUMN "packagingCost" REAL;
+ALTER TABLE "DropshippingProductCandidate" ADD COLUMN "returnReserveRatePct" REAL;
+ALTER TABLE "DropshippingProductCandidate" ADD COLUMN "otherVariableCosts" REAL;
+ALTER TABLE "DropshippingProductCandidate" ADD COLUMN "estimatedProfit" REAL;
+ALTER TABLE "DropshippingProductCandidate" ADD COLUMN "marginPct" REAL;
+ALTER TABLE "DropshippingProductCandidate" ADD COLUMN "breakEvenPrice" REAL;

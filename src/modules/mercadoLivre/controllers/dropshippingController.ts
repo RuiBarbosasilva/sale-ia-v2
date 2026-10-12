@@ -243,8 +243,30 @@ export async function assessDropshippingProductCandidate(req: Request, res: Resp
       ['fragile', 'hasSizeVariants'].some((key) => req.body[key] !== undefined && typeof req.body[key] !== 'boolean')) {
     return res.status(400).json({ error: 'INVALID_PRODUCT_METRICS' });
   }
+  let economics: ProductEconomics | null = null;
+  let marginResult: ReturnType<typeof calculateMargin> | null = null;
+  if (req.body.economics !== undefined) {
+    if (!isObject(req.body.economics)) return res.status(400).json({ error: 'INVALID_PRODUCT_ECONOMICS' });
+    const required = ['salePrice', 'supplierCost', 'marketplaceFeeRatePct', 'fixedMarketplaceFee', 'shippingCost', 'taxRatePct'];
+    const optional = ['packagingCost', 'returnReserveRatePct', 'otherVariableCosts'];
+    if (required.some((key) => typeof req.body.economics[key] !== 'number' ||
+        !Number.isFinite(req.body.economics[key] as number) || (req.body.economics[key] as number) < 0) ||
+        optional.some((key) => req.body.economics[key] !== undefined &&
+        (typeof req.body.economics[key] !== 'number' || !Number.isFinite(req.body.economics[key] as number) ||
+         (req.body.economics[key] as number) < 0))) {
+      return res.status(400).json({ error: 'INVALID_PRODUCT_ECONOMICS' });
+    }
+    economics = req.body.economics as unknown as ProductEconomics;
+    marginResult = calculateMargin(economics);
+    if (!marginResult.valid) return res.status(400).json({ error: 'INVALID_PRODUCT_ECONOMICS', reasons: marginResult.reasons });
+  }
   const result = assessProductCandidate(req.body as unknown as ProductCandidate);
-  const status = result.blockers.length ? 'REJECT' : result.suitabilityScore >= 60 ? 'TEST' : 'WATCH';
+  const blockers = [...result.blockers];
+  if (marginResult && marginResult.estimatedProfit <= 0) {
+    blockers.push('Margem estimada nula ou negativa; rever custos antes de testar.');
+  }
+  const candidateForTesting = result.candidateForTesting && (!marginResult || marginResult.estimatedProfit > 0);
+  const status = blockers.length ? 'REJECT' : result.suitabilityScore >= 60 ? 'TEST' : 'WATCH';
   try {
     const candidate = await prisma.dropshippingProductCandidate.create({
       data: {
@@ -253,6 +275,18 @@ export async function assessDropshippingProductCandidate(req: Request, res: Resp
         canonicalUrl: req.body.canonicalUrl.trim(),
         marketplace: req.body.marketplace as ProductCandidate['marketplace'],
         observedPrice: typeof req.body.observedPrice === 'number' ? req.body.observedPrice : null,
+        salePrice: economics?.salePrice ?? null,
+        supplierCost: economics?.supplierCost ?? null,
+        marketplaceFeeRatePct: economics?.marketplaceFeeRatePct ?? null,
+        fixedMarketplaceFee: economics?.fixedMarketplaceFee ?? null,
+        shippingCost: economics?.shippingCost ?? null,
+        taxRatePct: economics?.taxRatePct ?? null,
+        packagingCost: economics?.packagingCost ?? null,
+        returnReserveRatePct: economics?.returnReserveRatePct ?? null,
+        otherVariableCosts: economics?.otherVariableCosts ?? null,
+        estimatedProfit: marginResult?.estimatedProfit ?? null,
+        marginPct: marginResult?.marginPct ?? null,
+        breakEvenPrice: marginResult?.breakEvenPrice ?? null,
         observedSales: typeof req.body.observedSales === 'number' ? req.body.observedSales : null,
         observedReviews: typeof req.body.observedReviews === 'number' ? req.body.observedReviews : null,
         observedStock: typeof req.body.observedStock === 'number' ? req.body.observedStock : null,
@@ -261,18 +295,19 @@ export async function assessDropshippingProductCandidate(req: Request, res: Resp
         hasSizeVariants: typeof req.body.hasSizeVariants === 'boolean' ? req.body.hasSizeVariants : null,
         evidence: JSON.stringify(req.body.evidence),
         suitabilityScore: result.suitabilityScore,
-        candidateForTesting: result.candidateForTesting,
+        candidateForTesting,
         status,
-        blockers: JSON.stringify(result.blockers),
+        blockers: JSON.stringify(blockers),
         warnings: JSON.stringify(result.warnings),
       },
       select: { id: true, title: true, marketplace: true, suitabilityScore: true, status: true, createdAt: true },
     });
     return res.status(201).json({
       candidate,
-      result,
+      result: { ...result, candidateForTesting, blockers },
+      margin: marginResult,
       champion: false,
-      note: 'Candidato salvo. A pontuação é uma triagem; campeão exige vendas reais, margem positiva e fornecedor validado.',
+      note: 'Candidato salvo. Quando os custos são informados, margem nula ou negativa bloqueia o teste; campeão exige vendas reais, margem positiva e fornecedor validado.',
     });
   } catch {
     return res.status(500).json({ error: 'PRODUCT_CANDIDATE_SAVE_FAILED' });

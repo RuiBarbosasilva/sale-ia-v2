@@ -1659,6 +1659,18 @@ model DropshippingProductCandidate {
   canonicalUrl       String
   marketplace        String
   observedPrice      Float?
+  salePrice          Float?
+  supplierCost       Float?
+  marketplaceFeeRatePct Float?
+  fixedMarketplaceFee Float?
+  shippingCost       Float?
+  taxRatePct         Float?
+  packagingCost      Float?
+  returnReserveRatePct Float?
+  otherVariableCosts Float?
+  estimatedProfit    Float?
+  marginPct          Float?
+  breakEvenPrice     Float?
   observedSales      Int?
   observedReviews    Int?
   observedStock      Int?

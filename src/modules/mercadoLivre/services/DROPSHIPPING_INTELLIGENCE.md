@@ -64,3 +64,10 @@ Enviar o cabeçalho `x-mercado-livre-admin-key` (ou o cabeçalho alternativo ace
 - Estados iniciais: `REJECT` quando há bloqueios, `TEST` quando a triagem permite investigar, ou `WATCH` quando a evidência é insuficiente.
 - Nenhum registro é promovido automaticamente a `CHAMPION` ou `SCALE`: isso exige fluxo adicional com margem calculada, fornecedor validado e vendas reais observadas durante período suficiente.
 - Evidências e sinais recebidos são armazenados para auditoria; dados fornecidos manualmente não são tratados como prova independente.
+
+
+## Economia unitária persistente
+
+O payload de `POST /api/mercadolivre/dropshipping/assess-product-candidate` pode incluir `economics` com `salePrice`, `supplierCost`, `marketplaceFeeRatePct`, `fixedMarketplaceFee`, `shippingCost`, `taxRatePct` e, opcionalmente, `packagingCost`, `returnReserveRatePct`, `otherVariableCosts`.
+
+Quando informada, a economia é calculada pelo motor de margem compartilhado e ficam persistidos lucro estimado, margem percentual e preço de equilíbrio. Taxas inválidas são rejeitadas; lucro estimado nulo ou negativo bloqueia o teste do produto. Os valores continuam estimativas e dependem de taxas/fretes corretos.
