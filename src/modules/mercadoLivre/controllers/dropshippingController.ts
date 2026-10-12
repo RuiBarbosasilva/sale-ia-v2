@@ -1403,3 +1403,48 @@ export async function listDropshippingSupplierOffers(req: Request, res: Response
     return res.status(500).json({ success: false, error: 'SUPPLIER_OFFERS_LIST_ERROR' });
   }
 }
+
+export function getDropshippingProviderReadiness(_req: Request, res: Response): Response {
+  const mercadoLivreCredentials = [
+    'MERCADOLIVRE_APP_ID',
+    'MERCADOLIVRE_CLIENT_SECRET',
+    'MERCADOLIVRE_REDIRECT_URI',
+  ];
+  const shopeeCredentials = [
+    'SHOPEE_PARTNER_ID',
+    'SHOPEE_PARTNER_KEY',
+    'SHOPEE_SHOP_ID',
+    'SHOPEE_ACCESS_TOKEN',
+  ];
+  const configured = (keys: string[]) => keys.filter((key) =>
+    typeof process.env[key] === 'string' && process.env[key]!.trim().length > 0);
+  const mlConfigured = configured(mercadoLivreCredentials);
+  const shopeeConfigured = configured(shopeeCredentials);
+  return res.json({
+    success: true,
+    providers: {
+      mercadoLivre: {
+        publicCatalogResearch: 'AVAILABLE',
+        researchMode: 'READ_ONLY_PUBLIC_API',
+        oauthCredentialsConfigured: mlConfigured.length === mercadoLivreCredentials.length,
+        missingConfiguration: mercadoLivreCredentials.filter((key) => !mlConfigured.includes(key)),
+        automatedListingAndOrderFlow: 'REQUIRES_SEPARATE_APPROVAL_AND_ACCOUNT_CONFIGURATION',
+      },
+      shopee: {
+        integrationImplemented: false,
+        apiCredentialsConfigured: shopeeConfigured.length === shopeeCredentials.length,
+        configuredCredentialCount: shopeeConfigured.length,
+        requiredCredentialCount: shopeeCredentials.length,
+        missingConfiguration: shopeeCredentials.filter((key) => !shopeeConfigured.includes(key)),
+        status: 'OFFICIAL_ADAPTER_NOT_IMPLEMENTED',
+      },
+      suppliers: {
+        automatedExternalDiscovery: false,
+        manualCandidateReview: true,
+        evidenceBackedValidation: true,
+        note: 'O fluxo aceita candidatos e evidências; não declara que fornecedores externos foram pesquisados automaticamente.',
+      },
+    },
+    note: 'Somente presença das variáveis é verificada. Nenhum valor secreto é retornado e credenciais configuradas não significam que uma API foi testada.',
+  });
+}
