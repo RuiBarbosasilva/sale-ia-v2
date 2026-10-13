@@ -163,7 +163,7 @@ Manter `src/modules/mercadoLivre/` como implementação oficial. Não publicar u
 - [x] `npm run build` — aprovado no CI do commit `aa07ae759b689ea397ed64b75d3d8abb59820e56`.
 - [x] `npm test -- --runInBand --forceExit` — aprovado no CI do commit `aa07ae759b689ea397ed64b75d3d8abb59820e56`.
 - [x] `npm run guardian:verify` — aprovado no CI do commit `aa07ae759b689ea397ed64b75d3d8abb59820e56`.
-- [x] Workflow completo de CI concluído com sucesso no commit de código `aa07ae759b689ea397ed64b75d3d8abb59820e56`; execução no HEAD documental `357b49e22eca2914b66be6a209cb059c05dcd058` ainda estava em andamento na última consulta.
+- [x] Workflow completo de CI concluído com sucesso no commit de código `aa07ae759b689ea397ed64b75d3d8abb59820e56`; execuções acionadas por commits posteriores de documentação/configuração estavam pendentes na última consulta. Esses commits posteriores não alteraram o código de aplicação validado.
 - [x] PR draft #68 criado para revisão: https://github.com/RuiBarbosasilva/sale-ia-v2/pull/68. Não foi mesclado; aguardar CI do HEAD atual e teste runtime local.
 - [ ] Sincronizar e validar a cópia local sem descartar as alterações locais existentes.
 - [ ] Testar as rotas no servidor local: a API em `localhost:3000` estava desligada quando o usuário fez a tentativa anterior.
@@ -177,6 +177,6 @@ Manter `src/modules/mercadoLivre/` como implementação oficial. Não publicar u
 
 ### Resultado final observado e próximo bloqueio
 - CI completo aprovado no commit `aa07ae759b689ea397ed64b75d3d8abb59820e56`: check de codificação, validação/geração/migração Prisma, typecheck, build, testes e Guardian concluíram com sucesso.
-- Execuções subsequentes para o HEAD `357b49e22eca2914b66be6a209cb059c05dcd058` (inclui atualização do notebook/configuração) estavam em andamento no último polling; conferir antes de retirar o estado draft do PR.
+- Execuções subsequentes acionadas por atualizações do notebook/configuração estavam em andamento no último polling; conferir o status do PR antes de retirar o estado draft.
 - PR #68: https://github.com/RuiBarbosasilva/sale-ia-v2/pull/68.
 - Bloqueio externo restante: iniciar a API local e testar os endpoints reais. A tentativa anterior em `http://localhost:3000/api/health` falhou por servidor desligado; nenhum endpoint foi declarado validado em runtime.
