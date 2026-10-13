@@ -65,7 +65,7 @@ function safeSourceUrl(value: unknown): string | null {
 export async function fetchMercadoLivreTrends(categoryInput: unknown, accessToken: string): Promise<MercadoLivreTrendsResult> {
   const categoryId = safeCategoryId(categoryInput);
   const token = typeof accessToken === 'string' ? accessToken.trim() : '';
-  if (!token || token.length > 4096 || /[\\r\\n]/.test(token)) {
+  if (!token || token.length > 4096 || /[\r\n]/.test(token)) {
     throw new Error('MERCADO_LIVRE_AUTH_REQUIRED');
   }
   const endpoint = categoryId
