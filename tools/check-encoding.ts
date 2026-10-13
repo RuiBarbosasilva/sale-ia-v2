@@ -19,7 +19,12 @@ function walk(dir: string) {
     if (entry.isDirectory()) walk(full);
     else if (EXTENSIONS.has(path.extname(entry.name).toLowerCase()) && !GENERATED_SQL.has(entry.name)) {
       try {
-        decoder.decode(fs.readFileSync(full));
+        const text = decoder.decode(fs.readFileSync(full));
+        const relative = path.relative(ROOT, full).replace(/\\\\/g, '/');
+        // UTF-8 validity alone does not detect mojibake. Scan public UI assets too.
+        if (relative.startsWith('public/') && /(?:ÃƒÂ.|Ã‚.|â€[™œž“”‘’–—]|â€¦|âš™|ðŸ.)/.test(text)) {
+          bad.push(relative + ' [MOJIBAKE_SUSPECTED]');
+        }
       } catch {
         bad.push(path.relative(ROOT, full) + ' [INVALID_UTF8]');
       }
