@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
 import { fetchMercadoLivreTrends } from '../services/mercadoLivreTrendsAdapter';
+import { tokenService } from '../auth/tokenService';
 import {
   assessProductCandidate,
   assessSupplierCandidate,
@@ -16,6 +17,16 @@ import {
   type ProductSignals,
   type SupplierSignals,
 } from '../services/dropshippingIntelligence';
+
+async function getActiveMercadoLivreAccessToken(): Promise<string> {
+  const account = await prisma.mercadoLivreAccount.findFirst({
+    where: { isActive: true, siteId: 'MLB' },
+    orderBy: { updatedAt: 'desc' },
+    select: { id: true },
+  });
+  if (!account) throw new Error('MERCADO_LIVRE_AUTH_REQUIRED');
+  return tokenService.getValidToken(account.id);
+}
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -1561,7 +1572,8 @@ export async function collectDropshippingTrends(req: Request, res: Response): Pr
     ? (req.body as Record<string, unknown>).categoryId
     : undefined;
   try {
-    const result = await fetchMercadoLivreTrends(categoryInput);
+    const accessToken = await getActiveMercadoLivreAccessToken();
+    const result = await fetchMercadoLivreTrends(categoryInput, accessToken);
     if (result.trends.length > 0) {
       await prisma.$transaction(result.trends.map((trend) =>
         prisma.dropshippingTrendSnapshot.create({
@@ -1590,11 +1602,13 @@ export async function collectDropshippingTrends(req: Request, res: Response): Pr
       note: 'Palavras-chave observadas na fonte oficial; ranking de tendência não é previsão nem comprovação de vendas.',
     });
   } catch (error) {
-    const status = error && typeof error === 'object' && 'status' in error &&
-      typeof (error as { status?: unknown }).status === 'number'
-      ? (error as { status: number }).status
-      : 502;
     const message = error instanceof Error ? error.message : 'MERCADOLIVRE_TRENDS_COLLECTION_FAILED';
+    const status = message === 'MERCADO_LIVRE_AUTH_REQUIRED' ? 401
+      : message === 'MERCADO_LIVRE_OAUTH_NOT_CONFIGURED' ? 503
+      : error && typeof error === 'object' && 'status' in error &&
+        typeof (error as { status?: unknown }).status === 'number'
+        ? (error as { status: number }).status
+        : 502;
     return res.status(status).json({
       success: false,
       error: message,
