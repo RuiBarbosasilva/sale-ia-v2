@@ -1,8 +1,10 @@
 import { prisma } from '../lib/prisma';
 import { searchMercadoLivreCatalog } from './mercadoLivreResearchAdapter';
+import { fetchMercadoLivreTrends } from './mercadoLivreTrendsAdapter';
 
 let timer: ReturnType<typeof setInterval> | null = null;
 let running = false;
+let lastTrendAttemptAt = 0;
 
 async function upsertAlert(input: {
   type: string;
@@ -127,6 +129,68 @@ async function collectWatch(query: string): Promise<void> {
   }
 }
 
+
+async function collectTrendsIfDue(): Promise<void> {
+  const configured = Number(process.env.DROPSHIPPING_TRENDS_INTERVAL_MS || 86_400_000);
+  const intervalMs = Number.isFinite(configured)
+    ? Math.max(3_600_000, Math.min(configured, 604_800_000))
+    : 86_400_000;
+  const nowMs = Date.now();
+  if (nowMs - lastTrendAttemptAt < intervalMs) return;
+
+  try {
+    const latest = await prisma.dropshippingTrendSnapshot.findFirst({
+      orderBy: { observedAt: 'desc' },
+      select: { observedAt: true },
+    });
+    if (latest && nowMs - latest.observedAt.getTime() < intervalMs) {
+      lastTrendAttemptAt = nowMs;
+      return;
+    }
+  } catch {
+    // The collection below will surface persistence/schema problems as an alert.
+  }
+
+  // Throttle attempts even when the provider is unavailable or changes its response.
+  lastTrendAttemptAt = nowMs;
+  try {
+    const result = await fetchMercadoLivreTrends();
+    if (!result.trends.length) {
+      await upsertAlert({
+        type: 'TRENDS_COLLECTION_EMPTY',
+        title: 'Coleta de tendências sem palavras-chave reconhecidas',
+        severity: 'WARNING',
+        message: 'A fonte oficial respondeu, mas não retornou registros reconhecíveis para persistência.',
+        payload: JSON.stringify({ endpoint: result.endpoint, collectedAt: result.collectedAt, warnings: result.warnings }),
+      });
+      return;
+    }
+    await prisma.$transaction(result.trends.map((trend) =>
+      prisma.dropshippingTrendSnapshot.create({
+        data: {
+          keyword: trend.keyword,
+          source: trend.source,
+          sourceUrl: trend.sourceUrl,
+          categoryId: trend.categoryId,
+          rank: trend.rank,
+          observedAt: new Date(trend.observedAt),
+          rawData: trend.rawData,
+        },
+        select: { id: true },
+      })
+    ));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'MERCADOLIVRE_TRENDS_COLLECTION_FAILED';
+    await upsertAlert({
+      type: 'TRENDS_COLLECTION_FAILED',
+      title: 'Falha na coleta de tendências do Mercado Livre',
+      severity: 'WARNING',
+      message: message.slice(0, 400),
+      payload: JSON.stringify({ attemptedAt: new Date(nowMs).toISOString() }),
+    });
+  }
+}
+
 export async function runDueDropshippingResearchWatches(): Promise<void> {
   if (running) return;
   running = true;
@@ -142,6 +206,7 @@ export async function runDueDropshippingResearchWatches(): Promise<void> {
       select: { query: true },
     });
     for (const watch of due) await collectWatch(watch.query);
+    await collectTrendsIfDue();
   } finally {
     running = false;
   }
