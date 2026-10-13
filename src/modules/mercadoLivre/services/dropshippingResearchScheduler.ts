@@ -1,10 +1,21 @@
 import { prisma } from '../lib/prisma';
 import { searchMercadoLivreCatalog } from './mercadoLivreResearchAdapter';
 import { fetchMercadoLivreTrends } from './mercadoLivreTrendsAdapter';
+import { tokenService } from '../auth/tokenService';
 
 let timer: ReturnType<typeof setInterval> | null = null;
 let running = false;
 let lastTrendAttemptAt = 0;
+
+async function getActiveMercadoLivreAccessToken(): Promise<string> {
+  const account = await prisma.mercadoLivreAccount.findFirst({
+    where: { isActive: true, siteId: 'MLB' },
+    orderBy: { updatedAt: 'desc' },
+    select: { id: true },
+  });
+  if (!account) throw new Error('MERCADO_LIVRE_AUTH_REQUIRED');
+  return tokenService.getValidToken(account.id);
+}
 
 async function upsertAlert(input: {
   type: string;
@@ -159,7 +170,8 @@ async function collectTrendsIfDue(): Promise<void> {
   // Throttle attempts even when the provider is unavailable or changes its response.
   lastTrendAttemptAt = nowMs;
   try {
-    const result = await fetchMercadoLivreTrends();
+    const accessToken = await getActiveMercadoLivreAccessToken();
+    const result = await fetchMercadoLivreTrends(undefined, accessToken);
     if (!result.trends.length) {
       await upsertAlert({
         type: 'TRENDS_COLLECTION_EMPTY',
