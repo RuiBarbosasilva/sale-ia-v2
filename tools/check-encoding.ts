@@ -20,7 +20,7 @@ function walk(dir: string) {
     else if (EXTENSIONS.has(path.extname(entry.name).toLowerCase()) && !GENERATED_SQL.has(entry.name)) {
       try {
         const text = decoder.decode(fs.readFileSync(full));
-        const relative = path.relative(ROOT, full).replace(/\\\\/g, '/');
+        const relative = path.relative(ROOT, full).split(path.sep).join('/');
         // UTF-8 validity alone does not detect mojibake. Scan public UI assets too.
         if (relative.startsWith('public/') && /(?:ÃƒÂ.|Ã‚.|â€[™œž“”‘’–—]|â€¦|âš™|ðŸ.)/.test(text)) {
           bad.push(relative + ' [MOJIBAKE_SUSPECTED]');
