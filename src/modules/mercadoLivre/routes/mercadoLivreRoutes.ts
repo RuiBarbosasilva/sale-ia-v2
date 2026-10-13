@@ -20,6 +20,8 @@ import {
   searchDropshippingMarketplace,
   listDropshippingResearchRuns,
   listDropshippingSnapshots,
+  collectDropshippingTrends,
+  listDropshippingTrendSnapshots,
   listDropshippingSupplierCandidates,
   validateDropshippingSupplierCandidate,
   listDropshippingAlerts,
@@ -73,6 +75,8 @@ router.post('/dropshipping/research/watches/bootstrap', bootstrapDropshippingRes
 router.post('/dropshipping/research/watches', upsertDropshippingResearchWatch);
 router.patch('/dropshipping/research/watches/:id', updateDropshippingResearchWatch);
 router.get('/dropshipping/research/snapshots', listDropshippingSnapshots);
+router.get('/dropshipping/research/trends', listDropshippingTrendSnapshots);
+router.post('/dropshipping/research/trends/collect', collectDropshippingTrends);
 router.get('/dropshipping/research/price-history/:itemId', getDropshippingPriceHistory);
 router.get('/dropshipping/suppliers/candidates', listDropshippingSupplierCandidates);
 router.get('/dropshipping/suppliers/candidates/:id/validations', listDropshippingSupplierValidationHistory);
