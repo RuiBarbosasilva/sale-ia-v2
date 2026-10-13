@@ -12,7 +12,8 @@ import {
   obterDashboard
 } from './afiliados-ia.controller';
 import { debugCriativo } from './debug-criativo.controller';
-import { mercadoLivreAdminGuard } from '../mercadoLivre/middleware/adminGuard';
+import { timingSafeSecret } from '../../middlewares/security';
+import { Request, Response, NextFunction } from 'express';
 import { generateTikTokAffiliatePackage } from './services/tiktokAffiliateContent.service';
 
 export const afiliadosIaRoutes = Router();
@@ -33,7 +34,16 @@ afiliadosIaRoutes.get('/oportunidades', relatorioOportunidades);
 afiliadosIaRoutes.get('/dashboard', obterDashboard);
 
 // Gera um rascunho revisável para TikTok; não publica conteúdo externamente.
-afiliadosIaRoutes.post('/tiktok/roteiro', mercadoLivreAdminGuard, (req, res) => {
+function tiktokAffiliateAdminGuard(req: Request, res: Response, next: NextFunction) {
+  const expected = process.env.AFFILIATE_ADMIN_KEY || process.env.SALE_IA_ADMIN_KEY;
+  const provided = req.header('x-affiliate-admin-key') || req.header('x-sale-ia-admin-key');
+  if (!timingSafeSecret(expected, provided)) {
+    return res.status(401).json({ success: false, error: 'AFFILIATE_ADMIN_UNAUTHORIZED' });
+  }
+  return next();
+}
+
+afiliadosIaRoutes.post('/tiktok/roteiro', tiktokAffiliateAdminGuard, (req, res) => {
   try {
     const content = generateTikTokAffiliatePackage(req.body || {});
     return res.status(200).json({ success: true, content });
