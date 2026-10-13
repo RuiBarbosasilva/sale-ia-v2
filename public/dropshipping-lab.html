@@ -125,6 +125,17 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
   "evidence": []
 }</textarea><div class="buttonrow"><button id="saveOfferButton">Vincular oferta e calcular margem</button><button id="listOffersButton" class="secondary">Ver ofertas vinculadas</button></div><pre id="offerOutput">Ofertas vinculadas e margem calculada aparecerão aqui.</pre></section>
 <section class="panel wide"><h2>Limites operacionais</h2><p>Esta interface executa os endpoints de cálculo e triagem. Pesquisa real, persistência de resultados, conexão com fornecedores, pedidos automáticos, publicação de anúncios e adaptador Shopee precisam de integração própria e validação.</p><div class="notice">Nunca coloque tokens do Mercado Livre ou senhas de fornecedores nos campos de evidência. Não use dados inventados como vendas, reputação ou validação de fornecedor.</div></section>
+
+<section class="panel wide">
+<h2>Tendências oficiais do Mercado Livre</h2>
+<p>Coleta palavras-chave da API oficial e salva snapshots com data, fonte e posição. Tendência não equivale a volume de vendas comprovado.</p>
+<div class="fields">
+<div><label for="trendCategoryId">Categoria (opcional, código MLB)</label><input id="trendCategoryId" maxlength="20" placeholder="Ex.: MLB1051"></div>
+<div><label for="trendLimit">Histórico a listar</label><select id="trendLimit"><option value="25">25 registros</option><option value="50" selected>50 registros</option><option value="100">100 registros</option></select></div>
+</div>
+<div class="buttonrow"><button id="collectTrendsButton">Pesquisar tendências agora</button><button class="secondary" id="listTrendsButton">Consultar histórico</button></div>
+<pre id="trendsOutput">Use “Pesquisar tendências agora” para consultar a fonte oficial.</pre>
+</section>
 </div><div class="foot">Sale-IA V2 · Dropshipping Intelligence · Ações de escrita/publicação não são executadas por esta página.</div>
 </main>
 <script>
@@ -224,6 +235,19 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
  $('providersStatusButton').addEventListener('click',()=>run('providersStatusButton','historyOutput',()=>call('/dropshipping/providers/status')));
  $('dashboardButton').addEventListener('click',()=>run('dashboardButton','historyOutput',()=>call('/dropshipping/dashboard/summary')));
  $('runsButton').addEventListener('click',()=>run('runsButton','historyOutput',()=>call('/dropshipping/research/runs?limit=50')));
+
+ $('collectTrendsButton').addEventListener('click',()=>run('collectTrendsButton','trendsOutput',()=>{
+   const categoryId=$('trendCategoryId').value.trim();
+   if(categoryId && !/^MLB\\d{1,12}$/.test(categoryId)) throw new Error('Use um código de categoria válido, como MLB1051.');
+   return call('/dropshipping/research/trends/collect','POST',categoryId?{categoryId}:{});
+ }));
+ $('listTrendsButton').addEventListener('click',()=>run('listTrendsButton','trendsOutput',()=>{
+   const categoryId=$('trendCategoryId').value.trim();
+   const query=new URLSearchParams({limit:$('trendLimit').value});
+   if(categoryId) query.set('categoryId',categoryId);
+   return call('/dropshipping/research/trends?'+query.toString());
+ }));
+
  $('snapshotsButton').addEventListener('click',()=>run('snapshotsButton','historyOutput',()=>call('/dropshipping/research/snapshots?limit=100')));
  $('suppliersButton').addEventListener('click',()=>run('suppliersButton','historyOutput',()=>call('/dropshipping/suppliers/candidates?limit=100')));
  $('researchForm').addEventListener('submit',event=>{
