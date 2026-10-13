@@ -62,14 +62,18 @@ function safeSourceUrl(value: unknown): string | null {
   }
 }
 
-export async function fetchMercadoLivreTrends(categoryInput?: unknown): Promise<MercadoLivreTrendsResult> {
+export async function fetchMercadoLivreTrends(categoryInput: unknown, accessToken: string): Promise<MercadoLivreTrendsResult> {
   const categoryId = safeCategoryId(categoryInput);
+  const token = typeof accessToken === 'string' ? accessToken.trim() : '';
+  if (!token || token.length > 4096 || /[\\r\\n]/.test(token)) {
+    throw new Error('MERCADO_LIVRE_AUTH_REQUIRED');
+  }
   const endpoint = categoryId
     ? `https://api.mercadolibre.com/trends/MLB/${categoryId}`
     : 'https://api.mercadolibre.com/trends/MLB';
   const response = await fetch(endpoint, {
     method: 'GET',
-    headers: { accept: 'application/json', 'user-agent': 'Sale-IA-V2-TrendsResearch/1.0' },
+    headers: { accept: 'application/json', authorization: `Bearer ${token}`, 'user-agent': 'Sale-IA-V2-TrendsResearch/1.0' },
     signal: AbortSignal.timeout(10000),
   });
 
