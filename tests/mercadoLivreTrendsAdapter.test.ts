@@ -86,8 +86,8 @@ describe('fetchMercadoLivreTrends', () => {
 
   it('rejects access tokens containing line breaks before making a network request', async () => {
     const fetchSpy = jest.spyOn(globalThis, 'fetch');
-    await expect(fetchMercadoLivreTrends(undefined, 'token\\nforged')).rejects.toThrow('MERCADO_LIVRE_AUTH_REQUIRED');
-    await expect(fetchMercadoLivreTrends(undefined, 'token\\rforged')).rejects.toThrow('MERCADO_LIVRE_AUTH_REQUIRED');
+    await expect(fetchMercadoLivreTrends(undefined, 'token\nforged')).rejects.toThrow('MERCADO_LIVRE_AUTH_REQUIRED');
+    await expect(fetchMercadoLivreTrends(undefined, 'token\rforged')).rejects.toThrow('MERCADO_LIVRE_AUTH_REQUIRED');
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
