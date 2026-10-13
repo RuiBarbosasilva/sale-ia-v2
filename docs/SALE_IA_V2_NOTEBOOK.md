@@ -110,3 +110,28 @@ O usuário executou `git status --short` e `git diff`. Os itens abaixo ainda est
 
 **Importante:** `public/site-factory.html` no GitHub já contém `<meta charset="UTF-8">` e não apresentou mojibake na inspeção remota. O defeito de caracteres identificado estava no JavaScript do dashboard RB Factory. Se a interface continuar exibindo caracteres estranhos depois de sincronizar, fazer recarga forçada do navegador e conferir se o servidor está servindo a versão atual do arquivo, não uma cópia antiga em cache.
 
+
+## Continuidade da integração Dropshipping — 12/10/2026, etapa 1
+
+### Estado confirmado nesta sessão
+- [x] Criada branch isolada `fix/dropshipping-hunter-integration-20261012` baseada em `main`; a branch principal não foi alterada diretamente.
+- [x] Reconsultados no GitHub o schema Prisma, as rotas/controller oficiais de Mercado Livre, o adaptador de pesquisa e o scheduler.
+- [x] A estrutura oficial já possui endpoints de pesquisa, candidatos de produtos/fornecedores, evidências de validação, ofertas, alertas, margem, watches e estado do scheduler.
+- [x] Na cópia local, o usuário executou `npm run typecheck`: `prisma generate` concluiu e `tsc --noEmit` terminou sem erro aparente (saída apresentada sem código de falha).
+- [x] Correções locais em `src/controllers/dropshippingController.ts` e `src/routes/dropshippingRoutes.ts`: adiciona `getSupplier`, corrige o handler de `/suppliers/:id` e remove duplicação de `/suppliers/validated`. Backups locais criados com sufixo `20261012-222117`.
+- [ ] A API local não estava executando durante a verificação: `http://localhost:3000/api/health` retornou “Impossível conectar-se ao servidor remoto”. Nenhuma rota foi validada em runtime nesta etapa.
+- [ ] Os arquivos locais novos/modificados de Dropshipping ainda não foram comprovadamente publicados no GitHub.
+- [ ] Não foi executada migração nem build/teste de integração nesta etapa.
+
+### Decisão arquitetural
+Manter `src/modules/mercadoLivre/` como implementação oficial. Não publicar uma segunda família de rotas/controller em `src/controllers/dropshippingController.ts` e `src/routes/dropshippingRoutes.ts` sem revisar integralmente todos os arquivos locais e comprovar que não duplica regras, auth, persistência ou jobs. A correção local de rotas não significa que o GitHub foi alterado.
+
+### Próximos passos obrigatórios
+1. Corrigir e complementar a implementação oficial no branch de trabalho, com alterações pequenas e sem substituir Afiliados, RB Factory ou Factory Ebook IA.
+2. Rever se o schema atual tem os modelos necessários e se existe migration correspondente antes de adicionar qualquer modelo novo.
+3. Validar erros de semântica/API, autenticação administrativa, persistência, scheduler e comportamento quando o provedor externo falha.
+4. Executar validação estática/build/testes que o ambiente permitir; runtime local só será marcado quando a API estiver ligada.
+5. Atualizar este caderno novamente com paths, commits, comandos e resultados reais.
+6. Só depois de revisão, considerar PR para `main`; não fazer merge nem afirmar conclusão sem evidência.
+
+**Limite de evidência:** os resultados de typecheck e o estado da API acima vêm da saída apresentada pelo usuário. As leituras de arquivos do GitHub confirmam a presença da arquitetura oficial, mas não comprovam testes executados no GitHub nem disponibilidade operacional de credenciais/provedores.
