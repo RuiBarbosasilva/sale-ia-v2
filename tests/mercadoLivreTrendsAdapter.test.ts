@@ -84,6 +84,13 @@ describe('fetchMercadoLivreTrends', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
+  it('rejects access tokens containing line breaks before making a network request', async () => {
+    const fetchSpy = jest.spyOn(globalThis, 'fetch');
+    await expect(fetchMercadoLivreTrends(undefined, 'token\\nforged')).rejects.toThrow('MERCADO_LIVRE_AUTH_REQUIRED');
+    await expect(fetchMercadoLivreTrends(undefined, 'token\\rforged')).rejects.toThrow('MERCADO_LIVRE_AUTH_REQUIRED');
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
   it('rejects malformed category IDs before making a network request', async () => {
     const fetchSpy = jest.spyOn(globalThis, 'fetch');
     await expect(fetchMercadoLivreTrends('../bad', 'test-access-token')).rejects.toThrow('INVALID_MERCADOLIVRE_CATEGORY_ID');
