@@ -17,11 +17,11 @@ describe('fetchMercadoLivreTrends', () => {
       ],
     } as Response);
 
-    const result = await fetchMercadoLivreTrends();
+    const result = await fetchMercadoLivreTrends(undefined, 'test-access-token');
 
     expect(fetchSpy).toHaveBeenCalledWith(
       'https://api.mercadolibre.com/trends/MLB',
-      expect.objectContaining({ method: 'GET' })
+      expect.objectContaining({ method: 'GET', headers: expect.objectContaining({ authorization: 'Bearer test-access-token' }) })
     );
     expect(result.trends).toHaveLength(2);
     expect(result.trends[0].keyword).toBe('organizador de cabos');
@@ -39,7 +39,7 @@ describe('fetchMercadoLivreTrends', () => {
       json: async () => ({ trends: [{ query: '  suporte   articulado ' }] }),
     } as Response);
 
-    const result = await fetchMercadoLivreTrends('MLB1051');
+    const result = await fetchMercadoLivreTrends('MLB1051', 'test-access-token');
 
     expect(fetchSpy).toHaveBeenCalledWith(
       'https://api.mercadolibre.com/trends/MLB/MLB1051',
@@ -56,7 +56,7 @@ describe('fetchMercadoLivreTrends', () => {
       json: async () => ({ items: [{ keyword: 'não usar como tendência' }] }),
     } as Response);
 
-    const result = await fetchMercadoLivreTrends();
+    const result = await fetchMercadoLivreTrends(undefined, 'test-access-token');
 
     expect(result.trends).toEqual([]);
     expect(result.warnings).toContain(
@@ -71,16 +71,22 @@ describe('fetchMercadoLivreTrends', () => {
       json: async () => ({}),
     } as Response);
 
-    await expect(fetchMercadoLivreTrends()).rejects.toMatchObject({
+    await expect(fetchMercadoLivreTrends(undefined, 'test-access-token')).rejects.toMatchObject({
       message: 'MERCADOLIVRE_TRENDS_UNAVAILABLE',
       status: 502,
       providerStatus: 503,
     });
   });
 
+  it('requires an OAuth access token before making a network request', async () => {
+    const fetchSpy = jest.spyOn(globalThis, 'fetch');
+    await expect(fetchMercadoLivreTrends(undefined, '')).rejects.toThrow('MERCADO_LIVRE_AUTH_REQUIRED');
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
   it('rejects malformed category IDs before making a network request', async () => {
     const fetchSpy = jest.spyOn(globalThis, 'fetch');
-    await expect(fetchMercadoLivreTrends('../bad')).rejects.toThrow('INVALID_MERCADOLIVRE_CATEGORY_ID');
+    await expect(fetchMercadoLivreTrends('../bad', 'test-access-token')).rejects.toThrow('INVALID_MERCADOLIVRE_CATEGORY_ID');
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
@@ -91,6 +97,6 @@ describe('fetchMercadoLivreTrends', () => {
       json: async () => ({}),
     } as Response);
 
-    await expect(fetchMercadoLivreTrends()).rejects.toThrow('MERCADOLIVRE_TRENDS_RATE_LIMITED');
+    await expect(fetchMercadoLivreTrends(undefined, 'test-access-token')).rejects.toThrow('MERCADOLIVRE_TRENDS_RATE_LIMITED');
   });
 });
