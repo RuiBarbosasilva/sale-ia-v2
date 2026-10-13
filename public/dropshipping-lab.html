@@ -238,7 +238,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
 
  $('collectTrendsButton').addEventListener('click',()=>run('collectTrendsButton','trendsOutput',()=>{
    const categoryId=$('trendCategoryId').value.trim();
-   if(categoryId && !/^MLB\\d{1,12}$/.test(categoryId)) throw new Error('Use um código de categoria válido, como MLB1051.');
+   if(categoryId && !/^MLB\d{1,12}$/.test(categoryId)) throw new Error('Use um código de categoria válido, como MLB1051.');
    return call('/dropshipping/research/trends/collect','POST',categoryId?{categoryId}:{});
  }));
  $('listTrendsButton').addEventListener('click',()=>run('listTrendsButton','trendsOutput',()=>{
