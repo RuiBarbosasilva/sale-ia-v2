@@ -35,9 +35,9 @@ afiliadosIaRoutes.get('/dashboard', obterDashboard);
 
 // Gera um rascunho revisável para TikTok; não publica conteúdo externamente.
 function tiktokAffiliateAdminGuard(req: Request, res: Response, next: NextFunction) {
-  const expected = process.env.AFFILIATE_ADMIN_KEY || process.env.SALE_IA_ADMIN_KEY;
-  const provided = req.header('x-affiliate-admin-key') || req.header('x-sale-ia-admin-key');
-  if (!timingSafeSecret(expected, provided)) {
+  const affiliateKeyValid = timingSafeSecret(process.env.AFFILIATE_ADMIN_KEY, req.header('x-affiliate-admin-key'));
+  const saleIaKeyValid = timingSafeSecret(process.env.SALE_IA_ADMIN_KEY, req.header('x-sale-ia-admin-key'));
+  if (!affiliateKeyValid && !saleIaKeyValid) {
     return res.status(401).json({ success: false, error: 'AFFILIATE_ADMIN_UNAUTHORIZED' });
   }
   return next();
