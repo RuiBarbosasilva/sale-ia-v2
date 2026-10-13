@@ -12,7 +12,7 @@ import {
   obterDashboard
 } from './afiliados-ia.controller';
 import { debugCriativo } from './debug-criativo.controller';
-import { timingSafeSecret } from '../../middlewares/security';
+import { rateLimit, timingSafeSecret } from '../../middlewares/security';
 import { Request, Response, NextFunction } from 'express';
 import { generateTikTokAffiliatePackage } from './services/tiktokAffiliateContent.service';
 
@@ -43,7 +43,7 @@ function tiktokAffiliateAdminGuard(req: Request, res: Response, next: NextFuncti
   return next();
 }
 
-afiliadosIaRoutes.post('/tiktok/roteiro', tiktokAffiliateAdminGuard, (req, res) => {
+afiliadosIaRoutes.post('/tiktok/roteiro', rateLimit({ name: 'tiktok-affiliate-admin', windowMs: 5 * 60 * 1000, limit: 20 }), tiktokAffiliateAdminGuard, (req, res) => {
   try {
     const content = generateTikTokAffiliatePackage(req.body || {});
     return res.status(200).json({ success: true, content });
