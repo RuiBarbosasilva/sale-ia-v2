@@ -139,7 +139,12 @@ async function collectTrendsIfDue(): Promise<void> {
   if (nowMs - lastTrendAttemptAt < intervalMs) return;
 
   try {
+    // Category-specific manual collections must not suppress the scheduled global snapshot.
     const latest = await prisma.dropshippingTrendSnapshot.findFirst({
+      where: {
+        source: 'MERCADOLIVRE_OFFICIAL_TRENDS_API',
+        categoryId: null,
+      },
       orderBy: { observedAt: 'desc' },
       select: { observedAt: true },
     });
