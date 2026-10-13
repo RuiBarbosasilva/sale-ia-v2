@@ -208,7 +208,7 @@
           '<td>' + escapeHtml(p.segment || p.category || '—') + '</td>' +
           '<td>' + escapeHtml(p.websiteOpportunityScore == null ? (p.websiteScore == null ? (p.score == null ? '—' : p.score) : p.websiteScore) : p.websiteOpportunityScore) + '</td>' +
           '<td><span class="badge">' + escapeHtml(p.websiteOpportunityStatus || p.status || '—') + '</span></td>' +
-          '<td><button class="btn" data-rb-action="process-prospect" data-id="' + escapeHtml(p.id) + '" style="padding:6px 8px;font-size:9px">âš™ Processar</button></td>' +
+          '<td><button class="btn" data-rb-action="process-prospect" data-id="' + escapeHtml(p.id) + '" style="padding:6px 8px;font-size:9px">⚙️ Processar</button></td>' +
           '</tr>'
         ).join('') +
         '</tbody></table>';
@@ -277,7 +277,7 @@
               '<td>' + escapeHtml(p.segment || p.category || '—') + '</td>' +
               '<td>' + escapeHtml(p.websiteScore == null ? (p.score == null ? '—' : p.score) : p.websiteScore) + '</td>' +
               '<td><span class="badge">' + escapeHtml(p.websiteOpportunityStatus || p.status || '—') + '</span></td>' +
-              '<td><button class="btn" data-rb-action="process-prospect" data-id="' + escapeHtml(p.id) + '" style="padding:6px 8px;font-size:9px">âš™ Processar</button></td></tr>'
+              '<td><button class="btn" data-rb-action="process-prospect" data-id="' + escapeHtml(p.id) + '" style="padding:6px 8px;font-size:9px">⚙️ Processar</button></td></tr>'
             ).join('') +
             '</tbody></table>'
           : '<div class="empty">Nenhum prospect encontrado.</div>';
