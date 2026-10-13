@@ -160,10 +160,10 @@ Manter `src/modules/mercadoLivre/` como implementação oficial. Não publicar u
 - [x] `npx prisma generate` — aprovado.
 - [x] `npx prisma migrate deploy` — aprovado, incluindo a nova migração.
 - [x] `npm run typecheck` — aprovado no workflow observado.
-- [ ] `npm run build` — estava em execução no último estado consultado.
-- [ ] `npm test -- --runInBand --forceExit` — aguardando execução no workflow.
-- [ ] `npm run guardian:verify` — aguardando execução no workflow.
-- [x] Workflow completo de CI concluído com sucesso no commit de código \`aa07ae759b689ea397ed64b75d3d8abb59820e56\`; execução no HEAD documental \`357b49e22eca2914b66be6a209cb059c05dcd058\` ainda estava em andamento na última consulta.
+- [x] `npm run build` — aprovado no CI do commit `aa07ae759b689ea397ed64b75d3d8abb59820e56`.
+- [x] `npm test -- --runInBand --forceExit` — aprovado no CI do commit `aa07ae759b689ea397ed64b75d3d8abb59820e56`.
+- [x] `npm run guardian:verify` — aprovado no CI do commit `aa07ae759b689ea397ed64b75d3d8abb59820e56`.
+- [x] Workflow completo de CI concluído com sucesso no commit de código `aa07ae759b689ea397ed64b75d3d8abb59820e56`; execução no HEAD documental `357b49e22eca2914b66be6a209cb059c05dcd058` ainda estava em andamento na última consulta.
 - [x] PR draft #68 criado para revisão: https://github.com/RuiBarbosasilva/sale-ia-v2/pull/68. Não foi mesclado; aguardar CI do HEAD atual e teste runtime local.
 - [ ] Sincronizar e validar a cópia local sem descartar as alterações locais existentes.
 - [ ] Testar as rotas no servidor local: a API em `localhost:3000` estava desligada quando o usuário fez a tentativa anterior.
