@@ -180,3 +180,14 @@ Manter `src/modules/mercadoLivre/` como implementação oficial. Não publicar u
 - Execuções subsequentes acionadas por atualizações do notebook/configuração estavam em andamento no último polling; conferir o status do PR antes de retirar o estado draft.
 - PR #68: https://github.com/RuiBarbosasilva/sale-ia-v2/pull/68.
 - Bloqueio externo restante: iniciar a API local e testar os endpoints reais. A tentativa anterior em `http://localhost:3000/api/health` falhou por servidor desligado; nenhum endpoint foi declarado validado em runtime.
+
+## Correção de caracteres corrompidos nos dashboards — 12/10/2026
+
+- [x] Corrigido `public/rb-factory-dashboard.js`: duas ocorrências de `âš™ Processar` substituídas pelo símbolo válido `⚙️ Processar`.
+- [x] Revisados os principais dashboards do branch: `public/index.html`, `public/dashboard/index.html`, `public/site-factory.html`, `public/site-factory-studio.html`, `public/rb-factory-commercial.html` e `public/rb-factory-maintenance.html`; não foram encontrados padrões comuns de mojibake nesses arquivos.
+- [x] Revisados os outros ativos públicos selecionados: `public/affiliates/index.html`, `public/dropshipping-lab.html`, `public/editorial/index.html`, `public/rb-factory-benchmark/index.html`, `public/rb-factory-template-library.html`, `public/sales/index.html`, `public/website-factory.html`, `public/app.js` e `public/app-v3.js`; nenhum padrão comum foi encontrado nesses arquivos.
+- [x] Reforçado `tools/check-encoding.ts`: além de validar UTF-8, agora detecta padrões comuns de mojibake nos arquivos públicos e falha com `[MOJIBAKE_SUSPECTED]`.
+- [ ] Executar `npm run check:encoding` no checkout local e no CI atualizado.
+- [ ] Aplicar o patch exato ao checkout local, com backup, preservando os demais arquivos modificados e não rastreados.
+- [ ] Fazer hard refresh do navegador após reiniciar o servidor, se necessário, para evitar cache do JavaScript antigo.
+- Não foram alterados os demais módulos nem foram sobrescritos arquivos locais.
