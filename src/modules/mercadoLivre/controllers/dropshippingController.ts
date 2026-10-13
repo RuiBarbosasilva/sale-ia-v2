@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
+import { fetchMercadoLivreTrends } from '../services/mercadoLivreTrendsAdapter';
 import {
   assessProductCandidate,
   assessSupplierCandidate,
@@ -1544,5 +1545,76 @@ export async function bootstrapDropshippingResearchWatches(req: Request, res: Re
     });
   } catch {
     return res.status(500).json({ success: false, error: 'DROPSHIPPING_STARTER_WATCHLIST_ERROR' });
+  }
+}
+
+
+/**
+ * Collects real trend keywords from the official Mercado Livre API and stores dated snapshots.
+ * This endpoint does not infer sales or mark any product as a champion.
+ */
+export async function collectDropshippingTrends(req: Request, res: Response): Promise<Response> {
+  const categoryInput = req.body && typeof req.body === 'object' && !Array.isArray(req.body)
+    ? (req.body as Record<string, unknown>).categoryId
+    : undefined;
+  try {
+    const result = await fetchMercadoLivreTrends(categoryInput);
+    if (result.trends.length > 0) {
+      await prisma.$transaction(result.trends.map((trend) =>
+        prisma.dropshippingTrendSnapshot.create({
+          data: {
+            keyword: trend.keyword,
+            source: trend.source,
+            sourceUrl: trend.sourceUrl,
+            categoryId: trend.categoryId,
+            rank: trend.rank,
+            observedAt: new Date(trend.observedAt),
+            rawData: trend.rawData,
+          },
+          select: { id: true },
+        })
+      ));
+    }
+    return res.status(200).json({
+      success: true,
+      source: result.source,
+      endpoint: result.endpoint,
+      categoryId: result.categoryId,
+      collectedAt: result.collectedAt,
+      count: result.trends.length,
+      warnings: result.warnings,
+      trends: result.trends.map(({ rawData: _rawData, ...trend }) => trend),
+      note: 'Palavras-chave observadas na fonte oficial; ranking de tendência não é previsão nem comprovação de vendas.',
+    });
+  } catch (error) {
+    const status = error && typeof error === 'object' && 'status' in error &&
+      typeof (error as { status?: unknown }).status === 'number'
+      ? (error as { status: number }).status
+      : 502;
+    const message = error instanceof Error ? error.message : 'MERCADOLIVRE_TRENDS_COLLECTION_FAILED';
+    return res.status(status).json({
+      success: false,
+      error: message,
+      note: 'Nenhum dado de tendência foi inventado. Verifique a disponibilidade/documentação do endpoint oficial.',
+    });
+  }
+}
+
+export async function listDropshippingTrendSnapshots(req: Request, res: Response): Promise<Response> {
+  const rawLimit = req.query.limit === undefined ? 50 : Number(req.query.limit);
+  const categoryId = typeof req.query.categoryId === 'string' ? req.query.categoryId.trim() : undefined;
+  if (!Number.isInteger(rawLimit) || rawLimit < 1 || rawLimit > 100 ||
+      (categoryId !== undefined && !/^MLB\\d{1,12}$/.test(categoryId))) {
+    return res.status(400).json({ success: false, error: 'INVALID_TREND_FILTER' });
+  }
+  try {
+    const trends = await prisma.dropshippingTrendSnapshot.findMany({
+      where: categoryId ? { categoryId } : undefined,
+      orderBy: [{ observedAt: 'desc' }, { rank: 'asc' }],
+      take: rawLimit,
+    });
+    return res.json({ success: true, count: trends.length, trends });
+  } catch {
+    return res.status(500).json({ success: false, error: 'DROPSHIPPING_TRENDS_LIST_ERROR' });
   }
 }
