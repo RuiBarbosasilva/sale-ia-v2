@@ -135,3 +135,42 @@ Manter `src/modules/mercadoLivre/` como implementação oficial. Não publicar u
 6. Só depois de revisão, considerar PR para `main`; não fazer merge nem afirmar conclusão sem evidência.
 
 **Limite de evidência:** os resultados de typecheck e o estado da API acima vêm da saída apresentada pelo usuário. As leituras de arquivos do GitHub confirmam a presença da arquitetura oficial, mas não comprovam testes executados no GitHub nem disponibilidade operacional de credenciais/provedores.
+
+## Implementação no GitHub — Hunter de tendências — 12/10/2026
+
+### Branch e alterações realizadas
+- Branch isolada: `fix/dropshipping-hunter-integration-20261012`.
+- Commit inicial do registro: `381d989ffc7cf2b4dd62b299ff33508c2744b441`.
+- Último commit de código observado nesta etapa: `aa07ae759b689ea397ed64b75d3d8abb59820e56`; atualização complementar de configuração: `52d6e85f7e18d065d5e08093b03b5c6f79298f70`.
+- [x] Ajustado `DropshippingCatalogSnapshot.sellerId` para opcional no Prisma, alinhando o schema ao SQL da migração existente, que já permitia NULL.
+- [x] Criado o modelo `DropshippingTrendSnapshot` e migração incremental `20261012080000_dropshipping_trend_snapshots`.
+- [x] Criado `src/modules/mercadoLivre/services/mercadoLivreTrendsAdapter.ts`: consulta somente leitura à API oficial, valida categoria, deduplica palavras-chave, registra fonte/data e não inventa vendas.
+- [x] Criados endpoints administrativos protegidos: `GET /api/mercadolivre/dropshipping/research/trends` e `POST /api/mercadolivre/dropshipping/research/trends/collect`.
+- [x] Integrada a coleta automática ao scheduler existente, respeitando `DROPSHIPPING_AUTORESEARCH_ENABLED=true`; intervalo `DROPSHIPPING_TRENDS_INTERVAL_MS` com padrão de 24 horas e limites de 1 hora a 7 dias.
+- [x] Adicionado status de prontidão de pesquisa de tendências.
+- [x] Adicionado painel de coleta/histórico ao `public/dropshipping-lab.html`.
+- [x] Documentado `DROPSHIPPING_TRENDS_INTERVAL_MS` em `.env.example`.
+- [x] Criados testes unitários de normalização, deduplicação, validação de categoria e resposta HTTP 429 em `tests/mercadoLivreTrendsAdapter.test.ts`.
+- [x] Mantida a arquitetura oficial `src/modules/mercadoLivre/`; não foi criada uma segunda família de rotas genéricas. Nenhuma alteração foi feita em Afiliados IA, RB Factory ou Factory Ebook IA nesta branch.
+
+### CI do GitHub — evidências vistas nesta etapa
+- [x] `npm ci` — aprovado no workflow observado.
+- [x] `npm run check:encoding` — aprovado.
+- [x] `npx prisma validate` — aprovado.
+- [x] `npx prisma generate` — aprovado.
+- [x] `npx prisma migrate deploy` — aprovado, incluindo a nova migração.
+- [x] `npm run typecheck` — aprovado no workflow observado.
+- [ ] `npm run build` — estava em execução no último estado consultado.
+- [ ] `npm test -- --runInBand --forceExit` — aguardando execução no workflow.
+- [ ] `npm run guardian:verify` — aguardando execução no workflow.
+- [ ] Verificar o resultado final do workflow após os passos pendentes.
+- [ ] Abrir/validar Pull Request e decidir merge após CI completo.
+- [ ] Sincronizar e validar a cópia local sem descartar as alterações locais existentes.
+- [ ] Testar as rotas no servidor local: a API em `localhost:3000` estava desligada quando o usuário fez a tentativa anterior.
+
+### Limites e comportamento operacional
+- A coleta de tendências só inicia automaticamente quando `DROPSHIPPING_AUTORESEARCH_ENABLED=true`; por padrão continua desligada.
+- A fonte oficial pode mudar formato, aplicar limite de requisições ou indisponibilizar endpoints. O adapter registra alertas quando a coleta falha ou não reconhece registros; isso não é prova de que houve coleta real bem-sucedida.
+- A lista de tendências é sinal de pesquisa, não prova de vendas nem indicação garantida de produto campeão.
+- O código foi enviado para branch de trabalho; **não foi feito merge em `main`**.
+- O patch local com controllers/rotas genéricas e os arquivos não rastreados do usuário não foram copiados automaticamente: seus conteúdos integrais ainda precisam ser revistos localmente antes de decidir se alguma parte deve ser aproveitada.
