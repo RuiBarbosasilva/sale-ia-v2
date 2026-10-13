@@ -10,7 +10,7 @@ O SALE-IA V2 pode gerar um **rascunho revisável** de vídeo de afiliado para Ti
 
 Autenticação: envie o cabeçalho administrativo já usado pelo projeto:
 - `x-affiliate-admin-key: <AFFILIATE_ADMIN_KEY>`, ou
-- `x-mercado-livre-admin-key: <MERCADO_LIVRE_ADMIN_KEY>`.
+- `x-sale-ia-admin-key: <SALE_IA_ADMIN_KEY>`.
 
 Exemplo de corpo:
 
