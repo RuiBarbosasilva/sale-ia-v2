@@ -1756,3 +1756,19 @@ model DropshippingResearchWatch {
   @@index([enabled, nextRunAt])
   @@index([lastStatus, updatedAt])
 }
+
+
+model DropshippingTrendSnapshot {
+  id          String   @id @default(uuid())
+  keyword     String
+  source      String   @default("MERCADOLIVRE_OFFICIAL_TRENDS_API")
+  sourceUrl   String?
+  categoryId  String?
+  rank        Int?
+  observedAt  DateTime @default(now())
+  rawData     String?
+
+  @@index([keyword, observedAt])
+  @@index([source, observedAt])
+  @@index([categoryId, observedAt])
+}
