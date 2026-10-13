@@ -1604,7 +1604,7 @@ export async function listDropshippingTrendSnapshots(req: Request, res: Response
   const rawLimit = req.query.limit === undefined ? 50 : Number(req.query.limit);
   const categoryId = typeof req.query.categoryId === 'string' ? req.query.categoryId.trim() : undefined;
   if (!Number.isInteger(rawLimit) || rawLimit < 1 || rawLimit > 100 ||
-      (categoryId !== undefined && !/^MLB\\d{1,12}$/.test(categoryId))) {
+      (categoryId !== undefined && !/^MLB\d{1,12}$/.test(categoryId))) {
     return res.status(400).json({ success: false, error: 'INVALID_TREND_FILTER' });
   }
   try {
