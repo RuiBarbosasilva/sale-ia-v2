@@ -1483,6 +1483,9 @@ export function getDropshippingProviderReadiness(_req: Request, res: Response): 
     providers: {
       mercadoLivre: {
         publicCatalogResearch: 'AVAILABLE',
+        officialTrendsResearch: 'IMPLEMENTED_READ_ONLY',
+        automaticTrendsCollectionEnabled: String(process.env.DROPSHIPPING_AUTORESEARCH_ENABLED || '').toLowerCase() === 'true',
+        trendsIntervalMs: Number(process.env.DROPSHIPPING_TRENDS_INTERVAL_MS || 86_400_000),
         researchMode: 'READ_ONLY_PUBLIC_API',
         oauthCredentialsConfigured: mlConfigured.length === mercadoLivreCredentials.length,
         missingConfiguration: mercadoLivreCredentials.filter((key) => !mlConfigured.includes(key)),
