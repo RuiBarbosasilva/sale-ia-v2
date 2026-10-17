@@ -1,0 +1,12 @@
+{
+  "name": "Bar da XV — Gestão",
+  "short_name": "Bar da XV",
+  "description": "Controle pessoal de vendas, caixa e estoque",
+  "lang": "pt-BR",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f4ed",
+  "theme_color": "#123c2d",
+  "icons": []
+}
