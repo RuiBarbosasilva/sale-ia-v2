@@ -75,6 +75,7 @@ async function publishTikTok(post: SocialPost, account: SocialAccount, token: st
   try { postMetadata = JSON.parse(post.metadata || '{}'); } catch {}
   if (!postMetadata.tiktokConsentAt) throw new Error('TikTok exige consentimento explícito por publicação. Agende o post marcando a confirmação de envio.');
   const media = parseMedia(post);
+  const postText = post.caption + (post.hashtags && !post.caption.includes(post.hashtags) ? '\\n' + post.hashtags : '');
   if (!media.length) throw new Error('TikTok exige pelo menos uma URL HTTPS pública de mídia.');
   media.forEach(assertPublicHttps);
   const info = await requestJson('https://open.tiktokapis.com/v2/post/publish/creator_info/query/', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: '{}' });
@@ -84,11 +85,11 @@ async function publishTikTok(post: SocialPost, account: SocialAccount, token: st
   const isPhoto = post.contentType.toUpperCase() === 'IMAGE' || post.contentType.toUpperCase() === 'PHOTO' || post.contentType.toUpperCase() === 'CAROUSEL';
   const endpoint = isPhoto ? 'https://open.tiktokapis.com/v2/post/publish/content/init/' : 'https://open.tiktokapis.com/v2/post/publish/video/init/';
   const payload = isPhoto ? {
-    post_info: { title: post.caption.slice(0, 2200), description: post.caption, privacy_level: privacy, ...(postMetadata.aiGeneratedMedia === true ? { is_aigc: true } : {}) },
+    post_info: { title: postText.slice(0, 2200), description: postText, privacy_level: privacy, ...(postMetadata.aiGeneratedMedia === true ? { is_aigc: true } : {}) },
     source_info: { source: 'PULL_FROM_URL', photo_images: media.slice(0, 10), photo_cover_index: 0 },
     post_mode: 'DIRECT_POST', media_type: 'PHOTO'
   } : {
-    post_info: { title: post.caption.slice(0, 2200), privacy_level: privacy, ...(postMetadata.aiGeneratedMedia === true ? { is_aigc: true } : {}) },
+    post_info: { title: postText.slice(0, 2200), privacy_level: privacy, ...(postMetadata.aiGeneratedMedia === true ? { is_aigc: true } : {}) },
     source_info: { source: 'PULL_FROM_URL', video_url: media[0] }
   };
   const result = await requestJson(endpoint, { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(payload) });
