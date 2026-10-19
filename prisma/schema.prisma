@@ -1775,6 +1775,7 @@ model SocialWorkspace {
 
   accounts SocialAccount[]
   posts    SocialPost[]
+  automationRuns SocialAutomationRun[]
 
   @@index([active, updatedAt])
 }
@@ -1857,4 +1858,20 @@ model SocialOAuthState {
 
   @@index([expiresAt])
   @@index([accountId, createdAt])
+}
+
+model SocialAutomationRun {
+  id          String   @id @default(uuid())
+  workspaceId String
+  workspace   SocialWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  runDate     String
+  status      String   @default("RUNNING")
+  startedAt   DateTime @default(now())
+  finishedAt  DateTime?
+  postCount   Int      @default(0)
+  error       String?
+  createdAt   DateTime @default(now())
+
+  @@unique([workspaceId, runDate])
+  @@index([status, startedAt])
 }
