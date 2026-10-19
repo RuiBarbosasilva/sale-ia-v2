@@ -28,8 +28,13 @@ Todas as rotas requerem `x-sale-ia-admin-key: <SALE_IA_ADMIN_KEY>`.
 - `GET /api/social-media-factory/workspaces`
 - `POST /api/social-media-factory/workspaces` — `{ "name": "...", "niche": "...", "timezone": "America/Sao_Paulo" }`
 - `GET /api/social-media-factory/workspaces/:workspaceId/posts?limit=50`
+- `GET /api/social-media-factory/workspaces/:workspaceId/automation-runs?limit=20`
 - `POST /api/social-media-factory/workspaces/:workspaceId/posts`
 - `POST /api/social-media-factory/workspaces/:workspaceId/generate-batch` — `{ "topic": "...", "count": 5, "instructions": "..." }`
+- `PATCH /api/social-media-factory/workspaces/:workspaceId/automation` — configura `autoGenerateEnabled`, `autoPublishEnabled`, `contentTheme`, `brandVoice` e `contentInstructions`.
+- `POST /api/social-media-factory/accounts/:accountId/connect` — inicia OAuth.
+- `POST /api/social-media-factory/accounts/:accountId/select` — seleciona conta de destino.
+- `PATCH /api/social-media-factory/accounts/:accountId/target` — define localização Google Business ou board Pinterest.
 - `POST /api/social-media-factory/posts/:postId/schedule` — `{ "scheduledFor": "ISO-8601 futuro" }`
 - `POST /api/social-media-factory/posts/:postId/publish`
 - `GET /api/social-media-factory/posts/:postId/logs`
