@@ -48,7 +48,7 @@ Configure no ambiente do servidor (nunca commitar segredos):
 - TikTok: `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET`.
 - Google/YouTube: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
 - Pinterest: `PINTEREST_APP_ID`, `PINTEREST_APP_SECRET`.
-- Para gerar mídia: `PUBLIC_BASE_URL` (origem HTTPS pública), `SOCIAL_MEDIA_IMAGE_GENERATION_ENABLED=true`, `SOCIAL_MEDIA_IMAGE_MODEL` (padrão `gpt-image-1`), `SOCIAL_MEDIA_VIDEO_GENERATION_ENABLED=true`, `FFMPEG_PATH` se ffmpeg não estiver no PATH.
+- Para gerar mídia: `PUBLIC_BASE_URL` (origem HTTPS pública), `SOCIAL_MEDIA_IMAGE_GENERATION_ENABLED=true`, `SOCIAL_MEDIA_IMAGE_MODEL` (padrão `gpt-image-1`), `SOCIAL_MEDIA_VIDEO_GENERATION_ENABLED=true`, `FFMPEG_PATH` se ffmpeg não estiver no PATH. Isso consome créditos de imagem da API: a automação tenta gerar até 5 imagens e 5 vídeos por projeto/dia.
 - `SOCIAL_MEDIA_MEDIA_ALLOWED_HOSTS`: lista separada por vírgulas dos hosts autorizados para baixar mídia de upload do YouTube. Deve incluir o hostname de `PUBLIC_BASE_URL`.
 - Opcional: `SOCIAL_MEDIA_YOUTUBE_MAX_BYTES` (padrão 500 MiB), `SOCIAL_MEDIA_YOUTUBE_PRIVACY` (padrão `private`), `SOCIAL_MEDIA_FACTORY_TIMEZONE`.
 
