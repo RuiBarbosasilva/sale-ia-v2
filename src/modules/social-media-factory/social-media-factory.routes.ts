@@ -97,7 +97,7 @@ router.patch('/accounts/:accountId/target', async (req, res) => {
   const updated = await prisma.socialAccount.update({ where: { id: account.id }, data: {
     externalId, accountName: req.body?.accountName ? String(req.body.accountName).slice(0, 160) : account.accountName,
     platformMetadata: Object.keys(metadata).length ? JSON.stringify(metadata) : account.platformMetadata,
-    status: 'CONNECTED', lastError: null, lastCheckedAt: new Date()
+    status: account.status === 'AVAILABLE' ? 'AVAILABLE' : 'CONNECTED', lastError: null, lastCheckedAt: new Date()
   }, select: { id: true, platform: true, accountName: true, externalId: true, status: true, platformMetadata: true } });
   res.json({ account: updated });
 });
