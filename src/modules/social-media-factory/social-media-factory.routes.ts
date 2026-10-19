@@ -81,7 +81,7 @@ router.post('/workspaces', async (req, res) => {
 router.patch('/accounts/:accountId/target', async (req, res) => {
   const account = await prisma.socialAccount.findUnique({ where: { id: req.params.accountId }, include: { workspace: true } });
   if (!account || !account.workspace.active) return res.status(404).json({ error: 'Conta social ou projeto não encontrado.' });
-  if (!['AUTHORIZED', 'CONNECTED'].includes(account.status) || !account.accessTokenEncrypted) return res.status(409).json({ error: 'Autorize a conta OAuth antes de configurar o destino.' });
+  if (!['AUTHORIZED', 'CONNECTED', 'AVAILABLE'].includes(account.status) || !account.accessTokenEncrypted) return res.status(409).json({ error: 'Autorize a conta OAuth antes de configurar o destino.' });
   const externalId = String(req.body?.externalId || '').trim();
   if (account.platform === 'GOOGLE_BUSINESS' && !/^accounts\/[^/]+\/locations\/[^/]+$/.test(externalId)) {
     return res.status(400).json({ error: 'Use o caminho completo accounts/{accountId}/locations/{locationId} do Google Business Profile.' });
@@ -115,6 +115,7 @@ router.patch('/workspaces/:workspaceId/automation', async (req, res) => {
       const accounts = await prisma.socialAccount.findMany({ where: { workspaceId: workspace.id, platform, status: { in: ['CONNECTED', 'AUTHORIZED'] }, accessTokenEncrypted: { not: null } } });
       if (accounts.length !== 1) return res.status(409).json({ error: platform + ': conecte exatamente uma conta autorizada neste projeto antes de ativar a publicação automática.' });
       const account = accounts[0];
+      if (!account.externalId) return res.status(409).json({ error: platform + ': a conta autorizada ainda não tem um destino identificado.' });
       if (platform === 'GOOGLE_BUSINESS' && !/^accounts\/[^/]+\/locations\/[^/]+$/.test(account.externalId || '')) return res.status(409).json({ error: 'Configure o destino de localização do Google Business antes de ativar a publicação automática.' });
       if (platform === 'PINTEREST') {
         let metadata: any = {};
@@ -140,6 +141,16 @@ router.patch('/workspaces/:workspaceId/automation', async (req, res) => {
   };
   const updated = await prisma.socialWorkspace.update({ where: { id: workspace.id }, data: { settings: JSON.stringify(settings) }, select: { id: true, name: true, settings: true } });
   res.json({ workspace: updated, message: autoPublishEnabled ? 'Automação ativada. Serão criados até 5 conteúdos diários por rede; TikTok continuará exigindo consentimento explícito por publicação.' : 'Configurações de automação salvas.' });
+});
+
+router.post('/accounts/:accountId/select', async (req, res) => {
+  const account = await prisma.socialAccount.findUnique({ where: { id: req.params.accountId } });
+  if (!account || !account.accessTokenEncrypted || !['CONNECTED', 'AUTHORIZED', 'AVAILABLE'].includes(account.status)) return res.status(409).json({ error: 'Autorize esta conta antes de selecioná-la.' });
+  await prisma.$transaction([
+    prisma.socialAccount.updateMany({ where: { workspaceId: account.workspaceId, platform: account.platform, status: { in: ['CONNECTED', 'AUTHORIZED'] } }, data: { status: 'AVAILABLE' } }),
+    prisma.socialAccount.update({ where: { id: account.id }, data: { status: 'CONNECTED', lastError: null } })
+  ]);
+  res.json({ selected: true, accountId: account.id, platform: account.platform, message: 'Conta de destino selecionada para este projeto.' });
 });
 
 router.post('/accounts/:accountId/connect', async (req, res) => {
