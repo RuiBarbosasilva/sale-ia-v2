@@ -1,4 +1,5 @@
 import { PrismaClient, SocialPost, SocialAccount } from '@prisma/client';
+import { isIP } from 'node:net';
 import { getValidSocialAccessToken } from './social-media-factory.oauth';
 
 const prisma = new PrismaClient();
@@ -15,10 +16,10 @@ function parseMedia(post: SocialPost): string[] {
 function assertPublicHttps(value: string): URL {
   const url = new URL(value);
   if (url.protocol !== 'https:') throw new Error('A mídia precisa usar URL HTTPS pública.');
-  const host = url.hostname.toLowerCase();
-  if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') ||
-      /^(127\.|10\.|192\.168\.|169\.254\.)/.test(host) ||
-      /^172\.(1[6-9]|2\d|3[01])\./.test(host) || host === '::1' || host.startsWith('fc') || host.startsWith('fd')) {
+  const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  const ipv4Private = /^(127\.|10\.|192\.168\.|169\.254\.)/.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host) || host === '0.0.0.0';
+  const ipv6Private = isIP(host) === 6 && (host === '::1' || host === '::' || host.startsWith('fc') || host.startsWith('fd') || host.startsWith('fe80:') || host.startsWith('::ffff:127.') || host.startsWith('::ffff:10.'));
+  if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') || ipv4Private || ipv6Private) {
     throw new Error('URL de mídia local/privada não permitida.');
   }
   return url;
