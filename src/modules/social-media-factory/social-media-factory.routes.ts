@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import OpenAI from 'openai';
 import crypto from 'node:crypto';
 import { createSocialAuthorizationUrl, socialOAuthConfigurationStatus } from './social-media-factory.oauth';
+import { publishQueuedSocialPost } from './social-media-factory.service';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -187,10 +188,10 @@ router.post('/posts/:postId/schedule', async (req, res) => {
 router.post('/posts/:postId/publish', async (req, res) => {
   const post = await prisma.socialPost.findUnique({ where: { id: req.params.postId } });
   if (!post) return res.status(404).json({ error: 'Publicação não encontrada.' });
-  const message = 'Nenhum adaptador de publicação oficial está habilitado para esta plataforma. Configure OAuth, permissões e o adaptador antes de publicar.';
-  const updated = await prisma.socialPost.update({ where: { id: post.id }, data: { status: 'INTEGRATION_REQUIRED', attempts: { increment: 1 }, lastError: message } });
-  await prisma.socialPublishLog.create({ data: { postId: post.id, platform: post.platform, outcome: 'INTEGRATION_REQUIRED', message } });
-  res.status(409).json({ post: updated, error: message });
+  if (post.status === 'PUBLISHED') return res.status(409).json({ error: 'Esta publicação já foi enviada.', post });
+  const result = await publishQueuedSocialPost(post.id);
+  if (!result.accepted) return res.status(409).json(result);
+  res.json({ ...result, message: result.message || 'Solicitação processada.' });
 });
 
 router.get('/posts/:postId/logs', async (req, res) => {
