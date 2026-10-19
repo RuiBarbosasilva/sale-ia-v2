@@ -81,7 +81,9 @@ async function claimRun(workspaceId: string, runDate: string): Promise<boolean> 
     return true;
   } catch {
     const existing = await prisma.socialAutomationRun.findUnique({ where: { workspaceId_runDate: { workspaceId, runDate } } });
-    if (!existing || existing.status === 'COMPLETED' || (existing.status === 'RUNNING' && Date.now() - existing.startedAt.getTime() < 30 * 60 * 1000)) return false;
+    if (!existing || existing.status === 'COMPLETED' ||
+        (existing.status === 'RUNNING' && Date.now() - existing.startedAt.getTime() < 30 * 60 * 1000) ||
+        (existing.status === 'FAILED' && existing.finishedAt && Date.now() - existing.finishedAt.getTime() < 30 * 60 * 1000)) return false;
     const updated = await prisma.socialAutomationRun.updateMany({ where: { id: existing.id, status: { in: ['FAILED', 'RUNNING'] }, startedAt: existing.startedAt }, data: { status: 'RUNNING', startedAt: new Date(), finishedAt: null, error: null } });
     return updated.count > 0;
   }
