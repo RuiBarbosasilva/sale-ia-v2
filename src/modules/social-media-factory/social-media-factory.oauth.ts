@@ -161,14 +161,14 @@ async function fetchIdentity(platform: Platform, token: string): Promise<{ id?: 
   }
   return {};
 }
-async function upsertAccount(input: { workspaceId: string; platform: Platform; externalId: string; accountName?: string; accessToken: string; refreshToken?: string; expiresAt?: Date; scopes: string[] }): Promise<string> {
+async function upsertAccount(input: { workspaceId: string; platform: Platform; externalId: string; accountName?: string; accessToken: string; refreshToken?: string; expiresAt?: Date | null; scopes: string[] }): Promise<string> {
   const where = { workspaceId_platform_externalId: { workspaceId: input.workspaceId, platform: input.platform, externalId: input.externalId } };
   const data = {
     accountName: input.accountName || input.externalId,
     status: 'CONNECTED',
     accessTokenEncrypted: encryptSocialSecret(input.accessToken),
     refreshTokenEncrypted: input.refreshToken ? encryptSocialSecret(input.refreshToken) : undefined,
-    tokenExpiresAt: input.expiresAt,
+    tokenExpiresAt: input.expiresAt ?? null,
     scopes: JSON.stringify(input.scopes),
     lastCheckedAt: new Date(),
     lastError: null
@@ -210,16 +210,19 @@ socialOAuthCallbackRouter.get('/callback', async (req, res) => {
         if (identity.id) discoveredIds.push(await upsertAccount({ workspaceId: account.workspaceId, platform, externalId: identity.id, accountName: identity.name, accessToken, refreshToken, expiresAt, scopes }));
       } else {
         for (const page of pages) {
-          if (platform === 'FACEBOOK' && page.id && page.access_token) discoveredIds.push(await upsertAccount({ workspaceId: account.workspaceId, platform: 'FACEBOOK', externalId: String(page.id), accountName: String(page.name || page.id), accessToken: String(page.access_token), refreshToken, expiresAt, scopes }));
-          if (platform === 'INSTAGRAM' && page.instagram_business_account?.id && page.access_token) discoveredIds.push(await upsertAccount({ workspaceId: account.workspaceId, platform: 'INSTAGRAM', externalId: String(page.instagram_business_account.id), accountName: String(page.instagram_business_account.username || page.name || page.id), accessToken: String(page.access_token), refreshToken, expiresAt, scopes }));
+          if (platform === 'FACEBOOK' && page.id && page.access_token) discoveredIds.push(await upsertAccount({ workspaceId: account.workspaceId, platform: 'FACEBOOK', externalId: String(page.id), accountName: String(page.name || page.id), accessToken: String(page.access_token), refreshToken, expiresAt: null, scopes }));
+          if (platform === 'INSTAGRAM' && page.instagram_business_account?.id && page.access_token) discoveredIds.push(await upsertAccount({ workspaceId: account.workspaceId, platform: 'INSTAGRAM', externalId: String(page.instagram_business_account.id), accountName: String(page.instagram_business_account.username || page.name || page.id), accessToken: String(page.access_token), refreshToken, expiresAt: null, scopes }));
         }
       }
-      if (discoveredIds.some(id => id !== account.id)) await prisma.socialAccount.delete({ where: { id: account.id } }).catch(() => undefined);
-      else await prisma.socialAccount.update({ where: { id: account.id }, data: {
-        status: 'AUTHORIZED', accessTokenEncrypted: encryptSocialSecret(accessToken),
-        refreshTokenEncrypted: refreshToken ? encryptSocialSecret(refreshToken) : null,
-        tokenExpiresAt: expiresAt, lastCheckedAt: new Date(), lastError: null, scopes: JSON.stringify(scopes)
-      } });
+      if (discoveredIds.length === 0) {
+        await prisma.socialAccount.update({ where: { id: account.id }, data: {
+          status: 'AUTHORIZED', accessTokenEncrypted: encryptSocialSecret(accessToken),
+          refreshTokenEncrypted: refreshToken ? encryptSocialSecret(refreshToken) : null,
+          tokenExpiresAt: expiresAt, lastCheckedAt: new Date(), lastError: null, scopes: JSON.stringify(scopes)
+        } });
+      } else if (!discoveredIds.includes(account.id)) {
+        await prisma.socialAccount.delete({ where: { id: account.id } }).catch(() => undefined);
+      }
     } else if (platform === 'GOOGLE_BUSINESS') {
       await prisma.socialAccount.update({ where: { id: account.id }, data: {
         status: 'AUTHORIZED', accessTokenEncrypted: encryptSocialSecret(accessToken),
