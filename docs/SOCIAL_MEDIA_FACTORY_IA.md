@@ -34,6 +34,42 @@ Todas as rotas requerem `x-sale-ia-admin-key: <SALE_IA_ADMIN_KEY>`.
 - `POST /api/social-media-factory/posts/:postId/publish`
 - `GET /api/social-media-factory/posts/:postId/logs`
 
+## Atualização: OAuth e publicação
+
+### Variáveis de ambiente
+
+Configure no ambiente do servidor (nunca commitar segredos):
+
+- `SALE_IA_ADMIN_KEY`: autenticação administrativa do painel/API.
+- `OPENAI_API_KEY`, `SOCIAL_MEDIA_AI_MODEL`: geração de textos.
+- `SOCIAL_MEDIA_TOKEN_ENCRYPTION_KEY`: chave AES-256-GCM, 32 bytes codificados em hexadecimal (64 caracteres) ou Base64.
+- `SOCIAL_MEDIA_OAUTH_REDIRECT_URI`: URL pública HTTPS exata, por exemplo `https://SEU-DOMINIO/api/social-media-factory/oauth/callback`.
+- Meta: `META_APP_ID`, `META_APP_SECRET`, opcional `META_GRAPH_API_VERSION`.
+- TikTok: `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET`.
+- Google/YouTube: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
+- Pinterest: `PINTEREST_APP_ID`, `PINTEREST_APP_SECRET`.
+- Para gerar mídia: `PUBLIC_BASE_URL` (origem HTTPS pública), `SOCIAL_MEDIA_IMAGE_GENERATION_ENABLED=true`, `SOCIAL_MEDIA_IMAGE_MODEL` (padrão `gpt-image-1`), `SOCIAL_MEDIA_VIDEO_GENERATION_ENABLED=true`, `FFMPEG_PATH` se ffmpeg não estiver no PATH.
+- `SOCIAL_MEDIA_MEDIA_ALLOWED_HOSTS`: lista separada por vírgulas dos hosts autorizados para baixar mídia de upload do YouTube. Deve incluir o hostname de `PUBLIC_BASE_URL`.
+- Opcional: `SOCIAL_MEDIA_YOUTUBE_MAX_BYTES` (padrão 500 MiB), `SOCIAL_MEDIA_YOUTUBE_PRIVACY` (padrão `private`), `SOCIAL_MEDIA_FACTORY_TIMEZONE`.
+
+### Fluxo
+
+1. Aplicar as migrations e gerar o cliente Prisma.
+2. Configurar cada app de desenvolvedor e cadastrar a URI de callback exatamente igual à variável.
+3. No painel, criar o projeto e usar **Conectar** para cada rede. O fluxo OAuth não exige enviar tokens pelo navegador.
+4. Selecionar a conta de destino quando houver mais de uma Página/canal. Google Business exige o caminho `accounts/{accountId}/locations/{locationId}`; Pinterest exige `boardId`.
+5. Ativar geração automática. Para habilitar publicação automática nas seis redes, a API valida seis contas autorizadas, destinos e configuração de mídia pública.
+6. Ativar `SOCIAL_MEDIA_FACTORY_ENABLED=true` e reiniciar o servidor. A rotina diária cria 30 conteúdos por projeto (5 por rede), em horários locais distribuídos durante o dia.
+7. Os conteúdos sem mídia necessária ficam como rascunhos; o YouTube requer vídeo renderizado e TikTok permanece aguardando consentimento explícito por post.
+
+### Publicação e limites
+
+- Implementados adaptadores REST para Facebook Pages, Instagram profissional, TikTok Content Posting API, YouTube Data API, Google Business Profile local posts e Pinterest Pins.
+- Tokens OAuth são criptografados em repouso com AES-256-GCM; tokens expirados de Google, TikTok e Pinterest são renovados quando o provedor fornece refresh token. Meta pode exigir nova autorização.
+- O worker registra tentativa, resultado, falha e status assíncrono do TikTok. Uma falha de uma plataforma não deve ser reportada como publicação bem-sucedida.
+- TikTok exige autorização explícita por post e pode restringir posts de apps não auditados a visibilidade privada. YouTube também pode aplicar restrições a projetos não auditados. A plataforma controla aprovação, cotas, escopos e disponibilidade do recurso.
+- Antes de produção, executar testes com uma conta de teste por plataforma e verificar escopos aprovados, cotas, mídia acessível externamente, renovação de token e políticas vigentes. O código não pode conceder aprovação de app nem permissões que o provedor ainda não concedeu.
+
 ## Plataformas-alvo
 
 Instagram, Facebook, TikTok, YouTube, Google Business Profile e Pinterest. Cada plataforma requer seu próprio fluxo de autorização, escopos e adaptador de publicação, e alguns formatos (Reels/Shorts/Stories/carrossel) têm requisitos específicos. Não armazenar tokens OAuth em texto simples nos campos de perfil; `credentialsRef` destina-se a uma referência segura de segredo, não ao token bruto.
