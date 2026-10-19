@@ -127,3 +127,22 @@ O usuário executou `git status --short` e `git diff`. Os itens abaixo ainda est
 - [ ] Abrir PR para revisão e CI; não considerar publicação real concluída até passar os testes e a validação de cada plataforma.
 
 **Limite importante desta entrega:** o painel, a persistência, a geração de rascunhos e o agendamento foram preparados. O módulo ainda não publica de fato em redes externas, pois as integrações OAuth/API e seus testes de conformidade ainda não estão implementados/configurados. Não inserir tokens em texto simples nem em commits.
+
+### Social Media Factory IA — atualização de integração — 19/10/2026
+
+- [x] OAuth state de uso único com expiração de 10 minutos e callback público isolado do middleware administrativo.
+- [x] Tokens e refresh tokens armazenados criptografados com AES-256-GCM; chave de criptografia via ambiente.
+- [x] Fluxos OAuth preparados para Meta (Facebook/Instagram), TikTok, Google (YouTube/Business Profile) e Pinterest.
+- [x] Adaptadores de publicação adicionados para Facebook Pages, Instagram profissional, TikTok Content Posting API, YouTube Data API, Google Business Profile e Pinterest.
+- [x] Renovação de tokens expirados de Google, TikTok e Pinterest quando existe refresh token.
+- [x] Worker passou a despachar posts agendados para os adaptadores e consultar status assíncrono do TikTok; erros são gravados nos logs.
+- [x] Seleção de conta de destino por projeto e configuração de destino/board para Google Business e Pinterest.
+- [x] Automação diária idempotente: 30 conteúdos por projeto, 5 por rede, com agenda local; gera até cinco imagens por dia e vídeos MP4 via FFmpeg quando habilitado.
+- [x] Painel atualizado para conexão OAuth, seleção de conta, configuração de destinos e automação diária.
+- [x] TikTok exige consentimento explícito por post; conteúdo gerado automaticamente fica como rascunho até aprovação/agendamento pelo usuário.
+- [ ] Reexecutar CI após a última leva de alterações. A aprovação de CI anterior validou a primeira estrutura, não estes commits recentes.
+- [ ] Configurar credenciais reais de apps, URI pública HTTPS, chave AES, domínio público de mídia e permissões aprovadas de cada plataforma.
+- [ ] Testar publicação real individual em contas de teste e verificar quotas, expiração/refresh e restrições de apps não auditados.
+- [ ] Confirmar disponibilidade do FFmpeg e geração de mídia no servidor de produção; posts que não tiverem mídia exigida permanecem como rascunho.
+
+**Estado honesto:** os fluxos OAuth, adaptadores e automação estão no branch de trabalho, mas publicação externa real ainda depende das credenciais/autorizações do proprietário e de teste de ponta a ponta. A CI anterior não é prova de que estes commits novos já passaram em testes.
