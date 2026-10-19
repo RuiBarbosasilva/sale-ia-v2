@@ -40,6 +40,7 @@ import { factoryEbookRoutes } from './modules/factory-ebook/factory-ebook.routes
 import produtosRoutes from './modules/afiliados-ia/routes/produtos.routes';
 import { handleAffiliateWebhook } from './modules/afiliados-ia/controllers/webhook.controller';
 import socialMediaFactoryRoutes from './modules/social-media-factory/social-media-factory.routes';
+import { socialOAuthCallbackRouter } from './modules/social-media-factory/social-media-factory.oauth';
 import contentGeneratorRoutes from './modules/afiliados-ia/routes/contentGenerator.routes';
 
 const app = express();
@@ -113,6 +114,7 @@ app.use('/api/rb-factory-maintenance', rbFactorySiteMaintenanceRoutes);
 app.use('/api/rb-factory-commercial', rbFactoryCommercialRoutes);
 
 app.use('/go', affiliatePublicRoutes);
+app.use('/api/social-media-factory/oauth', socialOAuthCallbackRouter);
 app.use('/api/social-media-factory', socialMediaFactoryRoutes);
 app.use('/api/mercadolivre', mlRoutes);
 app.use('/api/credenciais', credenciaisRoutes);
