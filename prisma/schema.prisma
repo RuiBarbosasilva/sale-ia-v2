@@ -1756,3 +1756,87 @@ model DropshippingResearchWatch {
   @@index([enabled, nextRunAt])
   @@index([lastStatus, updatedAt])
 }
+
+ 
+// ==========================================
+// SOCIAL MEDIA FACTORY IA
+// Workspaces, platform connections, content queue and auditable publishing.
+// ==========================================
+model SocialWorkspace {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  niche     String?
+  timezone  String   @default("America/Sao_Paulo")
+  active    Boolean  @default(true)
+  settings  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts SocialAccount[]
+  posts    SocialPost[]
+
+  @@index([active, updatedAt])
+}
+
+model SocialAccount {
+  id             String   @id @default(uuid())
+  workspaceId    String
+  workspace      SocialWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  platform       String
+  accountName    String?
+  externalId     String?
+  status         String   @default("NOT_CONFIGURED")
+  credentialsRef String?
+  scopes         String?
+  lastCheckedAt  DateTime?
+  lastError      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([workspaceId, platform, externalId])
+  @@index([workspaceId, platform, status])
+}
+
+model SocialPost {
+  id             String   @id @default(uuid())
+  workspaceId    String
+  workspace      SocialWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  platform       String
+  contentType    String   @default("IMAGE")
+  title          String?
+  caption        String
+  hashtags       String?
+  mediaUrls      String?
+  linkUrl        String?
+  status         String   @default("DRAFT")
+  scheduledFor   DateTime?
+  publishedAt    DateTime?
+  externalPostId String?
+  publishedUrl   String?
+  attempts       Int      @default(0)
+  lastError      String?
+  metadata       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  logs SocialPublishLog[]
+
+  @@index([workspaceId, status, scheduledFor])
+  @@index([platform, status, scheduledFor])
+  @@index([createdAt])
+}
+
+model SocialPublishLog {
+  id          String   @id @default(uuid())
+  postId      String
+  post        SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  platform    String
+  outcome     String
+  message     String?
+  response    String?
+  createdAt   DateTime @default(now())
+
+  @@index([postId, createdAt])
+  @@index([platform, outcome, createdAt])
+}
