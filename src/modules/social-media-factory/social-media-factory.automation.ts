@@ -179,3 +179,7 @@ export async function runDailySocialAutomation() {
     if (result.error) console.error('[SOCIAL MEDIA FACTORY] daily generation failed:', workspace.id, result.error);
   }
 }
+
+export async function isVideoRendererAvailable(): Promise<boolean> {
+  return new Promise(resolve => execFile(process.env.FFMPEG_PATH || 'ffmpeg', ['-version'], { timeout: 5000, maxBuffer: 256 * 1024 }, error => resolve(!error)));
+}
