@@ -90,6 +90,7 @@ app.get('/rb-factory-commercial', (_req, res) => res.sendFile('rb-factory-commer
 app.get(['/mercadolivre', '/mercadolivre/dropshipping'], (_req, res) => res.sendFile('dropshipping-lab.html', { root: 'public' }));
 app.use('/generated-images', express.static('storage/generated-images'));
 
+app.use('/api/social-media-factory/oauth', socialOAuthCallbackRouter);
 app.use('/api', apiRoutes);
 app.use('/api/websites/prospecting', prospectingRoutes);
 app.use('/api/websites', websiteRoutes);
@@ -114,7 +115,6 @@ app.use('/api/rb-factory-maintenance', rbFactorySiteMaintenanceRoutes);
 app.use('/api/rb-factory-commercial', rbFactoryCommercialRoutes);
 
 app.use('/go', affiliatePublicRoutes);
-app.use('/api/social-media-factory/oauth', socialOAuthCallbackRouter);
 app.use('/api/social-media-factory', socialMediaFactoryRoutes);
 app.use('/api/mercadolivre', mlRoutes);
 app.use('/api/credenciais', credenciaisRoutes);
