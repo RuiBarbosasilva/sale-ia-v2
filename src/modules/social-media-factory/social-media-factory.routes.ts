@@ -102,6 +102,46 @@ router.patch('/accounts/:accountId/target', async (req, res) => {
   res.json({ account: updated });
 });
 
+router.patch('/workspaces/:workspaceId/automation', async (req, res) => {
+  const workspace = await prisma.socialWorkspace.findUnique({ where: { id: req.params.workspaceId } });
+  if (!workspace) return res.status(404).json({ error: 'Projeto não encontrado.' });
+  const current = (() => { try { return JSON.parse(workspace.settings || '{}'); } catch { return {}; } })();
+  const autoGenerateEnabled = typeof req.body?.autoGenerateEnabled === 'boolean' ? req.body.autoGenerateEnabled : current.autoGenerateEnabled === true;
+  const autoPublishEnabled = typeof req.body?.autoPublishEnabled === 'boolean' ? req.body.autoPublishEnabled : current.autoPublishEnabled === true;
+  if (autoPublishEnabled && !autoGenerateEnabled) return res.status(400).json({ error: 'Ative a geração automática antes de ativar a publicação automática.' });
+  if (autoPublishEnabled) {
+    const platforms = ['INSTAGRAM', 'FACEBOOK', 'TIKTOK', 'YOUTUBE', 'GOOGLE_BUSINESS', 'PINTEREST'];
+    for (const platform of platforms) {
+      const accounts = await prisma.socialAccount.findMany({ where: { workspaceId: workspace.id, platform, status: { in: ['CONNECTED', 'AUTHORIZED'] }, accessTokenEncrypted: { not: null } } });
+      if (accounts.length !== 1) return res.status(409).json({ error: platform + ': conecte exatamente uma conta autorizada neste projeto antes de ativar a publicação automática.' });
+      const account = accounts[0];
+      if (platform === 'GOOGLE_BUSINESS' && !/^accounts\/[^/]+\/locations\/[^/]+$/.test(account.externalId || '')) return res.status(409).json({ error: 'Configure o destino de localização do Google Business antes de ativar a publicação automática.' });
+      if (platform === 'PINTEREST') {
+        let metadata: any = {};
+        try { metadata = JSON.parse(account.platformMetadata || '{}'); } catch {}
+        if (!metadata.boardId) return res.status(409).json({ error: 'Configure o board do Pinterest antes de ativar a publicação automática.' });
+      }
+    }
+    if (String(process.env.SOCIAL_MEDIA_IMAGE_GENERATION_ENABLED).toLowerCase() !== 'true' || String(process.env.SOCIAL_MEDIA_VIDEO_GENERATION_ENABLED).toLowerCase() !== 'true') {
+      return res.status(409).json({ error: 'Para publicação automática em todas as redes, habilite SOCIAL_MEDIA_IMAGE_GENERATION_ENABLED=true e SOCIAL_MEDIA_VIDEO_GENERATION_ENABLED=true.' });
+    }
+    let base: URL;
+    try { base = new URL(String(process.env.PUBLIC_BASE_URL || '')); } catch { return res.status(409).json({ error: 'Configure PUBLIC_BASE_URL HTTPS para que as redes possam acessar as mídias geradas.' }); }
+    if (base.protocol !== 'https:') return res.status(409).json({ error: 'PUBLIC_BASE_URL precisa ser HTTPS público.' });
+    const allowedHosts = (process.env.SOCIAL_MEDIA_MEDIA_ALLOWED_HOSTS || '').split(',').map((x: string) => x.trim().toLowerCase()).filter(Boolean);
+    if (!allowedHosts.includes(base.hostname.toLowerCase())) return res.status(409).json({ error: 'Inclua o domínio de PUBLIC_BASE_URL em SOCIAL_MEDIA_MEDIA_ALLOWED_HOSTS para validar mídia do YouTube.' });
+  }
+  const settings = {
+    ...current, autoGenerateEnabled, autoPublishEnabled,
+    contentTheme: String(req.body?.contentTheme ?? current.contentTheme ?? workspace.niche ?? workspace.name).slice(0, 300),
+    brandVoice: String(req.body?.brandVoice ?? current.brandVoice ?? 'profissional, humano e confiável').slice(0, 300),
+    contentInstructions: String(req.body?.contentInstructions ?? current.contentInstructions ?? '').slice(0, 2000),
+    postsPerDayPerPlatform: 5
+  };
+  const updated = await prisma.socialWorkspace.update({ where: { id: workspace.id }, data: { settings: JSON.stringify(settings) }, select: { id: true, name: true, settings: true } });
+  res.json({ workspace: updated, message: autoPublishEnabled ? 'Automação ativada. Serão criados até 5 conteúdos diários por rede; TikTok continuará exigindo consentimento explícito por publicação.' : 'Configurações de automação salvas.' });
+});
+
 router.post('/accounts/:accountId/connect', async (req, res) => {
   try {
     const account = await prisma.socialAccount.findUnique({ where: { id: req.params.accountId }, include: { workspace: true } });
