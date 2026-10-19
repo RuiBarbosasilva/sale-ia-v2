@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import crypto from 'node:crypto';
 import { createSocialAuthorizationUrl, socialOAuthConfigurationStatus } from './social-media-factory.oauth';
 import { publishQueuedSocialPost } from './social-media-factory.service';
+import { isVideoRendererAvailable } from './social-media-factory.automation';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -127,6 +128,7 @@ router.patch('/workspaces/:workspaceId/automation', async (req, res) => {
     if (String(process.env.SOCIAL_MEDIA_IMAGE_GENERATION_ENABLED).toLowerCase() !== 'true' || String(process.env.SOCIAL_MEDIA_VIDEO_GENERATION_ENABLED).toLowerCase() !== 'true') {
       return res.status(409).json({ error: 'Para publicação automática em todas as redes, habilite SOCIAL_MEDIA_IMAGE_GENERATION_ENABLED=true e SOCIAL_MEDIA_VIDEO_GENERATION_ENABLED=true.' });
     }
+    if (!(await isVideoRendererAvailable())) return res.status(409).json({ error: 'FFmpeg não está disponível. Configure FFMPEG_PATH ou instale FFmpeg antes de ativar publicação automática em todas as redes.' });
     let base: URL;
     try { base = new URL(String(process.env.PUBLIC_BASE_URL || '')); } catch { return res.status(409).json({ error: 'Configure PUBLIC_BASE_URL HTTPS para que as redes possam acessar as mídias geradas.' }); }
     if (base.protocol !== 'https:') return res.status(409).json({ error: 'PUBLIC_BASE_URL precisa ser HTTPS público.' });
