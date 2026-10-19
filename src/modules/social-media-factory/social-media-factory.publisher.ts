@@ -145,11 +145,13 @@ async function publishYouTube(post: SocialPost, account: SocialAccount, token: s
 export async function publishSocialPost(postId: string): Promise<PublishResult> {
   const post = await prisma.socialPost.findUnique({ where: { id: postId }, include: { workspace: true } });
   if (!post || !post.workspace.active) throw new Error('Post ou projeto ativo não encontrado.');
-  const account = await prisma.socialAccount.findFirst({
+  const accounts = await prisma.socialAccount.findMany({
     where: { workspaceId: post.workspaceId, platform: post.platform, status: { in: ['CONNECTED', 'AUTHORIZED'] }, accessTokenEncrypted: { not: null } },
     orderBy: { updatedAt: 'desc' }
   });
-  if (!account) throw new Error(`Nenhuma conta ${post.platform} autorizada para este projeto.`);
+  if (!accounts.length) throw new Error(`Nenhuma conta ${post.platform} autorizada para este projeto.`);
+  if (accounts.length > 1) throw new Error(`Há ${accounts.length} contas ${post.platform} conectadas neste projeto. Selecione explicitamente a conta de destino antes de publicar.`);
+  const account = accounts[0];
   const token = tokenFor(account);
   switch (post.platform) {
     case 'FACEBOOK': return publishFacebook(post, account, token);
@@ -165,8 +167,9 @@ export async function publishSocialPost(postId: string): Promise<PublishResult> 
 export async function checkSocialPostProcessing(postId: string): Promise<'PUBLISHED' | 'PROCESSING' | 'FAILED'> {
   const post = await prisma.socialPost.findUnique({ where: { id: postId }, include: { workspace: true } });
   if (!post || !post.externalPostId) return 'FAILED';
-  const account = await prisma.socialAccount.findFirst({ where: { workspaceId: post.workspaceId, platform: post.platform, status: { in: ['CONNECTED', 'AUTHORIZED'] }, accessTokenEncrypted: { not: null } }, orderBy: { updatedAt: 'desc' } });
-  if (!account) return 'FAILED';
+  const accounts = await prisma.socialAccount.findMany({ where: { workspaceId: post.workspaceId, platform: post.platform, status: { in: ['CONNECTED', 'AUTHORIZED'] }, accessTokenEncrypted: { not: null } }, orderBy: { updatedAt: 'desc' } });
+  if (accounts.length !== 1) return 'FAILED';
+  const account = accounts[0];
   if (post.platform !== 'TIKTOK') return post.status === 'PUBLISHED' ? 'PUBLISHED' : 'FAILED';
   const result = await requestJson('https://open.tiktokapis.com/v2/post/publish/status/fetch/', { method: 'POST', headers: { Authorization: 'Bearer ' + tokenFor(account), 'Content-Type': 'application/json' }, body: JSON.stringify({ publish_id: post.externalPostId }) });
   const status = String(result.data?.status || '').toUpperCase();
