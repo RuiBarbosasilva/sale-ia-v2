@@ -111,6 +111,7 @@ router.patch('/workspaces/:workspaceId/automation', async (req, res) => {
   const autoGenerateEnabled = typeof req.body?.autoGenerateEnabled === 'boolean' ? req.body.autoGenerateEnabled : current.autoGenerateEnabled === true;
   const autoPublishEnabled = typeof req.body?.autoPublishEnabled === 'boolean' ? req.body.autoPublishEnabled : current.autoPublishEnabled === true;
   if (autoPublishEnabled && !autoGenerateEnabled) return res.status(400).json({ error: 'Ative a geração automática antes de ativar a publicação automática.' });
+  if (autoGenerateEnabled && !process.env.OPENAI_API_KEY) return res.status(409).json({ error: 'Configure OPENAI_API_KEY antes de ativar a geração automática.' });
   if (autoPublishEnabled) {
     const platforms = ['INSTAGRAM', 'FACEBOOK', 'TIKTOK', 'YOUTUBE', 'GOOGLE_BUSINESS', 'PINTEREST'];
     for (const platform of platforms) {
