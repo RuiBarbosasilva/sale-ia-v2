@@ -139,7 +139,7 @@ async function publishYouTube(post: SocialPost, account: SocialAccount, token: s
   const uploadUrl = init.headers.get('location');
   if (!uploadUrl || !uploadUrl.startsWith('https://www.googleapis.com/upload/youtube/')) throw new Error('YouTube não retornou URL de upload válida.');
   const uploaded = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': contentType, 'Content-Length': String(bytes.length) }, body: bytes as any });
-  const result = await uploaded.json().catch(() => ({} as any));
+  const result: any = await uploaded.json().catch(() => ({} as any));
   if (!uploaded.ok) throw new Error(String(result?.error?.message || `YouTube upload falhou (HTTP ${uploaded.status}).`));
   return { status: 'PUBLISHED', externalPostId: String(result.id || ''), publishedUrl: result.id ? `https://www.youtube.com/watch?v=${result.id}` : undefined, message: 'Vídeo enviado ao YouTube; a visibilidade depende da auditoria do projeto Google e das configurações do canal.' };
 }
