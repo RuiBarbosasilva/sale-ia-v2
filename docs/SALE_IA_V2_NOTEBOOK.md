@@ -146,3 +146,8 @@ O usuário executou `git status --short` e `git diff`. Os itens abaixo ainda est
 - [ ] Confirmar disponibilidade do FFmpeg e geração de mídia no servidor de produção; posts que não tiverem mídia exigida permanecem como rascunho.
 
 **Estado honesto:** os fluxos OAuth, adaptadores e automação estão no branch de trabalho, mas publicação externa real ainda depende das credenciais/autorizações do proprietário e de teste de ponta a ponta. A CI anterior não é prova de que estes commits novos já passaram em testes.
+
+- [x] Endpoint e painel mostram histórico das execuções diárias e erros de geração.
+- [x] Painel permite tentar novamente posts com falha e mantém a sessão principal aberta durante OAuth em janela separada.
+- [x] Indicadores de prontidão mostram configuração OAuth, chave AES e estado do agendador.
+- [x] CI executada na revisão `53dcfd43`: typecheck, build, testes e Guardian passaram. CI de revisão posterior está sendo executada; repetir na revisão final após os últimos ajustes de painel/relatórios.
