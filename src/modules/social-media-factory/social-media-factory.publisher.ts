@@ -75,7 +75,7 @@ async function publishTikTok(post: SocialPost, account: SocialAccount, token: st
   try { postMetadata = JSON.parse(post.metadata || '{}'); } catch {}
   if (!postMetadata.tiktokConsentAt) throw new Error('TikTok exige consentimento explícito por publicação. Agende o post marcando a confirmação de envio.');
   const media = parseMedia(post);
-  const postText = post.caption + (post.hashtags && !post.caption.includes(post.hashtags) ? '\\n' + post.hashtags : '');
+  const postText = post.caption + (post.hashtags && !post.caption.includes(post.hashtags) ? '\n' + post.hashtags : '');
   if (!media.length) throw new Error('TikTok exige pelo menos uma URL HTTPS pública de mídia.');
   media.forEach(assertPublicHttps);
   const info = await requestJson('https://open.tiktokapis.com/v2/post/publish/creator_info/query/', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: '{}' });
