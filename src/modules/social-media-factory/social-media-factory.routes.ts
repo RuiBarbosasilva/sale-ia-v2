@@ -165,6 +165,14 @@ router.post('/accounts/:accountId/connect', async (req, res) => {
   }
 });
 
+router.get('/workspaces/:workspaceId/automation-runs', async (req, res) => {
+  const workspace = await prisma.socialWorkspace.findUnique({ where: { id: req.params.workspaceId }, select: { id: true } });
+  if (!workspace) return res.status(404).json({ error: 'Projeto não encontrado.' });
+  const take = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
+  const runs = await prisma.socialAutomationRun.findMany({ where: { workspaceId: workspace.id }, orderBy: { startedAt: 'desc' }, take });
+  res.json({ runs });
+});
+
 router.get('/workspaces/:workspaceId/posts', async (req, res) => {
   const take = Math.min(200, Math.max(1, Number(req.query.limit) || 50));
   const posts = await prisma.socialPost.findMany({
