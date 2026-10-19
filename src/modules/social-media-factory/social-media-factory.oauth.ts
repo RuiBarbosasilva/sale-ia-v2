@@ -291,6 +291,6 @@ export function socialOAuthConfigurationStatus() {
     GOOGLE: configured(['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET']),
     PINTEREST: configured(['PINTEREST_APP_ID', 'PINTEREST_APP_SECRET']),
     callbackConfigured: Boolean(process.env.SOCIAL_MEDIA_OAUTH_REDIRECT_URI?.trim()),
-    encryptionConfigured: Boolean(process.env.SOCIAL_MEDIA_TOKEN_ENCRYPTION_KEY?.trim())
+    encryptionConfigured: (() => { try { encryptionKey(); return true; } catch { return false; } })()
   };
 }
