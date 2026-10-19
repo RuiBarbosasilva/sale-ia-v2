@@ -110,13 +110,13 @@ router.post('/workspaces/:workspaceId/generate-batch', async (req, res) => {
   if (!process.env.OPENAI_API_KEY) return res.status(503).json({ error: 'Configure OPENAI_API_KEY para habilitar a geração por IA.' });
   const topic = String(req.body?.topic || '').trim();
   if (topic.length < 3) return res.status(400).json({ error: 'Informe o tema/campanha.' });
-  const count = Math.min(5, Math.max(1, Number(req.body?.count) || 5));
+  const count = Math.min(30, Math.max(1, Number(req.body?.count) || 30));
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const response = await client.chat.completions.create({
     model: process.env.SOCIAL_MEDIA_AI_MODEL || 'gpt-4.1-mini',
     response_format: { type: 'json_object' },
     messages: [
-      { role: 'system', content: 'Você é estrategista de redes sociais em português brasileiro. Gere conteúdo original, útil, sem alegações não verificadas, sem hashtags excessivas. Retorne JSON {"posts":[{"platform":"INSTAGRAM|FACEBOOK|TIKTOK|YOUTUBE|GOOGLE_BUSINESS|PINTEREST","title":"...","caption":"...","hashtags":["..."],"contentType":"IMAGE|VIDEO|TEXT"}]}. Alterne plataformas e adapte tamanho/formato ao canal. Não invente fatos sobre a empresa.' },
+      { role: 'system', content: 'Você é estrategista de redes sociais em português brasileiro. Gere conteúdo original, útil, sem alegações não verificadas, sem hashtags excessivas. Se a quantidade for múltipla de 6, distribua igualmente entre as seis plataformas, evitando duplicação literal. Retorne JSON {"posts":[{"platform":"INSTAGRAM|FACEBOOK|TIKTOK|YOUTUBE|GOOGLE_BUSINESS|PINTEREST","title":"...","caption":"...","hashtags":["..."],"contentType":"IMAGE|VIDEO|TEXT"}]}. Alterne plataformas e adapte tamanho/formato ao canal. Não invente fatos sobre a empresa.' },
       { role: 'user', content: JSON.stringify({ empresa: workspace.name, nicho: workspace.niche, tema: topic, quantidade: count, plataformas: PLATFORMS, instrucoesAdicionais: String(req.body?.instructions || '').slice(0, 2000) }) }
     ]
   });
