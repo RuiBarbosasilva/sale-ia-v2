@@ -221,7 +221,15 @@ router.post('/workspaces/:workspaceId/generate-batch', async (req, res) => {
 router.post('/posts/:postId/schedule', async (req, res) => {
   const scheduledFor = new Date(req.body?.scheduledFor);
   if (Number.isNaN(scheduledFor.getTime()) || scheduledFor.getTime() <= Date.now()) return res.status(400).json({ error: 'Agende para uma data futura válida.' });
-  const post = await prisma.socialPost.update({ where: { id: req.params.postId }, data: { scheduledFor, status: 'SCHEDULED', lastError: null } });
+  const existing = await prisma.socialPost.findUnique({ where: { id: req.params.postId } });
+  if (!existing) return res.status(404).json({ error: 'Publicação não encontrada.' });
+  let metadata: Record<string, any> = {};
+  try { metadata = JSON.parse(existing.metadata || '{}'); } catch {}
+  if (existing.platform === 'TIKTOK') {
+    if (req.body?.tiktokConsent !== true) return res.status(400).json({ error: 'TikTok exige confirmação explícita para enviar este conteúdo à conta autorizada.' });
+    metadata.tiktokConsentAt = new Date().toISOString();
+  }
+  const post = await prisma.socialPost.update({ where: { id: req.params.postId }, data: { scheduledFor, status: 'SCHEDULED', lastError: null, metadata: JSON.stringify(metadata) } });
   res.json({ post });
 });
 
