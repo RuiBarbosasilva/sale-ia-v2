@@ -11,8 +11,10 @@ type Platform = typeof PLATFORMS[number];
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
   const expected = process.env.SALE_IA_ADMIN_KEY;
   if (!expected) return res.status(503).json({ error: 'SALE_IA_ADMIN_KEY não configurada no servidor.' });
-  const provided = req.header('x-sale-ia-admin-key') || req.header('authorization')?.replace(/^Bearer\s+/i, '');
-  if (!provided || provided.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(provided), Buffer.from(expected))) {
+  const provided = req.header('x-sale-ia-admin-key') || req.header('authorization')?.replace(/^Bearer\\s+/i, '');
+  const providedBuffer = Buffer.from(provided || '');
+  const expectedBuffer = Buffer.from(expected);
+  if (!provided || providedBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(providedBuffer, expectedBuffer)) {
     return res.status(401).json({ error: 'Acesso não autorizado.' });
   }
   next();
