@@ -242,6 +242,44 @@ socialOAuthCallbackRouter.get('/callback', async (req, res) => {
   }
 });
 
+export async function getValidSocialAccessToken(account: { id: string; platform: string; accessTokenEncrypted: string | null; refreshTokenEncrypted: string | null; tokenExpiresAt: Date | null }): Promise<string> {
+  if (!account.accessTokenEncrypted) throw new Error('Conta ainda não possui token OAuth autorizado.');
+  const currentToken = decryptSocialSecret(account.accessTokenEncrypted);
+  if (!account.tokenExpiresAt || account.tokenExpiresAt.getTime() > Date.now() + 5 * 60 * 1000) return currentToken;
+  if (!account.refreshTokenEncrypted) throw new Error('Token OAuth expirado; reconecte esta conta para renovar a autorização.');
+  const platform = account.platform as Platform;
+  const refreshToken = decryptSocialSecret(account.refreshTokenEncrypted);
+  let tokenResponse: any;
+  if (platform === 'YOUTUBE' || platform === 'GOOGLE_BUSINESS') {
+    const config = providerConfig(platform);
+    const body = new URLSearchParams({ client_id: config.clientId, client_secret: config.clientSecret, grant_type: 'refresh_token', refresh_token: refreshToken });
+    tokenResponse = await fetchJson('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+  } else if (platform === 'TIKTOK') {
+    const config = providerConfig(platform);
+    const body = new URLSearchParams({ client_key: config.clientId, client_secret: config.clientSecret, grant_type: 'refresh_token', refresh_token: refreshToken });
+    tokenResponse = await fetchJson(config.tokenUrl, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+  } else if (platform === 'PINTEREST') {
+    const config = providerConfig(platform);
+    const body = new URLSearchParams({ grant_type: 'refresh_token', refresh_token: refreshToken });
+    tokenResponse = await fetchJson(config.tokenUrl, { method: 'POST', headers: { Authorization: 'Basic ' + Buffer.from(config.clientId + ':' + config.clientSecret).toString('base64'), 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+  } else {
+    throw new Error('A Meta não forneceu refresh token reutilizável para esta conta; reconecte a conta para renovar a autorização.');
+  }
+  const payload = tokenResponse.data && typeof tokenResponse.data === 'object' ? tokenResponse.data : tokenResponse;
+  const nextToken = String(payload.access_token || '');
+  if (!nextToken) throw new Error('O provedor não retornou token renovado.');
+  const nextRefresh = payload.refresh_token ? String(payload.refresh_token) : refreshToken;
+  const expiresIn = Number(payload.expires_in || 0);
+  await prisma.socialAccount.update({ where: { id: account.id }, data: {
+    accessTokenEncrypted: encryptSocialSecret(nextToken),
+    refreshTokenEncrypted: encryptSocialSecret(nextRefresh),
+    tokenExpiresAt: expiresIn > 0 ? new Date(Date.now() + expiresIn * 1000) : null,
+    scopes: payload.scope ? String(payload.scope) : undefined,
+    lastCheckedAt: new Date(), lastError: null
+  } });
+  return nextToken;
+}
+
 export function socialOAuthConfigurationStatus() {
   const configured = (names: string[]) => names.every(name => Boolean(process.env[name]?.trim()));
   return {
