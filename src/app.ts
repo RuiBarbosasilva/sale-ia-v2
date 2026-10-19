@@ -39,6 +39,7 @@ import { afiliadosIaRoutes } from './modules/afiliados-ia/afiliados-ia.routes';
 import { factoryEbookRoutes } from './modules/factory-ebook/factory-ebook.routes';
 import produtosRoutes from './modules/afiliados-ia/routes/produtos.routes';
 import { handleAffiliateWebhook } from './modules/afiliados-ia/controllers/webhook.controller';
+import socialMediaFactoryRoutes from './modules/social-media-factory/social-media-factory.routes';
 import contentGeneratorRoutes from './modules/afiliados-ia/routes/contentGenerator.routes';
 
 const app = express();
@@ -65,7 +66,7 @@ app.use((req, res, next) => {
 
 // Força UTF-8 nas páginas HTML para evitar mojibake em ambientes Windows/proxies.
 app.use((req, res, next) => {
-  const htmlRoutes = ['/affiliates', '/affiliates/admin', '/affiliates/intelligence', '/editorial', '/sales', '/dashboard', '/dashboard/', '/rb-factory', '/rb-factory-benchmark', '/rb-factory-maintenance', '/rb-factory-commercial', '/mercadolivre', '/mercadolivre/dropshipping'];
+  const htmlRoutes = ['/affiliates', '/affiliates/admin', '/affiliates/intelligence', '/editorial', '/sales', '/dashboard', '/dashboard/', '/rb-factory', '/rb-factory-benchmark', '/rb-factory-maintenance', '/rb-factory-commercial', '/mercadolivre', '/mercadolivre/dropshipping', '/social-media-factory'];
   if (htmlRoutes.includes(req.path) || req.path.endsWith('.html')) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
   }
@@ -74,6 +75,7 @@ app.use((req, res, next) => {
 
 app.use(express.static('public', { index: false }));
 app.get('/', (_req, res) => res.redirect(302, '/rb-factory'));
+app.get('/social-media-factory', (_req, res) => res.sendFile('social-media-factory.html', { root: 'public' }));
 app.get('/rb-factory', (_req, res) => { res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate'); res.setHeader('Pragma', 'no-cache'); res.setHeader('Expires', '0'); return res.sendFile('site-factory.html', { root: 'public' }); });
 app.get('/affiliates', (_req, res) => res.sendFile('affiliates/index.html', { root: 'public' }));
 app.get('/affiliates/admin', (_req, res) => res.sendFile('affiliates/admin.html', { root: 'public' }));
@@ -111,6 +113,7 @@ app.use('/api/rb-factory-maintenance', rbFactorySiteMaintenanceRoutes);
 app.use('/api/rb-factory-commercial', rbFactoryCommercialRoutes);
 
 app.use('/go', affiliatePublicRoutes);
+app.use('/api/social-media-factory', socialMediaFactoryRoutes);
 app.use('/api/mercadolivre', mlRoutes);
 app.use('/api/credenciais', credenciaisRoutes);
 app.use('/dashboard', dashboardRoutes);
