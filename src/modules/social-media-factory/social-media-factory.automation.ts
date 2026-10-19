@@ -174,7 +174,7 @@ export async function runDailySocialAutomation() {
     const settings = parseSettings(workspace as SocialWorkspace);
     if (settings.autoGenerateEnabled !== true) continue;
     const localHour = Number(new Intl.DateTimeFormat('en-US', { timeZone: workspace.timezone || 'America/Sao_Paulo', hour: '2-digit', hourCycle: 'h23' }).format(now));
-    if (localHour < 6) continue;
+    if (localHour < 6 || localHour >= 21) continue;
     const result = await generateDailySocialContent(workspace.id);
     if (result.error) console.error('[SOCIAL MEDIA FACTORY] daily generation failed:', workspace.id, result.error);
   }
