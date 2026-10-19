@@ -93,7 +93,8 @@ export async function createSocialAuthorizationUrl(accountId: string): Promise<s
   url.searchParams.set('redirect_uri', callbackUri());
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('state', state);
-  url.searchParams.set('scope', config.scopes.join(config.style === 'query' ? ',' : ' '));
+  const scopeDelimiter = platform === 'YOUTUBE' || platform === 'GOOGLE_BUSINESS' ? ' ' : ',';
+  url.searchParams.set('scope', config.scopes.join(scopeDelimiter));
   if (platform === 'YOUTUBE' || platform === 'GOOGLE_BUSINESS') {
     url.searchParams.set('access_type', 'offline');
     url.searchParams.set('include_granted_scopes', 'true');
@@ -160,7 +161,7 @@ async function fetchIdentity(platform: Platform, token: string): Promise<{ id?: 
   }
   return {};
 }
-async function upsertAccount(input: { workspaceId: string; platform: Platform; externalId: string; accountName?: string; accessToken: string; refreshToken?: string; expiresAt?: Date; scopes: string[] }) {
+async function upsertAccount(input: { workspaceId: string; platform: Platform; externalId: string; accountName?: string; accessToken: string; refreshToken?: string; expiresAt?: Date; scopes: string[] }): Promise<string> {
   const where = { workspaceId_platform_externalId: { workspaceId: input.workspaceId, platform: input.platform, externalId: input.externalId } };
   const data = {
     accountName: input.accountName || input.externalId,
@@ -172,7 +173,8 @@ async function upsertAccount(input: { workspaceId: string; platform: Platform; e
     lastCheckedAt: new Date(),
     lastError: null
   };
-  await prisma.socialAccount.upsert({ where, create: { workspaceId: input.workspaceId, platform: input.platform, externalId: input.externalId, ...data }, update: data });
+  const saved = await prisma.socialAccount.upsert({ where, create: { workspaceId: input.workspaceId, platform: input.platform, externalId: input.externalId, ...data }, update: data });
+  return saved.id;
 }
 
 socialOAuthCallbackRouter.get('/callback', async (req, res) => {
@@ -190,7 +192,8 @@ socialOAuthCallbackRouter.get('/callback', async (req, res) => {
     if (!code) throw new Error('Código de autorização não recebido.');
     const account = stateRecord.account;
     const platform = account.platform as Platform;
-    const tokens = await exchangeCode(platform, code);
+    const tokenResponse = await exchangeCode(platform, code);
+    const tokens = tokenResponse.data && typeof tokenResponse.data === 'object' ? tokenResponse.data : tokenResponse;
     const accessToken = String(tokens.access_token || '');
     if (!accessToken) throw new Error('O provedor não retornou token de acesso.');
     const refreshToken = tokens.refresh_token ? String(tokens.refresh_token) : undefined;
@@ -201,21 +204,24 @@ socialOAuthCallbackRouter.get('/callback', async (req, res) => {
 
     if (platform === 'FACEBOOK' || platform === 'INSTAGRAM') {
       const pages = await fetchMetaPages(accessToken);
+      let discoveredIds: string[] = [];
       if (!pages.length) {
         const identity = await fetchIdentity(platform, accessToken);
-        if (identity.id) await upsertAccount({ workspaceId: account.workspaceId, platform, externalId: identity.id, accountName: identity.name, accessToken, refreshToken, expiresAt, scopes });
+        if (identity.id) discoveredIds.push(await upsertAccount({ workspaceId: account.workspaceId, platform, externalId: identity.id, accountName: identity.name, accessToken, refreshToken, expiresAt, scopes }));
       } else {
         for (const page of pages) {
-          if (platform === 'FACEBOOK' && page.id && page.access_token) await upsertAccount({ workspaceId: account.workspaceId, platform: 'FACEBOOK', externalId: String(page.id), accountName: String(page.name || page.id), accessToken: String(page.access_token), refreshToken, expiresAt, scopes });
-          if (platform === 'INSTAGRAM' && page.instagram_business_account?.id && page.access_token) await upsertAccount({ workspaceId: account.workspaceId, platform: 'INSTAGRAM', externalId: String(page.instagram_business_account.id), accountName: String(page.instagram_business_account.username || page.name || page.id), accessToken: String(page.access_token), refreshToken, expiresAt, scopes });
+          if (platform === 'FACEBOOK' && page.id && page.access_token) discoveredIds.push(await upsertAccount({ workspaceId: account.workspaceId, platform: 'FACEBOOK', externalId: String(page.id), accountName: String(page.name || page.id), accessToken: String(page.access_token), refreshToken, expiresAt, scopes }));
+          if (platform === 'INSTAGRAM' && page.instagram_business_account?.id && page.access_token) discoveredIds.push(await upsertAccount({ workspaceId: account.workspaceId, platform: 'INSTAGRAM', externalId: String(page.instagram_business_account.id), accountName: String(page.instagram_business_account.username || page.name || page.id), accessToken: String(page.access_token), refreshToken, expiresAt, scopes }));
         }
       }
-      await prisma.socialAccount.update({ where: { id: account.id }, data: { status: 'AUTHORIZED', lastCheckedAt: new Date(), lastError: null, scopes: JSON.stringify(scopes) } });
+      if (discoveredIds.some(id => id !== account.id)) await prisma.socialAccount.delete({ where: { id: account.id } }).catch(() => undefined);
+      else await prisma.socialAccount.update({ where: { id: account.id }, data: { status: 'AUTHORIZED', lastCheckedAt: new Date(), lastError: null, scopes: JSON.stringify(scopes) } });
     } else {
       const identity = await fetchIdentity(platform, accessToken);
       const externalId = identity.id || account.externalId || account.id;
-      await upsertAccount({ workspaceId: account.workspaceId, platform, externalId, accountName: identity.name || account.accountName || externalId, accessToken, refreshToken, expiresAt, scopes });
-      await prisma.socialAccount.update({ where: { id: account.id }, data: { status: 'CONNECTED', externalId, accountName: identity.name || account.accountName, accessTokenEncrypted: encryptSocialSecret(accessToken), refreshTokenEncrypted: refreshToken ? encryptSocialSecret(refreshToken) : null, tokenExpiresAt: expiresAt, scopes: JSON.stringify(scopes), lastCheckedAt: new Date(), lastError: null } });
+      const connectedId = await upsertAccount({ workspaceId: account.workspaceId, platform, externalId, accountName: identity.name || account.accountName || externalId, accessToken, refreshToken, expiresAt, scopes });
+      if (connectedId !== account.id) await prisma.socialAccount.delete({ where: { id: account.id } }).catch(() => undefined);
+      else await prisma.socialAccount.update({ where: { id: account.id }, data: { status: 'CONNECTED', externalId, accountName: identity.name || account.accountName, accessTokenEncrypted: encryptSocialSecret(accessToken), refreshTokenEncrypted: refreshToken ? encryptSocialSecret(refreshToken) : null, tokenExpiresAt: expiresAt, scopes: JSON.stringify(scopes), lastCheckedAt: new Date(), lastError: null } });
     }
     return res.redirect('/social-media-factory?oauth=success&platform=' + encodeURIComponent(platform));
   } catch (error: any) {
