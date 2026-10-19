@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import OpenAI from 'openai';
 import crypto from 'node:crypto';
+import { createSocialAuthorizationUrl, socialOAuthConfigurationStatus } from './social-media-factory.oauth';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -44,6 +45,7 @@ router.get('/status', async (_req, res) => {
     platforms: PLATFORMS.map(platform => ({ platform, publishing: 'REQUIRES_OAUTH_AND_PROVIDER_ADAPTER' })),
     metrics: { workspaces, posts, scheduled, published, failed },
     aiConfigured: Boolean(process.env.OPENAI_API_KEY),
+    oauth: socialOAuthConfigurationStatus(),
     schedulerEnabled: String(process.env.SOCIAL_MEDIA_FACTORY_ENABLED).toLowerCase() === 'true',
     note: 'Publicação real só ocorre após configurar credenciais e adaptador oficial da plataforma.'
   });
@@ -54,7 +56,7 @@ router.get('/platforms', (_req, res) => res.json({ platforms: PLATFORMS }));
 router.get('/workspaces', async (_req, res) => {
   const workspaces = await prisma.socialWorkspace.findMany({
     orderBy: { updatedAt: 'desc' },
-    include: { accounts: { select: { id: true, platform: true, accountName: true, status: true, lastCheckedAt: true, lastError: true } },
+    include: { accounts: { select: { id: true, platform: true, accountName: true, externalId: true, status: true, scopes: true, lastCheckedAt: true, lastError: true } },
       _count: { select: { posts: true } } }
   });
   res.json({ workspaces });
@@ -73,6 +75,17 @@ router.post('/workspaces', async (req, res) => {
     accounts: { create: PLATFORMS.map(platform => ({ platform, status: 'NOT_CONFIGURED' })) }
   }, include: { accounts: true } });
   res.status(201).json({ workspace });
+});
+
+router.post('/accounts/:accountId/connect', async (req, res) => {
+  try {
+    const account = await prisma.socialAccount.findUnique({ where: { id: req.params.accountId }, include: { workspace: true } });
+    if (!account || !account.workspace.active) return res.status(404).json({ error: 'Conta social ou projeto não encontrado.' });
+    const authorizationUrl = await createSocialAuthorizationUrl(account.id);
+    res.json({ authorizationUrl, platform: account.platform, expiresInSeconds: 600, message: 'Abra a URL e autorize somente as permissões necessárias.' });
+  } catch (error: any) {
+    res.status(400).json({ error: String(error?.message || 'Não foi possível iniciar OAuth.').slice(0, 400) });
+  }
 });
 
 router.get('/workspaces/:workspaceId/posts', async (req, res) => {
