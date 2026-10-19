@@ -110,3 +110,20 @@ O usuário executou `git status --short` e `git diff`. Os itens abaixo ainda est
 
 **Importante:** `public/site-factory.html` no GitHub já contém `<meta charset="UTF-8">` e não apresentou mojibake na inspeção remota. O defeito de caracteres identificado estava no JavaScript do dashboard RB Factory. Se a interface continuar exibindo caracteres estranhos depois de sincronizar, fazer recarga forçada do navegador e conferir se o servidor está servindo a versão atual do arquivo, não uma cópia antiga em cache.
 
+
+## Social Media Factory IA — 19/10/2026
+
+- [x] Criada branch isolada `feature/social-media-factory-ia`; alterações não foram gravadas diretamente em `main`.
+- [x] Adicionados modelos Prisma para projetos multiempresa, contas por rede, posts e histórico de publicação.
+- [x] Adicionada migration SQLite `20261019170000_social_media_factory_ia`.
+- [x] Criada API administrativa em `/api/social-media-factory` para status, plataformas, projetos, posts, geração de rascunhos, agendamento e logs.
+- [x] Criado painel em `/social-media-factory`.
+- [x] Adicionada geração de conteúdo por OpenAI, ativada somente com `OPENAI_API_KEY`.
+- [x] Adicionado scheduler opcional por `SOCIAL_MEDIA_FACTORY_ENABLED=true`.
+- [x] Documentação operacional em `docs/SOCIAL_MEDIA_FACTORY_IA.md`.
+- [ ] Rodar `npx prisma migrate deploy`, `npx prisma generate`, `npm run typecheck`, `npm run build` e testes no ambiente do repositório.
+- [ ] Implementar e validar adaptadores OAuth/API oficiais de Instagram, Facebook, TikTok, YouTube, Google Business Profile e Pinterest. Até isso ocorrer, posts agendados ficam com status `INTEGRATION_REQUIRED` e não são enviados.
+- [ ] Configurar credenciais de cada projeto por mecanismo seguro de segredos, validar permissões e testar publicação real antes de ativar automação pública.
+- [ ] Abrir PR para revisão e CI; não considerar publicação real concluída até passar os testes e a validação de cada plataforma.
+
+**Limite importante desta entrega:** o painel, a persistência, a geração de rascunhos e o agendamento foram preparados. O módulo ainda não publica de fato em redes externas, pois as integrações OAuth/API e seus testes de conformidade ainda não estão implementados/configurados. Não inserir tokens em texto simples nem em commits.
