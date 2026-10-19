@@ -1788,11 +1788,15 @@ model SocialAccount {
   externalId     String?
   status         String   @default("NOT_CONFIGURED")
   credentialsRef String?
+  accessTokenEncrypted String?
+  refreshTokenEncrypted String?
+  tokenExpiresAt DateTime?
   scopes         String?
   lastCheckedAt  DateTime?
   lastError      String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  oauthStates    SocialOAuthState[]
 
   @@unique([workspaceId, platform, externalId])
   @@index([workspaceId, platform, status])
@@ -1839,4 +1843,17 @@ model SocialPublishLog {
 
   @@index([postId, createdAt])
   @@index([platform, outcome, createdAt])
+}
+
+model SocialOAuthState {
+  id        String   @id @default(uuid())
+  state     String   @unique
+  accountId String
+  account   SocialAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  consumedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+  @@index([accountId, createdAt])
 }
