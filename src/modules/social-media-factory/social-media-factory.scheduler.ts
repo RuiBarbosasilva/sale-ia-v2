@@ -3,7 +3,6 @@ import cron from 'node-cron';
 
 const prisma = new PrismaClient();
 let started = false;
-const platforms = ['INSTAGRAM', 'FACEBOOK', 'TIKTOK', 'YOUTUBE', 'GOOGLE_BUSINESS', 'PINTEREST'];
 
 export function startSocialMediaFactoryScheduler() {
   if (started) return;
