@@ -1,5 +1,5 @@
 import { PrismaClient, SocialPost, SocialAccount } from '@prisma/client';
-import { decryptSocialSecret } from './social-media-factory.oauth';
+import { getValidSocialAccessToken } from './social-media-factory.oauth';
 
 const prisma = new PrismaClient();
 const GRAPH_VERSION = process.env.META_GRAPH_API_VERSION || 'v23.0';
@@ -35,9 +35,8 @@ async function requestJson(url: string, init?: RequestInit): Promise<any> {
   if (body?.error && body.error.code && body.error.code !== 'ok') throw new Error(String(body.error.message || body.error.code).slice(0, 400));
   return body;
 }
-function tokenFor(account: SocialAccount): string {
-  if (!account.accessTokenEncrypted) throw new Error('Conta ainda não possui token OAuth autorizado.');
-  return decryptSocialSecret(account.accessTokenEncrypted);
+async function tokenFor(account: SocialAccount): Promise<string> {
+  return getValidSocialAccessToken(account);
 }
 function accountMetadata(account: SocialAccount): Record<string, any> {
   try { return JSON.parse(account.platformMetadata || '{}'); } catch { return {}; }
@@ -152,7 +151,7 @@ export async function publishSocialPost(postId: string): Promise<PublishResult> 
   if (!accounts.length) throw new Error(`Nenhuma conta ${post.platform} autorizada para este projeto.`);
   if (accounts.length > 1) throw new Error(`Há ${accounts.length} contas ${post.platform} conectadas neste projeto. Selecione explicitamente a conta de destino antes de publicar.`);
   const account = accounts[0];
-  const token = tokenFor(account);
+  const token = await tokenFor(account);
   switch (post.platform) {
     case 'FACEBOOK': return publishFacebook(post, account, token);
     case 'INSTAGRAM': return publishInstagram(post, account, token);
@@ -171,7 +170,7 @@ export async function checkSocialPostProcessing(postId: string): Promise<'PUBLIS
   if (accounts.length !== 1) return 'FAILED';
   const account = accounts[0];
   if (post.platform !== 'TIKTOK') return post.status === 'PUBLISHED' ? 'PUBLISHED' : 'FAILED';
-  const result = await requestJson('https://open.tiktokapis.com/v2/post/publish/status/fetch/', { method: 'POST', headers: { Authorization: 'Bearer ' + tokenFor(account), 'Content-Type': 'application/json' }, body: JSON.stringify({ publish_id: post.externalPostId }) });
+  const result = await requestJson('https://open.tiktokapis.com/v2/post/publish/status/fetch/', { method: 'POST', headers: { Authorization: 'Bearer ' + await tokenFor(account), 'Content-Type': 'application/json' }, body: JSON.stringify({ publish_id: post.externalPostId }) });
   const status = String(result.data?.status || '').toUpperCase();
   if (['PUBLISH_COMPLETE', 'PUBLISHED'].includes(status)) return 'PUBLISHED';
   if (['FAILED', 'PUBLISH_FAILED'].includes(status)) return 'FAILED';
