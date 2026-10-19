@@ -66,8 +66,12 @@ async function generateImage(client: OpenAI, workspace: SocialWorkspace, theme: 
   if (String(process.env.SOCIAL_MEDIA_VIDEO_GENERATION_ENABLED).toLowerCase() === 'true') {
     const videoName = stem + '.mp4';
     const args = ['-y', '-loop', '1', '-i', path.join(folder, imageName), '-t', '8', '-vf', "scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,zoompan=z='min(zoom+0.0008,1.08)':d=240:s=1280x720:fps=30,format=yuv420p", '-r', '30', '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-movflags', '+faststart', path.join(folder, videoName)];
-    await new Promise<void>((resolve, reject) => execFile(process.env.FFMPEG_PATH || 'ffmpeg', args, { timeout: 120000, maxBuffer: 1024 * 1024 }, error => error ? reject(error) : resolve()));
-    videoUrl = new URL('/generated-images/social-media/' + videoName, base).toString();
+    try {
+      await new Promise<void>((resolve, reject) => execFile(process.env.FFMPEG_PATH || 'ffmpeg', args, { timeout: 120000, maxBuffer: 1024 * 1024 }, error => error ? reject(error) : resolve()));
+      videoUrl = new URL('/generated-images/social-media/' + videoName, base).toString();
+    } catch (error: any) {
+      console.error('[SOCIAL MEDIA FACTORY] video rendering unavailable:', String(error?.message || error).slice(0, 250));
+    }
   }
   return { imageUrl, videoUrl };
 }
@@ -115,6 +119,7 @@ export async function generateDailySocialContent(workspaceId: string): Promise<{
     let generated: any;
     try { generated = JSON.parse(response.choices[0]?.message?.content || '{}'); } catch { throw new Error('A IA retornou conteúdo em formato inválido.'); }
     if (!Array.isArray(generated.posts) || generated.posts.length !== 30) throw new Error('A IA não retornou exatamente 30 conteúdos; lote diário cancelado para evitar calendário incompleto.');
+    if (generated.posts.some((item: any) => !String(item?.caption || '').trim())) throw new Error('A IA retornou conteúdo sem legenda; lote diário cancelado para evitar publicações vazias.');
     const normalized = generated.posts.map((item: any, index: number) => ({ ...item, ...assigned[index] }));
     const images: Array<{ imageUrl?: string; videoUrl?: string }> = [];
     for (let slot = 0; slot < 5; slot++) {
