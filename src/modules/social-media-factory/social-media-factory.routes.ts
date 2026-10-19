@@ -56,7 +56,7 @@ router.get('/platforms', (_req, res) => res.json({ platforms: PLATFORMS }));
 router.get('/workspaces', async (_req, res) => {
   const workspaces = await prisma.socialWorkspace.findMany({
     orderBy: { updatedAt: 'desc' },
-    include: { accounts: { select: { id: true, platform: true, accountName: true, externalId: true, status: true, scopes: true, lastCheckedAt: true, lastError: true } },
+    include: { accounts: { select: { id: true, platform: true, accountName: true, externalId: true, status: true, scopes: true, platformMetadata: true, lastCheckedAt: true, lastError: true } },
       _count: { select: { posts: true } } }
   });
   res.json({ workspaces });
@@ -75,6 +75,30 @@ router.post('/workspaces', async (req, res) => {
     accounts: { create: PLATFORMS.map(platform => ({ platform, status: 'NOT_CONFIGURED' })) }
   }, include: { accounts: true } });
   res.status(201).json({ workspace });
+});
+
+router.patch('/accounts/:accountId/target', async (req, res) => {
+  const account = await prisma.socialAccount.findUnique({ where: { id: req.params.accountId }, include: { workspace: true } });
+  if (!account || !account.workspace.active) return res.status(404).json({ error: 'Conta social ou projeto não encontrado.' });
+  if (!['AUTHORIZED', 'CONNECTED'].includes(account.status) || !account.accessTokenEncrypted) return res.status(409).json({ error: 'Autorize a conta OAuth antes de configurar o destino.' });
+  const externalId = String(req.body?.externalId || '').trim();
+  if (account.platform === 'GOOGLE_BUSINESS' && !/^accounts\/[^/]+\/locations\/[^/]+$/.test(externalId)) {
+    return res.status(400).json({ error: 'Use o caminho completo accounts/{accountId}/locations/{locationId} do Google Business Profile.' });
+  }
+  if (account.platform === 'PINTEREST' && !externalId) return res.status(400).json({ error: 'O nome de usuário Pinterest não pode ficar vazio.' });
+  const metadata: Record<string, string> = {};
+  if (account.platform === 'PINTEREST') {
+    const boardId = String(req.body?.boardId || '').trim();
+    if (!boardId) return res.status(400).json({ error: 'Informe o ID do board do Pinterest para criar Pins.' });
+    metadata.boardId = boardId;
+  }
+  if (account.platform !== 'GOOGLE_BUSINESS' && account.platform !== 'PINTEREST') return res.status(400).json({ error: 'Esta plataforma obtém o destino automaticamente no OAuth.' });
+  const updated = await prisma.socialAccount.update({ where: { id: account.id }, data: {
+    externalId, accountName: req.body?.accountName ? String(req.body.accountName).slice(0, 160) : account.accountName,
+    platformMetadata: Object.keys(metadata).length ? JSON.stringify(metadata) : account.platformMetadata,
+    status: 'CONNECTED', lastError: null, lastCheckedAt: new Date()
+  }, select: { id: true, platform: true, accountName: true, externalId: true, status: true, platformMetadata: true } });
+  res.json({ account: updated });
 });
 
 router.post('/accounts/:accountId/connect', async (req, res) => {
