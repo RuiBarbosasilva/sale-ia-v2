@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import cron from 'node-cron';
 import { publishQueuedSocialPost, refreshProcessingSocialPosts } from './social-media-factory.service';
+import { runDailySocialAutomation } from './social-media-factory.automation';
 
 const prisma = new PrismaClient();
 let started = false;
@@ -10,6 +11,7 @@ export function startSocialMediaFactoryScheduler() {
   started = true;
   cron.schedule('* * * * *', async () => {
     try {
+      await runDailySocialAutomation();
       const duePosts = await prisma.socialPost.findMany({
         where: { status: 'SCHEDULED', scheduledFor: { lte: new Date() } },
         orderBy: { scheduledFor: 'asc' },
