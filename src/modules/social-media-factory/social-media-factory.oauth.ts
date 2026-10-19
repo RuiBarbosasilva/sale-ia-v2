@@ -215,7 +215,11 @@ socialOAuthCallbackRouter.get('/callback', async (req, res) => {
         }
       }
       if (discoveredIds.some(id => id !== account.id)) await prisma.socialAccount.delete({ where: { id: account.id } }).catch(() => undefined);
-      else await prisma.socialAccount.update({ where: { id: account.id }, data: { status: 'AUTHORIZED', lastCheckedAt: new Date(), lastError: null, scopes: JSON.stringify(scopes) } });
+      else await prisma.socialAccount.update({ where: { id: account.id }, data: {
+        status: 'AUTHORIZED', accessTokenEncrypted: encryptSocialSecret(accessToken),
+        refreshTokenEncrypted: refreshToken ? encryptSocialSecret(refreshToken) : null,
+        tokenExpiresAt: expiresAt, lastCheckedAt: new Date(), lastError: null, scopes: JSON.stringify(scopes)
+      } });
     } else if (platform === 'GOOGLE_BUSINESS') {
       await prisma.socialAccount.update({ where: { id: account.id }, data: {
         status: 'AUTHORIZED', accessTokenEncrypted: encryptSocialSecret(accessToken),
