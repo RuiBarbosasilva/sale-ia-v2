@@ -40,4 +40,4 @@ Instagram, Facebook, TikTok, YouTube, Google Business Profile e Pinterest. Cada 
 
 ## Frequência
 
-A configuração desejada é de até 5 posts por dia por rede e por projeto (até 30 por dia por projeto). A API atual gera até cinco rascunhos por chamada; o calendário deve ser preenchido em lotes e o conteúdo precisa respeitar limites, formatos e políticas de cada rede. A publicação automática só deve ser habilitada após validar as integrações e limites aplicáveis.
+A configuração desejada é de até 5 posts por dia por rede e por projeto (até 30 por dia por projeto). A API aceita lotes de até 30 rascunhos por chamada; o padrão do painel é 30, orientado a cinco conteúdos por rede. A distribuição gerada pela IA deve ser revisada antes do agendamento e precisa respeitar limites, formatos e políticas de cada rede. A publicação automática só deve ser habilitada após validar as integrações e limites aplicáveis.
