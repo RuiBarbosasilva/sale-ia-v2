@@ -110,3 +110,18 @@ O usuário executou `git status --short` e `git diff`. Os itens abaixo ainda est
 
 **Importante:** `public/site-factory.html` no GitHub já contém `<meta charset="UTF-8">` e não apresentou mojibake na inspeção remota. O defeito de caracteres identificado estava no JavaScript do dashboard RB Factory. Se a interface continuar exibindo caracteres estranhos depois de sincronizar, fazer recarga forçada do navegador e conferir se o servidor está servindo a versão atual do arquivo, não uma cópia antiga em cache.
 
+
+
+## Correções RB Factory Sites — 20/10/2026
+
+### Alterações em validação
+- [x] Registrada a rota `siteFactoryDashboardRoutes` em `src/app.ts`, sob `/api/site-factory-dashboard`, para disponibilizar `GET /api/site-factory-dashboard/overview`.
+- [x] Corrigido o portão de qualidade da fila de demos em `src/services/prospecting/websiteDemoFactoryService.ts`: a fila agora também exige ausência de `qualityCriticalIssues`, alinhando a regra com a geração direta. Antes, uma demo com recomendação `approve` e score suficiente podia ser marcada como pronta pela fila mesmo contendo problemas críticos.
+- [x] A resposta interna da geração da demo agora transporta a lista `qualityCriticalIssues` para que o worker aplique a regra completa.
+- [ ] CI do PR #71 concluído com sucesso.
+- [ ] Testes de integração com banco real e chamadas HTTP verificadas.
+- [ ] Confirmar a interface no navegador e conferir o resumo do dashboard com dados reais.
+
+**PR de validação:** https://github.com/RuiBarbosasilva/sale-ia-v2/pull/71  
+**Branch:** `fix/rb-factory-dashboard-route`  
+**Regra de segurança:** não marcar o módulo como finalizado nem integrar em `main` antes de CI verde e validação funcional. Nenhuma migração ou alteração destrutiva de dados foi executada nesta correção.
