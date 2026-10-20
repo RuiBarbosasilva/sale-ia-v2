@@ -1,3 +1,4 @@
+import { generateVideoForPost } from './videoGeneration.service';
 import { Router, Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import OpenAI from 'openai';
@@ -270,4 +271,24 @@ router.get('/posts/:postId/logs', async (req, res) => {
   res.json({ logs });
 });
 
+
+// Rota de teste para geração de vídeo (Requer chave de admin)
+router.post('/test-generate-video', async (req: Request, res: Response) => {
+  try {
+    const { postId, scriptText, voiceId } = req.body;
+    if (!postId || !scriptText) {
+      return res.status(400).json({ error: 'postId e scriptText são obrigatórios' });
+    }
+    
+    const result = await generateVideoForPost({ postId, scriptText, voiceId });
+    
+    if (result.success) {
+      return res.json({ success: true, message: 'Vídeo gerado com sucesso!', videoUrl: result.videoUrl });
+    } else {
+      return res.status(500).json({ success: false, error: result.error });
+    }
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
 export default router;

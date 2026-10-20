@@ -3,8 +3,18 @@ import { isIP } from 'node:net';
 import { getValidSocialAccessToken } from './social-media-factory.oauth';
 
 const prisma = new PrismaClient();
+const DRY_RUN = process.env.SOCIAL_MEDIA_DRY_RUN === 'true';
 const GRAPH_VERSION = process.env.META_GRAPH_API_VERSION || 'v23.0';
 type PublishResult = { status: 'PUBLISHED' | 'PROCESSING'; externalPostId?: string; publishedUrl?: string; message: string };
+
+function checkDryRun(platform: string): PublishResult | null {
+  if (DRY_RUN) {
+    console.log("[DRY RUN] Simulacao em " + platform + ". Nenhuma API real chamada.");
+    return { status: 'PUBLISHED', externalPostId: 'DRY_RUN_' + Date.now(), publishedUrl: undefined, message: 'Publicação simulada (DRY_RUN ativo).' };
+  }
+  return null;
+}
+
 
 function parseMedia(post: SocialPost): string[] {
   if (!post.mediaUrls) return [];
@@ -46,6 +56,7 @@ function titleOf(post: SocialPost): string {
   return (post.title || post.caption.split('\n')[0] || 'Publicação').slice(0, 100);
 }
 async function publishFacebook(post: SocialPost, account: SocialAccount, token: string): Promise<PublishResult> {
+  const dryRunCheck = checkDryRun('Facebook'); if (dryRunCheck) return dryRunCheck;
   if (!account.externalId) throw new Error('Selecione uma Página do Facebook para esta conta.');
   const base = `https://graph.facebook.com/${GRAPH_VERSION}/${encodeURIComponent(account.externalId)}`;
   const media = parseMedia(post)[0];
@@ -56,6 +67,7 @@ async function publishFacebook(post: SocialPost, account: SocialAccount, token: 
   return { status: 'PUBLISHED', externalPostId: String(result.post_id || result.id || ''), publishedUrl: result.post_id ? `https://www.facebook.com/${result.post_id}` : undefined, message: 'Publicado na Página do Facebook.' };
 }
 async function publishInstagram(post: SocialPost, account: SocialAccount, token: string): Promise<PublishResult> {
+  const dryRunCheck = checkDryRun('Instagram'); if (dryRunCheck) return dryRunCheck;
   if (!account.externalId) throw new Error('Conta Instagram profissional não identificada.');
   const media = parseMedia(post)[0];
   if (!media) throw new Error('Instagram exige URL HTTPS pública de imagem ou vídeo para esta publicação.');
@@ -71,6 +83,7 @@ async function publishInstagram(post: SocialPost, account: SocialAccount, token:
   return { status: 'PUBLISHED', externalPostId: String(publish.id || ''), publishedUrl: undefined, message: 'Publicado no Instagram.' };
 }
 async function publishTikTok(post: SocialPost, account: SocialAccount, token: string): Promise<PublishResult> {
+  const dryRunCheck = checkDryRun('TikTok'); if (dryRunCheck) return dryRunCheck;
   let postMetadata: any = {};
   try { postMetadata = JSON.parse(post.metadata || '{}'); } catch {}
   if (!postMetadata.tiktokConsentAt) throw new Error('TikTok exige consentimento explícito por publicação. Agende o post marcando a confirmação de envio.');
