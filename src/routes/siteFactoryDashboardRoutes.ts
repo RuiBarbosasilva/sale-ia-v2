@@ -1,7 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
+import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
+
+// Os indicadores do Site Factory são internos e exigem a chave administrativa.
+router.use(adminAuthorization);
 
 router.get('/overview', async (req: Request, res: Response) => {
   try {
@@ -19,7 +23,7 @@ router.get('/overview', async (req: Request, res: Response) => {
     // WebsiteProposal atualmente não possui campo de preço.
     // A receita será calculada quando houver um campo financeiro
     // próprio no modelo de propostas.
-    const revenue = 0;
+    const revenue = null;
     
     res.json({
       success: true,
@@ -30,7 +34,8 @@ router.get('/overview', async (req: Request, res: Response) => {
         totalDemos,
         totalProposals,
         totalSales,
-        revenue
+        revenue,
+        revenueAvailable: false
       }
     });
   } catch (error: any) {
