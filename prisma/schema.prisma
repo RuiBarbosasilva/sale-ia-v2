@@ -1875,3 +1875,330 @@ model SocialAutomationRun {
   @@unique([workspaceId, runDate])
   @@index([status, startedAt])
 }
+
+
+model DropshipSupplier {
+  id                    String   @id @default(cuid())
+  name                  String
+  site                  String?
+  platform              String?
+  contact               String?
+  cnpj                  String?
+  origin                String?
+  location              String?
+  categories            String?
+  productCount          Int      @default(0)
+  stockUpdate           Boolean  @default(false)
+  emitsNF               Boolean  @default(false)
+  shippingDays          Int?
+  avgDeliveryDays       Int?
+  hasTracking           Boolean  @default(false)
+  returnPolicy          String?
+  exchangePolicy        String?
+  marketplaceCompatible String?
+  acceptsMLLabel        Boolean  @default(false)
+  acceptsShopeeLabel    Boolean  @default(false)
+  directShipping        Boolean  @default(false)
+  neutralPackaging      Boolean  @default(false)
+  customPackaging       Boolean  @default(false)
+  hasAPI                Boolean  @default(false)
+  priceStability        Float    @default(0)
+  availabilityHistory   String?
+  complaintHistory      String?
+  reputation            String?
+  reviews               String?
+  incidents             String?
+  lastValidation        DateTime?
+  reliabilityScore      Float    @default(0)
+  scoreReason           String?
+  validationStatus      String   @default("PENDING_VALIDATION")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  products              DropshipProduct[]
+  validations           DropshipSupplierValidation[]
+  orders                DropshipOrder[]
+
+    allowsDropshipping  Boolean  @default(false)
+@@map("dropship_suppliers")
+}
+
+model DropshipSupplierValidation {
+  id            String   @id @default(cuid())
+  supplierId    String
+  checklist     String
+  status        String   @default("PENDING")
+  validatedAt   DateTime?
+  validatedBy   String?
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  supplier      DropshipSupplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@map("dropship_supplier_validations")
+}
+
+model DropshipProduct {
+  id                    String   @id @default(cuid())
+  name                  String
+  sku                   String?
+  ean                   String?
+  category              String?
+  subcategory           String?
+  supplierId            String
+  cost                  Float    @default(0)
+  stock                 Int      @default(0)
+  weight                Float?
+  dimensions            String?
+  material              String?
+  variations            String?
+  images                String?
+  description           String?
+  suggestedPrice        Float?
+  minPrice              Float?
+  maxPrice              Float?
+  competitorCount       Int      @default(0)
+  avgRating             Float?
+  demandSignals         String?
+  potential             String?
+  risk                  String?
+  margin                Float?
+  opportunityScore      Float    @default(0)
+  riskScore             Float    @default(0)
+  classification        String   @default("WATCH")
+  priority              String   @default("P3")
+  status                String   @default("CANDIDATE")
+  source                String?
+  sourceUrl             String?
+  confidence            String   @default("UNKNOWN")
+  capturedAt            DateTime?
+  lastPriceCheck        DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  supplier              DropshipSupplier @relation(fields: [supplierId], references: [id])
+  scores                DropshipProductScore[]
+  priceSnapshots        DropshipPriceSnapshot[]
+  tests                 DropshipProductTest[]
+  performances          DropshipProductPerformance[]
+  orders                DropshipOrder[]
+
+  @@map("dropship_products")
+}
+
+model DropshipProductScore {
+  id            String   @id @default(cuid())
+  productId     String
+  demand        Float    @default(0)
+  competition   Float    @default(0)
+  price         Float    @default(0)
+  cost          Float    @default(0)
+  margin        Float    @default(0)
+  weight        Float    @default(0)
+  dimensions    Float    @default(0)
+  breakageRisk  Float    @default(0)
+  returnRisk    Float    @default(0)
+  easeOfListing Float    @default(0)
+  differentiation Float  @default(0)
+  kitPotential  Float    @default(0)
+  upsellPotential Float  @default(0)
+  supplierStability Float @default(0)
+  availability  Float    @default(0)
+  trend         Float    @default(0)
+  scalePotential Float   @default(0)
+  totalScore    Float    @default(0)
+  calculatedAt  DateTime @default(now())
+
+  product       DropshipProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("dropship_product_scores")
+}
+
+model DropshipPriceSnapshot {
+  id            String   @id @default(cuid())
+  productId     String
+  supplierPrice Float
+  mlMinPrice    Float?
+  mlAvgPrice    Float?
+  mlMaxPrice    Float?
+  shopeeMinPrice Float?
+  shopeeAvgPrice Float?
+  shopeeMaxPrice Float?
+  listingCount  Int      @default(0)
+  capturedAt    DateTime @default(now())
+
+  product       DropshipProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("dropship_price_snapshots")
+}
+
+model DropshipCompetitor {
+  id            String   @id @default(cuid())
+  productId     String
+  name          String
+  platform      String
+  price         Float
+  rating        Float?
+  reviewCount   Int?
+  url           String?
+  capturedAt    DateTime @default(now())
+
+  @@map("dropship_competitors")
+}
+
+model DropshipProductTest {
+  id            String   @id @default(cuid())
+  productId     String
+  startDate     DateTime @default(now())
+  endDate       DateTime?
+  salesCount    Int      @default(0)
+  revenue       Float    @default(0)
+  profit        Float    @default(0)
+  conversionRate Float   @default(0)
+  returnRate    Float    @default(0)
+  cancelRate    Float    @default(0)
+  status        String   @default("RUNNING")
+  notes         String?
+
+  product       DropshipProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("dropship_product_tests")
+}
+
+model DropshipProductPerformance {
+  id            String   @id @default(cuid())
+  productId     String
+  period        String
+  salesCount    Int      @default(0)
+  revenue       Float    @default(0)
+  profit        Float    @default(0)
+  margin        Float    @default(0)
+  roi           Float    @default(0)
+  recordedAt    DateTime @default(now())
+
+  product       DropshipProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("dropship_product_performances")
+}
+
+model DropshipOrder {
+  id                String   @id @default(cuid())
+  marketplaceId     String?
+  marketplace       String
+  productId         String
+  supplierId        String
+  sku               String?
+  quantity          Int      @default(1)
+  unitCost          Float
+  totalCost         Float
+  salePrice         Float
+  totalSale         Float
+  profit            Float
+  margin            Float
+  customerName      String?
+  customerAddress   String?
+  trackingCode      String?
+  carrier           String?
+  status            String   @default("PENDING")
+  supplierOrderId   String?
+  supplierStatus    String?
+  nfNumber          String?
+  shippedAt         DateTime?
+  deliveredAt       DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  product           DropshipProduct @relation(fields: [productId], references: [id])
+  supplier          DropshipSupplier @relation(fields: [supplierId], references: [id])
+
+  @@map("dropship_orders")
+}
+
+model DropshipTracking {
+  id            String   @id @default(cuid())
+  orderId       String
+  code          String
+  carrier       String?
+  origin        String?
+  destination   String?
+  events        String?
+  lastEvent     String?
+  lastEventAt   DateTime?
+  estimatedDelivery DateTime?
+  deliveredAt   DateTime?
+  isDelayed     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("dropship_trackings")
+}
+
+model DropshipAlert {
+  id            String   @id @default(cuid())
+  type          String
+  severity      String   @default("MEDIUM")
+  title         String
+  message       String
+  productId     String?
+  supplierId    String?
+  orderId       String?
+  isRead        Boolean  @default(false)
+  isResolved    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  resolvedAt    DateTime?
+
+  @@map("dropship_alerts")
+}
+
+model DropshipRecommendation {
+  id            String   @id @default(cuid())
+  type          String
+  priority      String   @default("P2")
+  title         String
+  message       String
+  productId     String?
+  supplierId    String?
+  action        String?
+  isAccepted    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@map("dropship_recommendations")
+}
+
+model DropshipResearchRun {
+  id            String   @id @default(cuid())
+  type          String
+  status        String   @default("RUNNING")
+  startedAt     DateTime @default(now())
+  finishedAt    DateTime?
+  productsFound Int      @default(0)
+  suppliersFound Int     @default(0)
+  errors        String?
+  config        String?
+
+  @@map("dropship_research_runs")
+}
+
+model DropshipConfig {
+  id              String   @id @default(cuid())
+  key             String   @unique
+  value           String
+  description     String?
+  updatedAt       DateTime @updatedAt
+
+  @@map("dropship_configs")
+}
+
+model DropshipTrendSnapshot {
+  id           String   @id @default(cuid())
+  keyword      String
+  categoryId   String?
+  position     Int?
+  searchVolume Int?
+  trend        String?
+  apiUrl       String
+  collectedAt  DateTime @default(now())
+
+  @@index([keyword, collectedAt])
+  @@map("dropship_trend_snapshots")
+}

@@ -15,6 +15,7 @@ import hotmartRoutes from './routes/hotmartRoutes';
 import braipRoutes from './routes/braipRoutes';
 import hunterRoutes from './routes/hunterRoutes';
 import mlRoutes from './modules/mercadoLivre/routes/mercadoLivreRoutes';
+import dropshippingRoutes from './routes/dropshippingRoutes';
 import cookieParser from 'cookie-parser';
 import express from 'express';
 import templateImportRoutes from './routes/templateImportRoutes';
@@ -65,7 +66,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Força UTF-8 nas páginas HTML para evitar mojibake em ambientes Windows/proxies.
+// ForÃ§a UTF-8 nas pÃ¡ginas HTML para evitar mojibake em ambientes Windows/proxies.
 app.use((req, res, next) => {
   const htmlRoutes = ['/affiliates', '/affiliates/admin', '/affiliates/intelligence', '/editorial', '/sales', '/dashboard', '/dashboard/', '/rb-factory', '/rb-factory-benchmark', '/rb-factory-maintenance', '/rb-factory-commercial', '/mercadolivre', '/mercadolivre/dropshipping', '/social-media-factory'];
   if (htmlRoutes.includes(req.path) || req.path.endsWith('.html')) {
@@ -116,6 +117,7 @@ app.use('/api/rb-factory-commercial', rbFactoryCommercialRoutes);
 
 app.use('/go', affiliatePublicRoutes);
 app.use('/api/social-media-factory', socialMediaFactoryRoutes);
+app.use('/api/mercadolivre/dropshipping', dropshippingRoutes);
 app.use('/api/mercadolivre', mlRoutes);
 app.use('/api/credenciais', credenciaisRoutes);
 app.use('/dashboard', dashboardRoutes);
@@ -123,26 +125,27 @@ app.use('/dashboard', dashboardRoutes);
 startRbFactoryMaintenanceJob();
 
 // ==========================================
-// ROTAS DO MÓDULO AFILIADOS IA E OUTROS
+// ROTAS DO MÃ“DULO AFILIADOS IA E OUTROS
 // (DEVEM VIR ANTES DO errorHandler)
 // ==========================================
 app.post('/api/affiliates/webhook/:provider', handleAffiliateWebhook);
 app.use('/api/factory-ebook', factoryEbookRoutes);
 app.use('/api/afiliados', afiliadosIaRoutes);
-app.use('/api/afiliados/produtos', produtosRoutes); // <-- CORREÇÃO: Rota agora conectada!
+app.use('/api/afiliados/produtos', produtosRoutes); // <-- CORREÃ‡ÃƒO: Rota agora conectada!
 app.use('/api/publishers', publisherRoutes);
 app.use('/api/ml-seller', mlSellerRoutes);
 app.use('/api/content-factory', contentFactoryRoutes);
 
 // ==========================================
-// ROTAS DE CONTEÚDO DE AFILIADOS
+// ROTAS DE CONTEÃšDO DE AFILIADOS
 // (DEVEM VIR ANTES DO errorHandler)
 // ==========================================
 app.use('/api/afiliados/conteudo', contentGeneratorRoutes);
 
 // ==========================================
-// MIDDLEWARE DE ERRO (DEVE SER O ÚLTIMO)
+// MIDDLEWARE DE ERRO (DEVE SER O ÃšLTIMO)
 // ==========================================
 app.use(errorHandler);
 
 export default app;
+
