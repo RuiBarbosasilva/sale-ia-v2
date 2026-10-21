@@ -9,7 +9,7 @@ function authorized(req: Request, res: Response): boolean {
 }
 function fail(res: Response, error: unknown) {
   const message = error instanceof Error ? error.message : 'INTERNAL_ERROR';
-  const status = message.endsWith('_NOT_FOUND') ? 404 : message.startsWith('QUALITY_GATE_') || message.startsWith('PUBLISHING_DISABLED') || message.startsWith('PUBLISHED_') ? 409 : 500;
+  const status = message.endsWith('_NOT_FOUND') ? 404 : message.startsWith('QUALITY_GATE_') || message.startsWith('PUBLISHING_DISABLED') || message.startsWith('PUBLISHED_') || message.startsWith('ARTICLE_ALREADY') || message.startsWith('HUMAN_APPROVAL') ? 409 : message.startsWith('AI_PROVIDER_NOT') ? 503 : 500;
   return res.status(status).json({ success: false, error: message });
 }
 export async function health(_req: Request, res: Response) {
@@ -19,6 +19,14 @@ export async function health(_req: Request, res: Response) {
 export async function status(req: Request, res: Response) {
   if (!authorized(req, res)) return;
   try { return res.json({ success: true, ...(await service.getStatus()) }); } catch (e) { return fail(res, e); }
+}
+export async function runCycle(req: Request, res: Response) {
+  if (!authorized(req, res)) return;
+  try { return res.json({ success: true, ...(await service.runAutomationCycle()) }); } catch (e) { return fail(res, e); }
+}
+export async function generateArticle(req: Request, res: Response) {
+  if (!authorized(req, res)) return;
+  try { return res.status(201).json({ success: true, item: await service.generateArticle(req.params.id) }); } catch (e) { return fail(res, e); }
 }
 export async function research(req: Request, res: Response) {
   if (!authorized(req, res)) return;
