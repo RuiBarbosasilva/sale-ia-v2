@@ -32,7 +32,7 @@ async function generateWithAI(topic: { title: string; summary: string; sourceUrl
   const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
   const content = data.choices?.[0]?.message?.content;
   if (!content) throw new Error('AI_EMPTY_RESPONSE');
-  const cleaned = content.replace(/^\\s*```(?:json)?/i, '').replace(/```\\s*$/, '').trim();
+  const cleaned = content.replace(/^\s*```(?:json)?/i, '').replace(/```\s*$/, '').trim();
   const start = cleaned.indexOf('{'), end = cleaned.lastIndexOf('}');
   if (start < 0 || end <= start) throw new Error('AI_INVALID_JSON');
   const obj = JSON.parse(cleaned.slice(start, end)) as Record<string, unknown>;
@@ -196,7 +196,7 @@ export async function approveArticle(id: string) {
     .replace(/<\s*(script|style|iframe|object|embed)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
   let sources: unknown;
   try { sources = JSON.parse(article.sourceUrls); } catch { throw new Error('QUALITY_GATE_SOURCES_INVALID'); }
-  if (!Array.isArray(sources) || sources.length === 0 || !sources.every((source) => source && typeof source.url === 'string' && /^https?:\\/\\//i.test(source.url))) throw new Error('QUALITY_GATE_SOURCES_REQUIRED');
+  if (!Array.isArray(sources) || sources.length === 0 || !sources.every((source) => source && typeof source.url === 'string' && /^https?:\/\//i.test(source.url))) throw new Error('QUALITY_GATE_SOURCES_REQUIRED');
   return prisma.blogFactoryArticle.update({ where: { id }, data: { status: 'APPROVED' } });
 }
 
