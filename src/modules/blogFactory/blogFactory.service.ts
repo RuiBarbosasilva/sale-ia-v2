@@ -47,7 +47,7 @@ async function generateWithAI(topic: { title: string; summary: string; sourceUrl
   const str = (key: string, max: number) => typeof obj[key] === 'string' ? (obj[key] as string).trim().slice(0, max) : '';
   const factChecks = Array.isArray(obj.factChecks) ? obj.factChecks.filter((v): v is string => typeof v === 'string').slice(0, 30) : [];
   const title = str('title', 220), excerpt = str('excerpt', 600), body = str('body', MAX_ARTICLE_CHARS);
-    .replace(/<\s*(script|style|iframe|object|embed)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
+  if (!title || body.replace(/<[^>]*>/g, ' ').trim().length < 500) throw new Error('AI_QUALITY_GATE_FAILED');
   return { title, excerpt, category: str('category', 80) || 'Atualidades', body, factChecks };
 }
 
