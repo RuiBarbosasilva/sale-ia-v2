@@ -216,3 +216,10 @@ Os arquivos foram escritos no GitHub por commits na branch de feature, mas os co
 - O código foi atualizado na branch `feat/blog-factory-ia`; o CI deve validar o head mais recente.
 - Ainda é obrigatório confirmar no GitHub Actions os resultados de Prisma validate/generate/migrate, typecheck, build, testes e Guardian antes de integrar em `main`.
 - O ambiente local, credenciais do provedor de IA, feeds reais e WordPress não foram executados/testados nesta sessão.
+
+
+### Hardening final — sanitização por lista permitida (21/10/2026)
+- Substituído o filtro inicial de HTML por uma lista permitida de tags editoriais. Atributos HTML são descartados; tags ativas/embeds são removidas antes de salvar o conteúdo editado.
+- Corrigida a limpeza de blocos Markdown JSON e a validação de URL de fonte.
+- Restaurado o parser XML/RSS para preservar a decodificação de CDATA e entidades.
+- CI iniciado para commits anteriores desta rodada; confirmar execução correspondente ao head mais recente antes de considerar a branch validada.
