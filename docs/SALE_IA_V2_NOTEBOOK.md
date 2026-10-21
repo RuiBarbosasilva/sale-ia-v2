@@ -156,3 +156,41 @@ Os feeds padrão são G1 RSS e Agência Brasil RSS; é possível substituir por 
 6. Criar painel administrativo integrado e testes automatizados.
 7. Atualizar este notebook com evidências reais e sincronizar a cópia local.
 
+
+
+## Continuação Blog Factory IA — geração por IA e rotina periódica (21/10/2026)
+
+### Novas entregas na branch `feat/blog-factory-ia`
+- `src/modules/blogFactory/blogFactory.service.ts`: geração de rascunhos originais por API compatível com OpenAI Chat Completions, validação mínima de saída, checklist editorial e execução de ciclo pesquisa + geração limitada.
+- `src/modules/blogFactory/blogFactory.scheduler.ts`: execução periódica com intervalo configurável, trava para evitar ciclos sobrepostos, tratamento de falhas e logs.
+- `src/server.ts`: inicialização condicional do scheduler quando `BLOG_FACTORY_AUTORUN_ENABLED=true`.
+- `src/modules/blogFactory/wordpressPublisher.ts`: adaptador WordPress REST que cria posts com status `draft`.
+- `src/modules/blogFactory/blogFactory.controller.ts` e `blogFactory.routes.ts`: endpoints de ciclo e geração de artigo.
+- `public/blog-factory.html`: página inicial do módulo e catálogo dos endpoints.
+- `src/modules/blogFactory/README.md`: configuração, endpoints e limites atualizados.
+
+### Variáveis de ambiente
+- `BLOG_FACTORY_AUTORUN_ENABLED=true`: liga rotina periódica; padrão desligado.
+- `BLOG_FACTORY_INTERVAL_MS=1800000`: 30 minutos por padrão, mínimo 5 minutos.
+- `BLOG_FACTORY_AI_ENABLED=true`: habilita geração de rascunhos.
+- `BLOG_FACTORY_AI_API_KEY` ou `OPENAI_API_KEY`: chave do provedor, somente no ambiente local/servidor.
+- `BLOG_FACTORY_AI_BASE_URL`: endpoint base compatível com OpenAI, opcional.
+- `BLOG_FACTORY_AI_MODEL`: modelo, padrão `gpt-4o-mini`.
+- `BLOG_FACTORY_MAX_ARTICLES_PER_CYCLE=3`: máximo de artigos gerados por ciclo, entre 1 e 10.
+- WordPress: `BLOG_FACTORY_WORDPRESS_URL`, `BLOG_FACTORY_WORDPRESS_USERNAME`, `BLOG_FACTORY_WORDPRESS_APP_PASSWORD`.
+- `BLOG_FACTORY_REQUIRE_HUMAN_APPROVAL` precisa ser definido como `false` para permitir o envio manual ao WordPress. Mesmo assim, o post é enviado como rascunho, não publicado publicamente.
+
+### Endpoints novos
+- `POST /api/blog-factory/run-cycle`: pesquisa feeds e tenta gerar artigos para pautas novas.
+- `POST /api/blog-factory/topics/:id/generate`: gera artigo a partir de uma pauta específica.
+- `POST /api/blog-factory/articles/:id/publish`: nome histórico do endpoint; envia para WordPress como rascunho, após as verificações e configuração exigidas.
+
+### Regras de segurança editorial
+- Não copiar ou clonar artigos completos de portais. A fonte serve como referência e descoberta; o texto deve ser original.
+- A geração é baseada no título e resumo do feed. O sistema registra explicitamente que a fonte integral não foi verificada automaticamente.
+- A saída de IA é rascunho e exige verificação factual humana.
+- Não há publicação pública automática nesta entrega.
+- Não ativar variáveis de automação no ambiente de produção sem validar o código, o custo do provedor e o funcionamento dos feeds.
+
+### Validação ainda pendente
+Os arquivos foram escritos no GitHub por commits na branch de feature, mas os comandos locais `npx prisma migrate deploy`, `npx prisma generate`, `npm run typecheck`, `npm run build` e testes de integração não foram executados nesta sessão. Não marcar como pronto para produção até obter esses resultados. Revisar especialmente a tipagem TypeScript, a compatibilidade do provedor configurado, o comportamento de feeds RSS/Atom reais e a resposta do WordPress em ambiente de teste.
