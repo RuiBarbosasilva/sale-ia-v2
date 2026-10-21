@@ -4,6 +4,13 @@ import { sendWordPressDraft } from './wordpressPublisher';
 const prisma = new PrismaClient();
 
 const MAX_ARTICLE_CHARS = 18000;
+function sanitizeHtml(value: string): string {
+  return value
+    .replace(/<\\s*(script|style|iframe|object|embed)[^>]*>[\\s\\S]*?<\\s*\\/\\s*\\1\\s*>/gi, '')
+    .replace(/\\s+on[a-z]+\\s*=\\s*(\"[^\"]*\"|'[^']*'|[^\\s>]+)/gi, '')
+    .replace(/javascript\\s*:/gi, '');
+}
+
 function slugify(value: string): string {
   return value.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 120) || 'artigo';
 }
@@ -159,7 +166,7 @@ export async function runAutomationCycle() {
   const maxPerCycle = Math.max(1, Math.min(10, Number(process.env.BLOG_FACTORY_MAX_ARTICLES_PER_CYCLE) || 3));
   let generated = 0;
   if (process.env.BLOG_FACTORY_AI_ENABLED === 'true') {
-    const topics = await prisma.blogFactoryTopic.findMany({ where: { status: 'DISCOVERED' }, orderBy: { createdAt: 'desc' }, take: maxPerCycle });
+    const topics = await prisma.blogFactoryTopic.findMany({ where: { status: 'DISCOVERED' }, orderBy: [{ trendScore: 'desc' }, { createdAt: 'desc' }], take: maxPerCycle });
     for (const topic of topics) {
       try { await generateArticle(topic.id); generated++; }
       catch (error) { console.error('[BLOG FACTORY] generation failed:', topic.id, error instanceof Error ? error.message : error); }
@@ -175,18 +182,30 @@ export async function updateDraft(id: string, input: { title?: string; excerpt?:
   return prisma.blogFactoryArticle.update({ where: { id }, data: {
     ...(input.title !== undefined ? { title: input.title.trim().slice(0, 220) } : {}),
     ...(input.excerpt !== undefined ? { excerpt: input.excerpt.trim().slice(0, 600) } : {}),
-    ...(input.body !== undefined ? { body: input.body.slice(0, 100000) } : {}),
+    ...(input.body !== undefined ? { body: sanitizeHtml(input.body).slice(0, 100000) } : {}),
     ...(input.category !== undefined ? { category: input.category.trim().slice(0, 80) } : {}),
   } });
+}
+
+export async function approveArticle(id: string) {
+  const article = await prisma.blogFactoryArticle.findUnique({ where: { id } });
+  if (!article) throw new Error('ARTICLE_NOT_FOUND');
+  if (article.status === 'CMS_DRAFT') throw new Error('ARTICLE_ALREADY_SENT_TO_CMS');
+  if (!article.title.trim()) throw new Error('QUALITY_GATE_TITLE_REQUIRED');
+  if (article.body.replace(/<[^>]*>/g, ' ').trim().length < 500) throw new Error('QUALITY_GATE_BODY_TOO_SHORT');
+  let sources: unknown;
+  try { sources = JSON.parse(article.sourceUrls); } catch { throw new Error('QUALITY_GATE_SOURCES_INVALID'); }
+  if (!Array.isArray(sources) || sources.length === 0 || !sources.every((source) => source && typeof source.url === 'string' && /^https?:\\/\\//i.test(source.url))) throw new Error('QUALITY_GATE_SOURCES_REQUIRED');
+  return prisma.blogFactoryArticle.update({ where: { id }, data: { status: 'APPROVED' } });
 }
 
 export async function publishArticle(id: string) {
   const article = await prisma.blogFactoryArticle.findUnique({ where: { id } });
   if (!article) throw new Error('ARTICLE_NOT_FOUND');
   if (article.status === 'CMS_DRAFT') throw new Error('ARTICLE_ALREADY_SENT_TO_CMS');
+  if (article.status !== 'APPROVED') throw new Error('HUMAN_APPROVAL_REQUIRED');
   if (article.body.replace(/<[^>]*>/g, ' ').trim().length < 500) throw new Error('QUALITY_GATE_BODY_TOO_SHORT');
   if (!article.sourceUrls || article.sourceUrls === '[]') throw new Error('QUALITY_GATE_SOURCES_REQUIRED');
-  if (process.env.BLOG_FACTORY_REQUIRE_HUMAN_APPROVAL !== 'false') throw new Error('HUMAN_APPROVAL_REQUIRED');
   const cms = await sendWordPressDraft({ title: article.title, slug: article.slug, excerpt: article.excerpt, body: article.body });
   return prisma.blogFactoryArticle.update({ where: { id }, data: {
     status: 'CMS_DRAFT',
@@ -197,7 +216,7 @@ export async function publishArticle(id: string) {
 export async function getStatus() {
   const [topics, drafts, published] = await Promise.all([
     prisma.blogFactoryTopic.count(),
-    prisma.blogFactoryArticle.count({ where: { status: { in: ['DRAFT', 'NEEDS_REVIEW'] } } }),
+    prisma.blogFactoryArticle.count({ where: { status: { in: ['DRAFT', 'NEEDS_REVIEW', 'APPROVED'] } } }),
     prisma.blogFactoryArticle.count({ where: { status: 'PUBLISHED' } }),
   ]);
   return { module: 'blog-factory-ia', status: 'ONLINE', topics, drafts, published, cmsDrafts: await prisma.blogFactoryArticle.count({ where: { status: 'CMS_DRAFT' } }), aiEnabled: process.env.BLOG_FACTORY_AI_ENABLED === 'true', schedulerEnabled: process.env.BLOG_FACTORY_AUTORUN_ENABLED === 'true', wordpressConfigured: Boolean(process.env.BLOG_FACTORY_WORDPRESS_URL && process.env.BLOG_FACTORY_WORDPRESS_USERNAME && process.env.BLOG_FACTORY_WORDPRESS_APP_PASSWORD), publishingMode: 'DRAFT_REQUIRES_REVIEW' };
