@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { sendWordPressDraft } from './wordpressPublisher';
 
 const prisma = new PrismaClient();
 
@@ -182,12 +183,15 @@ export async function updateDraft(id: string, input: { title?: string; excerpt?:
 export async function publishArticle(id: string) {
   const article = await prisma.blogFactoryArticle.findUnique({ where: { id } });
   if (!article) throw new Error('ARTICLE_NOT_FOUND');
-  if (!article.title.trim() || article.body.trim().length < 500) throw new Error('QUALITY_GATE_BODY_TOO_SHORT');
-  let sources: Array<{url?: string; title?: string}> = [];
-  try { sources = JSON.parse(article.sourceUrls); } catch { /* invalid source metadata fails below */ }
-  if (!sources.length || sources.some(source => !source.url || !/^https?:\/\//i.test(source.url))) throw new Error('QUALITY_GATE_SOURCES_REQUIRED');
-  if (process.env.BLOG_FACTORY_AUTO_PUBLISH !== 'true') throw new Error('PUBLISHING_DISABLED_CONFIGURE_BLOG_FACTORY_AUTO_PUBLISH');
-  return prisma.blogFactoryArticle.update({ where: { id }, data: { status: 'PUBLISHED', publishedAt: new Date() } });
+  if (article.status === 'CMS_DRAFT') throw new Error('ARTICLE_ALREADY_SENT_TO_CMS');
+  if (article.body.replace(/<[^>]*>/g, ' ').trim().length < 500) throw new Error('QUALITY_GATE_BODY_TOO_SHORT');
+  if (!article.sourceUrls || article.sourceUrls === '[]') throw new Error('QUALITY_GATE_SOURCES_REQUIRED');
+  if (process.env.BLOG_FACTORY_REQUIRE_HUMAN_APPROVAL !== 'false') throw new Error('HUMAN_APPROVAL_REQUIRED');
+  const cms = await sendWordPressDraft({ title: article.title, slug: article.slug, excerpt: article.excerpt, body: article.body });
+  return prisma.blogFactoryArticle.update({ where: { id }, data: {
+    status: 'CMS_DRAFT',
+    qualityNotes: JSON.stringify({ previous: article.qualityNotes, cms: 'WordPress', cmsPostId: cms.id, cmsLink: cms.link || null, cmsStatus: cms.status || 'draft', note: 'Enviado ao WordPress como rascunho; não publicado publicamente.' })
+  } });
 }
 
 export async function getStatus() {
@@ -196,5 +200,5 @@ export async function getStatus() {
     prisma.blogFactoryArticle.count({ where: { status: 'DRAFT' } }),
     prisma.blogFactoryArticle.count({ where: { status: 'PUBLISHED' } }),
   ]);
-  return { module: 'blog-factory-ia', status: 'ONLINE', topics, drafts, published, aiEnabled: process.env.BLOG_FACTORY_AI_ENABLED === 'true', schedulerEnabled: process.env.BLOG_FACTORY_AUTORUN_ENABLED === 'true', wordpressConfigured: Boolean(process.env.BLOG_FACTORY_WORDPRESS_URL && process.env.BLOG_FACTORY_WORDPRESS_USERNAME && process.env.BLOG_FACTORY_WORDPRESS_APP_PASSWORD), publishingMode: 'DRAFT_REQUIRES_REVIEW' };
+  return { module: 'blog-factory-ia', status: 'ONLINE', topics, drafts, published, cmsDrafts: await prisma.blogFactoryArticle.count({ where: { status: 'CMS_DRAFT' } }), aiEnabled: process.env.BLOG_FACTORY_AI_ENABLED === 'true', schedulerEnabled: process.env.BLOG_FACTORY_AUTORUN_ENABLED === 'true', wordpressConfigured: Boolean(process.env.BLOG_FACTORY_WORDPRESS_URL && process.env.BLOG_FACTORY_WORDPRESS_USERNAME && process.env.BLOG_FACTORY_WORDPRESS_APP_PASSWORD), publishingMode: 'DRAFT_REQUIRES_REVIEW' };
 }
