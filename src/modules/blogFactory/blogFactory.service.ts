@@ -51,9 +51,10 @@ const DEFAULT_FEEDS = [
 export type FeedItem = { title: string; url: string; publishedAt: string | null; summary: string; source: string };
 
 function decodeXml(value: string): string {
-    .replace(/<\s*(script|style|iframe|object|embed)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
+  return value.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
     .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'")
-    .replace(/<\s*(script|style|iframe|object|embed)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/<[^>]+>/g, ' ')
     .replace(/\s+/g, ' ').trim();
 }
 
@@ -193,7 +194,7 @@ export async function approveArticle(id: string) {
   if (!article) throw new Error('ARTICLE_NOT_FOUND');
   if (article.status === 'CMS_DRAFT') throw new Error('ARTICLE_ALREADY_SENT_TO_CMS');
   if (!article.title.trim()) throw new Error('QUALITY_GATE_TITLE_REQUIRED');
-    .replace(/<\s*(script|style|iframe|object|embed)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
+  if (article.body.replace(/<[^>]*>/g, ' ').trim().length < 500) throw new Error('QUALITY_GATE_BODY_TOO_SHORT');
   let sources: unknown;
   try { sources = JSON.parse(article.sourceUrls); } catch { throw new Error('QUALITY_GATE_SOURCES_INVALID'); }
   if (!Array.isArray(sources) || sources.length === 0 || !sources.every((source) => source && typeof source.url === 'string' && /^https?:\/\//i.test(source.url))) throw new Error('QUALITY_GATE_SOURCES_REQUIRED');
@@ -205,8 +206,10 @@ export async function publishArticle(id: string) {
   if (!article) throw new Error('ARTICLE_NOT_FOUND');
   if (article.status === 'CMS_DRAFT') throw new Error('ARTICLE_ALREADY_SENT_TO_CMS');
   if (article.status !== 'APPROVED') throw new Error('HUMAN_APPROVAL_REQUIRED');
-    .replace(/<\s*(script|style|iframe|object|embed)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
-  if (!article.sourceUrls || article.sourceUrls === '[]') throw new Error('QUALITY_GATE_SOURCES_REQUIRED');
+  if (article.body.replace(/<[^>]*>/g, ' ').trim().length < 500) throw new Error('QUALITY_GATE_BODY_TOO_SHORT');
+  let sources: unknown;
+  try { sources = JSON.parse(article.sourceUrls); } catch { throw new Error('QUALITY_GATE_SOURCES_INVALID'); }
+  if (!Array.isArray(sources) || sources.length === 0 || !sources.every((source) => source && typeof source.url === 'string' && /^https?:\/\//i.test(source.url))) throw new Error('QUALITY_GATE_SOURCES_REQUIRED');
   const cms = await sendWordPressDraft({ title: article.title, slug: article.slug, excerpt: article.excerpt, body: article.body });
   return prisma.blogFactoryArticle.update({ where: { id }, data: {
     status: 'CMS_DRAFT',
