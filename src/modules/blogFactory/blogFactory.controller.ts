@@ -51,6 +51,10 @@ export async function updateDraft(req: Request, res: Response) {
   if (['title', 'excerpt', 'body', 'category'].some(key => body[key] !== undefined && typeof body[key] !== 'string')) return res.status(400).json({ success: false, error: 'INVALID_FIELD_TYPE' });
   try { return res.json({ success: true, item: await service.updateDraft(req.params.id, body) }); } catch (e) { return fail(res, e); }
 }
+export async function approveArticle(req: Request, res: Response) {
+  if (!authorized(req, res)) return;
+  try { return res.json({ success: true, item: await service.approveArticle(req.params.id) }); } catch (e) { return fail(res, e); }
+}
 export async function publish(req: Request, res: Response) {
   if (!authorized(req, res)) return;
   try { return res.json({ success: true, item: await service.publishArticle(req.params.id) }); } catch (e) { return fail(res, e); }
