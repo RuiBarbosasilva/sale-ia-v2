@@ -194,3 +194,11 @@ Os feeds padrão são G1 RSS e Agência Brasil RSS; é possível substituir por 
 
 ### Validação ainda pendente
 Os arquivos foram escritos no GitHub por commits na branch de feature, mas os comandos locais `npx prisma migrate deploy`, `npx prisma generate`, `npm run typecheck`, `npm run build` e testes de integração não foram executados nesta sessão. Não marcar como pronto para produção até obter esses resultados. Revisar especialmente a tipagem TypeScript, a compatibilidade do provedor configurado, o comportamento de feeds RSS/Atom reais e a resposta do WordPress em ambiente de teste.
+
+
+### Continuação técnica — priorização editorial e CI (21/10/2026)
+- Adicionado `trendScore` aos modelos Prisma e à migração; a ordenação usa uma heurística simples de recência da publicação (não é uma medição real de viralização).
+- Corrigida a normalização da URL do adaptador WordPress após o primeiro CI identificar erro de sintaxe TypeScript em `wordpressPublisher.ts`.
+- Ajustado o contador do painel de status para incluir artigos `NEEDS_REVIEW` nos rascunhos em revisão.
+- Atualizado `.github/workflows/ci.yml` para também disparar em branches `feat/**`.
+- O CI anterior passou por instalação, encoding, validação/geração Prisma e migrações; falhou no typecheck por causa do regex da URL WordPress. O regex foi corrigido em commit posterior, mas ainda falta uma execução de CI referente ao head atualizado. Não declarar validação completa até confirmar typecheck, build, testes e Guardian.
