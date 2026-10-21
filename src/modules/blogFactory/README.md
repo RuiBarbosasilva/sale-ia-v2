@@ -4,6 +4,7 @@ Módulo editorial para descobrir pautas, gerar rascunhos originais e encaminhar 
 
 ## Recursos
 - Descoberta manual e agendada por RSS/Atom; feeds padrão G1 RSS e Agência Brasil.
+- Priorização editorial heurística por recência da publicação; não é uma métrica real de viralização nem substitui sinais de audiência.
 - Deduplicação de pautas por URL e título.
 - Persistência de pautas e artigos via Prisma/SQLite.
 - Geração de artigo original via endpoint compatível com OpenAI Chat Completions.
