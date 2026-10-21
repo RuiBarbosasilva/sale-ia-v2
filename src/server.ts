@@ -4,6 +4,7 @@ import { websiteDemoFactoryService } from './services/prospecting/websiteDemoFac
 import { mercadoLivreWebhookWorker } from './modules/mercadoLivre/workers/mercadoLivreWebhookWorker';
 import { startDropshippingResearchScheduler } from './modules/mercadoLivre/services/dropshippingResearchScheduler';
 import app from './app';
+import { startBlogFactoryScheduler } from './modules/blogFactory/blogFactory.scheduler';
 
 const PORT = process.env.PORT || 3000;
 
@@ -15,6 +16,10 @@ app.use('/dashboard', dashboardRoutes);
 if (process.env.NODE_ENV !== 'test') {
   server = app.listen(PORT, async () => {
     console.log(`[SERVER] Rodando na porta ${PORT}`);
+    if (String(process.env.BLOG_FACTORY_AUTORUN_ENABLED || '').toLowerCase() === 'true') {
+      startBlogFactoryScheduler();
+      console.log('[BLOG FACTORY] Agendador ativado.');
+    }
     if (String(process.env.DROPSHIPPING_AUTORESEARCH_ENABLED || '').toLowerCase() === 'true') {
       const configuredTick = Number(process.env.DROPSHIPPING_AUTORESEARCH_TICK_MS || 60000);
       startDropshippingResearchScheduler(Number.isFinite(configuredTick) ? configuredTick : 60000);
