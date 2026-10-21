@@ -197,7 +197,7 @@ export async function publishArticle(id: string) {
 export async function getStatus() {
   const [topics, drafts, published] = await Promise.all([
     prisma.blogFactoryTopic.count(),
-    prisma.blogFactoryArticle.count({ where: { status: 'DRAFT' } }),
+    prisma.blogFactoryArticle.count({ where: { status: { in: ['DRAFT', 'NEEDS_REVIEW'] } } }),
     prisma.blogFactoryArticle.count({ where: { status: 'PUBLISHED' } }),
   ]);
   return { module: 'blog-factory-ia', status: 'ONLINE', topics, drafts, published, cmsDrafts: await prisma.blogFactoryArticle.count({ where: { status: 'CMS_DRAFT' } }), aiEnabled: process.env.BLOG_FACTORY_AI_ENABLED === 'true', schedulerEnabled: process.env.BLOG_FACTORY_AUTORUN_ENABLED === 'true', wordpressConfigured: Boolean(process.env.BLOG_FACTORY_WORDPRESS_URL && process.env.BLOG_FACTORY_WORDPRESS_USERNAME && process.env.BLOG_FACTORY_WORDPRESS_APP_PASSWORD), publishingMode: 'DRAFT_REQUIRES_REVIEW' };
