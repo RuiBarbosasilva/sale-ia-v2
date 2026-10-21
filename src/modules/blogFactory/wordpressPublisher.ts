@@ -1,7 +1,7 @@
 export type CmsDraftResult = { id: number; link?: string; status?: string };
 
 export async function sendWordPressDraft(input: { title: string; slug: string; excerpt: string; body: string }) {
-  const baseUrl = process.env.BLOG_FACTORY_WORDPRESS_URL?.replace(/\\/$/, '');
+  const baseUrl = process.env.BLOG_FACTORY_WORDPRESS_URL?.replace(/\/$/, '');
   const username = process.env.BLOG_FACTORY_WORDPRESS_USERNAME;
   const appPassword = process.env.BLOG_FACTORY_WORDPRESS_APP_PASSWORD;
   if (!baseUrl || !username || !appPassword) throw new Error('WORDPRESS_NOT_CONFIGURED');
