@@ -6,9 +6,9 @@ const prisma = new PrismaClient();
 const MAX_ARTICLE_CHARS = 18000;
 function sanitizeHtml(value: string): string {
   return value
-    .replace(/<\\s*(script|style|iframe|object|embed)[^>]*>[\\s\\S]*?<\\s*\\/\\s*\\1\\s*>/gi, '')
-    .replace(/\\s+on[a-z]+\\s*=\\s*(\"[^\"]*\"|'[^']*'|[^\\s>]+)/gi, '')
-    .replace(/javascript\\s*:/gi, '');
+    .replace(/<\s*(script|style|iframe|object|embed)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
+    .replace(/\s+on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/javascript\s*:/gi, '');
 }
 
 function slugify(value: string): string {
@@ -39,7 +39,7 @@ async function generateWithAI(topic: { title: string; summary: string; sourceUrl
   const str = (key: string, max: number) => typeof obj[key] === 'string' ? (obj[key] as string).trim().slice(0, max) : '';
   const factChecks = Array.isArray(obj.factChecks) ? obj.factChecks.filter((v): v is string => typeof v === 'string').slice(0, 30) : [];
   const title = str('title', 220), excerpt = str('excerpt', 600), body = str('body', MAX_ARTICLE_CHARS);
-  if (!title || body.replace(/<[^>]*>/g, ' ').trim().length < 500) throw new Error('AI_QUALITY_GATE_FAILED');
+    .replace(/<\s*(script|style|iframe|object|embed)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
   return { title, excerpt, category: str('category', 80) || 'Atualidades', body, factChecks };
 }
 
@@ -51,9 +51,9 @@ const DEFAULT_FEEDS = [
 export type FeedItem = { title: string; url: string; publishedAt: string | null; summary: string; source: string };
 
 function decodeXml(value: string): string {
-  return value.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+    .replace(/<\s*(script|style|iframe|object|embed)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
     .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'")
-    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/<[^>]+>/g, ' ')
+    .replace(/<\s*(script|style|iframe|object|embed)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
     .replace(/\s+/g, ' ').trim();
 }
 
@@ -192,7 +192,7 @@ export async function approveArticle(id: string) {
   if (!article) throw new Error('ARTICLE_NOT_FOUND');
   if (article.status === 'CMS_DRAFT') throw new Error('ARTICLE_ALREADY_SENT_TO_CMS');
   if (!article.title.trim()) throw new Error('QUALITY_GATE_TITLE_REQUIRED');
-  if (article.body.replace(/<[^>]*>/g, ' ').trim().length < 500) throw new Error('QUALITY_GATE_BODY_TOO_SHORT');
+    .replace(/<\s*(script|style|iframe|object|embed)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
   let sources: unknown;
   try { sources = JSON.parse(article.sourceUrls); } catch { throw new Error('QUALITY_GATE_SOURCES_INVALID'); }
   if (!Array.isArray(sources) || sources.length === 0 || !sources.every((source) => source && typeof source.url === 'string' && /^https?:\\/\\//i.test(source.url))) throw new Error('QUALITY_GATE_SOURCES_REQUIRED');
@@ -204,7 +204,7 @@ export async function publishArticle(id: string) {
   if (!article) throw new Error('ARTICLE_NOT_FOUND');
   if (article.status === 'CMS_DRAFT') throw new Error('ARTICLE_ALREADY_SENT_TO_CMS');
   if (article.status !== 'APPROVED') throw new Error('HUMAN_APPROVAL_REQUIRED');
-  if (article.body.replace(/<[^>]*>/g, ' ').trim().length < 500) throw new Error('QUALITY_GATE_BODY_TOO_SHORT');
+    .replace(/<\s*(script|style|iframe|object|embed)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
   if (!article.sourceUrls || article.sourceUrls === '[]') throw new Error('QUALITY_GATE_SOURCES_REQUIRED');
   const cms = await sendWordPressDraft({ title: article.title, slug: article.slug, excerpt: article.excerpt, body: article.body });
   return prisma.blogFactoryArticle.update({ where: { id }, data: {
