@@ -179,6 +179,7 @@ export async function updateDraft(id: string, input: { title?: string; excerpt?:
   const article = await prisma.blogFactoryArticle.findUnique({ where: { id } });
   if (!article) throw new Error('ARTICLE_NOT_FOUND');
   if (article.status === 'PUBLISHED') throw new Error('PUBLISHED_ARTICLE_REQUIRES_VERSIONED_UPDATE');
+  if (article.status === 'CMS_DRAFT') throw new Error('ARTICLE_ALREADY_SENT_TO_CMS');
   return prisma.blogFactoryArticle.update({ where: { id }, data: {
     ...(input.title !== undefined ? { title: input.title.trim().slice(0, 220) } : {}),
     ...(input.excerpt !== undefined ? { excerpt: input.excerpt.trim().slice(0, 600) } : {}),
