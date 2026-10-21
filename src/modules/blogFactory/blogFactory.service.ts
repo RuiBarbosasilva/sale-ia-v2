@@ -5,10 +5,18 @@ const prisma = new PrismaClient();
 
 const MAX_ARTICLE_CHARS = 18000;
 function sanitizeHtml(value: string): string {
-  return value
-    .replace(/<\s*(script|style|iframe|object|embed)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
-    .replace(/\s+on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-    .replace(/javascript\s*:/gi, '');
+  const withoutActiveContent = value
+    .replace(/<\s*(script|style|iframe|object|embed|svg|math|form|input|button|video|audio|source)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
+    .replace(/<\s*(script|style|iframe|object|embed|svg|math|form|input|button|video|audio|source)\b[^>]*\/?\s*>/gi, '');
+  const allowed = new Set(['p', 'h2', 'h3', 'h4', 'ul', 'ol', 'li', 'strong', 'em', 'b', 'i', 'blockquote', 'a', 'br', 'hr']);
+  return withoutActiveContent.replace(/<[^>]*>/g, (tag) => {
+    const match = tag.match(/^<\s*(\/?)\s*([a-z0-9]+)[^>]*>$/i);
+    if (!match) return '';
+    const name = match[2].toLowerCase();
+    if (!allowed.has(name)) return '';
+    if (match[1]) return name === 'br' || name === 'hr' ? '' : '</' + name + '>';
+    return name === 'br' || name === 'hr' ? '<' + name + '>' : '<' + name + '>';
+  });
 }
 
 function slugify(value: string): string {
