@@ -202,3 +202,17 @@ Os arquivos foram escritos no GitHub por commits na branch de feature, mas os co
 - Ajustado o contador do painel de status para incluir artigos `NEEDS_REVIEW` nos rascunhos em revisão.
 - Atualizado `.github/workflows/ci.yml` para também disparar em branches `feat/**`.
 - O CI anterior passou por instalação, encoding, validação/geração Prisma e migrações; falhou no typecheck por causa do regex da URL WordPress. O regex foi corrigido em commit posterior, mas ainda falta uma execução de CI referente ao head atualizado. Não declarar validação completa até confirmar typecheck, build, testes e Guardian.
+
+
+### Continuação — revisão editorial, painel e proteção de conteúdo (21/10/2026)
+- O painel `public/blog-factory.html` passou a oferecer conexão administrativa, pesquisa RSS, execução do ciclo, geração de artigo, edição, aprovação editorial e envio ao WordPress como rascunho.
+- Adicionada rota `POST /api/blog-factory/articles/:id/approve`. O envio ao CMS agora exige estado `APPROVED`; editar artigo aprovado revoga a aprovação e retorna para revisão.
+- Corrigido o sanitizador HTML para remover blocos script/style/iframe/object/embed, atributos inline de evento e esquema javascript antes de salvar conteúdo editado.
+- A geração automática seleciona pautas por recência (`trendScore`) e respeita o limite por ciclo. Essa pontuação é heurística, não mede tendências virais ou audiência.
+- Bloqueada a edição de artigos já enviados ao WordPress como rascunho, para evitar criar uma nova submissão duplicada inadvertidamente.
+- O WordPress permanece como destino de rascunhos; não há publicação pública automática nesta versão.
+
+### Validação pós-correções
+- O código foi atualizado na branch `feat/blog-factory-ia`; o CI deve validar o head mais recente.
+- Ainda é obrigatório confirmar no GitHub Actions os resultados de Prisma validate/generate/migrate, typecheck, build, testes e Guardian antes de integrar em `main`.
+- O ambiente local, credenciais do provedor de IA, feeds reais e WordPress não foram executados/testados nesta sessão.
