@@ -99,7 +99,7 @@ export async function discoverTrends() {
     if (existing) continue;
     saved.push(await prisma.blogFactoryTopic.create({ data: {
       title: item.title, sourceUrl: item.url, sourceName: item.source,
-      summary: item.summary.slice(0, 5000), sourcePublishedAt: item.publishedAt && Number.isFinite(Date.parse(item.publishedAt)) ? new Date(item.publishedAt) : null,
+      summary: item.summary.slice(0, 5000), trendScore: item.publishedAt && Number.isFinite(Date.parse(item.publishedAt)) ? Math.max(0, Math.min(100, 100 - Math.floor(Math.max(0, Date.now() - Date.parse(item.publishedAt)) / 86400000) * 12)) : 0, sourcePublishedAt: item.publishedAt && Number.isFinite(Date.parse(item.publishedAt)) ? new Date(item.publishedAt) : null,
       status: 'DISCOVERED',
     } }));
   }
@@ -109,7 +109,7 @@ export async function discoverTrends() {
 export async function listTopics(status?: string) {
   return prisma.blogFactoryTopic.findMany({
     where: status ? { status } : undefined,
-    orderBy: [{ createdAt: 'desc' }], take: 100,
+    orderBy: [{ trendScore: 'desc' }, { createdAt: 'desc' }], take: 100,
   });
 }
 
