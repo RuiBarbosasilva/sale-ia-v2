@@ -1,6 +1,40 @@
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
+
+const MAX_ARTICLE_CHARS = 18000;
+function slugify(value: string): string {
+  return value.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 120) || 'artigo';
+}
+async function generateWithAI(topic: { title: string; summary: string; sourceUrl: string; sourceName: string }) {
+  const apiKey = process.env.BLOG_FACTORY_AI_API_KEY || process.env.OPENAI_API_KEY;
+  const endpoint = (process.env.BLOG_FACTORY_AI_BASE_URL || 'https://api.openai.com/v1').replace(/\\/$/, '');
+  const model = process.env.BLOG_FACTORY_AI_MODEL || 'gpt-4o-mini';
+  if (!apiKey) throw new Error('AI_PROVIDER_NOT_CONFIGURED');
+  const response = await fetch(endpoint + '/chat/completions', {
+    method: 'POST',
+    headers: { authorization: 'Bearer ' + apiKey, 'content-type': 'application/json' },
+    signal: AbortSignal.timeout(60000),
+    body: JSON.stringify({ model, temperature: 0.4, response_format: { type: 'json_object' }, messages: [
+      { role: 'system', content: 'Escreva conteúdo editorial original em português brasileiro. Não copie frases, não invente fatos, números ou citações. O resumo RSS pode ser incompleto e não comprova que o conteúdo integral foi consultado. Se faltarem dados, liste as verificações pendentes. Retorne JSON com title, excerpt, category, body (HTML simples) e factChecks (array de strings).' },
+      { role: 'user', content: JSON.stringify({ pauta: topic.title, resumo_disponivel: topic.summary, fonte: topic.sourceName, url_da_fonte: topic.sourceUrl, instrucoes: 'Crie um rascunho original com contexto apenas sustentado pelos dados fornecidos. Não reproduza o texto original.' }) }
+    ] })
+  });
+  if (!response.ok) throw new Error('AI_PROVIDER_HTTP_' + response.status);
+  const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) throw new Error('AI_EMPTY_RESPONSE');
+  const cleaned = content.replace(/^\\s*```(?:json)?/i, '').replace(/```\\s*$/, '').trim();
+  const start = cleaned.indexOf('{'), end = cleaned.lastIndexOf('}');
+  if (start < 0 || end <= start) throw new Error('AI_INVALID_JSON');
+  const obj = JSON.parse(cleaned.slice(start, end)) as Record<string, unknown>;
+  const str = (key: string, max: number) => typeof obj[key] === 'string' ? (obj[key] as string).trim().slice(0, max) : '';
+  const factChecks = Array.isArray(obj.factChecks) ? obj.factChecks.filter((v): v is string => typeof v === 'string').slice(0, 30) : [];
+  const title = str('title', 220), excerpt = str('excerpt', 600), body = str('body', MAX_ARTICLE_CHARS);
+  if (!title || body.replace(/<[^>]*>/g, ' ').trim().length < 500) throw new Error('AI_QUALITY_GATE_FAILED');
+  return { title, excerpt, category: str('category', 80) || 'Atualidades', body, factChecks };
+}
+
 const DEFAULT_FEEDS = [
   'https://g1.globo.com/rss/g1/',
   'https://agenciabrasil.ebc.com.br/rss/ultimasnoticias/feed.xml',
@@ -58,13 +92,13 @@ export async function discoverTrends() {
     seen.add(key);
     return true;
   });
-  const saved = [];
+  const saved: Array<{id: string}> = [];
   for (const item of unique.slice(0, 100)) {
     const existing = await prisma.blogFactoryTopic.findUnique({ where: { sourceUrl: item.url } });
     if (existing) continue;
     saved.push(await prisma.blogFactoryTopic.create({ data: {
       title: item.title, sourceUrl: item.url, sourceName: item.source,
-      summary: item.summary.slice(0, 5000), sourcePublishedAt: item.publishedAt ? new Date(item.publishedAt) : null,
+      summary: item.summary.slice(0, 5000), sourcePublishedAt: item.publishedAt && Number.isFinite(Date.parse(item.publishedAt)) ? new Date(item.publishedAt) : null,
       status: 'DISCOVERED',
     } }));
   }
@@ -103,6 +137,36 @@ export async function createDraft(topicId: string) {
   return article;
 }
 
+export async function generateArticle(id: string) {
+  const topic = await prisma.blogFactoryTopic.findUnique({ where: { id } });
+  if (!topic) throw new Error('TOPIC_NOT_FOUND');
+  const existing = await prisma.blogFactoryArticle.findFirst({ where: { topicId: id, status: { not: 'ARCHIVED' } } });
+  if (existing) throw new Error('ARTICLE_ALREADY_EXISTS');
+  const generated = await generateWithAI(topic);
+  const article = await prisma.blogFactoryArticle.create({ data: {
+    topicId: topic.id, title: generated.title, slug: slugify(generated.title) + '-' + topic.id.slice(0, 8),
+    excerpt: generated.excerpt, body: generated.body, category: generated.category, status: 'NEEDS_REVIEW',
+    sourceUrls: JSON.stringify([{ title: topic.title, url: topic.sourceUrl, source: topic.sourceName }]),
+    qualityNotes: JSON.stringify([...generated.factChecks, 'Rascunho de IA; revisão factual humana pendente. A fonte não foi verificada automaticamente.'])
+  } });
+  await prisma.blogFactoryTopic.update({ where: { id: topic.id }, data: { status: 'ARTICLE_GENERATED' } });
+  return article;
+}
+
+export async function runAutomationCycle() {
+  const research = await discoverTrends();
+  const maxPerCycle = Math.max(1, Math.min(10, Number(process.env.BLOG_FACTORY_MAX_ARTICLES_PER_CYCLE) || 3));
+  let generated = 0;
+  if (process.env.BLOG_FACTORY_AI_ENABLED === 'true') {
+    const topics = await prisma.blogFactoryTopic.findMany({ where: { status: 'DISCOVERED' }, orderBy: { createdAt: 'desc' }, take: maxPerCycle });
+    for (const topic of topics) {
+      try { await generateArticle(topic.id); generated++; }
+      catch (error) { console.error('[BLOG FACTORY] generation failed:', topic.id, error instanceof Error ? error.message : error); }
+    }
+  }
+  return { ...research, generated, aiEnabled: process.env.BLOG_FACTORY_AI_ENABLED === 'true' };
+}
+
 export async function updateDraft(id: string, input: { title?: string; excerpt?: string; body?: string; category?: string }) {
   const article = await prisma.blogFactoryArticle.findUnique({ where: { id } });
   if (!article) throw new Error('ARTICLE_NOT_FOUND');
@@ -132,5 +196,5 @@ export async function getStatus() {
     prisma.blogFactoryArticle.count({ where: { status: 'DRAFT' } }),
     prisma.blogFactoryArticle.count({ where: { status: 'PUBLISHED' } }),
   ]);
-  return { module: 'blog-factory-ia', status: 'ONLINE', topics, drafts, published, autoPublishEnabled: process.env.BLOG_FACTORY_AUTO_PUBLISH === 'true' };
+  return { module: 'blog-factory-ia', status: 'ONLINE', topics, drafts, published, aiEnabled: process.env.BLOG_FACTORY_AI_ENABLED === 'true', schedulerEnabled: process.env.BLOG_FACTORY_AUTORUN_ENABLED === 'true', wordpressConfigured: Boolean(process.env.BLOG_FACTORY_WORDPRESS_URL && process.env.BLOG_FACTORY_WORDPRESS_USERNAME && process.env.BLOG_FACTORY_WORDPRESS_APP_PASSWORD), publishingMode: 'DRAFT_REQUIRES_REVIEW' };
 }
