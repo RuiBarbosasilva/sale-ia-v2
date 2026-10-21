@@ -1765,6 +1765,7 @@ model BlogFactoryTopic {
   sourceUrl        String   @unique
   sourceName       String
   summary          String   @default("")
+  trendScore       Int      @default(0)
   sourcePublishedAt DateTime?
   status           String   @default("DISCOVERED")
   createdAt        DateTime @default(now())
