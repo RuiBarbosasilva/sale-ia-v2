@@ -178,7 +178,7 @@ Os feeds padrão são G1 RSS e Agência Brasil RSS; é possível substituir por 
 - `BLOG_FACTORY_AI_MODEL`: modelo, padrão `gpt-4o-mini`.
 - `BLOG_FACTORY_MAX_ARTICLES_PER_CYCLE=3`: máximo de artigos gerados por ciclo, entre 1 e 10.
 - WordPress: `BLOG_FACTORY_WORDPRESS_URL`, `BLOG_FACTORY_WORDPRESS_USERNAME`, `BLOG_FACTORY_WORDPRESS_APP_PASSWORD`.
-- `BLOG_FACTORY_REQUIRE_HUMAN_APPROVAL` precisa ser definido como `false` para permitir o envio manual ao WordPress. Mesmo assim, o post é enviado como rascunho, não publicado publicamente.
+- A integração WordPress exige aprovação editorial explícita via `POST /api/blog-factory/articles/:id/approve`; não é necessário desativar uma variável de aprovação. O endpoint `/publish` envia somente como rascunho WordPress.
 
 ### Endpoints novos
 - `POST /api/blog-factory/run-cycle`: pesquisa feeds e tenta gerar artigos para pautas novas.
@@ -207,7 +207,7 @@ Os arquivos foram escritos no GitHub por commits na branch de feature, mas os co
 ### Continuação — revisão editorial, painel e proteção de conteúdo (21/10/2026)
 - O painel `public/blog-factory.html` passou a oferecer conexão administrativa, pesquisa RSS, execução do ciclo, geração de artigo, edição, aprovação editorial e envio ao WordPress como rascunho.
 - Adicionada rota `POST /api/blog-factory/articles/:id/approve`. O envio ao CMS agora exige estado `APPROVED`; editar artigo aprovado revoga a aprovação e retorna para revisão.
-- Corrigido o sanitizador HTML para remover blocos script/style/iframe/object/embed, atributos inline de evento e esquema javascript antes de salvar conteúdo editado.
+- Sanitizador HTML endurecido com lista permitida de tags editoriais e descarte de atributos HTML; parser XML/RSS e quality gate da IA corrigidos após revisão do CI.
 - A geração automática seleciona pautas por recência (`trendScore`) e respeita o limite por ciclo. Essa pontuação é heurística, não mede tendências virais ou audiência.
 - Bloqueada a edição de artigos já enviados ao WordPress como rascunho, para evitar criar uma nova submissão duplicada inadvertidamente.
 - O WordPress permanece como destino de rascunhos; não há publicação pública automática nesta versão.
