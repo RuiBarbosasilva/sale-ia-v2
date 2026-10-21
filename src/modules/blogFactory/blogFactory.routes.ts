@@ -4,6 +4,8 @@ const router = Router();
 router.get('/health', c.health);
 router.get('/status', c.status);
 router.post('/research', c.research);
+router.post('/run-cycle', c.runCycle);
+router.post('/topics/:id/generate', c.generateArticle);
 router.get('/topics', c.topics);
 router.get('/articles', c.articles);
 router.post('/articles/draft', c.createDraft);
