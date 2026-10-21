@@ -1,17 +1,17 @@
 # Blog Factory IA
 
-Módulo editorial para descobrir pautas, gerar rascunhos originais e encaminhar conteúdo revisado ao WordPress como rascunho.
+Módulo editorial para descobrir pautas em RSS/Atom, gerar rascunhos originais, revisar e encaminhar conteúdo aprovado ao WordPress como rascunho.
 
 ## Recursos
 - Descoberta manual e agendada por RSS/Atom; feeds padrão G1 RSS e Agência Brasil.
-- Priorização editorial heurística por recência da publicação; não é uma métrica real de viralização nem substitui sinais de audiência.
 - Deduplicação de pautas por URL e título.
+- Priorização heurística por recência (não mede visualizações nem viralização real).
 - Persistência de pautas e artigos via Prisma/SQLite.
 - Geração de artigo original via endpoint compatível com OpenAI Chat Completions.
-- Limites por ciclo e proteção contra ciclos simultâneos.
-- Dashboard inicial em `/blog-factory.html`.
+- Ciclo periódico opcional, limite de artigos por ciclo e proteção contra ciclos sobrepostos.
+- Painel em `/blog-factory.html`.
 - API administrativa protegida por `x-sale-ia-admin-key`.
-- Adaptador WordPress que cria posts com status `draft`, nunca publicação pública automática nesta versão.
+- Aprovação editorial explícita e integração WordPress REST que cria somente posts `draft`.
 
 ## Configuração
 - `SALE_IA_ADMIN_KEY`: chave administrativa já usada pelo Sale-IA v2.
@@ -22,9 +22,8 @@ Módulo editorial para descobrir pautas, gerar rascunhos originais e encaminhar 
 - `BLOG_FACTORY_AI_API_KEY` ou `OPENAI_API_KEY`: chave do provedor; não versionar.
 - `BLOG_FACTORY_AI_BASE_URL`: endpoint base compatível com OpenAI, opcional.
 - `BLOG_FACTORY_AI_MODEL`: modelo, padrão `gpt-4o-mini`.
-- `BLOG_FACTORY_MAX_ARTICLES_PER_CYCLE=3`: limite de artigos por ciclo (1–10).
+- `BLOG_FACTORY_MAX_ARTICLES_PER_CYCLE=3`: limite por ciclo (1–10).
 - WordPress: `BLOG_FACTORY_WORDPRESS_URL`, `BLOG_FACTORY_WORDPRESS_USERNAME`, `BLOG_FACTORY_WORDPRESS_APP_PASSWORD`.
-- `BLOG_FACTORY_REQUIRE_HUMAN_APPROVAL=false`: habilita o envio manual pelo endpoint para WordPress como rascunho. O padrão exige aprovação humana.
 
 ## Rotas
 - `GET /api/blog-factory/health`
@@ -36,18 +35,13 @@ Módulo editorial para descobrir pautas, gerar rascunhos originais e encaminhar 
 - `GET /api/blog-factory/articles`
 - `POST /api/blog-factory/articles/draft`
 - `PATCH /api/blog-factory/articles/:id`
-- `POST /api/blog-factory/articles/:id/publish`
+- `POST /api/blog-factory/articles/:id/approve`: aprovação humana explícita após checagens mínimas.
+- `POST /api/blog-factory/articles/:id/publish`: nome legado; requer estado `APPROVED` e envia como rascunho WordPress, não publica publicamente.
 
 Todas as rotas, exceto health, exigem `x-sale-ia-admin-key`.
 
-## Integridade editorial e limites
-O sistema não clona nem reproduz artigos completos. Utiliza metadados e resumos disponíveis nos feeds como sinal inicial e mantém links das fontes. A IA deve criar texto original e sinalizar lacunas; isso não substitui verificação factual. A publicação externa não ocorre automaticamente: a integração WordPress cria somente rascunhos e o envio exige configuração e aprovação humana explícita. O sistema não garante que um tópico seja tendência viral; os feeds fornecem descoberta, não métricas de popularidade.
+## Integridade editorial
+O sistema não clona nem reproduz artigos completos. Os feeds servem como sinal de descoberta e contexto limitado; o texto gerado deve ser original. A aprovação automatizada verifica apenas critérios técnicos mínimos (título, tamanho e URL de fonte), não a veracidade dos fatos. Uma pessoa deve revisar fatos, direitos de uso e contexto. O WordPress recebe apenas rascunhos. A página não armazena a chave administrativa em armazenamento persistente.
 
-## Migração e validação
-1. Sincronizar a branch sem descartar alterações locais.
-2. Executar `npx prisma migrate deploy`.
-3. Executar `npx prisma generate`.
-4. Executar `npm run typecheck`, `npm run build` e testes.
-5. Validar `GET /api/blog-factory/health` e chamadas administrativas em ambiente local.
-
-Não executar `prisma migrate reset`. A implementação remota ainda precisa de validação no ambiente local antes de integrar à `main`.
+## Validação
+Executar `npx prisma validate`, `npx prisma migrate deploy`, `npx prisma generate`, `npm run typecheck`, `npm run build`, `npm test -- --runInBand --forceExit` e Guardian na branch atual. Não executar `prisma migrate reset`. Não mesclar em `main` antes de CI verde e teste local.
