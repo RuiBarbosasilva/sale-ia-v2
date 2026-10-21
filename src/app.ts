@@ -40,6 +40,7 @@ import { factoryEbookRoutes } from './modules/factory-ebook/factory-ebook.routes
 import produtosRoutes from './modules/afiliados-ia/routes/produtos.routes';
 import { handleAffiliateWebhook } from './modules/afiliados-ia/controllers/webhook.controller';
 import contentGeneratorRoutes from './modules/afiliados-ia/routes/contentGenerator.routes';
+import blogFactoryRoutes from './modules/blogFactory/blogFactory.routes';
 
 const app = express();
 
@@ -134,6 +135,7 @@ app.use('/api/content-factory', contentFactoryRoutes);
 // (DEVEM VIR ANTES DO errorHandler)
 // ==========================================
 app.use('/api/afiliados/conteudo', contentGeneratorRoutes);
+app.use('/api/blog-factory', blogFactoryRoutes);
 
 // ==========================================
 // MIDDLEWARE DE ERRO (DEVE SER O ÚLTIMO)
