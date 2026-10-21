@@ -5,11 +5,11 @@ const prisma = new PrismaClient();
 
 const MAX_ARTICLE_CHARS = 18000;
 function slugify(value: string): string {
-  return value.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 120) || 'artigo';
+  return value.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 120) || 'artigo';
 }
 async function generateWithAI(topic: { title: string; summary: string; sourceUrl: string; sourceName: string }) {
   const apiKey = process.env.BLOG_FACTORY_AI_API_KEY || process.env.OPENAI_API_KEY;
-  const endpoint = (process.env.BLOG_FACTORY_AI_BASE_URL || 'https://api.openai.com/v1').replace(/\\/$/, '');
+  const endpoint = (process.env.BLOG_FACTORY_AI_BASE_URL || 'https://api.openai.com/v1').replace(/\/$/, '');
   const model = process.env.BLOG_FACTORY_AI_MODEL || 'gpt-4o-mini';
   if (!apiKey) throw new Error('AI_PROVIDER_NOT_CONFIGURED');
   const response = await fetch(endpoint + '/chat/completions', {
