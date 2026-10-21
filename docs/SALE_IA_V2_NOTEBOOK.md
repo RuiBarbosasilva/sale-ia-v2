@@ -110,3 +110,49 @@ O usuário executou `git status --short` e `git diff`. Os itens abaixo ainda est
 
 **Importante:** `public/site-factory.html` no GitHub já contém `<meta charset="UTF-8">` e não apresentou mojibake na inspeção remota. O defeito de caracteres identificado estava no JavaScript do dashboard RB Factory. Se a interface continuar exibindo caracteres estranhos depois de sincronizar, fazer recarga forçada do navegador e conferir se o servidor está servindo a versão atual do arquivo, não uma cópia antiga em cache.
 
+
+
+## Novo módulo: Blog Factory IA — implementação inicial no GitHub (21/10/2026)
+
+Branch de trabalho: `feat/blog-factory-ia`.
+
+### Implementado nesta branch
+- `src/modules/blogFactory/blogFactory.service.ts`: leitura de feeds RSS/Atom configuráveis, deduplicação por URL e título, persistência de pautas, criação de rascunhos e validações básicas antes de mudar o status de publicação.
+- `src/modules/blogFactory/blogFactory.controller.ts`: endpoints administrativos protegidos pelo cabeçalho `x-sale-ia-admin-key`, usando `SALE_IA_ADMIN_KEY`.
+- `src/modules/blogFactory/blogFactory.routes.ts`: rotas de health, status, pesquisa, pautas, artigos, criação/edição de rascunho e publicação controlada.
+- `prisma/schema.prisma`: modelos `BlogFactoryTopic` e `BlogFactoryArticle`.
+- `prisma/migrations/20261021180000_blog_factory_ia/migration.sql`: migração SQLite para persistência de pautas e artigos.
+- `src/app.ts`: API montada em `/api/blog-factory`.
+- `src/modules/blogFactory/README.md`: configuração e limitações documentadas.
+
+### Como funciona a descoberta
+Os feeds padrão são G1 RSS e Agência Brasil RSS; é possível substituir por `BLOG_FACTORY_RSS_FEEDS`, uma lista de URLs separadas por vírgula. A pesquisa é disparada por chamada manual ao endpoint, não por worker contínuo. O sistema salva metadados, resumo do feed e URL de origem; não copia o artigo completo.
+
+### Configuração e execução local
+1. Sincronizar a branch `feat/blog-factory-ia` sem descartar mudanças locais.
+2. Confirmar `SALE_IA_ADMIN_KEY` no ambiente local, sem versionar o segredo.
+3. Executar `npx prisma migrate deploy`.
+4. Executar `npx prisma generate`.
+5. Executar `npm run typecheck` e `npm run build`.
+6. Iniciar o servidor e consultar `GET /api/blog-factory/health`.
+7. Para pesquisa administrativa, enviar `POST /api/blog-factory/research` com o cabeçalho `x-sale-ia-admin-key`.
+8. Consultar `GET /api/blog-factory/topics` e `GET /api/blog-factory/articles`.
+
+### Limitações conhecidas — não declarar pronto para produção
+- Ainda não implementa geração de artigos por modelo de IA.
+- A descoberta RSS é acionada manualmente; não há agendador contínuo do Blog Factory.
+- Não há adaptador de publicação para WordPress ou outro CMS. O status interno `PUBLISHED` não comprova que um artigo esteja público na internet.
+- O painel visual dedicado não foi adicionado nesta etapa.
+- Não há análise quantitativa de tendências, revisão factual automatizada, pipeline de imagens, métricas de audiência nem testes de runtime registrados.
+- A validação de publicação atual é apenas inicial; é necessário revisar a política editorial, o quality gate e a idempotência antes de habilitar publicação automática.
+- Nenhum typecheck, build, migração ou teste de integração foi executado por esta alteração remota. Confirmar localmente antes de integrar a `main`.
+
+### Próxima sequência
+1. Validar schema/migração, TypeScript, build e rotas.
+2. Implementar adaptador de IA com saída estruturada, fontes e checagem de duplicidade.
+3. Implementar scheduler com lock, limites e recuperação de falhas.
+4. Implementar revisão de fatos e quality gate editorial.
+5. Implementar publicação CMS idempotente com aprovação configurável.
+6. Criar painel administrativo integrado e testes automatizados.
+7. Atualizar este notebook com evidências reais e sincronizar a cópia local.
+
