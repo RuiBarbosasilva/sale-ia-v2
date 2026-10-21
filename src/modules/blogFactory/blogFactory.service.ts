@@ -127,7 +127,7 @@ export async function createDraft(topicId: string) {
   const article = await prisma.blogFactoryArticle.create({ data: {
     topicId: topic.id,
     title: topic.title,
-    slug: topic.title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 140),
+    slug: slugify(topic.title) + '-' + topic.id.slice(0, 8),
     excerpt: topic.summary.slice(0, 320),
     body: '',
     status: 'DRAFT',
