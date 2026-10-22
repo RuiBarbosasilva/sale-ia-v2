@@ -263,6 +263,18 @@ export class BlogFactoryService {
   }
 
   async runAutomationCycle() {
+    const staleBefore = new Date(Date.now() - 30 * 60 * 1000);
+    const staleTopics = await prisma.blogFactoryTopic.findMany({
+      where: { status: 'GENERATING_ARTICLE', updatedAt: { lt: staleBefore } },
+      select: { id: true }
+    });
+    for (const stale of staleTopics) {
+      const existing = await prisma.blogFactoryArticle.findFirst({ where: { topicId: stale.id }, select: { id: true } });
+      await prisma.blogFactoryTopic.updateMany({
+        where: { id: stale.id, status: 'GENERATING_ARTICLE' },
+        data: { status: existing ? 'ARTICLE_CREATED' : 'DISCOVERED' }
+      });
+    }
     const research = await this.discoverTrends();
     const aiEnabled = String(process.env.BLOG_FACTORY_AI_ENABLED || '').toLowerCase() === 'true';
     const maxConfigured = Number(process.env.BLOG_FACTORY_MAX_ARTICLES_PER_CYCLE || 3);
