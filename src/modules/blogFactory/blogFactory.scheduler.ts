@@ -1,23 +1,21 @@
-import { runAutomationCycle } from './blogFactory.service';
+import { blogFactoryService } from './blogFactory.service';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 
-let timer: NodeJS.Timeout | null = null;
-let running = false;
-
-export function startBlogFactoryScheduler() {
-  if (timer || process.env.BLOG_FACTORY_AUTORUN_ENABLED !== 'true') return;
-  const intervalMs = Math.max(5 * 60 * 1000, Number(process.env.BLOG_FACTORY_INTERVAL_MS) || 30 * 60 * 1000);
-  const run = async () => {
-    if (running) return;
-    running = true;
-    try {
-      const result = await runAutomationCycle();
-      console.log('[BLOG FACTORY] cycle complete', JSON.stringify({ fetched: result.fetched, newTopics: result.newTopics, generated: result.generated, errors: result.errors.length }));
-    } catch (error) {
-      console.error('[BLOG FACTORY] cycle failed:', error instanceof Error ? error.message : error);
-    } finally {
-      running = false;
+export class BlogFactoryScheduler {
+  async runCycle() {
+    console.log('[BlogFactory] Iniciando ciclo de coleta e geração...');
+    const pautas = await prisma.blogPauta.findMany({ where: { status: 'PENDING' }, take: 3 });
+    
+    for (const pauta of pautas) {
+      const article = await blogFactoryService.generateArticle(pauta);
+      
+      // AUTOMAÇÃO: Se configurado, aprova e envia como rascunho automaticamente
+      if (process.env.BLOG_AUTO_APPROVE === 'true') {
+        await blogFactoryService.autoApproveAndSendToWP(article.id);
+      }
     }
-  };
-  void run();
-  timer = setInterval(() => { void run(); }, intervalMs);
+    console.log('[BlogFactory] Ciclo concluído.');
+  }
 }
+export const blogFactoryScheduler = new BlogFactoryScheduler();
