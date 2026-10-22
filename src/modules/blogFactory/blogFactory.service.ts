@@ -183,10 +183,17 @@ export class BlogFactoryService {
       await prisma.blogFactoryTopic.update({ where: { id: topicId }, data: { status: 'ARTICLE_CREATED' } });
       return article;
     } catch (error) {
-      await prisma.blogFactoryTopic.updateMany({
-        where: { id: topicId, status: 'GENERATING_ARTICLE' },
-        data: { status: 'DISCOVERED' }
-      });
+      // The article insert may have succeeded even if updating the topic state failed.
+      // Recover the topic state without masking the original error.
+      try {
+        const persistedArticle = await prisma.blogFactoryArticle.findFirst({ where: { topicId }, select: { id: true } });
+        await prisma.blogFactoryTopic.updateMany({
+          where: { id: topicId, status: 'GENERATING_ARTICLE' },
+          data: { status: persistedArticle ? 'ARTICLE_CREATED' : 'DISCOVERED' }
+        });
+      } catch {
+        // Preserve the original failure; stale-generation recovery can repair this state later.
+      }
       throw error;
     }
   }
