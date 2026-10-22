@@ -3,7 +3,7 @@
 Módulo editorial para descobrir pautas em RSS/Atom, gerar rascunhos originais, revisar e encaminhar conteúdo aprovado ao WordPress como rascunho.
 
 ## Recursos
-- Descoberta manual e agendada por RSS/Atom; feeds padrão G1 RSS e Agência Brasil.
+- Descoberta manual e agendada por RSS/Atom configurados explicitamente em `BLOG_FACTORY_FEEDS`.
 - Deduplicação de pautas por URL e título.
 - Priorização heurística por recência (não mede visualizações nem viralização real).
 - Persistência de pautas e artigos via Prisma/SQLite.
@@ -15,12 +15,11 @@ Módulo editorial para descobrir pautas em RSS/Atom, gerar rascunhos originais, 
 
 ## Configuração
 - `SALE_IA_ADMIN_KEY`: chave administrativa já usada pelo Sale-IA v2.
-- `BLOG_FACTORY_RSS_FEEDS`: URLs de feeds separados por vírgula (opcional).
+- `BLOG_FACTORY_FEEDS`: URLs RSS/Atom separados por vírgula, ponto e vírgula ou nova linha; obrigatório para pesquisa.
 - `BLOG_FACTORY_AUTORUN_ENABLED=true`: inicia pesquisa periódica ao iniciar o servidor.
-- `BLOG_FACTORY_INTERVAL_MS=1800000`: intervalo padrão de 30 minutos; mínimo de 5 minutos.
-- `BLOG_FACTORY_AI_ENABLED=true`: ativa geração de rascunhos durante o ciclo.
-- `BLOG_FACTORY_AI_API_KEY` ou `OPENAI_API_KEY`: chave do provedor; não versionar.
-- `BLOG_FACTORY_AI_BASE_URL`: endpoint base compatível com OpenAI, opcional.
+- `BLOG_FACTORY_INTERVAL_MS=21600000`: intervalo padrão de 6 horas; mínimo de 1 minuto e máximo de 7 dias.
+- `BLOG_FACTORY_AI_ENABLED=true`: ativa geração de rascunhos durante ciclos agendados (padrão desligado).
+- `OPENAI_API_KEY`: chave do provedor OpenAI; não versionar.
 - `BLOG_FACTORY_AI_MODEL`: modelo, padrão `gpt-4o-mini`.
 - `BLOG_FACTORY_MAX_ARTICLES_PER_CYCLE=3`: limite por ciclo (1–10).
 - WordPress: `BLOG_FACTORY_WORDPRESS_URL`, `BLOG_FACTORY_WORDPRESS_USERNAME`, `BLOG_FACTORY_WORDPRESS_APP_PASSWORD`.
