@@ -223,3 +223,10 @@ Os arquivos foram escritos no GitHub por commits na branch de feature, mas os co
 - Corrigida a limpeza de blocos Markdown JSON e a validação de URL de fonte.
 - Restaurado o parser XML/RSS para preservar a decodificação de CDATA e entidades.
 - CI iniciado para commits anteriores desta rodada; confirmar execução correspondente ao head mais recente antes de considerar a branch validada.
+
+
+### Resultado de CI — commit de código validado (22/10/2026)
+- GitHub Actions concluiu com sucesso os workflows `sale-ia-v2-ci` (run 39673071837) e `Affiliate Module CI` (run 39673071461) no commit de código `7df368de94ce2c82b713f4ca4d061645075aa1d0`.
+- No Affiliate Module CI, instalação de dependências, `prisma validate`, `prisma generate`, `prisma migrate deploy` e `npm run typecheck`, build, testes e Guardian finalizaram com sucesso.
+- O workflow principal `sale-ia-v2-ci` também finalizou com sucesso.
+- Depois desses checks foi feito um ajuste documental no notebook para remover uma variável de aprovação obsoleta; esse último commit altera apenas documentação. Confirmar o estado final do PR antes do merge.
