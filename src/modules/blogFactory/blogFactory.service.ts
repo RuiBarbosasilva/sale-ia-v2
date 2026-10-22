@@ -136,39 +136,59 @@ export class BlogFactoryService {
     const existingArticle = await prisma.blogFactoryArticle.findFirst({ where: { topicId } });
     if (existingArticle) throw new Error('TOPIC_ALREADY_HAS_ARTICLE');
     if (!process.env.OPENAI_API_KEY) throw new Error('AI_PROVIDER_NOT_CONFIGURED');
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: 'Bearer ' + process.env.OPENAI_API_KEY },
-      signal: AbortSignal.timeout(60000),
-      body: JSON.stringify({
-        model: process.env.BLOG_FACTORY_AI_MODEL || 'gpt-4o-mini',
-        temperature: 0.5,
-        messages: [
-          { role: 'system', content: 'Você é um editor SEO. Escreva em português brasileiro um artigo original, útil e factual, com título, resumo e corpo em HTML seguro. Não invente dados nem copie a fonte. Cite a fonte original e diferencie fatos de opinião. Retorne JSON válido com title, excerpt, body, category. body deve conter HTML sem scripts, iframes ou estilos inline. Nunca publique automaticamente.' },
-          { role: 'user', content: JSON.stringify({ tema: topic.title, resumoFonte: topic.summary, fonte: topic.sourceUrl, instrucoes: 'Produza artigo de pelo menos 600 palavras, com subtítulos H2/H3, introdução, conclusão e CTA moderado. Use apenas informações suportadas pela fonte ou conhecimento geral confiável.' }) }
-        ],
-        response_format: { type: 'json_object' }
-      })
+
+    // Claim the topic atomically so simultaneous manual/scheduled requests cannot generate duplicates.
+    const claim = await prisma.blogFactoryTopic.updateMany({
+      where: { id: topicId, status: 'DISCOVERED' },
+      data: { status: 'GENERATING_ARTICLE' }
     });
-    if (!response.ok) throw new Error('AI_PROVIDER_HTTP_' + response.status);
-    const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
-    const raw = data.choices?.[0]?.message?.content;
-    if (!raw) throw new Error('AI_PROVIDER_EMPTY_RESPONSE');
-    let generated: {title?: string; excerpt?: string; body?: string; category?: string};
-    try { generated = JSON.parse(raw); } catch { throw new Error('AI_PROVIDER_INVALID_JSON'); }
-    const title = String(generated.title || topic.title).trim().slice(0, 300);
-    const excerpt = String(generated.excerpt || topic.summary).trim().slice(0, 1000);
-    const body = sanitizeEditorialHtml(String(generated.body || ''));
-    if (body.replace(/<[^>]*>/g, ' ').trim().length < ARTICLE_MIN_LENGTH) throw new Error('QUALITY_GATE_ARTICLE_TOO_SHORT');
-    const baseSlug = slugify(title);
-    let slug = baseSlug;
-    for (let suffix = 2; await prisma.blogFactoryArticle.findUnique({ where: { slug } }); suffix++) slug = baseSlug.slice(0, 80) + '-' + suffix;
-    const article = await prisma.blogFactoryArticle.create({
-      data: { topicId, title, slug, excerpt, body, category: generated.category ? String(generated.category).slice(0, 100) : null,
-        status: 'DRAFT', sourceUrls: JSON.stringify([topic.sourceUrl]), qualityNotes: JSON.stringify(['Revisão humana necessária antes de qualquer publicação.']) }
-    });
-    await prisma.blogFactoryTopic.update({ where: { id: topicId }, data: { status: 'ARTICLE_CREATED' } });
-    return article;
+    if (claim.count !== 1) {
+      const latest = await prisma.blogFactoryTopic.findUnique({ where: { id: topicId } });
+      if (latest?.status === 'ARTICLE_CREATED') throw new Error('TOPIC_ALREADY_HAS_ARTICLE');
+      throw new Error('TOPIC_GENERATION_IN_PROGRESS');
+    }
+
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: 'Bearer ' + process.env.OPENAI_API_KEY },
+        signal: AbortSignal.timeout(60000),
+        body: JSON.stringify({
+          model: process.env.BLOG_FACTORY_AI_MODEL || 'gpt-4o-mini',
+          temperature: 0.5,
+          messages: [
+            { role: 'system', content: 'Você é um editor SEO. Escreva em português brasileiro um artigo original, útil e factual, com título, resumo e corpo em HTML seguro. Não invente dados nem copie a fonte. Cite a fonte original e diferencie fatos de opinião. Retorne JSON válido com title, excerpt, body, category. body deve conter HTML sem scripts, iframes ou estilos inline. Nunca publique automaticamente.' },
+            { role: 'user', content: JSON.stringify({ tema: topic.title, resumoFonte: topic.summary, fonte: topic.sourceUrl, instrucoes: 'Produza artigo de pelo menos 600 palavras, com subtítulos H2/H3, introdução, conclusão e CTA moderado. Use apenas informações suportadas pela fonte ou conhecimento geral confiável.' }) }
+          ],
+          response_format: { type: 'json_object' }
+        })
+      });
+      if (!response.ok) throw new Error('AI_PROVIDER_HTTP_' + response.status);
+      const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+      const raw = data.choices?.[0]?.message?.content;
+      if (!raw) throw new Error('AI_PROVIDER_EMPTY_RESPONSE');
+      let generated: {title?: string; excerpt?: string; body?: string; category?: string};
+      try { generated = JSON.parse(raw); } catch { throw new Error('AI_PROVIDER_INVALID_JSON'); }
+      const title = String(generated.title || topic.title).trim().slice(0, 300);
+      const excerpt = String(generated.excerpt || topic.summary).trim().slice(0, 1000);
+      const body = sanitizeEditorialHtml(String(generated.body || ''));
+      if (body.replace(/<[^>]*>/g, ' ').trim().length < ARTICLE_MIN_LENGTH) throw new Error('QUALITY_GATE_ARTICLE_TOO_SHORT');
+      const baseSlug = slugify(title);
+      let slug = baseSlug;
+      for (let suffix = 2; await prisma.blogFactoryArticle.findUnique({ where: { slug } }); suffix++) slug = baseSlug.slice(0, 80) + '-' + suffix;
+      const article = await prisma.blogFactoryArticle.create({
+        data: { topicId, title, slug, excerpt, body, category: generated.category ? String(generated.category).slice(0, 100) : null,
+          status: 'DRAFT', sourceUrls: JSON.stringify([topic.sourceUrl]), qualityNotes: JSON.stringify(['Revisão humana necessária antes de qualquer publicação.']) }
+      });
+      await prisma.blogFactoryTopic.update({ where: { id: topicId }, data: { status: 'ARTICLE_CREATED' } });
+      return article;
+    } catch (error) {
+      await prisma.blogFactoryTopic.updateMany({
+        where: { id: topicId, status: 'GENERATING_ARTICLE' },
+        data: { status: 'DISCOVERED' }
+      });
+      throw error;
+    }
   }
 
   async createDraft(topicId: string) {
