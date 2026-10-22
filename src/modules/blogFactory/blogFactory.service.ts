@@ -5,27 +5,22 @@ const prisma = new PrismaClient();
 const MAX_FEEDS = 20;
 const ARTICLE_MIN_LENGTH = 500;
 
-type Topic = {
-  id: string; title: string; sourceUrl: string; sourceName: string; summary: string;
-  trendScore: number; sourcePublishedAt: Date | null; status: string;
-};
-
 function slugify(value: string): string {
   return value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 90) || 'artigo';
 }
 function sanitizeEditorialHtml(input: string): string {
   let html = input
-    .replace(/<(script|style|iframe|object|embed|form|input|button|textarea|select|svg|math|video|audio|source|link|meta|base)\\b[^>]*>[\\s\\S]*?<\\/\\1\\s*>/gi, '')
-    .replace(/<(script|style|iframe|object|embed|svg|math|video|audio|source|link|meta|base)\\b[^>]*\\/?\\s*>/gi, '');
+    .replace(/<(script|style|iframe|object|embed|form|input|button|textarea|select|svg|math|video|audio|source|link|meta|base)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, '')
+    .replace(/<(script|style|iframe|object|embed|svg|math|video|audio|source|link|meta|base)\b[^>]*\/?\s*>/gi, '');
   const allowed = new Set(['p','br','h1','h2','h3','h4','ul','ol','li','strong','b','em','i','blockquote','code','pre','a','hr']);
-  html = html.replace(/<\\/?([a-z0-9-]+)\\b([^>]*)>/gi, (whole, rawName: string, rawAttrs: string) => {
+  html = html.replace(/<\/?([a-z0-9-]+)\b([^>]*)>/gi, (whole, rawName: string, rawAttrs: string) => {
     const name = String(rawName).toLowerCase();
     if (!allowed.has(name)) return '';
     if (whole.startsWith('</')) return name === 'br' || name === 'hr' ? '' : '</' + name + '>';
     if (name === 'br' || name === 'hr') return '<' + name + '>';
     if (name !== 'a') return '<' + name + '>';
-    const hrefMatch = String(rawAttrs).match(/\\bhref\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))/i);
+    const hrefMatch = String(rawAttrs).match(/\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
     const href = hrefMatch ? (hrefMatch[1] || hrefMatch[2] || hrefMatch[3] || '') : '';
     try {
       const parsed = new URL(href);
