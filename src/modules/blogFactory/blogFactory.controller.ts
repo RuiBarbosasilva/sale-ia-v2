@@ -17,7 +17,7 @@ function fail(res: Response, error: unknown) {
     message.startsWith('PUBLISHED_') || message.startsWith('ARTICLE_ALREADY') ||
     message.startsWith('HUMAN_APPROVAL') || message.startsWith('TOPIC_ALREADY') || message.startsWith('TOPIC_GENERATION_IN_PROGRESS') || message.startsWith('ARTICLE_ALREADY_SENT') || message.startsWith('ARTICLE_PUBLISH_IN_PROGRESS') || message === 'NO_VALID_FIELDS') status = 409;
   else if (message.startsWith('AI_PROVIDER_') || message.startsWith('WORDPRESS_NOT_CONFIGURED') ||
-    message.startsWith('WORDPRESS_HTTP_') || message.startsWith('WORDPRESS_LOOKUP_HTTP_') || message === 'WORDPRESS_INVALID_URL' || message === 'BLOG_FACTORY_FEEDS_NOT_CONFIGURED') status = 503;
+    message.startsWith('WORDPRESS_HTTP_') || message.startsWith('WORDPRESS_LOOKUP_HTTP_') || message === 'WORDPRESS_INVALID_URL' || message === 'WORDPRESS_SLUG_ALREADY_USED' || message === 'BLOG_FACTORY_FEEDS_NOT_CONFIGURED') status = 503;
   return res.status(status).json({ success: false, error: message });
 }
 
