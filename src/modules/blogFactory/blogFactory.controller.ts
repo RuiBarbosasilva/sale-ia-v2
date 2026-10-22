@@ -2,16 +2,24 @@ import { Request, Response } from 'express';
 import * as service from './blogFactory.service';
 
 function authorized(req: Request, res: Response): boolean {
-  const expected = process.env.SALE_IA_ADMIN_KEY;
+  const expected = process.env.SALE_IA_ADMIN_KEY || process.env.AFFILIATE_ADMIN_KEY;
   if (!expected) { res.status(503).json({ success: false, error: 'ADMIN_KEY_NOT_CONFIGURED' }); return false; }
   if (req.header('x-sale-ia-admin-key') !== expected) { res.status(401).json({ success: false, error: 'UNAUTHORIZED' }); return false; }
   return true;
 }
+
 function fail(res: Response, error: unknown) {
   const message = error instanceof Error ? error.message : 'INTERNAL_ERROR';
-  const status = message.endsWith('_NOT_FOUND') ? 404 : message.startsWith('QUALITY_GATE_') || message.startsWith('PUBLISHING_DISABLED') || message.startsWith('PUBLISHED_') || message.startsWith('ARTICLE_ALREADY') || message.startsWith('HUMAN_APPROVAL') ? 409 : message.startsWith('AI_PROVIDER_NOT') ? 503 : 500;
+  let status = 500;
+  if (message.endsWith('_NOT_FOUND')) status = 404;
+  else if (message.startsWith('QUALITY_GATE_') || message.startsWith('PUBLISHING_DISABLED') ||
+    message.startsWith('PUBLISHED_') || message.startsWith('ARTICLE_ALREADY') ||
+    message.startsWith('HUMAN_APPROVAL') || message === 'NO_VALID_FIELDS') status = 409;
+  else if (message.startsWith('AI_PROVIDER_') || message.startsWith('WORDPRESS_NOT_CONFIGURED') ||
+    message.startsWith('WORDPRESS_HTTP_') || message === 'BLOG_FACTORY_FEEDS_NOT_CONFIGURED') status = 503;
   return res.status(status).json({ success: false, error: message });
 }
+
 export async function health(_req: Request, res: Response) {
   try { return res.json({ success: true, ...(await service.getStatus()) }); }
   catch { return res.status(503).json({ success: false, module: 'blog-factory-ia', status: 'DEGRADED', reason: 'DATABASE_UNAVAILABLE' }); }
