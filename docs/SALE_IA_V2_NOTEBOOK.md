@@ -241,7 +241,7 @@ Os arquivos foram escritos no GitHub por commits na branch de feature, mas os co
 - Aplicada sanitização HTML por lista permitida ao conteúdo gerado/editado; pontuação de pauta representa apenas recência da fonte.
 - Impedida geração repetida para uma pauta que já tenha artigo; erros de duplicidade retornam conflito.
 - Aprovação humana e qualidade mínima são exigidas antes do envio. O WordPress recebe rascunho, e o ID/link remoto são persistidos para bloquear reenvios duplicados.
-- Acrescentadas colunas WordPress ao schema e à migração inicial do módulo e testes de API em `tests/blogFactory.test.ts`.
+- Acrescentadas colunas WordPress ao schema por uma nova migração aditiva (sem reescrever a migração inicial já publicada) e testes de API em `tests/blogFactory.test.ts`.
 - Documentação ajustada para refletir as variáveis realmente usadas: `BLOG_FACTORY_FEEDS`, `BLOG_FACTORY_AI_ENABLED`, `BLOG_FACTORY_MAX_ARTICLES_PER_CYCLE` e intervalo padrão de 6 horas.
 - **Validação pendente:** o CI deve compilar o TypeScript, validar/gerar Prisma e executar os testes antes de considerar estas alterações corretas. Não foi possível executar comandos no computador local do usuário nem testar credenciais/feed/WordPress reais nesta sessão.
 
@@ -251,3 +251,5 @@ Os arquivos foram escritos no GitHub por commits na branch de feature, mas os co
 
 - Corrigido também o painel `public/blog-factory.html`: os contadores e mensagens de pesquisa/ciclo agora usam os campos reais da API; removido o falso botão de “rascunho vazio” que tentava gerar IA; ações são mostradas conforme o estado do artigo; link WordPress e estado de configuração são apresentados corretamente.
 - O endpoint de execução manual passou a usar o mesmo scheduler com trava de concorrência, evitando ciclos manuais e automáticos simultâneos.
+
+- Recuperação automática de tópicos presos em `GENERATING_ARTICLE` há mais de 30 minutos; se já houver artigo, marca a pauta como processada, caso contrário libera para nova tentativa.
