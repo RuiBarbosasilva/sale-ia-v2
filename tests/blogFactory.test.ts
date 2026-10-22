@@ -3,6 +3,12 @@ import request from 'supertest';
 
 process.env.SALE_IA_ADMIN_KEY = 'blog-factory-test-key';
 
+jest.mock('../src/modules/blogFactory/blogFactory.scheduler', () => ({
+  blogFactoryScheduler: {
+    runCycle: jest.fn().mockResolvedValue({ topicsConsidered: 0, generatedArticleIds: [], failures: [], requiresHumanApproval: true })
+  }
+}));
+
 jest.mock('../src/modules/blogFactory/blogFactory.service', () => ({
   getStatus: jest.fn().mockResolvedValue({ module: 'blog-factory-ia', status: 'READY' }),
   runAutomationCycle: jest.fn().mockResolvedValue({ topicsConsidered: 0, generatedArticleIds: [], failures: [], requiresHumanApproval: true }),
