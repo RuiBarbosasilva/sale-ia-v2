@@ -255,3 +255,9 @@ Os arquivos foram escritos no GitHub por commits na branch de feature, mas os co
 - Recuperação automática de tópicos presos em `GENERATING_ARTICLE` há mais de 30 minutos; se já houver artigo, marca a pauta como processada, caso contrário libera para nova tentativa.
 
 - O adaptador WordPress agora recusa colisão com slug já publicado/pendente (em vez de marcar falsamente o artigo como enviado); colisões retornam conflito e têm teste dedicado.
+
+### Continuação técnica — gatilhos de CI e diagnóstico de runners (22/10/2026)
+- Ajustados os gatilhos de `.github/workflows/ci.yml` e `.github/workflows/affiliate-ci.yml` para executar também em pull requests destinados a branches `feature/**`, `feat/**`, `chore/**` e `fix/**`, além de `main`. Isso corrige a cobertura de PRs como #74, cujo destino é `feat/blog-factory-ia`.
+- Os novos commits dispararam os workflows, mas as execuções encerraram como `failure` antes de qualquer etapa: o endpoint de jobs retorna `steps: null`, sem `runner_id` e sem logs disponíveis. Portanto, ainda não há evidência de falha de TypeScript, Prisma ou testes; o bloqueio aparente ocorre antes da execução do runner.
+- Não repetir reexecuções às cegas nem alterar o código para mascarar essa falha. É necessário verificar no GitHub Actions/Settings se Actions está habilitado e se há restrições de runners, política ou limite de uso. A integração disponível não expõe essas configurações nem os logs que expliquem o encerramento.
+- Os workflows permanecem sem validação bem-sucedida no head atual. PR #74 não deve ser mesclada até obter CI válido e executar smoke tests locais de Prisma/API/feeds/WordPress.
