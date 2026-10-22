@@ -253,3 +253,5 @@ Os arquivos foram escritos no GitHub por commits na branch de feature, mas os co
 - O endpoint de execução manual passou a usar o mesmo scheduler com trava de concorrência, evitando ciclos manuais e automáticos simultâneos.
 
 - Recuperação automática de tópicos presos em `GENERATING_ARTICLE` há mais de 30 minutos; se já houver artigo, marca a pauta como processada, caso contrário libera para nova tentativa.
+
+- O adaptador WordPress agora recusa colisão com slug já publicado/pendente (em vez de marcar falsamente o artigo como enviado); colisões retornam conflito e têm teste dedicado.
