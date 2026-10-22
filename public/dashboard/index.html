@@ -51,13 +51,13 @@ main{margin-left:252px;width:calc(100% - 252px);padding:28px 34px 60px}.top{disp
   <div class="top"><div class="crumb">SALE-IA / <b>Central</b></div><div class="top-actions"><button id="adminKeyBtn" class="btn">🔐 Chave</button><button id="refreshBtn" class="btn">↻ Atualizar</button><a class="btn dark" href="/rb-factory">Abrir RB-factory-sites</a></div></div>
   <section class="hero"><div><h1>Bom dia. Vamos vender.</h1><p>Uma central limpa para acompanhar oportunidades, vendas, afiliados, sites e inteligência comercial em um só lugar.</p></div><div class="date" id="date"></div></section>
   <section class="grid">
-    <div class="card"><div class="metric-label">Completude do ecossistema</div><div class="metric" id="projectCompleteness">—%</div><div class="metric-note">verificações funcionais concluídas com sucesso</div></div><div class="card"><div class="metric-label">Saúde operacional</div><div class="metric" id="overallScore">—%</div><div class="metric-note">módulos e serviços consultados</div></div>
+    <div class="card"><div class="metric-label">Verificações funcionais aprovadas</div><div class="metric" id="projectCompleteness">—%</div><div class="metric-note">verificações funcionais concluídas com sucesso</div></div><div class="card"><div class="metric-label">Saúde operacional</div><div class="metric" id="overallScore">—%</div><div class="metric-note">módulos e serviços consultados</div></div>
     <div class="card"><div class="metric-label">Receita Mercado Livre</div><div class="metric" id="revenue">—</div><div class="metric-note">dados da conta conectada</div></div>
     <div class="card"><div class="metric-label">Pedidos</div><div class="metric" id="orders">—</div><div class="metric-note">total sincronizado</div></div>
     <div class="card"><div class="metric-label">Produtos</div><div class="metric" id="items">—</div><div class="metric-note" id="sync">itens na operação</div></div>
   </section>
   <section class="panel readiness-panel">
-    <div class="panel-head"><h2>Completude do ecossistema</h2><span id="completionLabel">verificações funcionais por módulo</span></div>
+    <div class="panel-head"><h2>Verificações funcionais aprovadas</h2><span id="completionLabel">verificações funcionais por módulo</span></div>
     <div id="completionReadiness" class="readiness"></div>
     <div class="definition">Índice calculado pelas verificações funcionais executadas; não representa percentual de código implementado.</div>
   </section>
@@ -119,8 +119,8 @@ main{margin-left:252px;width:calc(100% - 252px);padding:28px 34px 60px}.top{disp
 const $=id=>document.getElementById(id);
 function adminKey(){return sessionStorage.getItem('saleIaAdminKey')||''}
 async function validateAdminKey(value){const response=await fetch('/dashboard/auth/check',{headers:{'x-sale-ia-admin-key':value},cache:'no-store'});return response.ok}
-async function setAdminKey(){const current=adminKey();const entered=prompt('Informe a chave administrativa configurada no SALE_IA_ADMIN_KEY:',current);if(entered===null)return;const value=entered.trim();if(!value){sessionStorage.removeItem('saleIaAdminKey');refresh();return}try{const valid=await validateAdminKey(value);if(!valid){sessionStorage.removeItem('saleIaAdminKey');alert('Chave recusada pelo servidor. Confira SALE_IA_ADMIN_KEY no arquivo .env e reinicie o servidor.');return}sessionStorage.setItem('saleIaAdminKey',value);await refresh()}catch(error){alert('Não foi possível validar a chave no servidor. Confira se a API está ativa e tente novamente.')}} 
-async function adminFetch(url,options={},retry=true){const headers=new Headers(options.headers||{});const key=adminKey();if(key)headers.set('x-sale-ia-admin-key',key);const response=await fetch(url,{...options,headers,cache:'no-store'});if(response.status===401&&retry){sessionStorage.removeItem('saleIaAdminKey');const entered=prompt('Chave administrativa recusada. Informe a chave configurada no SALE_IA_ADMIN_KEY:');if(entered===null||!entered.trim())throw new Error('ADMIN_UNAUTHORIZED');const value=entered.trim();const valid=await validateAdminKey(value);if(!valid){alert('Chave recusada pelo servidor. Confira SALE_IA_ADMIN_KEY no .env.');throw new Error('ADMIN_UNAUTHORIZED')}sessionStorage.setItem('saleIaAdminKey',value);return adminFetch(url,options,false)}return response}
+async function setAdminKey(){const current=adminKey();const entered=prompt('Informe a chave administrativa configurada no SALE_IA_ADMIN_KEY:',current);if(entered===null)return;const value=entered.trim();if(!value){sessionStorage.removeItem('saleIaAdminKey');refresh();return}try{const valid=await validateAdminKey(value);if(!valid){sessionStorage.removeItem('saleIaAdminKey');alert('Chave recusada pelo servidor. Confira SALE_IA_ADMIN_KEY (ou AFFILIATE_ADMIN_KEY, se usar o fallback) no arquivo .env e reinicie o servidor.');return}sessionStorage.setItem('saleIaAdminKey',value);await refresh()}catch(error){alert('Não foi possível validar a chave no servidor. Confira se a API está ativa e tente novamente.')}} 
+async function adminFetch(url,options={},retry=true){const headers=new Headers(options.headers||{});const key=adminKey();if(key)headers.set('x-sale-ia-admin-key',key);const response=await fetch(url,{...options,headers,cache:'no-store'});if(response.status===401&&retry){sessionStorage.removeItem('saleIaAdminKey');const entered=prompt('Chave administrativa recusada. Informe a chave configurada no SALE_IA_ADMIN_KEY:');if(entered===null||!entered.trim())throw new Error('ADMIN_UNAUTHORIZED');const value=entered.trim();const valid=await validateAdminKey(value);if(!valid){alert('Chave recusada pelo servidor. Confira SALE_IA_ADMIN_KEY (ou AFFILIATE_ADMIN_KEY, se usar o fallback) no .env.');throw new Error('ADMIN_UNAUTHORIZED')}sessionStorage.setItem('saleIaAdminKey',value);return adminFetch(url,options,false)}return response}
 function money(v){return typeof v==='number'?v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}):'—'}
 async function refresh(){
   $('date').textContent=new Date().toLocaleString('pt-BR',{dateStyle:'full',timeStyle:'short'});
@@ -134,7 +134,7 @@ async function refresh(){
     if(d.success&&d.data){
       const completion=d.data.projectCompleteness||{};
       $('projectCompleteness').textContent=(completion.score??0)+'%';
-      $('completionLabel').textContent=completion.label||'implementação por módulo';
+      $('completionLabel').textContent=completion.label||'verificações funcionais por módulo';
       const completionModules=completion.modules||[];
       $('completionReadiness').innerHTML=completionModules.map(m=>{const score=Math.max(0,Math.min(100,Number(m.score)||0));const cls=score===100?'':score>0?'partial':'zero';return '<div class="readiness-item"><div class="readiness-top"><span class="readiness-name">'+m.name+'</span><span class="readiness-score">'+score+'%</span></div><div class="readiness-bar"><div class="readiness-fill '+cls+'" style="width:'+score+'%"></div></div><div class="readiness-status">'+(m.status||'SEM STATUS')+'</div></div>';}).join('');
       $('overallScore').textContent=(d.data.overallScore??0)+'%';
