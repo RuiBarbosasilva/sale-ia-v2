@@ -1795,3 +1795,39 @@ model BlogFactoryArticle {
   @@index([status, updatedAt])
   @@index([topicId])
 }
+
+
+// ============================================================
+// BLOG FACTORY IA - MODELOS DE DADOS
+// ============================================================
+model BlogPauta {
+  id            String    @id @default(uuid())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  titulo        String
+  conteudo      String?
+  fonteUrl      String?
+  status        String    @default("PENDING") // PENDING, PROCESSED, IGNORED
+  
+  articles      BlogArticle[]
+}
+
+model BlogArticle {
+  id            String    @id @default(uuid())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  pautaId       String
+  pauta         BlogPauta @relation(fields: [pautaId], references: [id])
+  
+  title         String
+  content       String
+  status        String    @default("DRAFT") // DRAFT, APPROVED, PUBLISHED
+  
+  wordCount     Int       @default(0)
+  seoScore      Int       @default(0)
+  
+  wpPostId      String?
+  wpUrl         String?
+}
