@@ -230,3 +230,17 @@ Os arquivos foram escritos no GitHub por commits na branch de feature, mas os co
 - No Affiliate Module CI, instalação de dependências, `prisma validate`, `prisma generate`, `prisma migrate deploy` e `npm run typecheck`, build, testes e Guardian finalizaram com sucesso.
 - O workflow principal `sale-ia-v2-ci` também finalizou com sucesso.
 - Depois desses checks foi feito um ajuste documental no notebook para remover uma variável de aprovação obsoleta; esse último commit altera apenas documentação. Confirmar o estado final do PR antes do merge.
+
+
+### Correções adicionais de runtime — Blog Factory (22/10/2026)
+- Criada branch isolada `fix/blog-factory-runtime-20261022` baseada na feature do Blog Factory; não mesclada em `main`.
+- Implementada a API de serviço que faltava ao controlador: status, descoberta RSS/Atom, listagem, geração, edição, aprovação e ciclo de automação.
+- A descoberta aceita feeds configurados em `BLOG_FACTORY_FEEDS`, valida URLs HTTP(S), limita o tamanho do feed e registra falhas por origem.
+- Corrigida a inicialização do scheduler: agora agenda ciclos com intervalo configurável, impede ciclos sobrepostos e pode ser encerrado explicitamente.
+- Geração usa `OPENAI_API_KEY`, timeout e validação de resposta JSON; não cria texto fictício quando a IA está indisponível.
+- Aplicada sanitização HTML por lista permitida ao conteúdo gerado/editado; pontuação de pauta representa apenas recência da fonte.
+- Impedida geração repetida para uma pauta que já tenha artigo; erros de duplicidade retornam conflito.
+- Aprovação humana e qualidade mínima são exigidas antes do envio. O WordPress recebe rascunho, e o ID/link remoto são persistidos para bloquear reenvios duplicados.
+- Acrescentadas colunas WordPress ao schema e à migração inicial do módulo e testes de API em `tests/blogFactory.test.ts`.
+- Documentação ajustada para refletir as variáveis realmente usadas: `BLOG_FACTORY_FEEDS`, `BLOG_FACTORY_AI_ENABLED`, `BLOG_FACTORY_MAX_ARTICLES_PER_CYCLE` e intervalo padrão de 6 horas.
+- **Validação pendente:** o CI deve compilar o TypeScript, validar/gerar Prisma e executar os testes antes de considerar estas alterações corretas. Não foi possível executar comandos no computador local do usuário nem testar credenciais/feed/WordPress reais nesta sessão.
