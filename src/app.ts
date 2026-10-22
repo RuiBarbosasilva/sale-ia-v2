@@ -65,7 +65,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// ForÃƒÂ§a UTF-8 nas pÃƒÂ¡ginas HTML para evitar mojibake em ambientes Windows/proxies.
+// ForÃƒÆ’Ã‚Â§a UTF-8 nas pÃƒÆ’Ã‚Â¡ginas HTML para evitar mojibake em ambientes Windows/proxies.
 app.use((req, res, next) => {
   const htmlRoutes = ['/affiliates', '/affiliates/admin', '/affiliates/intelligence', '/editorial', '/sales', '/dashboard', '/dashboard/', '/rb-factory', '/rb-factory-benchmark', '/rb-factory-maintenance', '/rb-factory-commercial', '/mercadolivre', '/mercadolivre/dropshipping'];
   if (htmlRoutes.includes(req.path) || req.path.endsWith('.html')) {
@@ -122,26 +122,26 @@ app.use('/dashboard', dashboardRoutes);
 startRbFactoryMaintenanceJob();
 
 // ==========================================
-// ROTAS DO MÃƒâ€œDULO AFILIADOS IA E OUTROS
+// ROTAS DO MÃƒÆ’Ã¢â‚¬Å“DULO AFILIADOS IA E OUTROS
 // (DEVEM VIR ANTES DO errorHandler)
 // ==========================================
 app.post('/api/affiliates/webhook/:provider', handleAffiliateWebhook);
 app.use('/api/factory-ebook', factoryEbookRoutes);
 app.use('/api/afiliados', afiliadosIaRoutes);
-app.use('/api/afiliados/produtos', produtosRoutes); // <-- CORREÃƒâ€¡ÃƒÆ’O: Rota agora conectada!
+app.use('/api/afiliados/produtos', produtosRoutes); // <-- CORREÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã†â€™O: Rota agora conectada!
 app.use('/api/publishers', publisherRoutes);
 app.use('/api/ml-seller', mlSellerRoutes);
 app.use('/api/content-factory', contentFactoryRoutes);
 
 // ==========================================
-// ROTAS DE CONTEÃƒÅ¡DO DE AFILIADOS
+// ROTAS DE CONTEÃƒÆ’Ã…Â¡DO DE AFILIADOS
 // (DEVEM VIR ANTES DO errorHandler)
 // ==========================================
 app.use('/api/afiliados/conteudo', contentGeneratorRoutes);
 app.use('/api/blog-factory', blogFactoryRoutes);
 
 // ==========================================
-// MIDDLEWARE DE ERRO (DEVE SER O ÃƒÅ¡LTIMO)
+// MIDDLEWARE DE ERRO (DEVE SER O ÃƒÆ’Ã…Â¡LTIMO)
 // ==========================================
 app.use(errorHandler);
 
