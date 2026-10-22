@@ -205,21 +205,41 @@ export class BlogFactoryService {
     const article = await prisma.blogFactoryArticle.findUnique({ where: { id } });
     if (!article) throw new Error('ARTICLE_NOT_FOUND');
     if (article.status === 'SENT_TO_WORDPRESS_DRAFT' || article.wordpressPostId) throw new Error('ARTICLE_ALREADY_SENT_TO_WORDPRESS');
-    if (article.status !== 'APPROVED') throw new Error('HUMAN_APPROVAL_REQUIRED');
-    const sources = JSON.parse(article.sourceUrls || '[]') as string[];
-    const safeSources = sources.filter(url => { try { return ['http:', 'https:'].includes(new URL(url).protocol); } catch { return false; } });
-    const escapeHtml = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    const sourceBlock = safeSources.length
-      ? '<p><strong>Fontes:</strong> ' + safeSources.map(url => '<a href="' + escapeHtml(url) + '" rel="nofollow noopener">' + escapeHtml(url) + '</a>').join(' · ') + '</p>'
-      : '';
-    const result = await sendWordPressDraft({
-      title: article.title, slug: article.slug, excerpt: article.excerpt,
-      body: article.body + sourceBlock
+    if (article.status !== 'APPROVED') {
+      if (article.status === 'PUBLISHING_TO_WORDPRESS') throw new Error('ARTICLE_PUBLISH_IN_PROGRESS');
+      throw new Error('HUMAN_APPROVAL_REQUIRED');
+    }
+
+    // Atomic claim prevents two simultaneous requests from submitting the same article.
+    const claim = await prisma.blogFactoryArticle.updateMany({
+      where: { id, status: 'APPROVED', wordpressPostId: null },
+      data: { status: 'PUBLISHING_TO_WORDPRESS' }
     });
-    return prisma.blogFactoryArticle.update({
-      where: { id },
-      data: { status: 'SENT_TO_WORDPRESS_DRAFT', wordpressPostId: result.id, wordpressLink: result.link || null, qualityNotes: JSON.stringify(['Enviado ao WordPress como rascunho. ID WordPress: ' + result.id, result.link || '']) }
-    });
+    if (claim.count !== 1) throw new Error('ARTICLE_PUBLISH_IN_PROGRESS');
+
+    try {
+      const sources = JSON.parse(article.sourceUrls || '[]') as string[];
+      const safeSources = sources.filter(url => { try { return ['http:', 'https:'].includes(new URL(url).protocol); } catch { return false; } });
+      const escapeHtml = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      const sourceBlock = safeSources.length
+        ? '<p><strong>Fontes:</strong> ' + safeSources.map(url => '<a href="' + escapeHtml(url) + '" rel="nofollow noopener">' + escapeHtml(url) + '</a>').join(' · ') + '</p>'
+        : '';
+      const result = await sendWordPressDraft({
+        title: article.title, slug: article.slug, excerpt: article.excerpt,
+        body: article.body + sourceBlock
+      });
+      return await prisma.blogFactoryArticle.update({
+        where: { id },
+        data: { status: 'SENT_TO_WORDPRESS_DRAFT', wordpressPostId: result.id, wordpressLink: result.link || null, qualityNotes: JSON.stringify(['Enviado ao WordPress como rascunho. ID WordPress: ' + result.id, result.link || '']) }
+      });
+    } catch (error) {
+      // Restore approval if submission failed; the WordPress adapter checks the slug before creating.
+      await prisma.blogFactoryArticle.updateMany({
+        where: { id, status: 'PUBLISHING_TO_WORDPRESS', wordpressPostId: null },
+        data: { status: 'APPROVED' }
+      });
+      throw error;
+    }
   }
 
   async runAutomationCycle() {
