@@ -1795,7 +1795,7 @@ model BlogFactoryArticle {
   updatedAt   DateTime @updatedAt
 
   @@index([status, updatedAt])
-  @@index([topicId])
+  @@unique([topicId])
 }
 
 
