@@ -186,7 +186,11 @@ export class BlogFactoryService {
     if (article.status === 'SENT_TO_WORDPRESS_DRAFT' || article.wordpressPostId) throw new Error('ARTICLE_ALREADY_SENT_TO_WORDPRESS');
     if (article.status !== 'APPROVED') throw new Error('HUMAN_APPROVAL_REQUIRED');
     const sources = JSON.parse(article.sourceUrls || '[]') as string[];
-    const sourceBlock = sources.length ? '<p><strong>Fontes:</strong> ' + sources.map(url => '<a href="' + url.replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '" rel="nofollow noopener">' + url.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</a></p>' : '';
+    const safeSources = sources.filter(url => { try { return ['http:', 'https:'].includes(new URL(url).protocol); } catch { return false; } });
+    const escapeHtml = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const sourceBlock = safeSources.length
+      ? '<p><strong>Fontes:</strong> ' + safeSources.map(url => '<a href="' + escapeHtml(url) + '" rel="nofollow noopener">' + escapeHtml(url) + '</a>').join(' · ') + '</p>'
+      : '';
     const result = await sendWordPressDraft({
       title: article.title, slug: article.slug, excerpt: article.excerpt,
       body: article.body + sourceBlock
