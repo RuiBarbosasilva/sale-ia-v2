@@ -51,15 +51,15 @@ main{margin-left:252px;width:calc(100% - 252px);padding:28px 34px 60px}.top{disp
   <div class="top"><div class="crumb">SALE-IA / <b>Central</b></div><div class="top-actions"><button id="adminKeyBtn" class="btn">🔐 Chave</button><button id="refreshBtn" class="btn">↻ Atualizar</button><a class="btn dark" href="/rb-factory">Abrir RB-factory-sites</a></div></div>
   <section class="hero"><div><h1>Bom dia. Vamos vender.</h1><p>Uma central limpa para acompanhar oportunidades, vendas, afiliados, sites e inteligência comercial em um só lugar.</p></div><div class="date" id="date"></div></section>
   <section class="grid">
-    <div class="card"><div class="metric-label">Completude do ecossistema</div><div class="metric" id="projectCompleteness">—%</div><div class="metric-note">implementação planejada do SALE-IA-V2</div></div><div class="card"><div class="metric-label">Saúde operacional</div><div class="metric" id="overallScore">—%</div><div class="metric-note">módulos e serviços consultados</div></div>
+    <div class="card"><div class="metric-label">Completude do ecossistema</div><div class="metric" id="projectCompleteness">—%</div><div class="metric-note">verificações funcionais concluídas com sucesso</div></div><div class="card"><div class="metric-label">Saúde operacional</div><div class="metric" id="overallScore">—%</div><div class="metric-note">módulos e serviços consultados</div></div>
     <div class="card"><div class="metric-label">Receita Mercado Livre</div><div class="metric" id="revenue">—</div><div class="metric-note">dados da conta conectada</div></div>
     <div class="card"><div class="metric-label">Pedidos</div><div class="metric" id="orders">—</div><div class="metric-note">total sincronizado</div></div>
     <div class="card"><div class="metric-label">Produtos</div><div class="metric" id="items">—</div><div class="metric-note" id="sync">itens na operação</div></div>
   </section>
   <section class="panel readiness-panel">
-    <div class="panel-head"><h2>Completude do ecossistema</h2><span id="completionLabel">implementação por módulo</span></div>
+    <div class="panel-head"><h2>Completude do ecossistema</h2><span id="completionLabel">verificações funcionais por módulo</span></div>
     <div id="completionReadiness" class="readiness"></div>
-    <div class="definition">Índice separado da saúde operacional. A saúde responde se os serviços estão funcionando; a completude mede quanto do ecossistema planejado já foi implementado.</div>
+    <div class="definition">Índice calculado pelas verificações funcionais executadas; não representa percentual de código implementado.</div>
   </section>
   <section class="panel readiness-panel">
     <div class="panel-head"><h2>Saúde dos módulos</h2><span>atualização automática</span></div>
@@ -128,7 +128,7 @@ async function refresh(){
     const r=await adminFetch('/dashboard/overview');const d=await r.json();
     if(d.success&&d.data){$('revenue').textContent=money(d.data.totalRevenue);$('orders').textContent=d.data.totalOrders??'0';$('items').textContent=d.data.totalItems??'0';$('sync').textContent=d.data.lastSync?'última sincronização: '+new Date(d.data.lastSync).toLocaleString('pt-BR'):'conta conectada';}
     else $('sync').textContent='Mercado Livre ainda sem métricas';
-  }catch(e){$('system').textContent='ONLINE';$('sync').textContent='API de métricas indisponível no momento'}
+  }catch(e){$('sync').textContent='API de métricas indisponível no momento'}
   try{
     const r=await adminFetch('/dashboard/operations');const d=await r.json();
     if(d.success&&d.data){
