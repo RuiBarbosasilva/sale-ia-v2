@@ -5,119 +5,142 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RB-Factory | Central Command</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-    body { background: #0f172a; color: #e2e8f0; padding: 40px 20px; min-height: 100vh; }
-    .container { max-width: 1400px; margin: 0 auto; }
-    header { text-align: center; margin-bottom: 50px; }
-    header h1 { font-size: 2.5rem; font-weight: 800; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
+    body { background: #0f172a; color: #e2e8f0; }
+    .layout { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+    
+    /* Sidebar */
+    .sidebar { background: #1e293b; border-right: 1px solid #334155; padding: 30px 20px; }
+    .sidebar h2 { color: #3b82f6; font-size: 1.2rem; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 2px solid #334155; }
+    .sidebar nav a { display: block; color: #94a3b8; text-decoration: none; padding: 12px 15px; margin-bottom: 8px; border-radius: 8px; font-size: 0.95rem; transition: all 0.2s; }
+    .sidebar nav a:hover { background: #334155; color: #f8fafc; }
+    
+    /* Content */
+    .content { padding: 40px; overflow-y: auto; }
+    header { margin-bottom: 40px; }
+    header h1 { font-size: 2.5rem; margin-bottom: 10px; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     header p { color: #94a3b8; font-size: 1.1rem; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; }
-    .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 30px; transition: all 0.3s ease; position: relative; overflow: hidden; }
-    .card:hover { transform: translateY(-5px); border-color: #3b82f6; box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.3); }
-    .card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); }
+    
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 30px; transition: all 0.3s ease; }
+    .card:hover { transform: translateY(-5px); border-color: #3b82f6; box-shadow: 0 10px 30px rgba(59, 130, 246, 0.2); }
     .card-icon { font-size: 2.5rem; margin-bottom: 15px; }
     .card h2 { font-size: 1.3rem; margin-bottom: 10px; color: #f8fafc; }
-    .card p { color: #94a3b8; font-size: 0.9rem; line-height: 1.5; margin-bottom: 25px; min-height: 50px; }
-    .btn { display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 14px; background: #3b82f6; color: white; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 1rem; transition: background 0.2s; border: none; cursor: pointer; }
+    .card p { color: #94a3b8; font-size: 0.9rem; line-height: 1.6; margin-bottom: 20px; }
+    .btn { display: inline-block; width: 100%; padding: 12px; background: #3b82f6; color: white; text-align: center; text-decoration: none; border-radius: 8px; font-weight: 600; transition: background 0.2s; }
     .btn:hover { background: #2563eb; }
-    .status { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 15px; }
-    .status-ready { background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); }
-    .status-beta { background: rgba(234, 179, 8, 0.2); color: #eab308; border: 1px solid rgba(234, 179, 8, 0.3); }
-    footer { text-align: center; margin-top: 60px; color: #475569; font-size: 0.9rem; }
+    .status { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; margin-bottom: 10px; }
+    .status-ready { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+    .status-beta { background: rgba(234, 179, 8, 0.2); color: #eab308; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>RB-FACTORY</h1>
-      <p>Central Command &bull; Ecossistema de Automação e Inteligência Artificial</p>
-    </header>
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>🚀 RB-FACTORY</h2>
+      <nav>
+        <a href="/"><strong>📊 Central Command</strong></a>
+        <a href="/dashboard/">🌐 RB-Factory-Sites</a>
+        <a href="/factory-ebook-dashboard">📚 RB-Factory-Ebook</a>
+        <a href="/blog-factory">📝 RB-Factory-Blogs</a>
+        <a href="/moneyprinter-dashboard"> RB-Factory-MoneyPrinter</a>
+        <a href="/aivio-dashboard"> RB-Factory-Aivio</a>
+        <a href="/tubefy-dashboard"> RB-Factory-Tubefy</a>
+        <a href="/affiliates/intelligence"> RB-Factory-Hunter</a>
+        <a href="/api/mercado-livre/docs">🛒 RB-Factory-MercadoLivre</a>
+        <a href="/api/prospecting/docs">🔍 RB-Factory-Prospecting</a>
+        <a href="/manual">📘 Manual Completo</a>
+      </nav>
+    </aside>
+    
+    <main class="content">
+      <header>
+        <h1>RB-FACTORY CENTRAL COMMAND</h1>
+        <p>Ecossistema Completo de Automação e Inteligência Artificial</p>
+      </header>
 
-    <div class="grid">
-      <div class="card">
-        <span class="status status-ready">Produção</span>
-        <div class="card-icon">🌐</div>
-        <h2>RB-Factory-Sites</h2>
-        <p>Construção e gestão de sites com IA, templates e automação completa.</p>
-        <a href="/dashboard/" class="btn">Acessar Dashboard →</a>
+      <div class="grid">
+        <div class="card">
+          <span class="status status-ready">Produção</span>
+          <div class="card-icon"></div>
+          <h2>RB-Factory-Sites</h2>
+          <p>Construção e gestão de sites com IA, templates responsivos e automação completa.</p>
+          <a href="/dashboard/" class="btn">Acessar →</a>
+        </div>
+
+        <div class="card">
+          <span class="status status-ready">Produção</span>
+          <div class="card-icon">📚</div>
+          <h2>RB-Factory-Ebook</h2>
+          <p>Máquina de vendas completa: ebooks, páginas de alta conversão e 8 campanhas de marketing.</p>
+          <a href="/factory-ebook-dashboard" class="btn">Acessar →</a>
+        </div>
+
+        <div class="card">
+          <span class="status status-ready">Produção</span>
+          <div class="card-icon">📝</div>
+          <h2>RB-Factory-Blogs</h2>
+          <p>Fábrica de conteúdo editorial com piloto automático. Publicação automática no WordPress.</p>
+          <a href="/blog-factory" class="btn">Acessar →</a>
+        </div>
+
+        <div class="card">
+          <span class="status status-ready">Produção</span>
+          <div class="card-icon">🎬</div>
+          <h2>RB-Factory-MoneyPrinter</h2>
+          <p>Geração automática de vídeos virais 4K com IA, narração ElevenLabs e renderização Python.</p>
+          <a href="/moneyprinter-dashboard" class="btn">Acessar →</a>
+        </div>
+
+        <div class="card">
+          <span class="status status-ready">Produção</span>
+          <div class="card-icon">🤖</div>
+          <h2>RB-Factory-Aivio</h2>
+          <p>Agente de vendas autônomo para WhatsApp/Instagram com lead scoring e memória de contexto.</p>
+          <a href="/aivio-dashboard" class="btn">Acessar →</a>
+        </div>
+
+        <div class="card">
+          <span class="status status-ready">Produção</span>
+          <div class="card-icon">🚀</div>
+          <h2>RB-Factory-Tubefy</h2>
+          <p>Motor de crescimento de canais. SEO, títulos virais e potencial viral para YouTube/TikTok.</p>
+          <a href="/tubefy-dashboard" class="btn">Acessar →</a>
+        </div>
+
+        <div class="card">
+          <span class="status status-beta">Validação</span>
+          <div class="card-icon">🎯</div>
+          <h2>RB-Factory-Hunter</h2>
+          <p>Caçador de produtos e oportunidades de afiliados com análise inteligente de score.</p>
+          <a href="/affiliates/intelligence" class="btn">Acessar →</a>
+        </div>
+
+        <div class="card">
+          <span class="status status-ready">Produção</span>
+          <div class="card-icon">🛒</div>
+          <h2>RB-Factory-MercadoLivre</h2>
+          <p>Inteligência de dropshipping, sincronização de pedidos e análise de concorrência.</p>
+          <a href="/api/mercado-livre/docs" class="btn">Ver API →</a>
+        </div>
+
+        <div class="card">
+          <span class="status status-ready">Produção</span>
+          <div class="card-icon">🔍</div>
+          <h2>RB-Factory-Prospecting</h2>
+          <p>Prospecção de sites e clientes com scoring de oportunidades e Google Places.</p>
+          <a href="/api/prospecting/docs" class="btn">Ver API →</a>
+        </div>
+
+        <div class="card">
+          <span class="status status-ready">Documentação</span>
+          <div class="card-icon">📘</div>
+          <h2>Manual Completo do Operador</h2>
+          <p>Guia completo com todos os módulos, APIs, troubleshooting e fluxo de trabalho recomendado.</p>
+          <a href="/manual" class="btn">Acessar →</a>
+        </div>
       </div>
-
-      <div class="card">
-        <span class="status status-ready">Produção</span>
-        <div class="card-icon">📚</div>
-        <h2>RB-Factory-Ebook</h2>
-        <p>Máquina de vendas completa. Geração de ebooks, páginas de alta conversão e campanhas.</p>
-        <a href="/factory-ebook-dashboard" class="btn">Acessar Dashboard →</a>
-      </div>
-
-      <div class="card">
-        <span class="status status-ready">Produção</span>
-        <div class="card-icon">📝</div>
-        <h2>RB-Factory-Blogs</h2>
-        <p>Fábrica de conteúdo editorial. Radar de tendências e publicação automática no WordPress.</p>
-        <a href="/blog-factory" class="btn">Acessar Dashboard →</a>
-      </div>
-
-      <div class="card">
-        <span class="status status-ready">Produção</span>
-        <div class="card-icon">🎬</div>
-        <h2>RB-Factory-MoneyPrinter</h2>
-        <p>Geração automática de vídeos virais 4K com IA, narração e renderização Python.</p>
-        <a href="/moneyprinter-dashboard" class="btn">Acessar Dashboard →</a>
-      </div>
-
-      <div class="card">
-        <span class="status status-ready">Produção</span>
-        <div class="card-icon">🤖</div>
-        <h2>RB-Factory-Aivio</h2>
-        <p>Agente de vendas autônomo com lead scoring, memória e integração OpenAI/Gemini.</p>
-        <a href="/aivio-dashboard" class="btn">Acessar Dashboard →</a>
-      </div>
-
-      <div class="card">
-        <span class="status status-ready">Produção</span>
-        <div class="card-icon">🚀</div>
-        <h2>RB-Factory-Tubefy</h2>
-        <p>Motor de crescimento de canais. SEO, potencial viral e agendamento YouTube/TikTok.</p>
-        <a href="/tubefy-dashboard" class="btn">Acessar Dashboard →</a>
-      </div>
-
-      <div class="card">
-        <span class="status status-beta">Validação</span>
-        <div class="card-icon">🎯</div>
-        <h2>RB-Factory-Hunter</h2>
-        <p>Caçador de produtos e oportunidades de afiliados com análise inteligente.</p>
-        <a href="/affiliates/intelligence" class="btn">Acessar Dashboard →</a>
-      </div>
-
-      <div class="card">
-        <span class="status status-ready">Produção</span>
-        <div class="card-icon">🛒</div>
-        <h2>RB-Factory-MercadoLivre</h2>
-        <p>Inteligência de dropshipping, sincronização de pedidos e análise de concorrência.</p>
-        <a href="/api/mercado-livre/docs" class="btn" style="background: #475569;">Ver Documentação →</a>
-      </div>
-
-      <div class="card">
-        <span class="status status-ready">Produção</span>
-        <div class="card-icon"></div>
-        <h2>RB-Factory-Prospecting</h2>
-        <p>Prospecção de sites e clientes com scoring de oportunidades e Google Places.</p>
-        <a href="/api/prospecting/docs" class="btn" style="background: #475569;">Ver Documentação →</a>
-      </div>
-
-      <div class="card">
-        <span class="status status-ready">Documentação</span>
-        <div class="card-icon">📘</div>
-        <h2>Manual Completo</h2>
-        <p>Guia completo do operador com todos os módulos, APIs, troubleshooting e fluxo.</p>
-        <a href="/manual" class="btn">Acessar Manual →</a>
-      </div>
-    </div>
-
-    <footer>
-      <p>RB-Factory &copy; 2026 &bull; Arquitetura de Elite &bull; Todos os sistemas operacionais</p>
-    </footer>
+    </main>
   </div>
 </body>
 </html>
