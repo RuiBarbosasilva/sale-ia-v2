@@ -13,12 +13,13 @@
 <section><h2>Configuração no servidor</h2><ul><li><code>BLOG_FACTORY_AUTORUN_ENABLED=true</code> ativa a rotina periódica.</li><li><code>BLOG_FACTORY_AI_ENABLED=true</code> habilita geração de rascunhos por IA.</li><li><code>BLOG_FACTORY_FEEDS</code>: URLs RSS/Atom separadas por vírgula; <code>OPENAI_API_KEY</code> e opcionalmente <code>BLOG_FACTORY_AI_MODEL</code>.</li><li>WordPress: <code>BLOG_FACTORY_WORDPRESS_URL</code>, <code>BLOG_FACTORY_WORDPRESS_USERNAME</code> e <code>BLOG_FACTORY_WORDPRESS_APP_PASSWORD</code>.</li><li>O envio externo exige aprovação explícita do artigo e cria apenas um rascunho WordPress; a publicação pública não é automática.</li></ul></section>
 </main>
 <script>
-const $=id=>document.getElementById(id);let key='';
+const $=id=>document.getElementById(id);let key='';let moduleStatus='desconectado';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function api(path,opts={}){const r=await fetch('/api/blog-factory'+path,{...opts,headers:{'content-type':'application/json','x-sale-ia-admin-key':key,...(opts.headers||{})}});const j=await r.json().catch(()=>({error:'Resposta inválida'}));if(!r.ok)throw Error(j.error||'HTTP '+r.status);return j}
 function message(text){$('message').textContent=text}
 async function load(){
  const [s,t,a]=await Promise.all([api('/status'),api('/topics'),api('/articles')]);
+ moduleStatus=s.status||'UNKNOWN';
  const counts=s.counts||{};
  $('topicsN').textContent=counts.topics??0;
  $('draftsN').textContent=counts.drafts??0;
@@ -33,7 +34,7 @@ async function load(){
    if(x.status==='DRAFT'){
      editor='<details open><summary>Editar e revisar artigo</summary><label>Título<input data-title="'+esc(x.id)+'" value="'+esc(x.title)+'"></label><label>Resumo<textarea data-excerpt="'+esc(x.id)+'">'+esc(x.excerpt)+'</textarea></label><label>Corpo HTML<textarea data-body="'+esc(x.id)+'">'+esc(x.body)+'</textarea></label><div class="actions"><button data-save="'+esc(x.id)+'">Salvar alterações</button><button data-approve="'+esc(x.id)+'">Aprovar editorialmente</button></div><p class="muted">A aprovação exige título e extensão mínima. Revise fatos, fontes, direitos e contexto.</p></details>';
    } else if(x.status==='APPROVED'){
-     editor='<details><summary>Conferir artigo aprovado</summary><p>'+esc(x.excerpt)+'</p><div>'+esc(x.body)+'</div><div class="actions"><button data-send="'+esc(x.id)+'">Enviar como rascunho WordPress</button></div></details>';
+     editor='<details><summary>Conferir artigo aprovado</summary><p>'+esc(x.excerpt)+'</p><div>'+esc(String(x.body||'').replace(/<[^>]*>/g,' '))+'</div><div class="actions"><button data-send="'+esc(x.id)+'">Enviar como rascunho WordPress</button></div></details>';
    } else if(x.status==='SENT_TO_WORDPRESS_DRAFT'){
      editor='<p class="muted">Enviado como rascunho WordPress. '+(x.wordpressLink?'<a href="'+esc(x.wordpressLink)+'" target="_blank" rel="noopener noreferrer">Abrir no WordPress</a>':'')+'</p>';
    } else {
@@ -46,7 +47,7 @@ async function load(){
  document.querySelectorAll('[data-approve]').forEach(b=>b.onclick=async()=>{const id=b.dataset.approve;if(!confirm('Confirmar que você revisou fatos, fontes e texto deste artigo?'))return;try{await api('/articles/'+encodeURIComponent(id)+'/approve',{method:'POST',body:'{}'});message('Aprovação editorial registrada.');await load()}catch(e){message(e.message)}});
  document.querySelectorAll('[data-send]').forEach(b=>b.onclick=async()=>{const id=b.dataset.send;if(!confirm('Enviar artigo aprovado ao WordPress como RASCUNHO, sem publicação pública?'))return;try{await api('/articles/'+encodeURIComponent(id)+'/publish',{method:'POST',body:'{}'});message('Enviado ao WordPress como rascunho.');await load()}catch(e){message(e.message)}});
 }
-$('connect').onclick=async()=>{key=$('key').value.trim();try{await load();message('Conectado. Estado do módulo: '+($('topicsN').textContent==='—'?'desconhecido':'verifique as contagens e configurações.'))}catch(e){message(e.message)}};
+$('connect').onclick=async()=>{key=$('key').value.trim();try{await load();message('Conectado. Estado do módulo: '+moduleStatus)}catch(e){message(e.message)}};
 $('refresh').onclick=()=>load().catch(e=>message(e.message));
 $('research').onclick=async()=>{try{$('research').disabled=true;message('Consultando feeds RSS/Atom...');const r=await api('/research',{method:'POST',body:'{}'});message('Itens processados: '+r.discovered+'; feeds consultados: '+r.feedsChecked+'; falhas: '+r.failures.length);await load()}catch(e){message(e.message)}finally{$('research').disabled=false}};
 $('cycle').onclick=async()=>{try{$('cycle').disabled=true;message('Executando ciclo de pesquisa e geração...');const r=await api('/run-cycle',{method:'POST',body:'{}'});message('Ciclo concluído. Itens processados: '+(r.research?.discovered??0)+'; artigos gerados: '+(r.generatedArticleIds?.length??0)+'; falhas: '+(r.failures?.length??0)+(r.aiEnabled?'':' · geração IA desativada; defina BLOG_FACTORY_AI_ENABLED=true'));await load()}catch(e){message(e.message)}finally{$('cycle').disabled=false}};
