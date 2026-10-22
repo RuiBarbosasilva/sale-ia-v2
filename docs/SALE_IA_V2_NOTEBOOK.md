@@ -184,3 +184,12 @@ O usuário executou `git status --short` e `git diff`. Os itens abaixo ainda est
 - Removido o estado visual fixo “Sistema operacional”, que era exibido mesmo quando a consulta de saúde falhava. O rótulo agora começa em “Verificando módulos” e muda conforme o resultado de `/dashboard/operations`; em falha mostra “Saúde indisponível”. Esse indicador descreve apenas os módulos consultados, não todo o ecossistema.
 - CI investigado via metadados de Actions: o run falhou em cerca de quatro segundos; o único job aparece como `completed/failure`, mas a API não fornece etapas, horários de início de execução nem logs, e o endpoint de logs retorna `BlobNotFound`. Isso indica que não há evidência suficiente para atribuir a falha ao código ou afirmar que o workflow chegou a executar os comandos. Link para inspeção manual: https://github.com/RuiBarbosasilva/sale-ia-v2/actions/runs/39824222283
 - PR #73 atualizado com as correções adicionais. O PR segue aberto e sem CI verde; não foi mesclado para evitar colocar alterações não validadas em `main`.
+
+
+### Ajuste final da semântica e novo estado do CI — 22/10/2026
+
+- Os cartões e o painel da central agora usam “Verificações funcionais aprovadas” em vez de “Completude do ecossistema”, pois o cálculo é a proporção de consultas operacionais que responderam, não a percentagem de implementação do produto.
+- As mensagens de autenticação explicam o fallback `AFFILIATE_ADMIN_KEY` quando `SALE_IA_ADMIN_KEY` não estiver configurada.
+- Após a correção do link do Dropshipping, foram geradas novas execuções Actions (#1510 do `sale-ia-v2-ci` e #1473 do `Affiliate Module CI`). Ambas falharam antes de expor qualquer etapa; o job está como `failure`, `steps: null`, `logs_url: null`, e a tentativa de baixar logs retorna `BlobNotFound`. O problema não pode ser corrigido com segurança por alteração de código enquanto o runner não fornece diagnóstico.
+- A última versão da branch é `85182a79108d2b8e4b9d9a03e73f531ceed149af`. PR #73 permanece aberto, não mesclado e sem CI aprovado: https://github.com/RuiBarbosasilva/sale-ia-v2/pull/73
+- Ação operacional necessária no GitHub: abrir Actions e inspecionar os runs recentes; se continuarem sem steps/logs, verificar configurações/permissões de Actions, disponibilidade de runner e limites de execução do repositório. Depois, executar CI e smoke tests para aprovar a alteração.
