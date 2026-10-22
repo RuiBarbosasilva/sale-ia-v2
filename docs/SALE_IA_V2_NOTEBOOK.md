@@ -196,3 +196,5 @@ O usuário executou `git status --short` e `git diff`. Os itens abaixo ainda est
 
 - Verificação final de diff: branch com 13 commits à frente e 0 atrás de `main`; apenas quatro arquivos modificados no PR (notebook, dashboard HTML, rotas do dashboard e testes). Isso confirma que as correções não carregam as alterações extensas das branches Blog/Social Media.
 - As execuções mais recentes do commit `85182a7` também falharam antes de expor etapas: `sale-ia-v2-ci` run 1514 (ID 39852101529) e `Affiliate Module CI` run 1477 (ID 39852101621). Os jobs seguem sem logs/steps acessíveis.
+
+- Atualização após o commit final do notebook (`14489d7`): os runs mais recentes continuam falhando sem logs, agora `sale-ia-v2-ci` #1518 (ID 39852160005) e `Affiliate Module CI` #1481 (ID 39852160036). PR permanece aberto e mergeable, mas não foi mesclado por falta de validação aprovada.
