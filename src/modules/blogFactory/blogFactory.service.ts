@@ -62,7 +62,7 @@ export class BlogFactoryService {
     ]);
     return {
       module: 'blog-factory-ia',
-      status: 'READY',
+      status: configuredFeeds().length === 0 ? 'CONFIGURATION_REQUIRED' : !process.env.OPENAI_API_KEY ? 'AI_NOT_CONFIGURED' : 'READY',
       automationEnabled: String(process.env.BLOG_FACTORY_AUTORUN_ENABLED || '').toLowerCase() === 'true',
       aiConfigured: Boolean(process.env.OPENAI_API_KEY),
       wordpressConfigured: Boolean(process.env.BLOG_FACTORY_WORDPRESS_URL && process.env.BLOG_FACTORY_WORDPRESS_USERNAME && process.env.BLOG_FACTORY_WORDPRESS_APP_PASSWORD),
@@ -224,14 +224,17 @@ export class BlogFactoryService {
 
   async runAutomationCycle() {
     const research = await this.discoverTrends();
-    const topics = await prisma.blogFactoryTopic.findMany({ where: { status: 'DISCOVERED' }, orderBy: [{ trendScore: 'desc' }, { createdAt: 'desc' }], take: 3 });
+    const aiEnabled = String(process.env.BLOG_FACTORY_AI_ENABLED || '').toLowerCase() === 'true';
+    const maxConfigured = Number(process.env.BLOG_FACTORY_MAX_ARTICLES_PER_CYCLE || 3);
+    const maxArticles = Number.isFinite(maxConfigured) ? Math.max(1, Math.min(10, Math.floor(maxConfigured))) : 3;
+    const topics = aiEnabled ? await prisma.blogFactoryTopic.findMany({ where: { status: 'DISCOVERED' }, orderBy: [{ trendScore: 'desc' }, { createdAt: 'desc' }], take: maxArticles }) : [];
     const generated: string[] = [];
     const failures: Array<{topicId: string; error: string}> = [];
     for (const topic of topics) {
       try { const article = await this.generateArticle(topic.id); generated.push(article.id); }
       catch (error) { failures.push({ topicId: topic.id, error: errorCode(error) }); }
     }
-    return { research, topicsConsidered: topics.length, generatedArticleIds: generated, failures, requiresHumanApproval: true };
+    return { research, aiEnabled, topicsConsidered: topics.length, generatedArticleIds: generated, failures, requiresHumanApproval: true };
   }
 }
 
