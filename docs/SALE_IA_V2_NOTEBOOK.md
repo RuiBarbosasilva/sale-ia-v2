@@ -154,3 +154,14 @@ O usuário executou `git status --short` e `git diff`. Os itens abaixo ainda est
 - [ ] Integrar Blog Factory IA e Social Media Factory IA com revisão de conflitos, migrações e rotas.
 - [ ] Criar um registro central de módulos com estado operacional verificável.
 - [ ] Validar a chave e executar smoke tests no ambiente local do Windows.
+
+
+### Continuação da auditoria — análise de branches e CI (22/10/2026, 17:40 UTC)
+
+- A branch `feat/blog-factory-ia` está 49 commits à frente de `main`. Inclui `dump.rdb` alterado, `prisma/schema.prisma`, `src/app.ts`, `src/server.ts`, uma migração Blog Factory, serviços/controlador/rotas/scheduler, páginas e autenticação própria. Não fazer merge integral sem revisar o diff: `dump.rdb` é estado de Redis, não deve ser integrado como código do módulo.
+- A branch `feature/social-media-factory-ia` está 79 commits à frente de `main`. Inclui múltiplas migrações, grandes mudanças em `prisma/schema.prisma`, `src/app.ts` e `src/server.ts`, páginas e serviços de redes sociais/dropshipping. Também não deve ser integrada integralmente sem reconciliar os arquivos compartilhados e o histórico de migrações.
+- As duas branches partem do mesmo ancestral aparente de `main`, mas representam conjuntos diferentes de mudanças; não se deve assumir que uma contém a outra.
+- O CI do PR #73 e o CI do módulo Afiliados falham quase imediatamente, com jobs reportados sem etapas executadas e sem logs acessíveis pela API consultada. Foram solicitadas novas execuções, que também falharam em seguida. Isso não identifica ainda se a causa é permissão/configuração do runner ou validação do projeto; não inventar uma causa sem logs.
+- Conferido no `main`: o middleware administrativo compara `x-sale-ia-admin-key` (ou `x-affiliate-admin-key`) com `SALE_IA_ADMIN_KEY` ou fallback `AFFILIATE_ADMIN_KEY` e retorna 401 para ausência/valor incorreto. O repositório não revela o valor do segredo local.
+- Rotas da interface central: os módulos já existentes em `main` têm rotas Express explícitas. As interfaces Blog Factory e Social Media Factory não estão montadas no `main`; adicionar links ativos antes de integrar seus arquivos criaria links quebrados.
+- Próximos passos seguros: obter detalhes do check-run/Actions no GitHub; validar localmente `npm ci`, `npx prisma validate`, `npm run typecheck`, `npm run build` e os testes; integrar os módulos em PRs separados e revisar `schema.prisma`, migrations, `app.ts`, `server.ts` e arquivos de estado como `dump.rdb`.
