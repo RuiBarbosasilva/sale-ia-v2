@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { sendWordPressDraft } from './wordpressPublisher';
 
 const prisma = new PrismaClient();
@@ -179,7 +179,7 @@ export class BlogFactoryService {
     const article = await prisma.blogFactoryArticle.findUnique({ where: { id } });
     if (!article) throw new Error('ARTICLE_NOT_FOUND');
     if (article.status !== 'DRAFT') throw new Error('ARTICLE_ALREADY_REVIEWED');
-    const data: Record<string, string | null> = {};
+    const data: Prisma.BlogFactoryArticleUpdateInput = {};
     if (input.title !== undefined) data.title = input.title.trim().slice(0, 300);
     if (input.excerpt !== undefined) data.excerpt = input.excerpt.trim().slice(0, 1000);
     if (input.body !== undefined) data.body = sanitizeEditorialHtml(input.body);
