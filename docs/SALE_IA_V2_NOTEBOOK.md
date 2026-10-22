@@ -244,3 +244,7 @@ Os arquivos foram escritos no GitHub por commits na branch de feature, mas os co
 - Acrescentadas colunas WordPress ao schema e à migração inicial do módulo e testes de API em `tests/blogFactory.test.ts`.
 - Documentação ajustada para refletir as variáveis realmente usadas: `BLOG_FACTORY_FEEDS`, `BLOG_FACTORY_AI_ENABLED`, `BLOG_FACTORY_MAX_ARTICLES_PER_CYCLE` e intervalo padrão de 6 horas.
 - **Validação pendente:** o CI deve compilar o TypeScript, validar/gerar Prisma e executar os testes antes de considerar estas alterações corretas. Não foi possível executar comandos no computador local do usuário nem testar credenciais/feed/WordPress reais nesta sessão.
+
+- PR de correção aberto: [#74](https://github.com/RuiBarbosasilva/sale-ia-v2/pull/74), direcionado primeiro à branch `feat/blog-factory-ia` para evitar incorporar os 49 commits da feature diretamente em `main`.
+- Proteção extra: submissão WordPress agora usa uma reivindicação atômica de estado e consulta o slug remoto antes de criar; a API informa conflito se outra submissão estiver em andamento.
+- Foram adicionados testes de API do módulo e testes de idempotência do adaptador WordPress. **O resultado do CI para o head atual ainda não está disponível nos status consultados**, portanto os testes permanecem não verificados.
