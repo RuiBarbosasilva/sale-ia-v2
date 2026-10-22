@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as service from './blogFactory.service';
+import { blogFactoryScheduler } from './blogFactory.scheduler';
 
 function authorized(req: Request, res: Response): boolean {
   const expected = process.env.SALE_IA_ADMIN_KEY || process.env.AFFILIATE_ADMIN_KEY;
@@ -30,7 +31,7 @@ export async function status(req: Request, res: Response) {
 }
 export async function runCycle(req: Request, res: Response) {
   if (!authorized(req, res)) return;
-  try { return res.json({ success: true, ...(await service.runAutomationCycle()) }); } catch (e) { return fail(res, e); }
+  try { return res.json({ success: true, ...(await blogFactoryScheduler.runCycle()) }); } catch (e) { return fail(res, e); }
 }
 export async function generateArticle(req: Request, res: Response) {
   if (!authorized(req, res)) return;
