@@ -23,6 +23,7 @@ export async function sendWordPressDraft(input: { title: string; slug: string; e
   if (!lookup.ok) throw new Error('WORDPRESS_LOOKUP_HTTP_' + lookup.status);
   const matches = await lookup.json() as CmsDraftResult[];
   if (Array.isArray(matches) && matches.length > 0 && Number.isFinite(Number(matches[0].id))) {
+    if (matches[0].status !== 'draft') throw new Error('WORDPRESS_SLUG_ALREADY_USED');
     return matches[0];
   }
 
