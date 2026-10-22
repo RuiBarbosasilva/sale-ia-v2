@@ -4,4 +4,4 @@ CREATE INDEX "BlogFactoryTopic_status_createdAt_idx" ON "BlogFactoryTopic"("stat
 CREATE TABLE "BlogFactoryArticle" ("id" TEXT NOT NULL PRIMARY KEY, "topicId" TEXT NOT NULL, "title" TEXT NOT NULL, "slug" TEXT NOT NULL, "excerpt" TEXT NOT NULL DEFAULT '', "body" TEXT NOT NULL DEFAULT '', "category" TEXT, "status" TEXT NOT NULL DEFAULT 'DRAFT', "sourceUrls" TEXT NOT NULL DEFAULT '[]', "qualityNotes" TEXT NOT NULL DEFAULT '[]', "publishedAt" DATETIME, "wordpressPostId" INTEGER, "wordpressLink" TEXT, "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" DATETIME NOT NULL, CONSTRAINT "BlogFactoryArticle_topicId_fkey" FOREIGN KEY ("topicId") REFERENCES "BlogFactoryTopic" ("id") ON DELETE RESTRICT ON UPDATE CASCADE);
 CREATE UNIQUE INDEX "BlogFactoryArticle_slug_key" ON "BlogFactoryArticle"("slug");
 CREATE INDEX "BlogFactoryArticle_status_updatedAt_idx" ON "BlogFactoryArticle"("status", "updatedAt");
-CREATE INDEX "BlogFactoryArticle_topicId_idx" ON "BlogFactoryArticle"("topicId");
+CREATE UNIQUE INDEX "BlogFactoryArticle_topicId_key" ON "BlogFactoryArticle"("topicId");
