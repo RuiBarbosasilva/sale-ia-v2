@@ -136,7 +136,7 @@ async function refresh(){
       $('projectCompleteness').textContent=(completion.score??0)+'%';
       $('completionLabel').textContent=completion.label||'implementação por módulo';
       const completionModules=completion.modules||[];
-      $('completionReadiness').innerHTML=completionModules.map(m=>{const score=Math.max(0,Math.min(100,Number(m.score)||0));const cls=score===100?'':score>0?'partial':'zero';return '<div class="readiness-item"><div class="readiness-top"><span class="readiness-name">'+m.name+'</span><span class="readiness-score">'+score+'%</span></div><div class="readiness-bar"><div class="readiness-fill '+cls+'" style="width:'+score+'%"></div></div><div class="readiness-status">peso '+m.weight+'%</div></div>';}).join('');
+      $('completionReadiness').innerHTML=completionModules.map(m=>{const score=Math.max(0,Math.min(100,Number(m.score)||0));const cls=score===100?'':score>0?'partial':'zero';return '<div class="readiness-item"><div class="readiness-top"><span class="readiness-name">'+m.name+'</span><span class="readiness-score">'+score+'%</span></div><div class="readiness-bar"><div class="readiness-fill '+cls+'" style="width:'+score+'%"></div></div><div class="readiness-status">'+(m.status||'SEM STATUS')+'</div></div>';}).join('');
       $('overallScore').textContent=(d.data.overallScore??0)+'%';
       const modules=d.data.modules||[];
       $('readiness').innerHTML=modules.map(m=>{
