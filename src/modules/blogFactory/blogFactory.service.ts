@@ -14,6 +14,32 @@ function slugify(value: string): string {
   return value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 90) || 'artigo';
 }
+function sanitizeEditorialHtml(input: string): string {
+  let html = input
+    .replace(/<(script|style|iframe|object|embed|form|input|button|textarea|select|svg|math|video|audio|source|link|meta|base)\\b[^>]*>[\\s\\S]*?<\\/\\1\\s*>/gi, '')
+    .replace(/<(script|style|iframe|object|embed|svg|math|video|audio|source|link|meta|base)\\b[^>]*\\/?\\s*>/gi, '');
+  const allowed = new Set(['p','br','h1','h2','h3','h4','ul','ol','li','strong','b','em','i','blockquote','code','pre','a','hr']);
+  html = html.replace(/<\\/?([a-z0-9-]+)\\b([^>]*)>/gi, (whole, rawName: string, rawAttrs: string) => {
+    const name = String(rawName).toLowerCase();
+    if (!allowed.has(name)) return '';
+    if (whole.startsWith('</')) return name === 'br' || name === 'hr' ? '' : '</' + name + '>';
+    if (name === 'br' || name === 'hr') return '<' + name + '>';
+    if (name !== 'a') return '<' + name + '>';
+    const hrefMatch = String(rawAttrs).match(/\\bhref\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))/i);
+    const href = hrefMatch ? (hrefMatch[1] || hrefMatch[2] || hrefMatch[3] || '') : '';
+    try {
+      const parsed = new URL(href);
+      if (['http:', 'https:'].includes(parsed.protocol)) return '<a href="' + parsed.toString().replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '" rel="nofollow noopener">';
+    } catch { /* discard unsafe or malformed links */ }
+    return '<a>';
+  });
+  return html.trim();
+}
+function recencyScore(date: Date | null): number {
+  if (!date) return 0;
+  const ageDays = Math.max(0, (Date.now() - date.getTime()) / 86_400_000);
+  return Math.max(0, Math.min(100, Math.round(100 - ageDays)));
+}
 function stripCdata(value: string): string {
   return value.replace(/^<!\[CDATA\[/, '').replace(/\]\]>$/, '').replace(/<[^>]*>/g, ' ')
     .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
@@ -80,8 +106,8 @@ export class BlogFactoryService {
           const sourcePublishedAt = dateRaw && Number.isFinite(Date.parse(dateRaw)) ? new Date(dateRaw) : null;
           await prisma.blogFactoryTopic.upsert({
             where: { sourceUrl: normalized },
-            create: { title: title.slice(0, 300), sourceUrl: normalized, sourceName: parsed.hostname, summary: summary.slice(0, 4000), trendScore: 0, sourcePublishedAt, status: 'DISCOVERED' },
-            update: { title: title.slice(0, 300), summary: summary.slice(0, 4000), sourcePublishedAt }
+            create: { title: title.slice(0, 300), sourceUrl: normalized, sourceName: parsed.hostname, summary: summary.slice(0, 4000), trendScore: recencyScore(sourcePublishedAt), sourcePublishedAt, status: 'DISCOVERED' },
+            update: { title: title.slice(0, 300), summary: summary.slice(0, 4000), trendScore: recencyScore(sourcePublishedAt), sourcePublishedAt }
           });
           discovered++;
         }
@@ -137,7 +163,7 @@ export class BlogFactoryService {
     try { generated = JSON.parse(raw); } catch { throw new Error('AI_PROVIDER_INVALID_JSON'); }
     const title = String(generated.title || topic.title).trim().slice(0, 300);
     const excerpt = String(generated.excerpt || topic.summary).trim().slice(0, 1000);
-    const body = String(generated.body || '').trim();
+    const body = sanitizeEditorialHtml(String(generated.body || ''));
     if (body.replace(/<[^>]*>/g, ' ').trim().length < ARTICLE_MIN_LENGTH) throw new Error('QUALITY_GATE_ARTICLE_TOO_SHORT');
     const baseSlug = slugify(title);
     let slug = baseSlug;
@@ -161,7 +187,7 @@ export class BlogFactoryService {
     const data: Record<string, string | null> = {};
     if (input.title !== undefined) data.title = input.title.trim().slice(0, 300);
     if (input.excerpt !== undefined) data.excerpt = input.excerpt.trim().slice(0, 1000);
-    if (input.body !== undefined) data.body = input.body.trim();
+    if (input.body !== undefined) data.body = sanitizeEditorialHtml(input.body);
     if (input.category !== undefined) data.category = input.category.trim().slice(0, 100) || null;
     if (!Object.keys(data).length) throw new Error('NO_VALID_FIELDS');
     return prisma.blogFactoryArticle.update({ where: { id }, data });
