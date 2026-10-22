@@ -165,3 +165,14 @@ O usuário executou `git status --short` e `git diff`. Os itens abaixo ainda est
 - Conferido no `main`: o middleware administrativo compara `x-sale-ia-admin-key` (ou `x-affiliate-admin-key`) com `SALE_IA_ADMIN_KEY` ou fallback `AFFILIATE_ADMIN_KEY` e retorna 401 para ausência/valor incorreto. O repositório não revela o valor do segredo local.
 - Rotas da interface central: os módulos já existentes em `main` têm rotas Express explícitas. As interfaces Blog Factory e Social Media Factory não estão montadas no `main`; adicionar links ativos antes de integrar seus arquivos criaria links quebrados.
 - Próximos passos seguros: obter detalhes do check-run/Actions no GitHub; validar localmente `npm ci`, `npx prisma validate`, `npm run typecheck`, `npm run build` e os testes; integrar os módulos em PRs separados e revisar `schema.prisma`, migrations, `app.ts`, `server.ts` e arquivos de estado como `dump.rdb`.
+
+
+### Correções adicionais da central — 22/10/2026
+
+- Corrigido o texto de “completude”: a API calcula verificações funcionais que responderam com sucesso, não a percentagem de código implementado. A interface agora deixa essa distinção explícita.
+- Corrigida a lista de estado da completude, que tentava mostrar `m.weight` embora a API não forneça esse campo; agora mostra o estado real de cada verificação.
+- Corrigido o tratamento de erro do overview: removida a tentativa de escrever em `$('system')`, elemento inexistente, que interrompia a própria recuperação quando a API falhava.
+- Confirmada a existência no `main` dos arquivos estáticos das rotas de biblioteca, benchmark, manutenção, comercial, Sales, Editorial e Dropshipping listadas no menu.
+- Mantida a validação de chave administrativa no servidor antes de salvar a chave em `sessionStorage`; chave inválida é descartada. O valor de `SALE_IA_ADMIN_KEY` é segredo de ambiente e não pode ser verificado pelo GitHub.
+- PR #73 continua aberto para revisão: https://github.com/RuiBarbosasilva/sale-ia-v2/pull/73
+- Limitação de validação: os jobs Actions disponíveis continuam sem etapas/logs no retorno da API. Não é correto declarar testes/CI aprovados nem afirmar que a senha local foi validada. Ainda é necessário rodar os comandos de CI em ambiente executável e confirmar o segredo no `.env` local.
