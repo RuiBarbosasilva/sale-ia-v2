@@ -86,7 +86,9 @@ export class BlogFactoryService {
           discovered++;
         }
       } catch (error) {
-        failures.push(new URL(feedUrl).hostname + ':' + errorCode(error));
+        let host = 'invalid-feed-url';
+        try { host = new URL(feedUrl).hostname; } catch { /* report malformed feed without masking the original error */ }
+        failures.push(host + ':' + errorCode(error));
       }
     }
     return { discovered, feedsChecked: feeds.length, failures };
@@ -110,6 +112,8 @@ export class BlogFactoryService {
   async generateArticle(topicId: string) {
     const topic = await prisma.blogFactoryTopic.findUnique({ where: { id: topicId } });
     if (!topic) throw new Error('TOPIC_NOT_FOUND');
+    const existingArticle = await prisma.blogFactoryArticle.findFirst({ where: { topicId } });
+    if (existingArticle) throw new Error('TOPIC_ALREADY_HAS_ARTICLE');
     if (!process.env.OPENAI_API_KEY) throw new Error('AI_PROVIDER_NOT_CONFIGURED');
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -138,10 +142,12 @@ export class BlogFactoryService {
     const baseSlug = slugify(title);
     let slug = baseSlug;
     for (let suffix = 2; await prisma.blogFactoryArticle.findUnique({ where: { slug } }); suffix++) slug = baseSlug.slice(0, 80) + '-' + suffix;
-    return prisma.blogFactoryArticle.create({
+    const article = await prisma.blogFactoryArticle.create({
       data: { topicId, title, slug, excerpt, body, category: generated.category ? String(generated.category).slice(0, 100) : null,
         status: 'DRAFT', sourceUrls: JSON.stringify([topic.sourceUrl]), qualityNotes: JSON.stringify(['Revisão humana necessária antes de qualquer publicação.']) }
     });
+    await prisma.blogFactoryTopic.update({ where: { id: topicId }, data: { status: 'ARTICLE_CREATED' } });
+    return article;
   }
 
   async createDraft(topicId: string) {
@@ -177,6 +183,7 @@ export class BlogFactoryService {
   async publishArticle(id: string) {
     const article = await prisma.blogFactoryArticle.findUnique({ where: { id } });
     if (!article) throw new Error('ARTICLE_NOT_FOUND');
+    if (article.status === 'SENT_TO_WORDPRESS_DRAFT' || article.wordpressPostId) throw new Error('ARTICLE_ALREADY_SENT_TO_WORDPRESS');
     if (article.status !== 'APPROVED') throw new Error('HUMAN_APPROVAL_REQUIRED');
     const sources = JSON.parse(article.sourceUrls || '[]') as string[];
     const sourceBlock = sources.length ? '<p><strong>Fontes:</strong> ' + sources.map(url => '<a href="' + url.replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '" rel="nofollow noopener">' + url.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</a></p>' : '';
@@ -186,7 +193,7 @@ export class BlogFactoryService {
     });
     return prisma.blogFactoryArticle.update({
       where: { id },
-      data: { status: 'SENT_TO_WORDPRESS_DRAFT', qualityNotes: JSON.stringify(['Enviado ao WordPress como rascunho. ID WordPress: ' + result.id, result.link || '']) }
+      data: { status: 'SENT_TO_WORDPRESS_DRAFT', wordpressPostId: result.id, wordpressLink: result.link || null, qualityNotes: JSON.stringify(['Enviado ao WordPress como rascunho. ID WordPress: ' + result.id, result.link || '']) }
     });
   }
 
