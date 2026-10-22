@@ -110,3 +110,47 @@ O usuário executou `git status --short` e `git diff`. Os itens abaixo ainda est
 
 **Importante:** `public/site-factory.html` no GitHub já contém `<meta charset="UTF-8">` e não apresentou mojibake na inspeção remota. O defeito de caracteres identificado estava no JavaScript do dashboard RB Factory. Se a interface continuar exibindo caracteres estranhos depois de sincronizar, fazer recarga forçada do navegador e conferir se o servidor está servindo a versão atual do arquivo, não uma cópia antiga em cache.
 
+
+
+## Auditoria do dashboard central e inventário de módulos — 22/10/2026
+
+### Evidências do código remoto (branch `main`)
+- Dashboard central: `public/dashboard/index.html`; a chave era mantida em `sessionStorage.saleIaAdminKey` e só era validada indiretamente ao consultar endpoints administrativos.
+- Autorização do backend: `src/middlewares/security.ts`; compara `x-sale-ia-admin-key` com `SALE_IA_ADMIN_KEY` (fallback `AFFILIATE_ADMIN_KEY`) por comparação timing-safe. A senha/chave real do arquivo `.env` local não é visível no GitHub e não deve ser publicada.
+- Rotas centrais: `src/routes/dashboardRoutes.ts`; inclui `/dashboard/overview` e `/dashboard/operations`, protegidas por `adminAuthorization`.
+- Foi criada a branch `fix/central-dashboard-auth-module-registry-20261022` e o PR #73: https://github.com/RuiBarbosasilva/sale-ia-v2/pull/73.
+
+### Correções propostas no PR #73
+- Endpoint autenticado `GET /dashboard/auth/check` para validar a chave antes de persistir na sessão do navegador.
+- O botão de chave passa a validar a chave no servidor; chave incorreta não fica guardada.
+- Ao receber 401, a chave antiga é descartada e a nova só é armazenada após validação.
+- Menu lateral e cards reorganizados com prefixo `RB Factory`, apenas para páginas/rotas que existem no `main`.
+- Testes adicionados para chave válida e inválida.
+
+### Inventário de interfaces presentes em `main`
+- RB Factory Sites: `/rb-factory`
+- RB Factory Comercial: `/rb-factory-commercial`
+- RB Factory Sales Agent: `/sales`
+- RB Factory Editorial: `/editorial`
+- RB Factory Afiliados IA: `/affiliates/intelligence`
+- RB Factory Mercado Livre / Dropshipping: `/mercadolivre/dropshipping`
+- RB Factory Benchmark: `/rb-factory-benchmark`
+- RB Factory Biblioteca: `/rb-factory-template-library.html`
+- RB Factory Manutenção: `/rb-factory-maintenance`
+
+### Lacunas que permanecem abertas
+- Blog Factory IA está numa branch própria (`feat/blog-factory-ia`) com migração, serviço, rotas e interface que não aparecem na árvore do `main` consultada nesta auditoria. Não declarar integrado/operacional no dashboard central até revisão de dependências, rotas, migração e testes.
+- Social Media Factory IA está numa branch própria (`feature/social-media-factory-ia`) com migrações, serviços, scheduler e interface ausentes do `main` consultado. Não apontar o menu para uma página inexistente nem mesclar cegamente a branch inteira.
+- A lista atual de saúde em `/dashboard/operations` verifica apenas seis grupos e usa algumas consultas de serviço; ela não representa uma auditoria de todos os módulos, rotas ou integrações. Precisa ser expandida com verificações reais e resultados por módulo.
+- O CI do PR #73 terminou com falha. Os detalhes de log não ficaram disponíveis pela API consultada; por isso, a correção não deve ser marcada como validada nem mesclada antes de investigar a falha e obter testes aprovados.
+- A chave local `SALE_IA_ADMIN_KEY`, a configuração do servidor e o comportamento do navegador local precisam ser confirmados no ambiente Windows do usuário; a auditoria remota não tem acesso ao `.env` local nem à instância localhost.
+
+### Status honesto
+- [x] Código do fluxo de autenticação e dashboard inspecionado no GitHub.
+- [x] Correção de autenticação e reorganização inicial do menu preparadas em branch/PR.
+- [x] Inventário inicial das interfaces existentes no `main`.
+- [ ] CI e testes aprovados.
+- [ ] Corrigir todos os módulos com falha identificada por testes/health checks reais.
+- [ ] Integrar Blog Factory IA e Social Media Factory IA com revisão de conflitos, migrações e rotas.
+- [ ] Criar um registro central de módulos com estado operacional verificável.
+- [ ] Validar a chave e executar smoke tests no ambiente local do Windows.
