@@ -176,3 +176,11 @@ O usuário executou `git status --short` e `git diff`. Os itens abaixo ainda est
 - Mantida a validação de chave administrativa no servidor antes de salvar a chave em `sessionStorage`; chave inválida é descartada. O valor de `SALE_IA_ADMIN_KEY` é segredo de ambiente e não pode ser verificado pelo GitHub.
 - PR #73 continua aberto para revisão: https://github.com/RuiBarbosasilva/sale-ia-v2/pull/73
 - Limitação de validação: os jobs Actions disponíveis continuam sem etapas/logs no retorno da API. Não é correto declarar testes/CI aprovados nem afirmar que a senha local foi validada. Ainda é necessário rodar os comandos de CI em ambiente executável e confirmar o segredo no `.env` local.
+
+
+### Continuação — validação dos links e estado operacional da central (22/10/2026)
+
+- Encontrado e corrigido um link quebrado no menu/cards: `/mercadolivre/dropshipping` não possui rota Express nem arquivo estático correspondente em `public/mercadolivre/dropshipping`. O destino foi alterado para `/dropshipping-lab.html`, cuja página existe em `main`.
+- Removido o estado visual fixo “Sistema operacional”, que era exibido mesmo quando a consulta de saúde falhava. O rótulo agora começa em “Verificando módulos” e muda conforme o resultado de `/dashboard/operations`; em falha mostra “Saúde indisponível”. Esse indicador descreve apenas os módulos consultados, não todo o ecossistema.
+- CI investigado via metadados de Actions: o run falhou em cerca de quatro segundos; o único job aparece como `completed/failure`, mas a API não fornece etapas, horários de início de execução nem logs, e o endpoint de logs retorna `BlobNotFound`. Isso indica que não há evidência suficiente para atribuir a falha ao código ou afirmar que o workflow chegou a executar os comandos. Link para inspeção manual: https://github.com/RuiBarbosasilva/sale-ia-v2/actions/runs/39824222283
+- PR #73 atualizado com as correções adicionais. O PR segue aberto e sem CI verde; não foi mesclado para evitar colocar alterações não validadas em `main`.
