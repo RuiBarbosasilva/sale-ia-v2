@@ -31,6 +31,16 @@ describe('WordPress publisher', () => {
     expect(String(fetchMock.mock.calls[0][0])).toContain('slug=same-slug');
   });
 
+  it('refuses to reuse an existing published post with the same slug', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => [{ id: 44, link: 'https://example.test/published', status: 'publish' }]
+    } as Response);
+
+    await expect(sendWordPressDraft({ title: 'Article', slug: 'published-slug', excerpt: '', body: '<p>Text</p>' }))
+      .rejects.toThrow('WORDPRESS_SLUG_ALREADY_USED');
+  });
+
   it('creates a WordPress draft when the slug does not exist', async () => {
     const fetchMock = jest.spyOn(global, 'fetch')
       .mockResolvedValueOnce({ ok: true, json: async () => [] } as Response)
