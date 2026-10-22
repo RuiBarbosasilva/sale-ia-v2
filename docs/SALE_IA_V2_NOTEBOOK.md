@@ -198,3 +198,13 @@ O usuário executou `git status --short` e `git diff`. Os itens abaixo ainda est
 - As execuções mais recentes do commit `85182a7` também falharam antes de expor etapas: `sale-ia-v2-ci` run 1514 (ID 39852101529) e `Affiliate Module CI` run 1477 (ID 39852101621). Os jobs seguem sem logs/steps acessíveis.
 
 - Atualização após o commit final do notebook (`14489d7`): os runs mais recentes continuam falhando sem logs, agora `sale-ia-v2-ci` #1518 (ID 39852160005) e `Affiliate Module CI` #1481 (ID 39852160036). PR permanece aberto e mergeable, mas não foi mesclado por falta de validação aprovada.
+
+
+## Continuação da correção da central — 2026-10-22 (segunda verificação)
+
+- Revisado o fluxo de autenticação em `src/middlewares/security.ts`: o middleware consulta `SALE_IA_ADMIN_KEY` e usa `AFFILIATE_ADMIN_KEY` como fallback, comparando a chave em tempo constante.
+- Confirmado que `src/app.ts` monta `dashboardRoutes` em `/dashboard` e serve a interface central em `/dashboard`.
+- Corrigido um defeito adicional de navegação em `public/dashboard/index.html`: os itens Hunter e Planos apontavam diretamente para endpoints administrativos protegidos. Abrir esses endpoints em outra aba não enviava o cabeçalho `x-sale-ia-admin-key`, levando a 401. Agora os itens levam às seções Hunter/Planos dentro da própria central, que já usa o fluxo autenticado.
+- Novo commit da correção de navegação: `4c14053263f4909393d192e6c0cdceb18c7fc4b9`.
+- Nova checagem de CI para o HEAD anterior `a78dd6e465e16e3051bba7610442f8a9806f8fc9`: `sale-ia-v2-ci` run #1520 (ID `39852203175`) e `Affiliate Module CI` run #1483 (ID `39852203087`) falharam. A API dos jobs continua retornando `steps: null` e sem logs acessíveis, então a causa não pode ser identificada com evidência suficiente. A nova correção de navegação também precisa passar por CI.
+- Limites mantidos: nenhuma chave real foi exposta ou alterada; não foi possível testar o servidor Windows/local via GitHub; PR #73 segue aberto e não mesclado. Não declarar a correção concluída até CI e smoke test local aprovados.
