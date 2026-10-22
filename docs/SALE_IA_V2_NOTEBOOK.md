@@ -248,3 +248,6 @@ Os arquivos foram escritos no GitHub por commits na branch de feature, mas os co
 - PR de correção aberto: [#74](https://github.com/RuiBarbosasilva/sale-ia-v2/pull/74), direcionado primeiro à branch `feat/blog-factory-ia` para evitar incorporar os 49 commits da feature diretamente em `main`.
 - Proteção extra: submissão WordPress agora usa uma reivindicação atômica de estado e consulta o slug remoto antes de criar; a API informa conflito se outra submissão estiver em andamento.
 - Foram adicionados testes de API do módulo e testes de idempotência do adaptador WordPress. **O resultado do CI para o head atual ainda não está disponível nos status consultados**, portanto os testes permanecem não verificados.
+
+- Corrigido também o painel `public/blog-factory.html`: os contadores e mensagens de pesquisa/ciclo agora usam os campos reais da API; removido o falso botão de “rascunho vazio” que tentava gerar IA; ações são mostradas conforme o estado do artigo; link WordPress e estado de configuração são apresentados corretamente.
+- O endpoint de execução manual passou a usar o mesmo scheduler com trava de concorrência, evitando ciclos manuais e automáticos simultâneos.
