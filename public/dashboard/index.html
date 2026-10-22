@@ -35,7 +35,7 @@ main{margin-left:252px;width:calc(100% - 252px);padding:28px 34px 60px}.top{disp
     <a href="/sales"><span class="ico">↗</span>RB-factory-sales-agent</a>
     <a href="/editorial"><span class="ico">◫</span>RB-factory-editorial</a>
     <a href="/affiliates/intelligence"><span class="ico">◎</span>RB-factory-afiliados-ia</a>
-    <a href="/mercadolivre/dropshipping"><span class="ico">▣</span>RB-factory-mercado-livre</a>
+    <a href="/dropshipping-lab.html"><span class="ico">▣</span>RB-factory-mercado-livre</a>
     <a href="/rb-factory-benchmark"><span class="ico">▦</span>RB-factory-benchmark</a>
     <a href="/rb-factory-template-library.html"><span class="ico">▧</span>RB-factory-biblioteca</a>
     <a href="/rb-factory-maintenance"><span class="ico">⚙</span>RB-factory-manutencao</a>
@@ -45,7 +45,7 @@ main{margin-left:252px;width:calc(100% - 252px);padding:28px 34px 60px}.top{disp
     <a href="/api/hunter/opportunities" target="_blank" rel="noopener"><span class="ico">⌁</span>RB-factory-hunter-api</a>
     <a href="/api/opportunity-sales/plans" target="_blank" rel="noopener"><span class="ico">◇</span>RB-factory-planos</a>
   </nav>
-  <div class="side-bottom"><div class="status"><b><span class="dot"></span>Sistema operacional</b><p>Módulos trabalham de forma independente e supervisionada.</p></div></div>
+  <div class="side-bottom"><div class="status"><b id="systemStatusText"><span class="dot"></span>Verificando módulos</b><p>Módulos trabalham de forma independente e supervisionada.</p></div></div>
 </aside>
 <main>
   <div class="top"><div class="crumb">SALE-IA / <b>Central</b></div><div class="top-actions"><button id="adminKeyBtn" class="btn">🔐 Chave</button><button id="refreshBtn" class="btn">↻ Atualizar</button><a class="btn dark" href="/rb-factory">Abrir RB-factory-sites</a></div></div>
@@ -76,11 +76,11 @@ main{margin-left:252px;width:calc(100% - 252px);padding:28px 34px 60px}.top{disp
           <a class="module" href="/sales"><div class="module-icon">↗</div><div><h3>RB-factory-sales-agent</h3><p>Conversas, intenção, objeções e follow-ups.</p><span class="tag ai">IA</span></div></a>
           <a class="module" href="/editorial"><div class="module-icon">◫</div><div><h3>RB-factory-editorial</h3><p>Pesquisa, projetos editoriais, qualidade e publicação.</p><span class="tag ai">IA</span></div></a>
           <a class="module" href="/affiliates/intelligence"><div class="module-icon">◎</div><div><h3>RB-factory-afiliados-ia</h3><p>Redes, produtos, oportunidades e inteligência de afiliados.</p><span class="tag ai">IA</span></div></a>
-          <a class="module" href="/mercadolivre/dropshipping"><div class="module-icon">▣</div><div><h3>RB-factory-mercado-livre</h3><p>Operação marketplace e laboratório de dropshipping.</p><span class="tag live">interface disponível</span></div></a>
+          <a class="module" href="/dropshipping-lab.html"><div class="module-icon">▣</div><div><h3>RB-factory-mercado-livre</h3><p>Operação marketplace e laboratório de dropshipping.</p><span class="tag live">interface disponível</span></div></a>
           <a class="module" href="/rb-factory-benchmark"><div class="module-icon">▦</div><div><h3>RB-factory-benchmark</h3><p>Biblioteca de demonstrações e referências de modelos.</p><span class="tag">biblioteca</span></div></a>
           <a class="module" href="/rb-factory-template-library.html"><div class="module-icon">▧</div><div><h3>RB-factory-biblioteca</h3><p>Consulta e gestão da biblioteca de modelos.</p><span class="tag">biblioteca</span></div></a>
           <a class="module" href="/rb-factory-maintenance"><div class="module-icon">⚙</div><div><h3>RB-factory-manutencao</h3><p>Manutenção e acompanhamento de sites gerados.</p><span class="tag">operação</span></div></a>
-          <a class="module" href="/api/hunter/opportunities" target="_blank" rel="noopener"><div class="module-icon">⌁</div><div><h3>RB Factory Hunter</h3><p>Endpoint de oportunidades para integração e diagnóstico.</p><span class="tag">API</span></div></a>
+          <a class="module" href="/api/hunter/opportunities" target="_blank" rel="noopener"><div class="module-icon">⌁</div><div><h3>RB-factory-hunter</h3><p>Endpoint de oportunidades para integração e diagnóstico.</p><span class="tag">API</span></div></a>
         </div>
         <div class="quick">
           <a href="/rb-factory-benchmark"><strong>Ver 100 demos</strong><span>Biblioteca RB-factory</span></a>
@@ -154,11 +154,13 @@ async function refresh(){
       $('opsEditorial').textContent=(d.data.editorial?.projects||0)+' projetos editoriais.';
       $('opsPlans').textContent=(d.data.opportunityPlans||0)+' planos de oportunidade.';
       $('opsState').textContent='atualizado agora';
+      $('systemStatusText').innerHTML='<span class="dot"></span>'+(Number(d.data.overallScore)===100?'Módulos consultados OK':'Atenção: verificar módulos');
     }
   }catch(e){
     $('overallScore').textContent='—%';
     $('readiness').innerHTML='<div style="font-size:11px;color:#b42318">Não foi possível consultar a saúde dos módulos.</div>';
     $('opsState').textContent='indisponível';
+    $('systemStatusText').innerHTML='<span class="dot"></span>Saúde indisponível';
   }
   try{
     const r=await adminFetch('/api/rb-factory-sales/pipeline');const d=await r.json();
