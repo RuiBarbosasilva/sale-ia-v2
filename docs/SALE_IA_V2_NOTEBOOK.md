@@ -262,3 +262,10 @@ Os arquivos foram escritos no GitHub por commits na branch de feature, mas os co
 - Não repetir reexecuções às cegas nem alterar o código para mascarar essa falha. É necessário verificar no GitHub Actions/Settings se Actions está habilitado e se há restrições de runners, política ou limite de uso. A integração disponível não expõe essas configurações nem os logs que expliquem o encerramento.
 - Os workflows permanecem sem validação bem-sucedida no head atual. PR #74 não deve ser mesclada até obter CI válido e executar smoke tests locais de Prisma/API/feeds/WordPress.
 - Corrigida também a recuperação parcial da geração: se o artigo for persistido mas a atualização do estado da pauta falhar, a rotina tenta marcar a pauta como `ARTICLE_CREATED` em vez de reabri-la para uma geração duplicada; a falha original é preservada.
+
+### Correção adicional — inicialização do scheduler Blog Factory (23/10/2026)
+- Revisão direta de `src/app.ts` identificou que o scheduler estava implementado, mas não era iniciado no bootstrap da aplicação. Isso contradizia a documentação de execução periódica.
+- Corrigido em `41ca485f585d620648800a5c71d05630b56252e3`: o app agora importa `startBlogFactoryScheduler` e inicia o ciclo periódico somente quando `BLOG_FACTORY_AUTORUN_ENABLED=true`. O padrão continua desligado, evitando automação inesperada.
+- A execução manual pela rota continua usando o scheduler com trava de concorrência.
+- Validação continua pendente: o GitHub Actions ainda precisa executar as etapas; o último job consultado estava com `runner_id: 0`, `steps: []` e sem logs. Não afirmar que a correção compila até obter CI executado ou teste local.
+
