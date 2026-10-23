@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { collectMercadoLivreTrends, listMercadoLivreTrendHistory } from '../services/dropshippingTrendsService';
+import { collectMercadoLivreTrends, compareLatestMercadoLivreTrendRuns, listMercadoLivreTrendHistory } from '../services/dropshippingTrendsService';
 
 function normalizedCategoryId(value: unknown): string | null | undefined {
   if (value === undefined || value === null || value === '') return null;
@@ -53,5 +53,16 @@ export async function getDropshippingTrendsHistory(req: Request, res: Response):
     return res.json({ success: true, count: runs.length, runs });
   } catch {
     return res.status(500).json({ success: false, error: 'MERCADOLIVRE_TRENDS_HISTORY_FAILED' });
+  }
+}
+
+export async function getDropshippingTrendChanges(req: Request, res: Response): Promise<Response> {
+  const categoryId = normalizedCategoryId(req.query.categoryId);
+  if (categoryId === undefined) return res.status(400).json({ error: 'INVALID_TRENDS_CATEGORY_ID' });
+  try {
+    const result = await compareLatestMercadoLivreTrendRuns(categoryId);
+    return res.json({ success: true, result });
+  } catch {
+    return res.status(500).json({ success: false, error: 'MERCADOLIVRE_TRENDS_COMPARISON_FAILED' });
   }
 }
