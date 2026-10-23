@@ -15,6 +15,7 @@ A documentação do Mercado Livre descreve até 50 termos por coleta semanal: po
 Endpoints administrativos (protegidos pelo guard existente):
 - `POST /api/mercadolivre/dropshipping/trends/collect` com corpo opcional `{"categoryId":"MLB1430"}`.
 - `GET /api/mercadolivre/dropshipping/trends/history?limit=30`, opcionalmente com `categoryId=MLB1430`.
+- `GET /api/mercadolivre/dropshipping/trends/changes`, compara as duas últimas coletas concluídas e classifica termos como novos, melhoraram, estáveis, caíram ou desapareceram.
 
 A página `/mercadolivre/dropshipping` expõe os controles de coleta e histórico. Para usar a API de tendências, a conta precisa estar conectada por OAuth e ter autorização. Erros 401/403/429 são registrados com códigos seguros; nenhum resultado fictício é criado.
 
