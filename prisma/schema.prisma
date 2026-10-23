@@ -1741,6 +1741,38 @@ model DropshippingProductCandidate {
   supplierOffers DropshippingSupplierOffer[]
 }
 
+model DropshippingTrendRun {
+  id          String   @id @default(uuid())
+  siteId      String   @default("MLB")
+  categoryId  String?
+  source      String   @default("MERCADOLIVRE_OFFICIAL_TRENDS_API")
+  status      String   @default("RUNNING")
+  resultCount Int      @default(0)
+  collectedAt DateTime @default(now())
+  errorCode   String?
+  createdAt   DateTime @default(now())
+
+  snapshots DropshippingTrendSnapshot[]
+
+  @@index([siteId, categoryId, createdAt])
+  @@index([status, createdAt])
+}
+
+model DropshippingTrendSnapshot {
+  id         String   @id @default(uuid())
+  runId      String
+  run        DropshippingTrendRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  keyword    String
+  url        String?
+  position   Int
+  trendGroup String
+  observedAt DateTime @default(now())
+
+  @@unique([runId, position])
+  @@index([keyword, observedAt])
+  @@index([trendGroup, observedAt])
+}
+
 model DropshippingResearchWatch {
   id             String   @id @default(uuid())
   query          String   @unique
