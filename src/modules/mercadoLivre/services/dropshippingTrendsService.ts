@@ -127,3 +127,78 @@ export async function listMercadoLivreTrendHistory(input: {
     },
   });
 }
+
+export async function compareLatestMercadoLivreTrendRuns(categoryId?: string | null) {
+  const runs = await prisma.dropshippingTrendRun.findMany({
+    where: {
+      siteId: 'MLB',
+      categoryId: categoryId || null,
+      status: 'COMPLETED',
+    },
+    orderBy: [{ collectedAt: 'desc' }, { createdAt: 'desc' }],
+    take: 2,
+    include: { snapshots: { orderBy: { position: 'asc' } } },
+  });
+
+  if (runs.length < 2) {
+    return {
+      available: false,
+      message: 'São necessárias duas coletas concluídas para calcular a variação.',
+      currentRunId: runs[0]?.id ?? null,
+      previousRunId: null,
+      changes: [],
+    };
+  }
+
+  const [current, previous] = runs;
+  const priorByKeyword = new Map(previous.snapshots.map((item) => [item.keyword.toLocaleLowerCase('pt-BR'), item]));
+  const currentByKeyword = new Map(current.snapshots.map((item) => [item.keyword.toLocaleLowerCase('pt-BR'), item]));
+  const changes = current.snapshots.map((item) => {
+    const old = priorByKeyword.get(item.keyword.toLocaleLowerCase('pt-BR'));
+    if (!old) {
+      return {
+        keyword: item.keyword,
+        currentPosition: item.position,
+        previousPosition: null,
+        positionDelta: null,
+        movement: 'NEW' as const,
+        trendGroup: item.trendGroup,
+      };
+    }
+    const delta = old.position - item.position;
+    return {
+      keyword: item.keyword,
+      currentPosition: item.position,
+      previousPosition: old.position,
+      positionDelta: delta,
+      movement: delta > 0 ? 'IMPROVED' as const : delta < 0 ? 'DECLINED' as const : 'STABLE' as const,
+      trendGroup: item.trendGroup,
+    };
+  });
+  for (const old of previous.snapshots) {
+    if (!currentByKeyword.has(old.keyword.toLocaleLowerCase('pt-BR'))) {
+      changes.push({
+        keyword: old.keyword,
+        currentPosition: null,
+        previousPosition: old.position,
+        positionDelta: null,
+        movement: 'DISAPPEARED' as const,
+        trendGroup: old.trendGroup,
+      });
+    }
+  }
+
+  return {
+    available: true,
+    currentRunId: current.id,
+    previousRunId: previous.id,
+    currentCollectedAt: current.collectedAt,
+    previousCollectedAt: previous.collectedAt,
+    changes: changes.sort((left, right) => {
+      const rank = (movement: string) => movement === 'NEW' ? 0 : movement === 'IMPROVED' ? 1 :
+        movement === 'STABLE' ? 2 : movement === 'DECLINED' ? 3 : 4;
+      return rank(left.movement) - rank(right.movement) ||
+        (left.currentPosition ?? 999) - (right.currentPosition ?? 999);
+    }),
+  };
+}
