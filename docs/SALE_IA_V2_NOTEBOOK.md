@@ -339,3 +339,5 @@ Os jobs retornam `steps: null` e não oferecem logs; portanto, não há evidênc
 - Hunter de tendências: branch `feat/dropshipping-trends-persistence-20261023`; abrir/revisar PR isolada após inspeção final dos arquivos e verificar CI.
 
 **Regra:** implementação no GitHub não equivale a execução validada. Marcar cada pendência como concluída somente com evidência do comando/teste ou fluxo real correspondente.
+
+- PR #75 (Hunter de tendências) foi aberta em Draft: https://github.com/RuiBarbosasilva/sale-ia-v2/pull/75. Os workflows no head `d14ff7a564308ff2943d384813d42876a16308df` também falharam antes das etapas: `sale-ia-v2-ci` run `39967456050` e `Affiliate Module CI` run `39967456123`; o job consultado não contém steps/logs. O código da tendência ainda não está validado por execução.
