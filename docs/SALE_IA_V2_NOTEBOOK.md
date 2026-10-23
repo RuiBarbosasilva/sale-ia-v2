@@ -269,3 +269,9 @@ Os arquivos foram escritos no GitHub por commits na branch de feature, mas os co
 - A execução manual pela rota continua usando o scheduler com trava de concorrência.
 - Validação continua pendente: o GitHub Actions ainda precisa executar as etapas; o último job consultado estava com `runner_id: 0`, `steps: []` e sem logs. Não afirmar que a correção compila até obter CI executado ou teste local.
 
+
+### Reexecução do CI — diagnóstico confirmado (23/10/2026)
+- Foram solicitadas novas tentativas dos jobs falhos, mas o resultado repetiu o padrão: runs `39945877165` (`sale-ia-v2-ci`) e `39945877154` (`Affiliate Module CI`) terminaram em cerca de 3 segundos.
+- A API de jobs confirma `runner_id: 0`, `runner_name: ""`, `steps: []`; os endpoints de logs não disponibilizam logs. Ambos os workflows usam `runs-on: ubuntu-latest`, com etapas de checkout, Node 22, instalação, Prisma, typecheck, build, testes e Guardian.
+- Isso confirma que a validação de código não chegou a iniciar; não permite concluir que o código passou nem identificar sozinho a causa administrativa. A causa deve ser investigada em GitHub Actions/Settings ou com o suporte do GitHub, verificando disponibilidade/políticas de runner e eventos da execução.
+- Não foi feito merge, não foram desativadas verificações e não se alterou o workflow para ocultar a falha. Próxima ação segura: corrigir o ambiente de Actions e, em paralelo, executar no Windows local `npm ci`, `npx prisma validate`, `npx prisma generate`, `npm run typecheck`, `npm run build` e a suíte de testes; registrar resultados reais antes de integrar.
