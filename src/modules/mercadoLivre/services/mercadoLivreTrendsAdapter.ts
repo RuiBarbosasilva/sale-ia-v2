@@ -89,7 +89,11 @@ export async function fetchMercadoLivreTrends(
           ? 'MERCADOLIVRE_TRENDS_RESOURCE_NOT_FOUND'
           : 'MERCADOLIVRE_TRENDS_UNAVAILABLE';
     const error = new Error(code);
-    Object.assign(error, { status: response.status === 429 ? 429 : response.status >= 400 && response.status < 500 ? 422 : 502 });
+    const status = response.status === 429 ? 429
+      : response.status === 401 || response.status === 403 ? 503
+        : response.status === 404 ? 422
+          : 502;
+    Object.assign(error, { status });
     throw error;
   }
 
