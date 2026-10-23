@@ -327,11 +327,9 @@ Referência oficial: https://developers.mercadolivre.com.br/pt_br/relatorios-de-
 - [ ] Sincronizar a cópia local com commits/branches remotos sem descartar alterações.
 
 ### Bloqueio de CI confirmado
-As execuções mais recentes para PR #74 no head `61f15d390b0d5cfda0b4006a58652c91f8d7c496` foram:
-- `sale-ia-v2-ci`: run `39946257838`, falha em cerca de 3 segundos.
-- `Affiliate Module CI`: run `39946257861`, falha em cerca de 2 segundos.
+Na primeira consulta, PR #74 no head `61f15d390b0d5cfda0b4006a58652c91f8d7c496` falhou nos runs `39946257838` e `39946257861` antes de qualquer etapa. Depois da atualização documental, os runs `39967532723` (`Affiliate Module CI`) e `39967532849` (`sale-ia-v2-ci`) no head `19b8a05e4934f54690c9d2de0b93aa08ed1e3467` repetiram o mesmo padrão; também foram observados os runs duplicados `39967521481`, `39967521560`, `39967435992` e `39967436112`. Para PR #75, os runs `39967456050` (`sale-ia-v2-ci`) e `39967456123` (`Affiliate Module CI`) no head `d14ff7a564308ff2943d384813d42876a16308df` falharam igualmente antes das etapas.
 
-Os jobs retornam `steps: null` e não oferecem logs; portanto, não há evidência de que Prisma, TypeScript ou testes tenham iniciado. Não contornar a validação nem fazer merge por inferência. Investigar permissões/políticas/runner no GitHub Actions e executar a suíte localmente enquanto isso.
+Nos jobs consultados, `steps` está ausente/nulo e não há logs de execução. Portanto, não há evidência de que Prisma, TypeScript ou testes tenham iniciado. Não contornar a validação nem fazer merge por inferência. Investigar permissões/políticas/runner no GitHub Actions e executar a suíte localmente enquanto isso. Os IDs acima registram as tentativas observadas até 23/10/2026 14:12 UTC; commits posteriores podem iniciar novas tentativas.
 
 ### PRs ainda abertas
 - Blog Factory: https://github.com/RuiBarbosasilva/sale-ia-v2/pull/74 — alterações de runtime estão no branch de correção; não mesclar sem CI válido e smoke tests.
