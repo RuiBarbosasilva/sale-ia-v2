@@ -149,7 +149,7 @@ export async function runDueDropshippingResearchWatches(): Promise<void> {
     // an active OAuth account.
     const categories = [...new Set(
       (process.env.DROPSHIPPING_TREND_CATEGORY_IDS || '')
-        .split(/[,;\\n]/)
+        .split(/[,;\n]/)
         .map((value) => value.trim())
         .filter((value) => /^MLB[0-9]{1,12}$/.test(value)),
     )];
