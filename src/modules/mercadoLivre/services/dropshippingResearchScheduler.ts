@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma';
 import { searchMercadoLivreCatalog } from './mercadoLivreResearchAdapter';
+import { collectMercadoLivreTrendsIfDue } from './dropshippingTrendsService';
 
 let timer: ReturnType<typeof setInterval> | null = null;
 let running = false;
@@ -142,6 +143,26 @@ export async function runDueDropshippingResearchWatches(): Promise<void> {
       select: { query: true },
     });
     for (const watch of due) await collectWatch(watch.query);
+
+    // Official trend rankings refresh weekly. Categories are opt-in and configured
+    // as comma/semicolon-separated MLB category IDs; no API calls are made without
+    // an active OAuth account.
+    const categories = [...new Set(
+      (process.env.DROPSHIPPING_TREND_CATEGORY_IDS || '')
+        .split(/[,;\\n]/)
+        .map((value) => value.trim())
+        .filter((value) => /^MLB[0-9]{1,12}$/.test(value)),
+    )];
+    for (const categoryId of [null, ...categories]) {
+      try {
+        await collectMercadoLivreTrendsIfDue(categoryId);
+      } catch (error) {
+        const code = error instanceof Error && /^[A-Z0-9_]{3,100}$/.test(error.message)
+          ? error.message
+          : 'MERCADOLIVRE_TRENDS_SCHEDULE_FAILED';
+        console.warn('[DROPSHIPPING] Coleta de tendências não concluída:', code);
+      }
+    }
   } finally {
     running = false;
   }
