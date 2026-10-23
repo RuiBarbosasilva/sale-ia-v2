@@ -1,5 +1,5 @@
 # CADERNO OPERACIONAL — SALE-IA V2
-## Atualização: 12/10/2026
+## Atualização: 23/10/2026
 ## Repositório: RuiBarbosasilva/sale-ia-v2
 
 Este arquivo é o registro de continuidade do projeto para manter contexto entre Qwen, GitHub e a cópia local. Não é um relatório de testes: estados de execução só devem ser marcados como concluídos quando houver evidência.
@@ -41,7 +41,7 @@ Automatizar ao máximo a pesquisa de tendências do Mercado Livre Brasil, a desc
 10. Monitorar preço, estoque, tendências, margem e status do anúncio; alertar e recomendar ação. Mudanças ao vivo de preço/anúncio ficam desligadas por padrão.
 
 ### Status de validação
-- [ ] Inspeção do estado atual do código e matriz de lacunas
+- [x] Inspeção remota inicial do código e matriz de lacunas concluída em 23/10/2026; lacunas restantes registradas na seção de continuidade abaixo.
 - [ ] Coleta real de tendências MLB com persistência
 - [ ] Histórico/variação de tendências e categorias
 - [ ] Busca externa de fornecedores configurada e com evidências rastreáveis
@@ -275,3 +275,67 @@ Os arquivos foram escritos no GitHub por commits na branch de feature, mas os co
 - A API de jobs confirma `runner_id: 0`, `runner_name: ""`, `steps: []`; os endpoints de logs não disponibilizam logs. Ambos os workflows usam `runs-on: ubuntu-latest`, com etapas de checkout, Node 22, instalação, Prisma, typecheck, build, testes e Guardian.
 - Isso confirma que a validação de código não chegou a iniciar; não permite concluir que o código passou nem identificar sozinho a causa administrativa. A causa deve ser investigada em GitHub Actions/Settings ou com o suporte do GitHub, verificando disponibilidade/políticas de runner e eventos da execução.
 - Não foi feito merge, não foram desativadas verificações e não se alterou o workflow para ocultar a falha. Próxima ação segura: corrigir o ambiente de Actions e, em paralelo, executar no Windows local `npm ci`, `npx prisma validate`, `npx prisma generate`, `npm run typecheck`, `npm run build` e a suíte de testes; registrar resultados reais antes de integrar.
+
+
+## Fechamento das pendências — auditoria e implementação incremental (23/10/2026)
+
+### Diagnóstico confirmado no código remoto de `main`
+A inspeção de `src/modules/mercadoLivre/`, `prisma/schema.prisma`, migrações, `src/server.ts`, rotas e `public/dropshipping-lab.html` confirmou que já existiam:
+- pesquisa do catálogo público oficial de anúncios e persistência de execuções/snapshots;
+- histórico observado de preço/estoque, alertas, watches agendados e bootstrap condicional do scheduler;
+- motor de score de produto/fornecedor, cálculo de margem com custos discriminados, candidatos e ofertas ligadas a fornecedores;
+- dashboard Dropshipping com autenticação administrativa e ações de pesquisa/avaliação.
+
+Lacunas verificadas nesta inspeção:
+- não havia adapter para a API oficial `/trends/{SITE_ID}` autenticada por OAuth nem tabelas próprias para snapshots de tendências;
+- o histórico de preço existente não equivalia a histórico/variação do ranking semanal de tendências;
+- pesquisa de fornecedores externos reais não está conectada a um provedor configurado nesta branch; evidências manuais e validação não substituem pesquisa externa;
+- não há evidência nesta sessão de smoke tests locais, conta OAuth real, coleta real de tendências, negociação real com fornecedor ou publicação real de anúncio.
+
+### Implementação criada em branch isolada
+Branch: `feat/dropshipping-trends-persistence-20261023`, baseada em `main` para manter a mudança isolada dos PRs Blog Factory e dashboard.
+
+Arquivos novos/alterados:
+- `src/modules/mercadoLivre/services/mercadoLivreTrendsAdapter.ts`: consulta autenticada, valida site/categoria, classifica as posições 1–10 / 11–30 / 31–50 e descarta URLs fora dos domínios HTTPS oficiais.
+- `src/modules/mercadoLivre/services/dropshippingTrendsService.ts`: persistência de execuções/snapshots, cadência semanal, nova tentativa após falha e recuperação de execução presa.
+- `src/modules/mercadoLivre/controllers/dropshippingTrendsController.ts` e `src/modules/mercadoLivre/routes/mercadoLivreRoutes.ts`: coleta manual, histórico e comparação.
+- `prisma/schema.prisma` + migração aditiva `20261023120000_dropshipping_trends`: histórico de execuções e snapshots, sem reset ou reescrita de migrações anteriores.
+- `src/modules/mercadoLivre/services/dropshippingResearchScheduler.ts`: coleta semanal opcional das tendências gerais e das categorias configuradas.
+- `public/dropshipping-lab.html`: controles para coletar, consultar histórico e comparar variação de posições.
+- `src/modules/mercadoLivre/services/__tests__/mercadoLivreTrendsAdapter.test.ts`: testes unitários de classificação, OAuth, categoria, URLs e falhas.
+- `.env.example` e `DROPSHIPPING_RESEARCH.md`: documentação de configuração e limites.
+
+Endpoints protegidos pelo guard administrativo existente:
+- `POST /api/mercadolivre/dropshipping/trends/collect` com `{"categoryId":"MLB1430"}` opcional.
+- `GET /api/mercadolivre/dropshipping/trends/history?limit=30`.
+- `GET /api/mercadolivre/dropshipping/trends/changes`.
+
+Configuração adicional: `DROPSHIPPING_TREND_CATEGORY_IDS=MLB1430,MLB5672` (opcional). A rotina geral e as categorias são consultadas no máximo semanalmente após sucesso. O sistema precisa de conta Mercado Livre conectada e token OAuth válido; não gera resultados fictícios.
+
+Referência oficial: https://developers.mercadolivre.com.br/pt_br/relatorios-de-faturamento/tendencias — API autenticada; o ranking é atualizado semanalmente e suas posições não são previsão de vendas.
+
+### Estado de validação — NÃO marcar como concluído
+- [x] Auditoria remota inicial do código e registro das lacunas.
+- [x] Implementação do adapter autenticado, persistência, histórico/comparação e controles no dashboard publicada em branch isolada.
+- [ ] `npx prisma validate`, `npx prisma generate`, `npx prisma migrate deploy`, `npm run typecheck`, `npm run build`, testes e Guardian aprovados.
+- [ ] Coleta manual de tendências executada com OAuth real e duas coletas reais para validar comparação.
+- [ ] Provedor autorizado de pesquisa de fornecedores escolhido/configurado; evidências reais e política de dropshipping verificadas.
+- [ ] Fluxo de aceite explícito de cadastro/condições do fornecedor confirmado na interface e persistência.
+- [ ] Revisar a publicação OAuth de anúncios para aprovação explícita, pré-validação e idempotência antes de habilitar qualquer publicação real.
+- [ ] Smoke test do dashboard e API no Windows local.
+- [ ] Reconciliar alterações locais de Qwen com GitHub, sem sobrescrever arquivos não inspecionados nem incluir `dump.rdb`.
+- [ ] Sincronizar a cópia local com commits/branches remotos sem descartar alterações.
+
+### Bloqueio de CI confirmado
+As execuções mais recentes para PR #74 no head `61f15d390b0d5cfda0b4006a58652c91f8d7c496` foram:
+- `sale-ia-v2-ci`: run `39946257838`, falha em cerca de 3 segundos.
+- `Affiliate Module CI`: run `39946257861`, falha em cerca de 2 segundos.
+
+Os jobs retornam `steps: null` e não oferecem logs; portanto, não há evidência de que Prisma, TypeScript ou testes tenham iniciado. Não contornar a validação nem fazer merge por inferência. Investigar permissões/políticas/runner no GitHub Actions e executar a suíte localmente enquanto isso.
+
+### PRs ainda abertas
+- Blog Factory: https://github.com/RuiBarbosasilva/sale-ia-v2/pull/74 — alterações de runtime estão no branch de correção; não mesclar sem CI válido e smoke tests.
+- Dashboard central: https://github.com/RuiBarbosasilva/sale-ia-v2/pull/73 — não mesclar sem CI válido e smoke tests.
+- Hunter de tendências: branch `feat/dropshipping-trends-persistence-20261023`; abrir/revisar PR isolada após inspeção final dos arquivos e verificar CI.
+
+**Regra:** implementação no GitHub não equivale a execução validada. Marcar cada pendência como concluída somente com evidência do comando/teste ou fluxo real correspondente.
