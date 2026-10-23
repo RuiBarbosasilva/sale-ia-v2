@@ -12,8 +12,12 @@ function errorStatus(error: unknown): number {
       typeof (error as { status?: unknown }).status === 'number') {
     return (error as { status: number }).status;
   }
-  if (error instanceof Error && error.message === 'MERCADOLIVRE_ACCOUNT_NOT_CONNECTED') return 503;
-  if (error instanceof Error && error.message === 'MERCADOLIVRE_TRENDS_TOKEN_REQUIRED') return 503;
+  if (error instanceof Error && [
+    'MERCADOLIVRE_ACCOUNT_NOT_CONNECTED',
+    'MERCADO_LIVRE_AUTH_REQUIRED',
+    'MERCADO_LIVRE_OAUTH_NOT_CONFIGURED',
+    'MERCADOLIVRE_TRENDS_TOKEN_REQUIRED',
+  ].includes(error.message)) return 503;
   return 502;
 }
 
