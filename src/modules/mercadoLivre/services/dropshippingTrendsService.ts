@@ -102,8 +102,21 @@ export async function collectMercadoLivreTrendsIfDue(categoryId?: string | null,
   });
   if (lastRun) {
     const age = now.getTime() - lastRun.createdAt.getTime();
-    const threshold = lastRun.status === 'FAILED' ? RETRY_MS : WEEK_MS;
+    const threshold = lastRun.status === 'FAILED' ? RETRY_MS
+      : lastRun.status === 'RUNNING' ? 30 * 60 * 1000
+        : WEEK_MS;
     if (age < threshold) return false;
+    if (lastRun.status === 'RUNNING') {
+      await prisma.dropshippingTrendRun.updateMany({
+        where: {
+          siteId,
+          categoryId: categoryId || null,
+          status: 'RUNNING',
+          createdAt: { lte: new Date(now.getTime() - 30 * 60 * 1000) },
+        },
+        data: { status: 'FAILED', errorCode: 'STALE_TREND_RUN_RECOVERED' },
+      });
+    }
   }
 
   await collectMercadoLivreTrends(categoryId);
