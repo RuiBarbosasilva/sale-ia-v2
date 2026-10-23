@@ -90,12 +90,13 @@ export async function collectMercadoLivreTrendsIfDue(categoryId?: string | null,
   const account = await prisma.mercadoLivreAccount.findFirst({
     where: { isActive: true },
     orderBy: { updatedAt: 'desc' },
-    select: { id: true },
+    select: { id: true, siteId: true },
   });
   if (!account) return false;
 
+  const siteId = account.siteId || 'MLB';
   const lastRun = await prisma.dropshippingTrendRun.findFirst({
-    where: { siteId: 'MLB', categoryId: categoryId || null },
+    where: { siteId, categoryId: categoryId || null },
     orderBy: { createdAt: 'desc' },
     select: { status: true, createdAt: true },
   });
