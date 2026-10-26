@@ -8,7 +8,12 @@ export async function sendWordPressDraft(input: { title: string; slug: string; e
 
   let parsedBase: URL;
   try { parsedBase = new URL(baseUrl); } catch { throw new Error('WORDPRESS_INVALID_URL'); }
-  if (!['http:', 'https:'].includes(parsedBase.protocol)) throw new Error('WORDPRESS_INVALID_URL');
+  const localHosts = new Set(['localhost', '127.0.0.1', '::1']);
+  const isLocalHttp = parsedBase.protocol === 'http:' && localHosts.has(parsedBase.hostname.toLowerCase());
+  if (parsedBase.username || parsedBase.password || parsedBase.search || parsedBase.hash ||
+      (parsedBase.protocol !== 'https:' && !isLocalHttp)) {
+    throw new Error('WORDPRESS_INVALID_URL');
+  }
 
   const auth = Buffer.from(username + ':' + appPassword).toString('base64');
   const headers = { authorization: 'Basic ' + auth, 'content-type': 'application/json' };
