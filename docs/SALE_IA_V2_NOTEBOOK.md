@@ -548,6 +548,15 @@ A branch `feat/blog-factory-ia` foi atualizada para remover a dependência impl�
 - Commit: `9c93c9e31d919dc1b83dbcecc1505abea8a535d1`.
 - [ ] Validar dashboard e testes no ambiente local; a CI segue sem runner/steps observáveis.
 
+### Conflitos documentais resolvidos e estado atual das PRs — 26/10/2026
+
+- [x] Consolidados no notebook principal os históricos específicos de Blog Factory, Dashboard Central e tendências Mercado Livre, preservando os detalhes de implementação e as pendências reais.
+- [x] Sincronizado o notebook entre `main` e as branches #72, #73, #74 e #75; isso removeu o conflito documental.
+- [x] PR #74 sincronizada com o registro de rota de login, publisher WordPress endurecido e testes atualizados; `dump.rdb` removido também do branch de runtime para não voltar a ser versionado.
+- [x] GitHub passou a reportar `mergeable=true`, `mergeable_state=unstable` para #72, #73, #74 e #75. Conflitos conhecidos resolvidos; as PRs ainda não estão aprovadas.
+- Runs mais recentes observados: #72 `40330803392`; #73 `40330818951`; #74 `40331199445`; #75 `40330830568`. Todos falham antes do runner/steps, com `steps=null` e `logs_url=null`.
+- [ ] Executar em Windows local `npm ci`, encoding, Prisma validate/generate/migrate deploy, typecheck, build, testes e Guardian. Não há evidência de que esses comandos tenham rodado; não mesclar até haver resultados reproduzíveis.
+
 ### Riscos de revisão encontrados
 1. **`dump.rdb` na PR #72:** é um dump binário de persistência Redis, não código-fonte. Não o sincronizar nem sobrescrever sem plano explícito de preservação. A remoção do versionamento deve ser feita deliberadamente, preservando qualquer cópia local necessária.
 2. **Autenticação na PR #72:** `public/login.html` grava a chave administrativa em cookie legível por JavaScript. Não considerar esse fluxo seguro; preferir sessão emitida pelo servidor com cookie `HttpOnly`, `Secure` em HTTPS e política `SameSite` adequada. Validar compatibilidade com o middleware antes de trocar o mecanismo.
