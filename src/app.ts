@@ -92,6 +92,7 @@ app.get(['/mercadolivre', '/mercadolivre/dropshipping'], (_req, res) => res.send
 app.use('/generated-images', express.static('storage/generated-images'));
 
 app.use('/api', apiRoutes);
+app.use('/api', authRoutes);
 app.use('/api/websites/prospecting', prospectingRoutes);
 app.use('/api/websites', websiteRoutes);
 app.use('/api/affiliates', affiliateRoutes);
