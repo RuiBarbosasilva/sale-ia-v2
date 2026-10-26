@@ -298,3 +298,16 @@ export class BlogFactoryService {
 }
 
 export const blogFactoryService = new BlogFactoryService();
+
+// Named facade exports used by blogFactory.controller.ts. Keep the controller
+// decoupled from the class instance while preserving a single shared service.
+export const getStatus = () => blogFactoryService.getStatus();
+export const discoverTrends = () => blogFactoryService.discoverTrends();
+export const listTopics = (status?: string) => blogFactoryService.listTopics(status);
+export const listArticles = (status?: string) => blogFactoryService.listArticles(status);
+export const generateArticle = (topicId: string) => blogFactoryService.generateArticle(topicId);
+export const createDraft = (topicId: string) => blogFactoryService.createDraft(topicId);
+export const updateDraft = (id: string, input: { title?: string; excerpt?: string; body?: string; category?: string }) =>
+  blogFactoryService.updateDraft(id, input);
+export const approveArticle = (id: string) => blogFactoryService.approveArticle(id);
+export const publishArticle = (id: string) => blogFactoryService.publishArticle(id);
