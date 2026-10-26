@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { createHmac } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 const router = Router();
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
@@ -7,6 +7,12 @@ const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 function configuredAdminKey(): string | undefined {
   const key = process.env.SALE_IA_ADMIN_KEY || process.env.ADMIN_KEY;
   return key && key.trim() ? key : undefined;
+}
+
+function safeEqual(left: string, right: string): boolean {
+  const a = Buffer.from(left);
+  const b = Buffer.from(right);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 function signSession(expiry: number, secret: string): string {
@@ -22,7 +28,7 @@ router.post('/verify-key', (req: Request, res: Response) => {
   }
 
   const supplied = typeof req.body?.key === 'string' ? req.body.key : '';
-  if (!supplied || supplied !== expected) {
+  if (!supplied || !safeEqual(supplied, expected)) {
     return res.status(401).json({ success: false, error: 'INVALID_CREDENTIALS' });
   }
 
