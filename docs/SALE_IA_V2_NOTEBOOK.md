@@ -207,6 +207,13 @@ A branch `feat/blog-factory-ia` foi atualizada para remover a dependência impl�
 
 **Limite de validação:** os arquivos foram relidos após os commits, mas não foi possível executar typecheck/build/testes remotamente. O run `40329382939` do head `4c39692445590889d84f28bb2ad5cf37a8232c4c` encerrou com falha e `steps: null`, `logs_url: null`; portanto a CI continua sem execução observável. É necessária validação local isolada antes de merge.
 
+### Hardening WordPress Publisher — 26/10/2026
+
+- [x] A PR #72 agora usa o publisher idempotente da linha de runtime: consulta o slug existente antes de criar um post, reaproveita somente um rascunho existente e recusa colisão com post publicado.
+- [x] Publisher recusa URL externa em HTTP e credenciais embutidas na URL; permite HTTP apenas em loopback local para desenvolvimento. As credenciais Basic Auth só são enviadas depois da validação.
+- [x] Copiados para a branch da PR #72 os testes de API Blog Factory e de WordPress Publisher; acrescentados testes que garantem a rejeição de HTTP externo e credenciais embutidas.
+- [ ] Executar os testes localmente: os runs de Actions continuam falhando antes dos steps e sem logs, então o código ainda não tem validação executada nesta sessão.
+
 ### Riscos de revisão encontrados
 1. **`dump.rdb` na PR #72:** é um dump binário de persistência Redis, não código-fonte. Não o sincronizar nem sobrescrever sem plano explícito de preservação. A remoção do versionamento deve ser feita deliberadamente, preservando qualquer cópia local necessária.
 2. **Autenticação na PR #72:** `public/login.html` grava a chave administrativa em cookie legível por JavaScript. Não considerar esse fluxo seguro; preferir sessão emitida pelo servidor com cookie `HttpOnly`, `Secure` em HTTPS e política `SameSite` adequada. Validar compatibilidade com o middleware antes de trocar o mecanismo.
