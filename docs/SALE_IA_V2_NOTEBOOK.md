@@ -110,3 +110,33 @@ O usuário executou `git status --short` e `git diff`. Os itens abaixo ainda est
 
 **Importante:** `public/site-factory.html` no GitHub já contém `<meta charset="UTF-8">` e não apresentou mojibake na inspeção remota. O defeito de caracteres identificado estava no JavaScript do dashboard RB Factory. Se a interface continuar exibindo caracteres estranhos depois de sincronizar, fazer recarga forçada do navegador e conferir se o servidor está servindo a versão atual do arquivo, não uma cópia antiga em cache.
 
+
+
+## Sincronização e bloqueios GitHub — 26/10/2026
+
+### Estado remoto confirmado
+- Branch `main` estava sincronizada com `origin/main` no commit `7aea3276a22ffafce84a47f3090a86c57757a816` durante a conferência anterior.
+- PR #72 — [Blog Factory IA](https://github.com/RuiBarbosasilva/sale-ia-v2/pull/72): aberta, Draft, base `main`, head `cf80ead56c085fb98f5c1bad60e84e5e375af702`. A descrição registra CI aprovado em commit anterior (`7df368de94ce2c82b713f4ca4d061645075aa1d0`), mas isso não substitui a validação do head atual e dos riscos abaixo.
+- PR #73 — [Dashboard central](https://github.com/RuiBarbosasilva/sale-ia-v2/pull/73): aberta, não mesclada, head `6792038104f6469de6d79cfc266945092e41161d`.
+- PR #74 — [Correções do Blog Factory](https://github.com/RuiBarbosasilva/sale-ia-v2/pull/74): aberta, não mesclada, head `eeedd00e9bbdd4b12d9cb222fb9078f4a3417e81`; baseia-se na branch da PR #72. A ordem segura é validar/integrar #72 antes de #74.
+- PR #75 — [Persistência de tendências Mercado Livre](https://github.com/RuiBarbosasilva/sale-ia-v2/pull/75): aberta, Draft, não mesclada, head `d14ff7a564308ff2943d384813d42876a16308df`.
+- Issue #76 — [bloqueio de GitHub Actions e validação](https://github.com/RuiBarbosasilva/sale-ia-v2/issues/76): aberta; centraliza evidências e pendências.
+
+### Riscos de revisão encontrados
+1. **`dump.rdb` na PR #72:** é um dump binário de persistência Redis, não código-fonte. Não o sincronizar nem sobrescrever sem plano explícito de preservação. A remoção do versionamento deve ser feita deliberadamente, preservando qualquer cópia local necessária.
+2. **Autenticação na PR #72:** `public/login.html` grava a chave administrativa em cookie legível por JavaScript. Não considerar esse fluxo seguro; preferir sessão emitida pelo servidor com cookie `HttpOnly`, `Secure` em HTTPS e política `SameSite` adequada. Validar compatibilidade com o middleware antes de trocar o mecanismo.
+3. **Possível duplicidade de modelos Blog Factory:** a PR #72 introduz `BlogFactoryTopic`/`BlogFactoryArticle` e também `BlogPauta`/`BlogArticle`. Confirmar uso e necessidade de ambos antes de consolidar schema/migrações.
+4. **GitHub Actions:** nos runs recentes associados às PRs #73–#75, jobs terminaram antes dos steps, com `runner_id: 0`, `steps: []` ou sem steps/logs acessíveis. Isso não comprova defeito no código, mas também não valida os commits. A causa do runner/serviço ainda não foi determinada.
+5. **Não confundir mergeabilidade com aprovação:** GitHub informa as PRs como mergeable, mas isso só indica ausência de conflito conhecido; não substitui CI verde e smoke tests.
+
+### Próximas ações obrigatórias
+- [ ] Diagnosticar e restaurar a execução normal de GitHub Actions; capturar logs de uma execução real.
+- [ ] Executar em worktrees isoladas as verificações para `feat/blog-factory-ia`, `fix/central-dashboard-auth-module-registry-20261022`, `fix/blog-factory-runtime-20261022` e `feat/dropshipping-trends-persistence-20261023`: `npm ci`, encoding, Prisma validate/generate/migrate deploy, typecheck, build, testes e Guardian.
+- [ ] Rever e corrigir o fluxo de sessão administrativa do Blog Factory.
+- [ ] Retirar `dump.rdb` do controle de versão com uma alteração pequena e auditável, depois de confirmar que nenhuma operação depende do arquivo versionado.
+- [ ] Confirmar se os modelos Blog Factory duplicados são necessários e alinhar a migração.
+- [ ] Executar smoke tests do dashboard, Blog Factory, WordPress em modo rascunho e coleta OAuth de tendências do Mercado Livre.
+- [ ] Atualizar o resultado real de cada validação e sincronizar a cópia local sem descartar alterações da Qwen.
+
+### Regra de integração
+**Não mesclar as PRs #73–#75 enquanto não houver validação reproduzível.** Para Blog Factory, revisar primeiro a PR #72 e seus riscos; a PR #74 depende da branch da #72. Não executar `git reset --hard`, `git clean` ou `prisma migrate reset`. Não marcar itens como concluídos sem evidência do comando/teste executado.
