@@ -195,6 +195,18 @@ Branch `feat/blog-factory-ia` (PR #72) recebeu alterações diretas no GitHub:
 ### Estado de CI após as alterações
 Os pushes recentes à branch `feat/blog-factory-ia` também falharam imediatamente. Exemplo: run `40328645618` para o commit `431e2b4cde6c7f0be310beaa4011b9f0a833ca65`. Os jobs continuam retornando `steps: null`, sem logs utilizáveis. Isso impede confirmar typecheck, build e testes via Actions; não é prova de que esses comandos passaram ou falharam no código. A execução local em worktree isolada continua obrigatória.
 
+### Consolidação de runtime Blog Factory na PR #72 — 26/10/2026
+
+A branch `feat/blog-factory-ia` foi atualizada para remover a dependência implícita de uma PR futura:
+- [x] Substituído `blogFactory.service.ts` pela implementação que corresponde ao controller atual: métodos de status, pesquisa RSS, tópicos, artigos, geração com IA, revisão humana e envio ao WordPress exclusivamente como rascunho.
+- [x] Atualizado `blogFactory.scheduler.ts` para chamar `runAutomationCycle()`, evitar ciclos sobrepostos, respeitar intervalo configurado e oferecer `stopBlogFactoryScheduler()`.
+- [x] Incluídos `wordpressPostId` e `wordpressLink` em `BlogFactoryArticle` e criada a migração `20261022190000_blog_factory_wordpress_delivery`. Os modelos legados `BlogPauta`/`BlogArticle` permanecem por enquanto para não apagar dados existentes; devem ser removidos só após confirmar que nenhum módulo os utiliza.
+- [x] Criados testes `tests/authRoutes.test.ts` cobrindo chave ausente, credencial incorreta, cookie seguro, configuração legada e validação de sessão assinada.
+- [x] A sessão de login agora é um token HMAC temporário, não a chave administrativa original; cookie `HttpOnly`, `SameSite=Lax`, `Secure` em produção; comparação da chave em tempo constante; sem fallback de credencial previsível.
+- Commit de serviço: `ddaf76962998baa31e4009b5007e287a0eeb7f38`; scheduler: `619c97f65dd54abb290580c827305a65f616459b`; schema: `609b123645ce9ed51a0972bed669ebd1ee20bfda`; migração: `aaca25c5dfa6b048edbbe6f5e5d7d4620a4c363c`; testes de sessão: `4c39692445590889d84f28bb2ad5cf37a8232c4c`; comparação constante: `416bf861835b76aee48d662172061832bc1b12b3`.
+
+**Limite de validação:** os arquivos foram relidos após os commits, mas não foi possível executar typecheck/build/testes remotamente. O run `40329382939` do head `4c39692445590889d84f28bb2ad5cf37a8232c4c` encerrou com falha e `steps: null`, `logs_url: null`; portanto a CI continua sem execução observável. É necessária validação local isolada antes de merge.
+
 ### Riscos de revisão encontrados
 1. **`dump.rdb` na PR #72:** é um dump binário de persistência Redis, não código-fonte. Não o sincronizar nem sobrescrever sem plano explícito de preservação. A remoção do versionamento deve ser feita deliberadamente, preservando qualquer cópia local necessária.
 2. **Autenticação na PR #72:** `public/login.html` grava a chave administrativa em cookie legível por JavaScript. Não considerar esse fluxo seguro; preferir sessão emitida pelo servidor com cookie `HttpOnly`, `Secure` em HTTPS e política `SameSite` adequada. Validar compatibilidade com o middleware antes de trocar o mecanismo.
