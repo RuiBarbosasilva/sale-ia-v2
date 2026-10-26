@@ -75,6 +75,7 @@ app.use((req, res, next) => {
 });
 
 app.use(express.static('public', { index: false }));
+app.get('/login', (_req, res) => res.sendFile('login.html', { root: 'public' }));
 app.get('/manual', (_req: any, res: any) => res.sendFile('manual.html', { root: 'public' }));
 
 app.get('/', (_req, res) => res.redirect(302, '/rb-factory'));
