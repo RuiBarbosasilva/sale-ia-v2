@@ -557,21 +557,21 @@ A branch `feat/blog-factory-ia` foi atualizada para remover a dependência impl�
 - Runs mais recentes observados: #72 `40330803392`; #73 `40330818951`; #74 `40331199445`; #75 `40330830568`. Todos falham antes do runner/steps, com `steps=null` e `logs_url=null`.
 - [ ] Executar em Windows local `npm ci`, encoding, Prisma validate/generate/migrate deploy, typecheck, build, testes e Guardian. Não há evidência de que esses comandos tenham rodado; não mesclar até haver resultados reproduzíveis.
 
-### Riscos de revisão e ações pendentes — revisão 26/10/2026
-1. **Resolvido no branch #72:** `dump.rdb` foi removido da PR e `dump.rdb` está no `.gitignore`. A lista de arquivos da PR confirma `status: removed`. Não reintroduzir o dump Redis no Git.
-2. **Correção presente no branch #72, ainda requer teste:** `src/routes/authRoutes.ts` emite cookie de sessão HMAC com `HttpOnly`, `SameSite=Lax` e `Secure` quando `NODE_ENV=production`; o login não deve gravar a chave administrativa diretamente no cookie. Testes de autenticação foram adicionados, mas ainda não foram executados com resultado observável.
-3. **Modelos editoriais possivelmente legados:** `BlogPauta`/`BlogArticle` permanecem declarados no schema, enquanto o serviço atual usa `BlogFactoryTopic`/`BlogFactoryArticle`. A inspeção inicial não encontrou referências de aplicação além das declarações/relações do schema; confirmar no código e nas migrações antes de remover os modelos legados. Não apagar modelos/migrações sem essa confirmação.
-4. **GitHub Actions bloqueado:** os runs recentes das PRs #73–#75 terminam sem steps/logs acessíveis (`steps: null`, downloads de logs retornam `BlobNotFound`). Isso não prova falha do código nem valida os commits. A causa do runner/serviço ainda não foi determinada.
-5. **Mergeabilidade não é aprovação:** `mergeable=true` apenas indica ausência de conflito conhecido; não substitui CI verde e smoke tests.
+### Riscos de revisão encontrados
+1. **`dump.rdb` na PR #72:** é um dump binário de persistência Redis, não código-fonte. Não o sincronizar nem sobrescrever sem plano explícito de preservação. A remoção do versionamento deve ser feita deliberadamente, preservando qualquer cópia local necessária.
+2. **Autenticação na PR #72:** `public/login.html` grava a chave administrativa em cookie legível por JavaScript. Não considerar esse fluxo seguro; preferir sessão emitida pelo servidor com cookie `HttpOnly`, `Secure` em HTTPS e política `SameSite` adequada. Validar compatibilidade com o middleware antes de trocar o mecanismo.
+3. **Possível duplicidade de modelos Blog Factory:** a PR #72 introduz `BlogFactoryTopic`/`BlogFactoryArticle` e também `BlogPauta`/`BlogArticle`. Confirmar uso e necessidade de ambos antes de consolidar schema/migrações.
+4. **GitHub Actions:** nos runs recentes associados às PRs #73–#75, jobs terminaram antes dos steps, com `runner_id: 0`, `steps: []` ou sem steps/logs acessíveis. Isso não comprova defeito no código, mas também não valida os commits. A causa do runner/serviço ainda não foi determinada.
+5. **Não confundir mergeabilidade com aprovação:** GitHub informa as PRs como mergeable, mas isso só indica ausência de conflito conhecido; não substitui CI verde e smoke tests.
 
 ### Próximas ações obrigatórias
-- [ ] Diagnosticar e restaurar a execução normal de GitHub Actions; obter logs de uma execução real.
+- [ ] Diagnosticar e restaurar a execução normal de GitHub Actions; capturar logs de uma execução real.
 - [ ] Executar em worktrees isoladas as verificações para `feat/blog-factory-ia`, `fix/central-dashboard-auth-module-registry-20261022`, `fix/blog-factory-runtime-20261022` e `feat/dropshipping-trends-persistence-20261023`: `npm ci`, encoding, Prisma validate/generate/migrate deploy, typecheck, build, testes e Guardian.
-- [x] Remover `dump.rdb` da PR #72 e ignorá-lo no Git.
-- [x] Implementar sessão administrativa HMAC com cookie `HttpOnly` no branch #72; pendente executar os testes.
-- [ ] Confirmar se `BlogPauta`/`BlogArticle` são modelos legados e alinhar schema/migrações sem perda de dados.
+- [ ] Rever e corrigir o fluxo de sessão administrativa do Blog Factory.
+- [ ] Retirar `dump.rdb` do controle de versão com uma alteração pequena e auditável, depois de confirmar que nenhuma operação depende do arquivo versionado.
+- [ ] Confirmar se os modelos Blog Factory duplicados são necessários e alinhar a migração.
 - [ ] Executar smoke tests do dashboard, Blog Factory, WordPress em modo rascunho e coleta OAuth de tendências do Mercado Livre.
-- [ ] Atualizar os resultados reais e sincronizar a cópia local sem descartar alterações da Qwen.
+- [ ] Atualizar o resultado real de cada validação e sincronizar a cópia local sem descartar alterações da Qwen.
 
 ### Regra de integração
 **Não mesclar as PRs #73–#75 enquanto não houver validação reproduzível.** Para Blog Factory, revisar primeiro a PR #72 e seus riscos; a PR #74 depende da branch da #72. Não executar `git reset --hard`, `git clean` ou `prisma migrate reset`. Não marcar itens como concluídos sem evidência do comando/teste executado.
