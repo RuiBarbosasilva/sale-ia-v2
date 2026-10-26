@@ -178,6 +178,23 @@ O commit `a4e0426068fc923ee6d8d883e2c0f88dede615de` gerou novos runs para o head
 
 Os dois encerraram em falha antes dos steps, com `steps: null` e `logs_url: null`. A correção estática foi publicada, mas typecheck/build/testes continuam sem validação. A PR #74 permanece aberta e não mesclada. Evidência registrada na [Issue #76](https://github.com/RuiBarbosasilva/sale-ia-v2/issues/76).
 
+### Correções aplicadas na branch Blog Factory — 26/10/2026
+
+Branch `feat/blog-factory-ia` (PR #72) recebeu alterações diretas no GitHub:
+- [x] Removido o fallback da chave administrativa previsível `sale-ia-2026-admin-key-secure`; login agora falha fechado com HTTP 503 se nenhuma chave estiver configurada.
+- [x] Login usa `SALE_IA_ADMIN_KEY` ou `ADMIN_KEY`, igual à precedência do middleware.
+- [x] Cookie de login agora é `HttpOnly`, `SameSite=Lax`, `Secure` em produção, com caminho explícito e validade de 8 horas; a página não grava mais a chave via `document.cookie`.
+- [x] Registrada a rota `POST /api/verify-key` por `app.use('/api', authRoutes)`.
+- [x] Criada a rota web `/login` que serve `public/login.html`; redirecionamento após login corrigido para `/main-dashboard.html`.
+- [x] `adminAuth.middleware.ts` agora falha fechado se a chave estiver ausente e usa a mesma precedência de configuração.
+- [x] Removido `dump.rdb` do branch da PR #72 e incluída regra `dump.rdb` no `.gitignore`. O arquivo era persistência Redis, não código. **Preservar qualquer cópia local/stash antes de atualizar a cópia de trabalho.**
+- Commits de correção de autenticação/rota: `c574c18366be27ea741b432583e8fe5da0f5e996`, `45799407bb51e33c09623cc398bdcfd333fd1b43`, `35f6ab68cf1647e0ab2e4df66e58fd6cb8b61d5c`, `bd7a5e51ac8f343c32fe8f203f9d11dd79a8aaa2`, `431e2b4cde6c7f0be310beaa4011b9f0a833ca65`; dump/ignore commit `938468b34f206044ef14e325142e56c19a55316a`.
+
+**Ainda não declarar a PR #72 pronta:** o controller chama métodos do serviço novo que só existem na linha de correção da PR #74, e o serviço antigo ainda trabalha com os modelos legados `BlogPauta`/`BlogArticle`. Integrar/alinhar esse par de forma consistente antes do merge; não misturar parcialmente os dois contratos. As correções de autenticação foram confirmadas por leitura posterior dos arquivos remotos, mas ainda faltam testes executados.
+
+### Estado de CI após as alterações
+Os pushes recentes à branch `feat/blog-factory-ia` também falharam imediatamente. Exemplo: run `40328645618` para o commit `431e2b4cde6c7f0be310beaa4011b9f0a833ca65`. Os jobs continuam retornando `steps: null`, sem logs utilizáveis. Isso impede confirmar typecheck, build e testes via Actions; não é prova de que esses comandos passaram ou falharam no código. A execução local em worktree isolada continua obrigatória.
+
 ### Riscos de revisão encontrados
 1. **`dump.rdb` na PR #72:** é um dump binário de persistência Redis, não código-fonte. Não o sincronizar nem sobrescrever sem plano explícito de preservação. A remoção do versionamento deve ser feita deliberadamente, preservando qualquer cópia local necessária.
 2. **Autenticação na PR #72:** `public/login.html` grava a chave administrativa em cookie legível por JavaScript. Não considerar esse fluxo seguro; preferir sessão emitida pelo servidor com cookie `HttpOnly`, `Secure` em HTTPS e política `SameSite` adequada. Validar compatibilidade com o middleware antes de trocar o mecanismo.
