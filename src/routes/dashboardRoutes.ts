@@ -102,7 +102,7 @@ router.get('/operations', adminAuthorization, async (_req, res) => {
   const modules = [
     { id: 'rb-factory', name: 'RB Factory Sites', score: rbFactoryScore, status: rbFactoryScore === 100 ? 'OPERACIONAL' : 'INDISPONIVEL', href: '/rb-factory' },
     { id: 'afiliados', name: 'Afiliados & IA', score: affiliateScore, status: affiliateScore === 100 ? 'OPERACIONAL' : affiliateScore > 0 ? 'PARCIAL' : 'INDISPONIVEL', href: '/affiliates/intelligence' },
-    { id: 'hunter', name: 'Hunter', score: hunterScore, status: hunterScore === 100 ? 'OPERACIONAL' : 'INDISPONIVEL', href: '/api/hunter/opportunities' },
+    { id: 'hunter', name: 'Hunter', score: hunterScore, status: hunterScore === 100 ? 'OPERACIONAL' : 'INDISPONIVEL', href: '/affiliates/intelligence' },
     { id: 'sales', name: 'Sales Agent', score: salesScore, status: salesScore === 100 ? 'OPERACIONAL' : 'INDISPONIVEL', href: '/sales' },
     { id: 'editorial', name: 'Editorial Factory', score: editorialScore, status: editorialScore === 100 ? 'OPERACIONAL' : 'INDISPONIVEL', href: '/editorial' },
     { id: 'plans', name: 'Planos de oportunidade', score: plansScore, status: plansScore === 100 ? 'OPERACIONAL' : 'INDISPONIVEL', href: '/api/opportunity-sales/plans' }
