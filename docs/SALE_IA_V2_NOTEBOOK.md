@@ -122,6 +122,14 @@ O usuário executou `git status --short` e `git diff`. Os itens abaixo ainda est
 - PR #75 — [Persistência de tendências Mercado Livre](https://github.com/RuiBarbosasilva/sale-ia-v2/pull/75): aberta, Draft, não mesclada, head `d14ff7a564308ff2943d384813d42876a16308df`.
 - Issue #76 — [bloqueio de GitHub Actions e validação](https://github.com/RuiBarbosasilva/sale-ia-v2/issues/76): aberta; centraliza evidências e pendências.
 
+### Rechecagem de CI da PR #72 — 26/10/2026
+
+A consulta aos runs associados ao head atual da PR #72 (`cf80ead56c085fb98f5c1bad60e84e5e375af702`) também encontrou falha antes de etapas/logs:
+- `sale-ia-v2-ci`: run `39816998464`, job `validate`, `conclusion=failure`, `steps=null`, `logs_url=null`.
+- `Affiliate Module CI`: run `39816998448`, job `verify`, `conclusion=failure`, `steps=null`, `logs_url=null`.
+
+Isso atualiza a evidência: a descrição da PR registra uma execução anterior aprovada em outro commit, mas o head atual não tem validação confirmada. A causa da falha continua indeterminada, pois o GitHub não fornece os steps/logs desses runs. Não tratar como falha comprovada do código nem como aprovação.
+
 ### Riscos de revisão encontrados
 1. **`dump.rdb` na PR #72:** é um dump binário de persistência Redis, não código-fonte. Não o sincronizar nem sobrescrever sem plano explícito de preservação. A remoção do versionamento deve ser feita deliberadamente, preservando qualquer cópia local necessária.
 2. **Autenticação na PR #72:** `public/login.html` grava a chave administrativa em cookie legível por JavaScript. Não considerar esse fluxo seguro; preferir sessão emitida pelo servidor com cookie `HttpOnly`, `Secure` em HTTPS e política `SameSite` adequada. Validar compatibilidade com o middleware antes de trocar o mecanismo.
