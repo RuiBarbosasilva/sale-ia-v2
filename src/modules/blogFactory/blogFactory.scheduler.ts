@@ -1,26 +1,43 @@
-import { PrismaClient } from '@prisma/client';
 import { blogFactoryService } from './blogFactory.service';
 
-const prisma = new PrismaClient();
+let timer: ReturnType<typeof setInterval> | undefined;
+let running = false;
 
 export class BlogFactoryScheduler {
   async runCycle() {
-    console.log('[BlogFactory] Iniciando ciclo de coleta e geração...');
+    if (running) return { skipped: true, reason: 'CYCLE_ALREADY_RUNNING' };
+    running = true;
     try {
-      const pautas = await prisma.blogPauta.findMany({ where: { status: 'PENDING' }, take: 3 });
-      for (const pauta of pautas) {
-        const article = await blogFactoryService.generateArticle(pauta);
-        if (process.env.BLOG_AUTO_APPROVE === 'true') {
-          await blogFactoryService.publishArticle(article.id);
-        }
-      }
-      console.log('[BlogFactory] Ciclo concluído.');
-    } catch (error) { console.error('[BlogFactory] Erro no ciclo:', error); }
+      const result = await blogFactoryService.runAutomationCycle();
+      console.log('[BlogFactory] Ciclo concluído:', JSON.stringify({
+        topicsConsidered: result.topicsConsidered,
+        generated: result.generatedArticleIds.length,
+        failures: result.failures.length
+      }));
+      return result;
+    } catch (error) {
+      console.error('[BlogFactory] Ciclo falhou:', error instanceof Error ? error.message : error);
+      throw error;
+    } finally {
+      running = false;
+    }
   }
 }
 
 export const blogFactoryScheduler = new BlogFactoryScheduler();
 
 export function startBlogFactoryScheduler() {
-  console.log('[BlogFactory] Scheduler inicializado.');
+  if (timer) return;
+  const configured = Number(process.env.BLOG_FACTORY_INTERVAL_MS || 6 * 60 * 60 * 1000);
+  const interval = Number.isFinite(configured) ? Math.min(Math.max(configured, 60_000), 7 * 24 * 60 * 60 * 1000) : 6 * 60 * 60 * 1000;
+  timer = setInterval(() => {
+    void blogFactoryScheduler.runCycle().catch(() => undefined);
+  }, interval);
+  if (typeof timer === 'object' && 'unref' in timer) timer.unref();
+  console.log('[BlogFactory] Scheduler ativo. Intervalo (ms):', interval);
+}
+
+export function stopBlogFactoryScheduler() {
+  if (timer) clearInterval(timer);
+  timer = undefined;
 }
