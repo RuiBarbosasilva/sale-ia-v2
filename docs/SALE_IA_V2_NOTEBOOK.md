@@ -214,6 +214,12 @@ A branch `feat/blog-factory-ia` foi atualizada para remover a dependência impl�
 - [x] Copiados para a branch da PR #72 os testes de API Blog Factory e de WordPress Publisher; acrescentados testes que garantem a rejeição de HTTP externo e credenciais embutidas.
 - [ ] Executar os testes localmente: os runs de Actions continuam falhando antes dos steps e sem logs, então o código ainda não tem validação executada nesta sessão.
 
+### Correção de navegação no Dashboard Central — 26/10/2026
+
+- [x] Na branch `fix/central-dashboard-auth-module-registry-20261022`, o link do módulo Hunter deixou de apontar para o endpoint JSON protegido `/api/hunter/opportunities` e agora abre a interface existente `/affiliates/intelligence`.
+- Commit: `9c93c9e31d919dc1b83dbcecc1505abea8a535d1`.
+- [ ] Validar dashboard e testes no ambiente local; a CI segue sem runner/steps observáveis.
+
 ### Riscos de revisão encontrados
 1. **`dump.rdb` na PR #72:** é um dump binário de persistência Redis, não código-fonte. Não o sincronizar nem sobrescrever sem plano explícito de preservação. A remoção do versionamento deve ser feita deliberadamente, preservando qualquer cópia local necessária.
 2. **Autenticação na PR #72:** `public/login.html` grava a chave administrativa em cookie legível por JavaScript. Não considerar esse fluxo seguro; preferir sessão emitida pelo servidor com cookie `HttpOnly`, `Secure` em HTTPS e política `SameSite` adequada. Validar compatibilidade com o middleware antes de trocar o mecanismo.
