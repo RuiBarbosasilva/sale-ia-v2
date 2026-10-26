@@ -1,10 +1,26 @@
 import { Request, Response, NextFunction } from 'express';
+import { createHmac, timingSafeEqual } from 'crypto';
+
+function safeEqual(left: string, right: string): boolean {
+  const a = Buffer.from(left);
+  const b = Buffer.from(right);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+function validSession(value: unknown, secret: string): boolean {
+  if (typeof value !== 'string') return false;
+  const match = value.match(/^v1\.(\d{13})\.([A-Za-z0-9_-]+)$/);
+  if (!match) return false;
+  const expiry = Number(match[1]);
+  if (!Number.isSafeInteger(expiry) || expiry <= Date.now()) return false;
+  const payload = 'v1.' + match[1];
+  const expected = createHmac('sha256', secret).update(payload).digest('base64url');
+  return safeEqual(match[2], expected);
+}
 
 export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunction) => {
   const adminKey = process.env.SALE_IA_ADMIN_KEY || process.env.ADMIN_KEY;
 
-  // Public pages/endpoints are explicit; avoid broad prefix checks that can
-  // accidentally make protected routes public.
   const publicPaths = new Set([
     '/login',
     '/api/verify-key',
@@ -24,8 +40,6 @@ export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunct
   ]);
 
   if (publicPaths.has(req.path)) return next();
-
-  // Static assets are served separately; only permit known HTML/assets here.
   if (!req.path.startsWith('/api/') && /\.[a-z0-9]+$/i.test(req.path)) return next();
 
   if (!adminKey) {
@@ -35,8 +49,11 @@ export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunct
     return res.redirect('/login');
   }
 
-  const providedKey = req.cookies?.adminKey || req.headers['x-admin-key'];
-  if (typeof providedKey !== 'string' || providedKey !== adminKey) {
+  const cookieSessionValid = validSession(req.cookies?.adminKey, adminKey);
+  const headerKey = req.headers['x-admin-key'];
+  const headerValid = typeof headerKey === 'string' && safeEqual(headerKey, adminKey);
+
+  if (!cookieSessionValid && !headerValid) {
     if (req.path.startsWith('/api/')) {
       return res.status(401).json({ error: 'ADMIN_UNAUTHORIZED' });
     }
