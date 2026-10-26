@@ -170,6 +170,14 @@ Após o commit documental `21cc0418ebe832540e3d1ee56207a76386b458a7`, o workflow
 - Arquivo: [blogFactory.service.ts](https://github.com/RuiBarbosasilva/sale-ia-v2/blob/fix/blog-factory-runtime-20261022/src/modules/blogFactory/blogFactory.service.ts).
 - [ ] Executar typecheck, build, testes e Guardian. A leitura remota confirma os exports no arquivo, mas não comprova compilação. O GitHub Actions continua encerrando antes dos steps.
 
+### Revalidação automática após correção estática da PR #74 — 26/10/2026
+
+O commit `a4e0426068fc923ee6d8d883e2c0f88dede615de` gerou novos runs para o head atualizado:
+- `sale-ia-v2-ci`: `40328021711`
+- `Affiliate Module CI`: `40328022011`
+
+Os dois encerraram em falha antes dos steps, com `steps: null` e `logs_url: null`. A correção estática foi publicada, mas typecheck/build/testes continuam sem validação. A PR #74 permanece aberta e não mesclada. Evidência registrada na [Issue #76](https://github.com/RuiBarbosasilva/sale-ia-v2/issues/76).
+
 ### Riscos de revisão encontrados
 1. **`dump.rdb` na PR #72:** é um dump binário de persistência Redis, não código-fonte. Não o sincronizar nem sobrescrever sem plano explícito de preservação. A remoção do versionamento deve ser feita deliberadamente, preservando qualquer cópia local necessária.
 2. **Autenticação na PR #72:** `public/login.html` grava a chave administrativa em cookie legível por JavaScript. Não considerar esse fluxo seguro; preferir sessão emitida pelo servidor com cookie `HttpOnly`, `Secure` em HTTPS e política `SameSite` adequada. Validar compatibilidade com o middleware antes de trocar o mecanismo.
