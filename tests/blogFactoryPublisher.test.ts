@@ -53,4 +53,20 @@ describe('WordPress publisher', () => {
     expect((fetchMock.mock.calls[1][1] as RequestInit).method).toBe('POST');
     expect(JSON.parse(String((fetchMock.mock.calls[1][1] as RequestInit).body)).status).toBe('draft');
   });
+  it('rejects insecure external HTTP URLs before sending credentials', async () => {
+    process.env.BLOG_FACTORY_WORDPRESS_URL = 'http://wordpress.example.test';
+    const fetchMock = jest.spyOn(global, 'fetch');
+    await expect(sendWordPressDraft({ title: 'Article', slug: 'insecure', excerpt: '', body: '<p>Text</p>' }))
+      .rejects.toThrow('WORDPRESS_INVALID_URL');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects credentials embedded in the WordPress URL', async () => {
+    process.env.BLOG_FACTORY_WORDPRESS_URL = 'https://editor:secret@example.test';
+    const fetchMock = jest.spyOn(global, 'fetch');
+    await expect(sendWordPressDraft({ title: 'Article', slug: 'embedded-credentials', excerpt: '', body: '<p>Text</p>' }))
+      .rejects.toThrow('WORDPRESS_INVALID_URL');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
 });
