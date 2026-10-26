@@ -146,6 +146,17 @@ A leitura direta dos arquivos da branch `feat/blog-factory-ia` confirmou riscos 
 - [ ] Validar a combinação final das PRs #72 e #74 com CI funcional e testes locais.
 - [ ] Não mesclar a PR #72 isoladamente.
 
+### Verificação de registro das rotas de login — 26/10/2026
+
+Rastreamento adicional dos pontos de entrada da branch `feat/blog-factory-ia`:
+- `src/app.ts` importa `authRoutes`, mas não registra `app.use(..., authRoutes)`.
+- `src/routes/apiRoutes.ts` também não registra `authRoutes`.
+- `public/login.html` chama `POST /api/verify-key`; nos pontos de entrada inspecionados, essa rota não está montada e tende a responder 404. O redirecionamento para `/main-dashboard` também precisa de verificação explícita.
+- A tela de login antiga usa `ADMIN_KEY`/cookie, enquanto o painel Blog Factory usa chave em memória enviada por `x-sale-ia-admin-key` e o controlador verifica `SALE_IA_ADMIN_KEY` ou `AFFILIATE_ADMIN_KEY`. São fluxos distintos; não combinar parcialmente.
+- A importação de `authRoutes` em `src/app.ts` parece não utilizada e deve ser removida ou a rota registrada intencionalmente, com testes correspondentes.
+
+O achado foi registrado nos comentários da [PR #72](https://github.com/RuiBarbosasilva/sale-ia-v2/pull/72) e da [Issue #76](https://github.com/RuiBarbosasilva/sale-ia-v2/issues/76), comentários `6416703570` e `6416705217`.
+
 ### Riscos de revisão encontrados
 1. **`dump.rdb` na PR #72:** é um dump binário de persistência Redis, não código-fonte. Não o sincronizar nem sobrescrever sem plano explícito de preservação. A remoção do versionamento deve ser feita deliberadamente, preservando qualquer cópia local necessária.
 2. **Autenticação na PR #72:** `public/login.html` grava a chave administrativa em cookie legível por JavaScript. Não considerar esse fluxo seguro; preferir sessão emitida pelo servidor com cookie `HttpOnly`, `Secure` em HTTPS e política `SameSite` adequada. Validar compatibilidade com o middleware antes de trocar o mecanismo.
