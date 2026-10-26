@@ -26,27 +26,44 @@
   </div>
   <script>
     async function verifyKey() {
-      const key = document.getElementById('adminKey').value;
+      const input = document.getElementById('adminKey');
+      const errorBox = document.getElementById('errorMsg');
+      const key = input.value;
+      errorBox.style.display = 'none';
+
+      if (!key) {
+        errorBox.textContent = 'Informe a chave de acesso.';
+        errorBox.style.display = 'block';
+        input.focus();
+        return;
+      }
+
       try {
         const res = await fetch('/api/verify-key', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
           body: JSON.stringify({ key })
         });
-        const data = await res.json();
-        if (data.success) {
-          document.cookie = 'adminKey=' + key + '; path=/; max-age=86400';
-          window.location.href = '/main-dashboard';
-        } else {
-          document.getElementById('errorMsg').style.display = 'block';
-          document.getElementById('errorMsg').textContent = 'Chave incorreta. Tente novamente.';
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) {
+          input.value = '';
+          window.location.replace('/main-dashboard.html');
+          return;
         }
-      } catch (err) {
-        alert('Erro de conexão. Verifique se o servidor está rodando.');
+
+        errorBox.textContent = data.error === 'ADMIN_KEY_NOT_CONFIGURED'
+          ? 'A chave administrativa não está configurada no servidor.'
+          : 'Chave incorreta. Tente novamente.';
+        errorBox.style.display = 'block';
+      } catch (_err) {
+        errorBox.textContent = 'Erro de conexão. Verifique se o servidor está rodando.';
+        errorBox.style.display = 'block';
       }
     }
-    document.getElementById('adminKey').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') verifyKey();
+
+    document.getElementById('adminKey').addEventListener('keypress', (event) => {
+      if (event.key === 'Enter') verifyKey();
     });
   </script>
 </body>
