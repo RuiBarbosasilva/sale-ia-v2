@@ -130,6 +130,22 @@ A consulta aos runs associados ao head atual da PR #72 (`cf80ead56c085fb98f5c1ba
 
 Isso atualiza a evidência: a descrição da PR registra uma execução anterior aprovada em outro commit, mas o head atual não tem validação confirmada. A causa da falha continua indeterminada, pois o GitHub não fornece os steps/logs desses runs. Não tratar como falha comprovada do código nem como aprovação.
 
+### Revisão técnica adicional da PR #72 — 26/10/2026
+
+A leitura direta dos arquivos da branch `feat/blog-factory-ia` confirmou riscos que exigem correção antes da integração:
+- **Controller/service incompatíveis:** `src/modules/blogFactory/blogFactory.controller.ts` invoca `getStatus`, `runAutomationCycle`, `discoverTrends`, `listTopics` e outros como funções exportadas; o `blogFactory.service.ts` do head da PR #72 exporta apenas a classe `BlogFactoryService` e a instância `blogFactoryService`. A versão de serviço com esses métodos existe na branch da PR #74. Portanto, a PR #72 isolada não deve ser integrada em `main`; a ordem de dependência #72 → #74 é necessária.
+- **Fallback de credencial previsível:** `src/routes/authRoutes.ts` e `src/middleware/adminAuth.middleware.ts` usam `process.env.ADMIN_KEY || 'sale-ia-2026-admin-key-secure'`. Se a variável não estiver definida, a chave hardcoded pode autenticar acesso. Remover fallback e falhar fechado quando a configuração estiver ausente; alinhar com as chaves administrativas usadas pelo restante do sistema e adicionar testes.
+- **Cookie de segredo:** a rota define `httpOnly: false` e a página `public/login.html` também grava a chave original via `document.cookie`. Migrar para uma sessão segura emitida pelo servidor; não armazenar a chave administrativa original no cookie.
+- Esses achados foram registrados nos comentários da [PR #72](https://github.com/RuiBarbosasilva/sale-ia-v2/pull/72) e da [Issue #76](https://github.com/RuiBarbosasilva/sale-ia-v2/issues/76). Comentários: `6416673516` e `6416674594`.
+
+### Decisão de integração
+- [x] Identificada incompatibilidade entre controller e service no head da PR #72.
+- [x] Identificado fallback de chave administrativa hardcoded.
+- [x] Registrados riscos de cookie e dependência da PR #74.
+- [ ] Corrigir autenticação/sessão sem quebrar dashboard central nem outros módulos.
+- [ ] Validar a combinação final das PRs #72 e #74 com CI funcional e testes locais.
+- [ ] Não mesclar a PR #72 isoladamente.
+
 ### Riscos de revisão encontrados
 1. **`dump.rdb` na PR #72:** é um dump binário de persistência Redis, não código-fonte. Não o sincronizar nem sobrescrever sem plano explícito de preservação. A remoção do versionamento deve ser feita deliberadamente, preservando qualquer cópia local necessária.
 2. **Autenticação na PR #72:** `public/login.html` grava a chave administrativa em cookie legível por JavaScript. Não considerar esse fluxo seguro; preferir sessão emitida pelo servidor com cookie `HttpOnly`, `Secure` em HTTPS e política `SameSite` adequada. Validar compatibilidade com o middleware antes de trocar o mecanismo.
