@@ -161,6 +161,15 @@ O achado foi registrado nos comentários da [PR #72](https://github.com/RuiBarbo
 
 Após o commit documental `21cc0418ebe832540e3d1ee56207a76386b458a7`, o workflow `sale-ia-v2-ci` no run `40327615658` falhou em um evento `push` para `main`. Job `validate`: `conclusion=failure`, `steps=null`, `logs_url=null`. Isso amplia a evidência para além das PRs #72–#75 e sugere um bloqueio de execução do Actions/runner ou de configuração da execução; a causa exata não está demonstrada porque não há steps/logs disponíveis. A conexão GitHub utilizada nesta sessão não expõe permissão administrativa para alterar configurações do Actions.
 
+### Correção estática aplicada na branch da PR #74 — 26/10/2026
+
+- [x] Corrigida incompatibilidade de exports entre `src/modules/blogFactory/blogFactory.controller.ts` e `blogFactory.service.ts`.
+- O controller importa o serviço como namespace e chama funções nomeadas; o serviço exportava somente a classe e a instância. Foram adicionados wrappers nomeados que encaminham para a instância única `blogFactoryService`.
+- Branch: `fix/blog-factory-runtime-20261022`.
+- Commit: `a4e0426068fc923ee6d8d883e2c0f88dede615de`.
+- Arquivo: [blogFactory.service.ts](https://github.com/RuiBarbosasilva/sale-ia-v2/blob/fix/blog-factory-runtime-20261022/src/modules/blogFactory/blogFactory.service.ts).
+- [ ] Executar typecheck, build, testes e Guardian. A leitura remota confirma os exports no arquivo, mas não comprova compilação. O GitHub Actions continua encerrando antes dos steps.
+
 ### Riscos de revisão encontrados
 1. **`dump.rdb` na PR #72:** é um dump binário de persistência Redis, não código-fonte. Não o sincronizar nem sobrescrever sem plano explícito de preservação. A remoção do versionamento deve ser feita deliberadamente, preservando qualquer cópia local necessária.
 2. **Autenticação na PR #72:** `public/login.html` grava a chave administrativa em cookie legível por JavaScript. Não considerar esse fluxo seguro; preferir sessão emitida pelo servidor com cookie `HttpOnly`, `Secure` em HTTPS e política `SameSite` adequada. Validar compatibilidade com o middleware antes de trocar o mecanismo.
