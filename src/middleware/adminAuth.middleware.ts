@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 
 export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  const adminKey = process.env.ADMIN_KEY || 'sale-ia-2026-admin-key-secure';
-  
-  // Lista EXATA de rotas públicas - HTML e APIs de auth
-  const publicPaths = [
+  const adminKey = process.env.SALE_IA_ADMIN_KEY || process.env.ADMIN_KEY;
+
+  // Public pages/endpoints are explicit; avoid broad prefix checks that can
+  // accidentally make protected routes public.
+  const publicPaths = new Set([
     '/login',
     '/api/verify-key',
     '/main-dashboard.html',
@@ -19,28 +20,28 @@ export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunct
     '/affiliates',
     '/manual',
     '/',
-    '/favicon.ico'
-  ];
-  
-  // Se é uma rota pública HTML, libera SEMPRE
-  if (publicPaths.some(p => req.path === p || req.path.startsWith(p + '/'))) {
-    return next();
+    '/favicon.ico',
+  ]);
+
+  if (publicPaths.has(req.path)) return next();
+
+  // Static assets are served separately; only permit known HTML/assets here.
+  if (!req.path.startsWith('/api/') && /\.[a-z0-9]+$/i.test(req.path)) return next();
+
+  if (!adminKey) {
+    if (req.path.startsWith('/api/')) {
+      return res.status(503).json({ error: 'ADMIN_KEY_NOT_CONFIGURED' });
+    }
+    return res.redirect('/login');
   }
-  
-  // Se é uma rota HTML (não API), libera SEMPRE
-  if (!req.path.startsWith('/api/') && req.path.includes('.')) {
-    return next();
-  }
-  
-  // Para APIs, verifica o cookie ou header
+
   const providedKey = req.cookies?.adminKey || req.headers['x-admin-key'];
-  
-  if (!providedKey || providedKey !== adminKey) {
+  if (typeof providedKey !== 'string' || providedKey !== adminKey) {
     if (req.path.startsWith('/api/')) {
       return res.status(401).json({ error: 'ADMIN_UNAUTHORIZED' });
     }
     return res.redirect('/login');
   }
-  
-  next();
+
+  return next();
 };
