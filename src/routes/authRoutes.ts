@@ -1,10 +1,18 @@
 import { Router, Request, Response } from 'express';
+import { createHmac } from 'crypto';
 
 const router = Router();
+const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 
 function configuredAdminKey(): string | undefined {
   const key = process.env.SALE_IA_ADMIN_KEY || process.env.ADMIN_KEY;
   return key && key.trim() ? key : undefined;
+}
+
+function signSession(expiry: number, secret: string): string {
+  const payload = 'v1.' + expiry;
+  const signature = createHmac('sha256', secret).update(payload).digest('base64url');
+  return payload + '.' + signature;
 }
 
 router.post('/verify-key', (req: Request, res: Response) => {
@@ -18,8 +26,9 @@ router.post('/verify-key', (req: Request, res: Response) => {
     return res.status(401).json({ success: false, error: 'INVALID_CREDENTIALS' });
   }
 
-  res.cookie('adminKey', expected, {
-    maxAge: 8 * 60 * 60 * 1000,
+  const session = signSession(Date.now() + SESSION_TTL_MS, expected);
+  res.cookie('adminKey', session, {
+    maxAge: SESSION_TTL_MS,
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
