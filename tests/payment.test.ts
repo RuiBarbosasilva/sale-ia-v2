@@ -155,6 +155,7 @@ describe('Payment Webhook HTTP Integration (Checkpoint 09.11)', () => {
 
     const res = await request(app)
       .post('/api/payments/webhook')
+      .set('x-payment-webhook-secret', paymentWebhookSecret)
       .send({ orderId: testOrderId, transactionId: testTransactionId, amount: testAmount })
       .expect(200);
 
@@ -170,6 +171,7 @@ describe('Payment Webhook HTTP Integration (Checkpoint 09.11)', () => {
   it('TESTE 3: Order inexistente deve retornar 400', async () => {
     const res = await request(app)
       .post('/api/payments/webhook')
+      .set('x-payment-webhook-secret', paymentWebhookSecret)
       .send({ orderId: 'order-inexistente-123', transactionId: 'tx_novo_1', amount: 100 })
       .expect(400);
 
@@ -180,6 +182,7 @@ describe('Payment Webhook HTTP Integration (Checkpoint 09.11)', () => {
   it('TESTE 4: Valor incorreto (amount divergente) deve retornar 400', async () => {
     const res = await request(app)
       .post('/api/payments/webhook')
+      .set('x-payment-webhook-secret', paymentWebhookSecret)
       .send({ orderId: testOrderId, transactionId: 'tx_novo_2', amount: 999.99 }) // Valor diferente de 150.00
       .expect(400);
 
@@ -190,6 +193,7 @@ describe('Payment Webhook HTTP Integration (Checkpoint 09.11)', () => {
   it('TESTE 5: transactionId ausente deve retornar 400', async () => {
     const res = await request(app)
       .post('/api/payments/webhook')
+      .set('x-payment-webhook-secret', paymentWebhookSecret)
       .send({ orderId: testOrderId, amount: testAmount })
       .expect(400);
 
@@ -200,6 +204,7 @@ describe('Payment Webhook HTTP Integration (Checkpoint 09.11)', () => {
   it('TESTE 6: orderId ausente deve retornar 400', async () => {
     const res = await request(app)
       .post('/api/payments/webhook')
+      .set('x-payment-webhook-secret', paymentWebhookSecret)
       .send({ transactionId: 'tx_novo_3', amount: testAmount })
       .expect(400);
 
@@ -210,6 +215,7 @@ describe('Payment Webhook HTTP Integration (Checkpoint 09.11)', () => {
   it('TESTE 7: amount inválido (0 ou negativo) deve retornar 400', async () => {
     const res = await request(app)
       .post('/api/payments/webhook')
+      .set('x-payment-webhook-secret', paymentWebhookSecret)
       .send({ orderId: testOrderId, transactionId: 'tx_novo_4', amount: 0 })
       .expect(400);
 
@@ -221,6 +227,7 @@ describe('Payment Webhook HTTP Integration (Checkpoint 09.11)', () => {
     const newTxId = 'tx_manual_' + Date.now().toString();
     const res = await request(app)
       .post('/api/payments/webhook')
+      .set('x-payment-webhook-secret', paymentWebhookSecret)
       .send({ orderId: testOrderId, transactionId: newTxId, amount: testAmount }) // sem provider
       .expect(200);
 
