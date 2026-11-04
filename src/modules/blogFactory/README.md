@@ -15,9 +15,9 @@ Módulo editorial para descobrir pautas em RSS/Atom, gerar rascunhos originais, 
 
 ## Configuração
 - `SALE_IA_ADMIN_KEY`: chave administrativa já usada pelo Sale-IA v2.
-- `BLOG_FACTORY_RSS_FEEDS`: URLs de feeds separados por vírgula (opcional).
+- `BLOG_FACTORY_FEEDS`: URLs de feeds separados por vírgula (opcional).
 - `BLOG_FACTORY_AUTORUN_ENABLED=true`: inicia pesquisa periódica ao iniciar o servidor.
-- `BLOG_FACTORY_INTERVAL_MS=1800000`: intervalo padrão de 30 minutos; mínimo de 5 minutos.
+- `BLOG_FACTORY_INTERVAL_MS=21600000`: intervalo padrão de 6 horas; mínimo de 1 minuto e máximo de 7 dias. O scheduler só inicia quando `BLOG_FACTORY_AUTORUN_ENABLED=true`.
 - `BLOG_FACTORY_AI_ENABLED=true`: ativa geração de rascunhos durante o ciclo.
 - `BLOG_FACTORY_AI_API_KEY` ou `OPENAI_API_KEY`: chave do provedor; não versionar.
 - `BLOG_FACTORY_AI_BASE_URL`: endpoint base compatível com OpenAI, opcional.
