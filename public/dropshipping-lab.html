@@ -106,6 +106,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
   "prohibitedOrRestricted": false,
   "brandOrAuthenticityConcern": false
 }</textarea><div class="buttonrow"><button id="evaluateProductButton">Reavaliar produto</button></div><pre id="productEvaluationOutput">O veredito e os bloqueios aparecerão aqui.</pre></section>
+<section class="panel wide"><h2>Tendências oficiais do Mercado Livre</h2><p>Coleta autenticada via OAuth, registra snapshots semanais e separa as posições em crescimento rápido, mais desejadas e populares. Não representa garantia de vendas.</p><label for="trendCategoryId">ID de categoria MLB (opcional)</label><input id="trendCategoryId" placeholder="ex.: MLB1430; vazio = tendências gerais"><div class="buttonrow"><button id="collectTrendsButton">Coletar tendências agora</button><button id="trendHistoryButton" class="secondary">Ver histórico de tendências</button><button id="trendChangesButton" class="secondary">Comparar variação</button></div><pre id="trendOutput">Conecte a conta Mercado Livre por OAuth e use a chave administrativa para consultar tendências.</pre><div class="notice">A API oficial pode retornar 401/403 quando a conta/token não tiver autorização para tendências. Nenhum resultado é inventado se a fonte estiver indisponível.</div></section>
 <section class="panel wide"><h2>Agendar pesquisa automática</h2><p>Crie uma palavra-chave para o Sale-IA pesquisar periodicamente e registrar snapshots/alertas. O servidor também precisa estar com <code>DROPSHIPPING_AUTORESEARCH_ENABLED=true</code>.</p><label for="watchQuery">Produto ou palavra-chave</label><input id="watchQuery" minlength="2" maxlength="120" placeholder="ex.: organizador de cabos"><label for="watchInterval">Intervalo em minutos (15–1440)</label><input id="watchInterval" type="number" min="15" max="1440" value="60"><div class="buttonrow"><button id="saveWatchButton">Salvar consulta agendada</button><button id="bootstrapWatchButton" class="secondary">Criar lista inicial de 8 pesquisas</button></div><divider /><h3>Alterar consulta existente</h3><label for="watchId">ID da consulta agendada</label><input id="watchId" placeholder="UUID da consulta"><label><input id="watchEnabled" type="checkbox" checked> Consulta habilitada</label><label for="watchEditInterval">Novo intervalo em minutos (opcional)</label><input id="watchEditInterval" type="number" min="15" max="1440" placeholder="deixe vazio para manter"><div class="buttonrow"><button id="updateWatchButton" class="secondary">Atualizar consulta</button></div><pre id="watchOutput">As consultas agendadas e seu último status aparecerão aqui.</pre></section>
 <section class="panel wide"><h2>Vincular oferta real de fornecedor</h2><p>Exige fornecedor já VALIDATED. Use preço e estoque observados no catálogo do fornecedor e adicione evidência verificável. O sistema calcula o custo posto e a margem do anúncio.</p><label for="offerProductId">ID do candidato Mercado Livre</label><input id="offerProductId" placeholder="UUID do produto salvo"><label for="offerJson">Oferta e custos (JSON)</label><textarea id="offerJson" rows="17">{
   "supplierCandidateId": "",
@@ -226,6 +227,23 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#09101e;border:1px so
  $('runsButton').addEventListener('click',()=>run('runsButton','historyOutput',()=>call('/dropshipping/research/runs?limit=50')));
  $('snapshotsButton').addEventListener('click',()=>run('snapshotsButton','historyOutput',()=>call('/dropshipping/research/snapshots?limit=100')));
  $('suppliersButton').addEventListener('click',()=>run('suppliersButton','historyOutput',()=>call('/dropshipping/suppliers/candidates?limit=100')));
+ $('collectTrendsButton').addEventListener('click',()=>run('collectTrendsButton','trendOutput',()=>{
+   const categoryId=$('trendCategoryId').value.trim();
+   if(categoryId && !/^MLB[0-9]{1,12}$/.test(categoryId)) throw new Error('Use um ID de categoria MLB válido, por exemplo MLB1430.');
+   return call('/dropshipping/trends/collect','POST',categoryId?{categoryId}:{});
+ }));
+ $('trendChangesButton').addEventListener('click',()=>run('trendChangesButton','trendOutput',()=>{
+   const categoryId=$('trendCategoryId').value.trim();
+   if(categoryId && !/^MLB[0-9]{1,12}$/.test(categoryId)) throw new Error('Use um ID de categoria MLB válido, por exemplo MLB1430.');
+   const query=categoryId?'?categoryId='+encodeURIComponent(categoryId):'';
+   return call('/dropshipping/trends/changes'+query);
+ }));
+ $('trendHistoryButton').addEventListener('click',()=>run('trendHistoryButton','trendOutput',()=>{
+   const categoryId=$('trendCategoryId').value.trim();
+   if(categoryId && !/^MLB[0-9]{1,12}$/.test(categoryId)) throw new Error('Use um ID de categoria MLB válido, por exemplo MLB1430.');
+   const query=categoryId?'?categoryId='+encodeURIComponent(categoryId)+'&limit=30':'?limit=30';
+   return call('/dropshipping/trends/history'+query);
+ }));
  $('researchForm').addEventListener('submit',event=>{
    event.preventDefault();
    const query=$('researchQuery').value.trim();

@@ -40,6 +40,7 @@ import {
   createDropshippingSupplierOffer,
   listDropshippingSupplierOffers,
 } from '../controllers/dropshippingController';
+import { collectDropshippingTrends, getDropshippingTrendChanges, getDropshippingTrendsHistory } from '../controllers/dropshippingTrendsController';
 import { mercadoLivreAdminGuard } from '../middleware/adminGuard';
 
 const router = Router();
@@ -66,6 +67,9 @@ router.get('/dropshipping/rules', getDropshippingRules);
 router.get('/dropshipping/providers/status', getDropshippingProviderReadiness);
 router.get('/dropshipping/dashboard/summary', getDropshippingDashboardSummary);
 router.get('/dropshipping/research/marketplace', searchDropshippingMarketplace);
+router.post('/dropshipping/trends/collect', collectDropshippingTrends);
+router.get('/dropshipping/trends/history', getDropshippingTrendsHistory);
+router.get('/dropshipping/trends/changes', getDropshippingTrendChanges);
 router.get('/dropshipping/research/runs', listDropshippingResearchRuns);
 router.get('/dropshipping/research/watches', listDropshippingResearchWatches);
 router.get('/dropshipping/research/scheduler-status', getDropshippingResearchSchedulerStatus);
