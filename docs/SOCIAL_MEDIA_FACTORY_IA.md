@@ -82,3 +82,15 @@ Instagram, Facebook, TikTok, YouTube, Google Business Profile e Pinterest. Cada 
 ## Frequência
 
 A configuração desejada é de até 5 posts por dia por rede e por projeto (até 30 por dia por projeto). A API aceita lotes de até 30 rascunhos por chamada; o padrão do painel é 30, orientado a cinco conteúdos por rede. A distribuição gerada pela IA deve ser revisada antes do agendamento e precisa respeitar limites, formatos e políticas de cada rede. A publicação automática só deve ser habilitada após validar as integrações e limites aplicáveis.
+
+
+## Integração na linha principal — 04/11/2026
+
+O módulo foi portado seletivamente para uma branch baseada na `main` atual. Foram preservados os módulos atuais de Dropshipping, Blog Factory e RB Factory. O painel central apresenta o acesso como `RB-Factory-Social-Media`.
+
+Correções adicionais da portabilidade:
+- `SOCIAL_MEDIA_DRY_RUN=true` grava estado `DRY_RUN`, sem contabilizar publicação real.
+- A API compara a chave administrativa em tempo constante.
+- O renderer de vídeo usa caminhos da raiz do projeto, exige `PUBLIC_BASE_URL` HTTPS e persiste a URL pública em JSON.
+- O renderer não substitui o estado editorial do post por `READY`, mantendo o fluxo de publicação.
+- O scheduler continua opt-in e desativado por padrão.
