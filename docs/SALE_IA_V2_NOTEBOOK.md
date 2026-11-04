@@ -675,5 +675,25 @@ Depois de confirmar os dois workflows pós-merge, continuar a auditoria dos mód
 - [x] Testes cobrem detecção de posts abandonados, concorrência/alteração de estado e limites seguros de parâmetros.
 - [x] CI principal para o HEAD da PR #85: run `41930851921` concluído com sucesso, incluindo Prisma, typecheck, build, testes e Guardian.
 - [x] Affiliate CI para o HEAD da PR #85: run `41930839988` concluído com sucesso; segunda execução duplicada `41930851806` também concluiu com sucesso.
-- [ ] Confirmar os workflows pós-merge da main e prosseguir com auditoria de rotas, autenticação e estados dos módulos restantes.
+- [x] Workflows pós-merge da main para PR #85 concluídos com sucesso (runs `41931106883` e `41931106840`).
+- [ ] Prosseguir com auditoria de rotas, autenticação e estados dos módulos restantes.
+- [ ] Sincronizar a cópia local com a main sem descartar alterações locais.
+
+
+### Controle de automação do Blog Factory — 04/11/2026
+
+- [x] PR #86 integrada por squash na main: commit `56b9a85628c4693d1cdf5f8612d620059f6d3592`.
+- [x] O scheduler só inicia ciclos automáticos quando `BLOG_FACTORY_AUTORUN_ENABLED=true`; variável ausente ou `false` mantém o scheduler parado.
+- [x] Testes cobrem flag ausente, falsa, verdadeira e prevenção de timers duplicados.
+- [x] Documentação alinhada às configurações realmente suportadas: feeds `BLOG_FACTORY_FEEDS`, endpoint OpenAI e intervalo padrão/limites do scheduler.
+- [x] CI principal e Affiliate CI da PR #86 aprovados (runs `41931314595` e `41931314633`).
+- [x] CI pós-merge da main aprovado (runs `41931614495` e `41931614485`).
+
+### Proteção do endpoint legado do Dashboard Central — 04/11/2026
+
+- [x] PR #87 integrada por squash na main: commit `b7fda3bcebc4fb279fe5d08b6ea2aa425cf2a05c`.
+- [x] Rota `GET /dashboard/api/metricas` agora exige `adminAuthorization`; o endpoint não entrega mais métricas comerciais/afiliados sem autenticação.
+- [x] Teste garante HTTP 401 e código `ADMIN_UNAUTHORIZED` sem chave administrativa.
+- [x] CI principal e Affiliate CI da PR #87 aprovados no HEAD corrigido (runs `41931704593` e `41931704632`).
+- [ ] CI pós-merge da main em execução: principal run `41932902804`; Affiliate CI run `41932902858`.
 - [ ] Sincronizar a cópia local com a main sem descartar alterações locais.
