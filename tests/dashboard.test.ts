@@ -74,7 +74,11 @@ describe("Dashboard Routes", () => {
     jest.clearAllMocks();
   });
 
-  it("protege métricas legadas de afiliados contra acesso sem autenticação", async () => {\n    const res = await request(app).get("/legacy-dashboard/api/metricas");\n    expect(res.status).toBe(401);\n    expect(res.body.error).toBe("ADMIN_UNAUTHORIZED");\n  });\n\n  it("bloqueia acesso administrativo sem chave", async () => {
+  it("protege métricas legadas de afiliados contra acesso sem autenticação", async () => {
+    const res = await request(app).get("/legacy-dashboard/api/metricas");
+    expect(res.status).toBe(401);
+    expect(res.body.error).toBe("ADMIN_UNAUTHORIZED");
+  });\n\n  it("bloqueia acesso administrativo sem chave", async () => {
     const res = await request(app).get("/dashboard/overview");
     expect(res.status).toBe(401);
     expect(res.body.error).toBe("ADMIN_UNAUTHORIZED");
