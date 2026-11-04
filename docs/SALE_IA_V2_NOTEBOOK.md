@@ -607,3 +607,21 @@ A branch `feat/blog-factory-ia` foi atualizada para remover a dependência impl�
 4. Reavaliar a PR #74 por diferenças funcionais restantes; não mesclar código já incorporado.
 
 **Regra preservada:** não executar `prisma migrate reset`, `git reset --hard` ou `git clean`; não sobrescrever módulos que já estão funcionando; não marcar validação como concluída sem resultado observável.
+
+
+---
+
+## Atualização de execução — 04/11/2026 (continuidade)
+
+- [x] PR #80 integrada à `main` em `57305374e51cef75a9d6a1df42e2cabbc87aad8e`; validação pós-merge da `main` concluída com sucesso nos workflows `41923995949` e `41923995793`.
+- [x] Notebook atualizado após as integrações anteriores; commit documental `7e3b4d1c379a1c93409ce1f947499110b035d700` validado pelos workflows `41924068950` e `41924068984`, ambos `success`.
+- [x] PR #74 encerrada como obsoleta em 04/11. O controller antigo ainda permitia fallback de autenticação por `AFFILIATE_ADMIN_KEY`; a `main` atual removeu esse fallback. Serviço, scheduler, publisher e testes atuais já estão integrados. A branch antiga foi preservada.
+- [ ] PR #70 permanece aberta enquanto a portabilidade seletiva Social Media é validada; não mesclar seu diff antigo que mistura Dropshipping e schema obsoleto.
+- [x] Criada branch `feat/social-media-factory-main-20261104` a partir da `main` atual e PR #81 aberta: https://github.com/RuiBarbosasilva/sale-ia-v2/pull/81.
+- [x] Portados para a PR #81 apenas os seis modelos Social, quatro migrations, sete componentes do módulo, painel, callback OAuth, scheduler opt-in, configuração, documentação e dependências opcionais de vídeo.
+- [x] Dashboard Central atualizado com o card `RB-Factory-Social-Media`.
+- [x] Correções da portabilidade: modo DRY_RUN não contabiliza publicação real; chave administrativa comparada em tempo constante; renderer Python usa caminho da raiz, valida postId/roteiro e exige URL pública HTTPS; vídeo grava mediaUrls como array JSON e preserva o status do post.
+- [x] Testes adicionados para rota do painel e bloqueio da API sem chave/ com chave incorreta.
+- [ ] Validação CI da PR #81: no head `8b65cccbe41b700d433a01b65766dab3cb9c1ca3`, instalação, encoding, Prisma validate/generate/migrate deploy e typecheck já passaram; build, testes e Guardian ainda estavam em execução na última consulta. Não mesclar antes de todos concluírem com sucesso.
+- [ ] Após validação e merge da #81, encerrar a PR #70 como substituída e sincronizar notebook/branch local.
+- **Limite de produção:** a publicação real nas redes continua dependente de credenciais OAuth, permissões aprovadas, callback HTTPS, tokens e contas autorizadas. O scheduler permanece opt-in/desativado por padrão; nenhuma credencial real foi adicionada.
