@@ -654,3 +654,13 @@ Depois de confirmar os dois workflows pós-merge, continuar a auditoria dos mód
 - [ ] PR #84 em validação: a consulta da fila diária omitia `WebsiteProspect.contactedAt`, `nextFollowUpAt` e `status`, confundindo status do pipeline com status do prospect. Também agendar follow-up alterava `lastContactAt` sem contato real. Correção e testes entregues; aguardar ambos os workflows.
 - [ ] Continuar revisão de integridade dos estados de proposta e pipeline, sem marcar como enviado/publicado/contatado sem confirmação real.
 - [ ] Verificar integração de entrega real WhatsApp/e-mail: a geração de mensagens existe, mas não foi comprovado envio externo ativo. Manter ação manual até existir provedor autenticado e confirmação.
+
+
+### Conclusão da auditoria da fila comercial — 04/11/2026
+
+- [x] PR #84 integrada por squash na main: commit `40f99a5f7e0490c037a54c76130648e8b6f58633`.
+- [x] CI principal da PR #84 (run `41926317690`) concluído integralmente com sucesso: instalação, encoding, Prisma validate/generate/migrate deploy, typecheck, build, testes e Guardian.
+- [x] Affiliate CI da PR #84 (run `41926318399`) concluído com sucesso.
+- [x] Fila diária agora consulta e classifica o status correto do prospect, inclui follow-ups vencidos e propostas aguardando, e não registra contato fictício ao apenas agendar retorno.
+- [ ] Confirmar os workflows pós-merge da main e continuar auditoria de integridade dos módulos e rotas.
+- [ ] Sincronizar a cópia local com a main sem descartar alterações locais.
