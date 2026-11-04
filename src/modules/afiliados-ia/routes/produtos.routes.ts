@@ -1,7 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../../../modules/mercadoLivre/lib/prisma';
+import { adminAuthorization } from '../../../middlewares/security';
 
 const router = Router();
+router.use(adminAuthorization);
 const text = (value: unknown, max = 255): string => {
   if (typeof value !== 'string') return '';
   return value.trim().slice(0, max);
