@@ -311,3 +311,4 @@ export const updateDraft = (id: string, input: { title?: string; excerpt?: strin
   blogFactoryService.updateDraft(id, input);
 export const approveArticle = (id: string) => blogFactoryService.approveArticle(id);
 export const publishArticle = (id: string) => blogFactoryService.publishArticle(id);
+export const runAutomationCycle = () => blogFactoryService.runAutomationCycle();
