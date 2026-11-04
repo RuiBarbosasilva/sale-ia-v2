@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RB-Factory Central</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+    body { background: #1a1a2e; color: white; padding: 40px 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1 { text-align: center; font-size: 2.5rem; margin-bottom: 10px; color: #00d4ff; }
+    .subtitle { text-align: center; color: #888; margin-bottom: 50px; font-size: 1.1rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+    .module-btn { 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      border-radius: 15px;
+      padding: 30px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-decoration: none;
+      color: white;
+      display: block;
+    }
+    .module-btn:hover { 
+      transform: translateY(-5px); 
+      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+    }
+    .module-btn .icon { font-size: 3rem; margin-bottom: 15px; }
+    .module-btn h3 { font-size: 1.3rem; margin-bottom: 10px; }
+    .module-btn p { font-size: 0.9rem; opacity: 0.9; }
+    .btn-sites { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .btn-ebook { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .btn-blogs { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .btn-money { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+    .btn-aivio { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+    .btn-tubefy { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333; }
+    .btn-hunter { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); color: #333; }
+    .btn-ml { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); color: #333; }
+    .btn-prospect { background: linear-gradient(135deg, #ff6e7f 0%, #bfe9ff 100%); color: #333; }
+    .btn-manual { background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); color: #333; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>RB-FACTORY CENTRAL</h1>
+    <p class="subtitle">Selecione um modulo para acessar</p>
+
+    <div class="grid">
+      <a href="/dashboard/" class="module-btn btn-sites">
+        <div class="icon">🌐</div>
+        <h3>RB-Factory-Sites</h3>
+        <p>Construcao de sites com IA</p>
+      </a>
+
+      <a href="/factory-ebook-dashboard" class="module-btn btn-ebook">
+        <div class="icon">📚</div>
+        <h3>RB-Factory-Ebook</h3>
+        <p>Maquina de ebooks</p>
+      </a>
+
+      <a href="/blog-factory" class="module-btn btn-blogs">
+        <div class="icon"></div>
+        <h3>RB-Factory-Blogs</h3>
+        <p>Publicacao WordPress</p>
+      </a>
+
+      <a href="/moneyprinter-dashboard" class="module-btn btn-money">
+        <div class="icon">🎬</div>
+        <h3>RB-Factory-MoneyPrinter</h3>
+        <p>Videos 4K automaticos</p>
+      </a>
+
+      <a href="/aivio-dashboard" class="module-btn btn-aivio">
+        <div class="icon">🤖</div>
+        <h3>RB-Factory-Aivio</h3>
+        <p>Agente de vendas</p>
+      </a>
+
+      <a href="/tubefy-dashboard" class="module-btn btn-tubefy">
+        <div class="icon">🚀</div>
+        <h3>RB-Factory-Tubefy</h3>
+        <p>YouTube/TikTok</p>
+      </a>
+
+      <a href="/affiliates/intelligence" class="module-btn btn-hunter">
+        <div class="icon">🎯</div>
+        <h3>RB-Factory-Hunter</h3>
+        <p>Afiliados</p>
+      </a>
+
+      <a href="/api/mercado-livre/docs" class="module-btn btn-ml">
+        <div class="icon">🛒</div>
+        <h3>RB-Factory-MercadoLivre</h3>
+        <p>Dropshipping</p>
+      </a>
+
+      <a href="/api/prospecting/docs" class="module-btn btn-prospect">
+        <div class="icon">🔍</div>
+        <h3>RB-Factory-Prospecting</h3>
+        <p>Prospeccao</p>
+      </a>
+
+      <a href="/manual" class="module-btn btn-manual">
+        <div class="icon">📘</div>
+        <h3>Manual Completo</h3>
+        <p>Documentacao</p>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

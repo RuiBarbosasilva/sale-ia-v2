@@ -34,12 +34,14 @@ import rbFactorySalesAgentRoutes from './routes/rbFactorySalesAgentRoutes';
 import rbFactorySalesAutonomyRoutes from './routes/rbFactorySalesAutonomyRoutes';
 import rbFactorySiteMaintenanceRoutes from './routes/rbFactorySiteMaintenanceRoutes';
 import rbFactoryCommercialRoutes from './routes/rbFactoryCommercialRoutes';
+import authRoutes from './routes/authRoutes';
 import { startRbFactoryMaintenanceJob } from './jobs/rbFactoryMaintenanceJob';
 import { afiliadosIaRoutes } from './modules/afiliados-ia/afiliados-ia.routes';
 import { factoryEbookRoutes } from './modules/factory-ebook/factory-ebook.routes';
 import produtosRoutes from './modules/afiliados-ia/routes/produtos.routes';
 import { handleAffiliateWebhook } from './modules/afiliados-ia/controllers/webhook.controller';
 import contentGeneratorRoutes from './modules/afiliados-ia/routes/contentGenerator.routes';
+import blogFactoryRoutes from './modules/blogFactory/blogFactory.routes';
 
 const app = express();
 
@@ -63,7 +65,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Força UTF-8 nas páginas HTML para evitar mojibake em ambientes Windows/proxies.
+// ForÃƒÆ’Ã‚Â§a UTF-8 nas pÃƒÆ’Ã‚Â¡ginas HTML para evitar mojibake em ambientes Windows/proxies.
 app.use((req, res, next) => {
   const htmlRoutes = ['/affiliates', '/affiliates/admin', '/affiliates/intelligence', '/editorial', '/sales', '/dashboard', '/dashboard/', '/rb-factory', '/rb-factory-benchmark', '/rb-factory-maintenance', '/rb-factory-commercial', '/mercadolivre', '/mercadolivre/dropshipping'];
   if (htmlRoutes.includes(req.path) || req.path.endsWith('.html')) {
@@ -73,6 +75,9 @@ app.use((req, res, next) => {
 });
 
 app.use(express.static('public', { index: false }));
+app.get('/login', (_req, res) => res.sendFile('login.html', { root: 'public' }));
+app.get('/manual', (_req: any, res: any) => res.sendFile('manual.html', { root: 'public' }));
+
 app.get('/', (_req, res) => res.redirect(302, '/rb-factory'));
 app.get('/rb-factory', (_req, res) => { res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate'); res.setHeader('Pragma', 'no-cache'); res.setHeader('Expires', '0'); return res.sendFile('site-factory.html', { root: 'public' }); });
 app.get('/affiliates', (_req, res) => res.sendFile('affiliates/index.html', { root: 'public' }));
@@ -88,6 +93,7 @@ app.get(['/mercadolivre', '/mercadolivre/dropshipping'], (_req, res) => res.send
 app.use('/generated-images', express.static('storage/generated-images'));
 
 app.use('/api', apiRoutes);
+app.use('/api', authRoutes);
 app.use('/api/websites/prospecting', prospectingRoutes);
 app.use('/api/websites', websiteRoutes);
 app.use('/api/affiliates', affiliateRoutes);
@@ -118,25 +124,26 @@ app.use('/dashboard', dashboardRoutes);
 startRbFactoryMaintenanceJob();
 
 // ==========================================
-// ROTAS DO MÓDULO AFILIADOS IA E OUTROS
+// ROTAS DO MÃƒÆ’Ã¢â‚¬Å“DULO AFILIADOS IA E OUTROS
 // (DEVEM VIR ANTES DO errorHandler)
 // ==========================================
 app.post('/api/affiliates/webhook/:provider', handleAffiliateWebhook);
 app.use('/api/factory-ebook', factoryEbookRoutes);
 app.use('/api/afiliados', afiliadosIaRoutes);
-app.use('/api/afiliados/produtos', produtosRoutes); // <-- CORREÇÃO: Rota agora conectada!
+app.use('/api/afiliados/produtos', produtosRoutes); // <-- CORREÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã†â€™O: Rota agora conectada!
 app.use('/api/publishers', publisherRoutes);
 app.use('/api/ml-seller', mlSellerRoutes);
 app.use('/api/content-factory', contentFactoryRoutes);
 
 // ==========================================
-// ROTAS DE CONTEÚDO DE AFILIADOS
+// ROTAS DE CONTEÃƒÆ’Ã…Â¡DO DE AFILIADOS
 // (DEVEM VIR ANTES DO errorHandler)
 // ==========================================
 app.use('/api/afiliados/conteudo', contentGeneratorRoutes);
+app.use('/api/blog-factory', blogFactoryRoutes);
 
 // ==========================================
-// MIDDLEWARE DE ERRO (DEVE SER O ÚLTIMO)
+// MIDDLEWARE DE ERRO (DEVE SER O ÃƒÆ’Ã…Â¡LTIMO)
 // ==========================================
 app.use(errorHandler);
 

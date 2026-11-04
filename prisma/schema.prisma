@@ -1756,3 +1756,50 @@ model DropshippingResearchWatch {
   @@index([enabled, nextRunAt])
   @@index([lastStatus, updatedAt])
 }
+
+
+// BLOG FACTORY IA — pautas descobertas e artigos editoriais
+model BlogFactoryTopic {
+  id               String   @id @default(uuid())
+  title            String
+  sourceUrl        String   @unique
+  sourceName       String
+  summary          String   @default("")
+  trendScore       Int      @default(0)
+  sourcePublishedAt DateTime?
+  status           String   @default("DISCOVERED")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  articles BlogFactoryArticle[]
+
+  @@index([status, createdAt])
+}
+
+model BlogFactoryArticle {
+  id          String   @id @default(uuid())
+  topicId     String
+  topic       BlogFactoryTopic @relation(fields: [topicId], references: [id])
+  title       String
+  slug        String   @unique
+  excerpt     String   @default("")
+  body        String   @default("")
+  category    String?
+  status      String   @default("DRAFT")
+  sourceUrls  String   @default("[]")
+  qualityNotes String  @default("[]")
+  publishedAt DateTime?
+  wordpressPostId Int?
+  wordpressLink   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status, updatedAt])
+  @@index([topicId])
+}
+
+
+// ============================================================
+// BLOG FACTORY IA - MODELOS DE DADOS
+// ============================================================
+

@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RB-Factory | Manual Completo do Operador</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; line-height: 1.7; }
+    
+    .layout { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+    
+    /* Sidebar */
+    .sidebar { background: #1e293b; border-right: 1px solid #334155; padding: 30px 20px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    .sidebar h2 { color: #3b82f6; font-size: 1.1rem; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #334155; }
+    .sidebar nav a { display: block; color: #94a3b8; text-decoration: none; padding: 8px 12px; margin-bottom: 4px; border-radius: 6px; font-size: 0.9rem; transition: all 0.2s; }
+    .sidebar nav a:hover { background: #334155; color: #f8fafc; }
+    .sidebar nav a.active { background: #3b82f6; color: white; }
+    
+    /* Content */
+    .content { padding: 50px 60px; max-width: 1000px; }
+    .content h1 { font-size: 2.5rem; margin-bottom: 10px; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .content h2 { font-size: 1.8rem; margin: 50px 0 20px; color: #f8fafc; padding-bottom: 10px; border-bottom: 2px solid #3b82f6; }
+    .content h3 { font-size: 1.3rem; margin: 30px 0 15px; color: #3b82f6; }
+    .content p { margin-bottom: 15px; color: #cbd5e1; }
+    .content ul, .content ol { margin: 15px 0 15px 30px; color: #cbd5e1; }
+    .content li { margin-bottom: 8px; }
+    .content strong { color: #f8fafc; }
+    .content code { background: #1e293b; padding: 2px 6px; border-radius: 4px; font-family: 'Fira Code', monospace; font-size: 0.9em; color: #f59e0b; }
+    .content pre { background: #1e293b; padding: 20px; border-radius: 8px; overflow-x: auto; margin: 20px 0; border-left: 4px solid #3b82f6; }
+    .content pre code { background: none; color: #e2e8f0; padding: 0; }
+    .content table { width: 100%; border-collapse: collapse; margin: 20px 0; background: #1e293b; border-radius: 8px; overflow: hidden; }
+    .content th { background: #334155; padding: 12px; text-align: left; color: #f8fafc; font-weight: 600; }
+    .content td { padding: 12px; border-top: 1px solid #334155; color: #cbd5e1; }
+    .content hr { border: none; border-top: 1px solid #334155; margin: 40px 0; }
+    .content blockquote { border-left: 4px solid #3b82f6; padding: 10px 20px; margin: 20px 0; background: #1e293b; border-radius: 0 8px 8px 0; }
+    
+    .back-btn { display: inline-block; margin-bottom: 30px; color: #3b82f6; text-decoration: none; font-weight: 600; }
+    .back-btn:hover { color: #60a5fa; }
+    
+    @media (max-width: 768px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: relative; height: auto; }
+      .content { padding: 30px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>📘 Navegação</h2>
+      <nav>
+        <a href="#visao-geral">1. Visão Geral</a>
+        <a href="#instalacao">2. Instalação</a>
+        <a href="#autenticacao">3. Autenticação</a>
+        <a href="#dashboard">4. Dashboard Central</a>
+        <a href="#sites">5. RB-Factory-Sites</a>
+        <a href="#ebook">6. RB-Factory-Ebook</a>
+        <a href="#blogs">7. RB-Factory-Blogs</a>
+        <a href="#moneyprinter">8. RB-Factory-MoneyPrinter</a>
+        <a href="#aivio">9. RB-Factory-Aivio</a>
+        <a href="#tubefy">10. RB-Factory-Tubefy</a>
+        <a href="#hunter">11. RB-Factory-Hunter</a>
+        <a href="#mercadolivre">12. RB-Factory-MercadoLivre</a>
+        <a href="#prospecting">13. RB-Factory-Prospecting</a>
+        <a href="#orquestrador">14. Orquestrador IA</a>
+        <a href="#env">15. Variáveis .env</a>
+        <a href="#troubleshooting">16. Troubleshooting</a>
+        <a href="#fluxo">17. Fluxo de Trabalho</a>
+      </nav>
+    </aside>
+    
+    <main class="content">
+      <a href="/" class="back-btn">← Voltar ao Dashboard Central</a>
+      
+      <h1>MANUAL COMPLETO DO OPERADOR</h1>
+      <p style="color: #94a3b8; font-size: 1.1rem;">RB-Factory (Sale-IA v2) — Ecossistema de Automação, Conteúdo e Inteligência Artificial</p>
+      <p style="color: #64748b; font-size: 0.9rem;">Versão 1.0 | 22 de outubro de 2026</p>
+      
+      <hr>
+      
+      <h2 id="visao-geral">1. Visão Geral do Sistema</h2>
+      <p>O <strong>RB-Factory</strong> (antigo Sale-IA v2) é uma plataforma enterprise de automação inteligente que integra 9 módulos especializados para cobrir todo o ciclo de um negócio digital:</p>
+      <ul>
+        <li><strong>RB-Factory-Sites</strong> — Construção e gestão de sites com IA</li>
+        <li><strong>RB-Factory-Ebook</strong> — Máquina de vendas de produtos digitais</li>
+        <li><strong>RB-Factory-Blogs</strong> — Fábrica de conteúdo editorial com piloto automático</li>
+        <li><strong>RB-Factory-MoneyPrinter</strong> — Geração de vídeos virais 4K</li>
+        <li><strong>RB-Factory-Aivio</strong> — Agente autônomo de vendas (WhatsApp/Instagram)</li>
+        <li><strong>RB-Factory-Tubefy</strong> — Motor de crescimento de canais (YouTube/TikTok)</li>
+        <li><strong>RB-Factory-Hunter</strong> — Caçador de produtos de afiliados</li>
+        <li><strong>RB-Factory-MercadoLivre</strong> — Inteligência de dropshipping</li>
+        <li><strong>RB-Factory-Prospecting</strong> — Prospecção de sites e clientes</li>
+      </ul>
+      
+      <h3>Arquitetura Técnica</h3>
+      <ul>
+        <li><strong>Backend:</strong> Node.js + TypeScript + Express</li>
+        <li><strong>Banco de Dados:</strong> PostgreSQL/SQLite via Prisma ORM</li>
+        <li><strong>IA:</strong> OpenAI GPT-4o-mini, Gemini, ElevenLabs, Grok (xAI)</li>
+        <li><strong>Renderização:</strong> Python (FFmpeg) para vídeos</li>
+        <li><strong>Frontend:</strong> Dashboards HTML estáticos servidos pelo Express</li>
+      </ul>
+      
+      <h2 id="instalacao">2. Instalação e Configuração Inicial</h2>
+      <h3>Pré-requisitos</h3>
+      <ul>
+        <li>Node.js v18+ (recomendado v22)</li>
+        <li>Python 3.10+ (para MoneyPrinter)</li>
+        <li>FFmpeg instalado no sistema</li>
+        <li>Git</li>
+      </ul>
+      
+      <h3>Passo a Passo</h3>
+      <pre><code># 1. Clone o repositório
+git clone https://github.com/RuiBarbosasilva/sale-ia-v2.git
+cd sale-ia-v2
+
+# 2. Instale as dependências
+npm install
+
+# 3. Configure o banco de dados
+npx prisma generate
+npx prisma db push
+
+# 4. Configure as variáveis de ambiente
+cp .env.example .env
+# Edite o .env com suas chaves de API
+
+# 5. Inicie o servidor
+npm run dev</code></pre>
+      
+      <h3>Atalho de Início Rápido (Windows)</h3>
+      <p>Crie um arquivo <code>Iniciar-RB-Factory.bat</code> na Área de Trabalho:</p>
+      <pre><code>@echo off
+title RB-Factory - Central Command
+echo Iniciando o ecossistema RB-Factory...
+cd C:\sale-ia-v2
+start "" npm run dev
+timeout /t 5 /nobreak >nul
+start http://localhost:3000/login
+exit</code></pre>
+      
+      <h2 id="autenticacao">3. Autenticação e Segurança</h2>
+      <h3>Como acessar o sistema</h3>
+      <ol>
+        <li>Inicie o servidor: <code>npm run dev</code></li>
+        <li>Abra o navegador em: <code>http://localhost:3000/login</code></li>
+        <li>Insira a chave de acesso (padrão: <code>sale-ia-2026-admin-key-secure</code>)</li>
+        <li>Você será redirecionado ao Dashboard Central</li>
+      </ol>
+      
+      <h3>Alterar a chave de acesso</h3>
+      <p>Edite o arquivo <code>.env</code>:</p>
+      <pre><code>ADMIN_KEY=sua-nova-chave-secreta-aqui</code></pre>
+      <p>Reinicie o servidor para aplicar.</p>
+      
+      <h2 id="dashboard">4. Dashboard Central</h2>
+      <p><strong>URL:</strong> <code>http://localhost:3000/</code> (após login)</p>
+      <p>O Dashboard Central é o <strong>ponto único de controle</strong> do sistema. Ele apresenta 9 módulos organizados em cards com ícone visual, status operacional, descrição resumida e botão de acesso direto.</p>
+      
+      <h3>Módulos disponíveis</h3>
+      <table>
+        <tr><th>Módulo</th><th>Status</th><th>URL Direta</th></tr>
+        <tr><td>RB-Factory-Sites</td><td>✅ Produção</td><td><code>/dashboard/</code></td></tr>
+        <tr><td>RB-Factory-Ebook</td><td>✅ Produção</td><td><code>/factory-ebook-dashboard</code></td></tr>
+        <tr><td>RB-Factory-Blogs</td><td>🟡 Validação</td><td><code>/blog-factory</code></td></tr>
+        <tr><td>RB-Factory-MoneyPrinter</td><td>✅ Produção</td><td><code>/moneyprinter-dashboard</code></td></tr>
+        <tr><td>RB-Factory-Aivio</td><td>✅ Produção</td><td><code>/aivio-dashboard</code></td></tr>
+        <tr><td>RB-Factory-Tubefy</td><td>✅ Produção</td><td><code>/tubefy-dashboard</code></td></tr>
+        <tr><td>RB-Factory-Hunter</td><td>🟡 Validação</td><td><code>/affiliates/intelligence</code></td></tr>
+        <tr><td>RB-Factory-MercadoLivre</td><td>✅ Produção</td><td><code>/api/mercado-livre/docs</code></td></tr>
+        <tr><td>RB-Factory-Prospecting</td><td>✅ Produção</td><td><code>/api/prospecting/docs</code></td></tr>
+      </table>
+      
+      <h2 id="sites">5. RB-Factory-Sites</h2>
+      <p><strong>Propósito:</strong> Construção e gestão de sites com IA, templates e automação completa.</p>
+      <h3>Funcionalidades principais</h3>
+      <ul>
+        <li>Geração de páginas com IA</li>
+        <li>Templates responsivos</li>
+        <li>Integração com provedores de imagem (Pexels, Unsplash, OpenAI)</li>
+        <li>Sistema de branding e identidade visual</li>
+      </ul>
+      <h3>Como usar</h3>
+      <ol>
+        <li>Acesse <code>/dashboard/</code></li>
+        <li>Selecione o tipo de site/projeto</li>
+        <li>Configure nicho e público-alvo</li>
+        <li>O sistema gera a estrutura completa</li>
+        <li>Revise e publique</li>
+      </ol>
+      
+      <h2 id="ebook">6. RB-Factory-Ebook</h2>
+      <p><strong>Propósito:</strong> Máquina de vendas completa para produtos digitais (ebooks).</p>
+      <h3>O que o módulo gera</h3>
+      <ol>
+        <li><strong>Conteúdo do Ebook</strong> — Capítulos estruturados por nicho</li>
+        <li><strong>Mockups 3D</strong> — Capas profissionais do livro</li>
+        <li><strong>Página de Vendas</strong> — HTML persuasivo com fórmula AIDA</li>
+        <li><strong>8 Campanhas de Marketing</strong> — Roteiros para Reels, TikTok, E-mail, Meta Ads, Google Ads, Stories, Lead Magnet</li>
+      </ol>
+      <h3>Como usar</h3>
+      <ol>
+        <li>Acesse <code>/factory-ebook-dashboard</code></li>
+        <li>Escolha um nicho (ou crie personalizado)</li>
+        <li>Clique em "Gerar Máquina de Vendas"</li>
+        <li>Baixe os ativos gerados</li>
+        <li>Suba a página no seu domínio</li>
+        <li>Dispare as campanhas</li>
+      </ol>
+      
+      <h2 id="blogs">7. RB-Factory-Blogs (Piloto Automático)</h2>
+      <p><strong>Propósito:</strong> Fábrica de conteúdo editorial com publicação automática no WordPress.</p>
+      
+      <h3>Fluxo de Piloto Automático</h3>
+      <pre><code>[Feed RSS do Blog Alvo] 
+         ↓
+[Radar de Notícias] → Identifica pauta nova
+         ↓
+[IA com Técnica do Arranha-Céu] → Gera artigo SUPERIOR ao original
+         ↓
+[Instinct] → Injeta gatilhos mentais + CTA
+         ↓
+[Auto-Aprovação] → Se BLOG_AUTO_APPROVE=true
+         ↓
+[WordPress Publisher] → Publica como RASCUNHO
+         ↓
+[Você] → Revisa e clica em "Publicar" no WP</code></pre>
+      
+      <h3>Configuração para modo 100% automático</h3>
+      <p>Edite o <code>.env</code>:</p>
+      <pre><code>WP_BASE_URL=https://seusite.com
+WP_USERNAME=seu_usuario
+WP_APP_PASSWORD=senha_de_aplicativo_wp
+BLOG_AUTO_APPROVE=true
+BLOG_SCHEDULER_INTERVAL_MINUTES=60</code></pre>
+      
+      <h3>Como gerar senhas de aplicativo no WordPress</h3>
+      <ol>
+        <li>Acesse <code>Usuários > Perfil</code> no WordPress</li>
+        <li>Role até "Senhas de Aplicativo"</li>
+        <li>Dê um nome (ex: "RB-Factory")</li>
+        <li>Clique em "Adicionar nova senha de aplicativo"</li>
+        <li>Copie a senha gerada e cole no <code>.env</code></li>
+      </ol>
+      
+      <h2 id="moneyprinter">8. RB-Factory-MoneyPrinter</h2>
+      <p><strong>Propósito:</strong> Geração automática de vídeos virais 4K.</p>
+      
+      <h3>Pipeline completo (4 etapas automáticas)</h3>
+      <pre><code>[Tópico] 
+    ↓
+[1. IA - Roteiro] → Hook + Problema + Solução + CTA
+    ↓
+[2. ElevenLabs - Narração] → Voz profissional
+    ↓
+[3. Pexels API - B-Roll] → 5 vídeos verticais de fundo
+    ↓
+[4. Python + FFmpeg] → Renderização 4K com legendas
+    ↓
+[Vídeo final pronto para TikTok/Shorts/Reels]</code></pre>
+      
+      <h3>Como usar</h3>
+      <ol>
+        <li>Acesse <code>/moneyprinter-dashboard</code></li>
+        <li>Insira o tópico (ex: "5 dicas para investir em 2024")</li>
+        <li>Escolha o formato: <strong>9:16</strong> (TikTok/Reels/Shorts) ou <strong>16:9</strong> (YouTube)</li>
+        <li>Clique em "Gerar Vídeo Viral"</li>
+        <li>Acompanhe o progresso em tempo real: PENDING → SCRIPTING → VOICEOVER → RENDERING → COMPLETED</li>
+      </ol>
+      
+      <h3>Configuração necessária no .env</h3>
+      <pre><code>ELEVENLABS_API_KEY=sua_chave_elevenlabs
+PEXELS_API_KEY=sua_chave_pexels
+OPENAI_API_KEY=sua_chave_openai</code></pre>
+      
+      <h2 id="aivio">9. RB-Factory-Aivio</h2>
+      <p><strong>Propósito:</strong> Agente de vendas autônomo para WhatsApp/Instagram.</p>
+      
+      <h3>Como funciona o Lead Scoring</h3>
+      <table>
+        <tr><th>Palavra-chave detectada</th><th>Pontos</th><th>Gatilho acionado</th></tr>
+        <tr><td>"preço", "valor", "caro"</td><td>+25</td><td>Ancoragem de preço</td></tr>
+        <tr><td>"comprar", "fechar", "pagar"</td><td>+40</td><td>Escassez + garantia</td></tr>
+        <tr><td>"não tenho dinheiro"</td><td>-10</td><td>Prova social</td></tr>
+        <tr><td>"não sei", "tenho medo"</td><td>0</td><td>Suporte + depoimentos</td></tr>
+      </table>
+      
+      <h3>Regras de escalonamento</h3>
+      <ul>
+        <li>Score ≥ 80 → Escala para humano automaticamente</li>
+        <li>5+ trocas de mensagem sem fechamento → Escala para humano</li>
+      </ul>
+      
+      <h3>Como usar</h3>
+      <ol>
+        <li>Acesse <code>/aivio-dashboard</code></li>
+        <li>Use o <strong>Simulador de Chat</strong> para testar</li>
+        <li>Digite como se fosse um cliente (ex: "Oi, qual o preço?")</li>
+        <li>Observe a resposta da IA, o score do lead subindo e a cor mudando (🔵 Frio → 🟡 Morno → 🔴 Quente)</li>
+      </ol>
+      
+      <h2 id="tubefy">10. RB-Factory-Tubefy</h2>
+      <p><strong>Propósito:</strong> Motor de crescimento de canais (YouTube, TikTok, Instagram).</p>
+      
+      <h3>O que gera</h3>
+      <ul>
+        <li>3 opções de <strong>Títulos Virais</strong></li>
+        <li><strong>Descrição</strong> otimizada com palavras-chave</li>
+        <li><strong>Tags</strong> estratégicas</li>
+        <li><strong>SEO Score</strong> (0-100)</li>
+        <li><strong>Potencial Viral</strong> (LOW / MEDIUM / HIGH / VIRAL)</li>
+      </ul>
+      
+      <h3>Algoritmo de SEO Score</h3>
+      <ul>
+        <li>Base: 50 pontos</li>
+        <li>Título entre 40-70 caracteres: +20</li>
+        <li>Descrição com 200+ caracteres: +15</li>
+        <li>5+ tags: +15</li>
+        <li><strong>Máximo: 100 pontos</strong></li>
+      </ul>
+      
+      <h3>Como usar</h3>
+      <ol>
+        <li>Acesse <code>/tubefy-dashboard</code></li>
+        <li>Preencha: ID do Canal, Tópico, Plataforma, Tom</li>
+        <li>Clique em "Gerar Plano Otimizado"</li>
+        <li>Veja o Score de SEO e o Potencial Viral</li>
+        <li>Clique em "Agendar" ou "Publicar"</li>
+      </ol>
+      
+      <h2 id="hunter">11. RB-Factory-Hunter</h2>
+      <p><strong>Propósito:</strong> Caçador de produtos e oportunidades de afiliados.</p>
+      <h3>Funcionalidades</h3>
+      <ul>
+        <li>Varredura de redes de afiliados</li>
+        <li>Análise de score de produtos</li>
+        <li>Importação de ofertas</li>
+        <li>Gestão de campanhas</li>
+      </ul>
+      <h3>Como usar</h3>
+      <ol>
+        <li>Acesse <code>/affiliates/intelligence</code></li>
+        <li>Clique em "Inicializar redes padrão"</li>
+        <li>Use "Executar Hunter" para varrer produtos</li>
+        <li>Importe ofertas e acompanhe métricas</li>
+      </ol>
+      
+      <h2 id="mercadolivre">12. RB-Factory-MercadoLivre</h2>
+      <p><strong>Propósito:</strong> Inteligência de dropshipping e sincronização de pedidos.</p>
+      <h3>Funcionalidades validadas</h3>
+      <ul>
+        <li>✅ 26 testes unitários passando</li>
+        <li>✅ Dropshipping Intelligence (decisão de fornecedores)</li>
+        <li>✅ Dropshipping Research (validação de produtos)</li>
+        <li>✅ Mercado Livre Research Adapter (API oficial)</li>
+        <li>✅ Sincronização de pedidos</li>
+        <li>✅ Webhook idempotente</li>
+        <li>✅ Criptografia de tokens</li>
+      </ul>
+      
+      <h2 id="prospecting">13. RB-Factory-Prospecting</h2>
+      <p><strong>Propósito:</strong> Prospecção de sites e clientes com scoring de oportunidades.</p>
+      <h3>Serviços disponíveis</h3>
+      <ul>
+        <li><code>websiteProspectorService</code> — Busca sites por nicho</li>
+        <li><code>websiteEnrichmentService</code> — Enriquece dados do site</li>
+        <li><code>websiteOpportunityScoringService</code> — Calcula score 0-100</li>
+        <li><code>websiteOutreachService</code> — Dispara abordagens</li>
+        <li><code>googlePlacesProvider</code> — Integração Google Places</li>
+        <li><code>smtpEmailProvider</code> — Envio de e-mails</li>
+      </ul>
+      
+      <h2 id="orquestrador">14. Orquestrador Central de IA</h2>
+      <p><strong>Localização:</strong> <code>src/services/ai/orchestrator.service.ts</code></p>
+      <p>O <strong>AiOrchestrator</strong> é o cérebro que decide qual IA usar para cada tarefa:</p>
+      
+      <h3>🧠 Grok (Tendências em Tempo Real)</h3>
+      <pre><code>aiOrchestrator.getRealTimeTrends('finanças', 'twitter')
+// Retorna temas virais do momento no X/Twitter</code></pre>
+      <p><strong>Usado por:</strong> Tubefy, Blog Factory, Social Media Factory</p>
+      
+      <h3>🧠 Instinct (Psicologia de Vendas)</h3>
+      <pre><code>aiOrchestrator.analyzeSalesIntent('qual o preço?', 30)
+// Retorna: { newScore: 55, psychologicalTrigger: 'OBJEÇÃO DE PREÇO', recommendedAction: 'USE ANCORAGEM' }</code></pre>
+      <p><strong>Usado por:</strong> Aivio, Factory Ebook (copywriting)</p>
+      
+      <h3>🧠 Dot (Automação de Tarefas)</h3>
+      <pre><code>aiOrchestrator.executeAutomationTask('publish_blog', { articleId: '123' })
+// Executa tarefas repetitivas sem alucinação</code></pre>
+      <p><strong>Usado por:</strong> Prospecting, Mercado Livre, Blog Factory</p>
+      
+      <h2 id="env">15. Variáveis de Ambiente (.env)</h2>
+      <h3>Template completo</h3>
+      <pre><code># RB-FACTORY - CONFIGURAÇÕES GERAIS
+NODE_ENV=development
+PORT=3000
+ADMIN_KEY=sale-ia-2026-admin-key-secure
+
+# BANCO DE DADOS
+DATABASE_URL="file:./dev.db"
+
+# IAs PRINCIPAIS
+OPENAI_API_KEY=sk-...
+GEMINI_API_KEY=AIza...
+
+# NARRAÇÃO E MÍDIA
+ELEVENLABS_API_KEY=sk_...
+PEXELS_API_KEY=...
+
+# BLOG FACTORY - WORDPRESS
+WP_BASE_URL=https://seusite.com
+WP_USERNAME=seu_usuario
+WP_APP_PASSWORD=xxxx xxxx xxxx xxxx
+BLOG_AUTO_APPROVE=true
+BLOG_SCHEDULER_INTERVAL_MINUTES=60
+
+# PROSPECTING
+GOOGLE_PLACES_API_KEY=AIza...
+
+# MERCADO LIVRE
+ML_ACCESS_TOKEN=...
+ML_REFRESH_TOKEN=...
+ML_CLIENT_ID=...
+ML_CLIENT_SECRET=...
+
+# ORQUESTRADOR (Grok, Instinct, Dot)
+GROK_API_KEY=
+INSTINCT_API_KEY=
+DOT_API_KEY=</code></pre>
+      
+      <h2 id="troubleshooting">16. Troubleshooting e FAQ</h2>
+      
+      <h3>O sistema não aceita minha chave</h3>
+      <ol>
+        <li>Verifique se a chave no <code>.env</code> está sem aspas: <code>ADMIN_KEY=minha-chave</code></li>
+        <li>Reinicie o servidor após alterar o <code>.env</code></li>
+        <li>Limpe os cookies do navegador em <code>localhost:3000</code></li>
+      </ol>
+      
+      <h3>Erro: Property 'blogArticle' does not exist</h3>
+      <pre><code>npx prisma generate
+npx prisma db push</code></pre>
+      
+      <h3>MoneyPrinter não gera vídeo</h3>
+      <ol>
+        <li>Verifique se o Python está instalado: <code>python --version</code></li>
+        <li>Verifique se o FFmpeg está no PATH: <code>ffmpeg -version</code></li>
+        <li>Confirme que <code>tools/generate_video.py</code> existe</li>
+        <li>Verifique as chaves <code>ELEVENLABS_API_KEY</code> e <code>PEXELS_API_KEY</code></li>
+      </ol>
+      
+      <h3>Blog Factory não publica no WordPress</h3>
+      <ol>
+        <li>Teste a URL do WP no navegador</li>
+        <li>Gere uma nova senha de aplicativo no WordPress</li>
+        <li>Verifique se <code>BLOG_AUTO_APPROVE=true</code> no <code>.env</code></li>
+        <li>Veja os logs do servidor para erros de autenticação WP</li>
+      </ol>
+      
+      <h3>Aivio não responde no WhatsApp</h3>
+      <ol>
+        <li>Teste primeiro no simulador do dashboard</li>
+        <li>Verifique se o webhook do WhatsApp está apontando para <code>/api/aivio/webhook</code></li>
+        <li>Confirme que o body do webhook tem <code>platform</code>, <code>externalId</code> e <code>content</code></li>
+      </ol>
+      
+      <h3>Typecheck falhando</h3>
+      <pre><code>rm -rf node_modules
+npm install
+npx prisma generate
+npm run typecheck</code></pre>
+      
+      <h2 id="fluxo">17. Fluxo de Trabalho Recomendado</h2>
+      
+      <h3>Rotina Diária do Operador RB-Factory</h3>
+      
+      <h3>Manhã (15 min)</h3>
+      <ol>
+        <li>Dê dois cliques no atalho <code>Iniciar-RB-Factory.bat</code></li>
+        <li>Faça login com a chave administrativa</li>
+        <li>Verifique o Dashboard Central — todos os módulos operacionais?</li>
+      </ol>
+      
+      <h3>Durante o dia (automático)</h3>
+      <ul>
+        <li>✅ Blog Factory publica 1 artigo/hora no WordPress</li>
+        <li>✅ MoneyPrinter renderiza vídeos em background</li>
+        <li>✅ Aivio atende leads no WhatsApp 24/7</li>
+        <li>✅ Hunter varre redes de afiliados</li>
+      </ul>
+      
+      <h3>Tarde (30 min)</h3>
+      <ol>
+        <li>Acesse o WordPress e revise os rascunhos do Blog Factory</li>
+        <li>Publique os melhores artigos</li>
+        <li>Verifique o painel do Aivio — há leads quentes para abordar pessoalmente?</li>
+        <li>Confira os vídeos prontos no MoneyPrinter e publique nas redes</li>
+      </ol>
+      
+      <h3>Semanal (1h)</h3>
+      <ol>
+        <li>Use o Tubefy para gerar 5 planos de vídeo para a semana</li>
+        <li>Use o Prospecting para encontrar 10 novos leads B2B</li>
+        <li>Analise as métricas do Hunter — quais produtos estão convertendo?</li>
+        <li>Gere um novo Ebook no Factory Ebook para lançar como isca digital</li>
+      </ol>
+      
+      <hr>
+      
+      <h2>Conclusão</h2>
+      <p>O <strong>RB-Factory</strong> é um ecossistema completo e autônomo. Quando configurado corretamente, ele opera 24/7 gerando:</p>
+      <ul>
+        <li>📝 Conteúdo (Blogs + Ebooks)</li>
+        <li>🎬 Vídeos (MoneyPrinter + Tubefy)</li>
+        <li>💬 Vendas (Aivio + Hunter)</li>
+        <li>🎯 Leads (Prospecting)</li>
+        <li>💰 Receita (Mercado Livre)</li>
+      </ul>
+      <p><strong>Sua única tarefa:</strong> revisar, publicar e escalar.</p>
+      
+      <hr>
+      <p style="color: #64748b; font-size: 0.9rem; text-align: center; margin-top: 40px;">
+        Documento gerado para Mr. Rui — Arquiteto do RB-Factory<br>
+        Construído com excelência de engenharia sênior 🚀👑
+      </p>
+    </main>
+  </div>
+  
+  <script>
+    // Destacar link ativo na sidebar durante scroll
+    const sections = document.querySelectorAll('h2[id]');
+    const navLinks = document.querySelectorAll('.sidebar nav a');
+    
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        if (scrollY >= sectionTop - 100) {
+          current = section.getAttribute('id');
+        }
+      });
+      
+      navLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === '#' + current) {
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

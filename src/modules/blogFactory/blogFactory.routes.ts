@@ -1,0 +1,15 @@
+import { Router } from 'express';
+import * as c from './blogFactory.controller';
+const router = Router();
+router.get('/health', c.health);
+router.get('/status', c.status);
+router.post('/research', c.research);
+router.post('/run-cycle', c.runCycle);
+router.post('/topics/:id/generate', c.generateArticle);
+router.get('/topics', c.topics);
+router.get('/articles', c.articles);
+router.post('/articles/draft', c.createDraft);
+router.patch('/articles/:id', c.updateDraft);
+router.post('/articles/:id/approve', c.approveArticle);
+router.post('/articles/:id/publish', c.publish);
+export default router;

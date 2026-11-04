@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sale-IA v2 | Acesso Administrativo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
+    body { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .login-box { background: #1e293b; padding: 40px; border-radius: 16px; border: 1px solid #334155; width: 100%; max-width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
+    h1 { color: #f8fafc; margin-bottom: 10px; font-size: 1.8rem; }
+    p { color: #94a3b8; margin-bottom: 30px; }
+    input { width: 100%; padding: 14px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: white; font-size: 1rem; margin-bottom: 20px; }
+    button { width: 100%; padding: 14px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: background 0.2s; }
+    button:hover { background: #2563eb; }
+    .error { background: #ef4444; color: white; padding: 10px; border-radius: 6px; margin-bottom: 20px; display: none; }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <h1>🔐 Sale-IA v2</h1>
+    <p>Acesso Administrativo</p>
+    <div id="errorMsg" class="error"></div>
+    <input type="password" id="adminKey" placeholder="Informe a chave de acesso" autofocus>
+    <button onclick="verifyKey()">Acessar Sistema →</button>
+  </div>
+  <script>
+    async function verifyKey() {
+      const input = document.getElementById('adminKey');
+      const errorBox = document.getElementById('errorMsg');
+      const key = input.value;
+      errorBox.style.display = 'none';
+
+      if (!key) {
+        errorBox.textContent = 'Informe a chave de acesso.';
+        errorBox.style.display = 'block';
+        input.focus();
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/verify-key', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ key })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) {
+          input.value = '';
+          window.location.replace('/main-dashboard.html');
+          return;
+        }
+
+        errorBox.textContent = data.error === 'ADMIN_KEY_NOT_CONFIGURED'
+          ? 'A chave administrativa não está configurada no servidor.'
+          : 'Chave incorreta. Tente novamente.';
+        errorBox.style.display = 'block';
+      } catch (_err) {
+        errorBox.textContent = 'Erro de conexão. Verifique se o servidor está rodando.';
+        errorBox.style.display = 'block';
+      }
+    }
+
+    document.getElementById('adminKey').addEventListener('keypress', (event) => {
+      if (event.key === 'Enter') verifyKey();
+    });
+  </script>
+</body>
+</html>
