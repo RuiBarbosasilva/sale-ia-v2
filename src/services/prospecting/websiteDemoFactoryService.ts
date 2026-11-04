@@ -102,6 +102,7 @@ export class WebsiteDemoFactoryService {
         version: result.demo.version,
         qualityScore: result.qualityReview.overallScore,
         qualityRecommendation: result.qualityReview.recommendation,
+        qualityCriticalIssues: result.qualityReview.criticalIssues || [],
       };
     } catch (error: any) {
       await prisma.websiteProspect.update({
@@ -218,7 +219,8 @@ export class WebsiteDemoFactoryService {
       const result = await this.generateDemoForProspect(job.prospectId);
       const qualityApproved =
         result.qualityRecommendation === 'approve' &&
-        Number(result.qualityScore || 0) >= 7.5;
+        Number(result.qualityScore || 0) >= 7.5 &&
+        !(result.qualityCriticalIssues?.length);
 
       await prisma.websiteDemoJob.update({
         where: { id: jobId },
