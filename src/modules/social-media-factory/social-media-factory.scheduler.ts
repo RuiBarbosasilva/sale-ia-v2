@@ -20,7 +20,9 @@ export function startSocialMediaFactoryScheduler() {
       for (const post of duePosts) {
         await publishQueuedSocialPost(post.id);
       }
-      await refreshProcessingSocialPosts(25);\n      const unconfirmed = await markStalePublishingPostsAsUnconfirmed(30, 100);\n      if (unconfirmed) console.warn('[SOCIAL MEDIA FACTORY] posts moved to DELIVERY_UNKNOWN; manual provider verification required:', unconfirmed);
+      await refreshProcessingSocialPosts(25);
+      const unconfirmed = await markStalePublishingPostsAsUnconfirmed(30, 100);
+      if (unconfirmed) console.warn('[SOCIAL MEDIA FACTORY] posts moved to DELIVERY_UNKNOWN; manual provider verification required:', unconfirmed);
     } catch (error: any) {
       console.error('[SOCIAL MEDIA FACTORY] scheduler error:', error?.message || error);
     }
