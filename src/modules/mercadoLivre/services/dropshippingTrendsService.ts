@@ -188,18 +188,17 @@ export async function compareLatestMercadoLivreTrendRuns(categoryId?: string | n
       trendGroup: item.trendGroup,
     };
   });
-  for (const old of previous.snapshots) {
-    if (!currentByKeyword.has(old.keyword.toLocaleLowerCase('pt-BR'))) {
-      changes.push({
-        keyword: old.keyword,
-        currentPosition: null,
-        previousPosition: old.position,
-        positionDelta: null,
-        movement: 'DISAPPEARED' as const,
-        trendGroup: old.trendGroup,
-      });
-    }
-  }
+  const disappeared = previous.snapshots
+    .filter((old) => !currentByKeyword.has(old.keyword.toLocaleLowerCase('pt-BR')))
+    .map((old) => ({
+      keyword: old.keyword,
+      currentPosition: null,
+      previousPosition: old.position,
+      positionDelta: null,
+      movement: 'DISAPPEARED' as const,
+      trendGroup: old.trendGroup,
+    }));
+  const allChanges = [...changes, ...disappeared];
 
   return {
     available: true,
@@ -207,7 +206,7 @@ export async function compareLatestMercadoLivreTrendRuns(categoryId?: string | n
     previousRunId: previous.id,
     currentCollectedAt: current.collectedAt,
     previousCollectedAt: previous.collectedAt,
-    changes: changes.sort((left, right) => {
+    changes: allChanges.sort((left, right) => {
       const rank = (movement: string) => movement === 'NEW' ? 0 : movement === 'IMPROVED' ? 1 :
         movement === 'STABLE' ? 2 : movement === 'DECLINED' ? 3 : 4;
       return rank(left.movement) - rank(right.movement) ||
