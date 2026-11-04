@@ -651,7 +651,7 @@ Depois de confirmar os dois workflows pós-merge, continuar a auditoria dos mód
 
 - [x] PR #82 integrada: controller de autonomia agora aguarda os métodos async; CI principal e Affiliate CI verdes.
 - [x] PR #83 integrada no commit `bd4aaa3940b38f96b154a43cd6813c1eecf656e5`: corrigido falso status de proposta enviada. A função preparava texto/conversa, mas marcava proposta como SENT e prospect como PROPOSAL_SENT sem chamar provedor. Agora mantém READY e retorna `delivery.status=NOT_SENT`; registros SENT antigos são sinalizados como `LEGACY_UNVERIFIED`. CI principal e Affiliate CI passaram, incluindo testes e Guardian.
-- [ ] PR #84 em validação: a consulta da fila diária omitia `WebsiteProspect.contactedAt`, `nextFollowUpAt` e `status`, confundindo status do pipeline com status do prospect. Também agendar follow-up alterava `lastContactAt` sem contato real. Correção e testes entregues; aguardar ambos os workflows.
+- [x] PR #84 integrada (detalhes e CI na seção de conclusão abaixo): a consulta da fila diária omitia `WebsiteProspect.contactedAt`, `nextFollowUpAt` e `status`, confundindo status do pipeline com status do prospect. Também agendar follow-up alterava `lastContactAt` sem contato real. Correção e testes entregues; aguardar ambos os workflows.
 - [ ] Continuar revisão de integridade dos estados de proposta e pipeline, sem marcar como enviado/publicado/contatado sem confirmação real.
 - [ ] Verificar integração de entrega real WhatsApp/e-mail: a geração de mensagens existe, mas não foi comprovado envio externo ativo. Manter ação manual até existir provedor autenticado e confirmação.
 
@@ -662,5 +662,18 @@ Depois de confirmar os dois workflows pós-merge, continuar a auditoria dos mód
 - [x] CI principal da PR #84 (run `41926317690`) concluído integralmente com sucesso: instalação, encoding, Prisma validate/generate/migrate deploy, typecheck, build, testes e Guardian.
 - [x] Affiliate CI da PR #84 (run `41926318399`) concluído com sucesso.
 - [x] Fila diária agora consulta e classifica o status correto do prospect, inclui follow-ups vencidos e propostas aguardando, e não registra contato fictício ao apenas agendar retorno.
-- [ ] Confirmar os workflows pós-merge da main e continuar auditoria de integridade dos módulos e rotas.
+- [x] Confirmar CI da PR #84 e manter a auditoria de integridade em andamento.
+- [ ] Sincronizar a cópia local com a main sem descartar alterações locais.
+
+
+### Recuperação segura de publicação interrompida — 04/11/2026
+
+- [x] PR #85 integrada por squash na main: commit `8272be19bc2f1a001f6320829c45ec3c99497bf7`.
+- [x] Detecta posts que permanecem em `PUBLISHING` por mais de 30 minutos e muda o estado para `DELIVERY_UNKNOWN`.
+- [x] Não faz retry automático de entrega incerta, evitando duplicidade quando a plataforma pode ter recebido o post antes da interrupção.
+- [x] Registra evento de auditoria e disponibiliza métrica `deliveryUnknown` no endpoint de status e no painel.
+- [x] Testes cobrem detecção de posts abandonados, concorrência/alteração de estado e limites seguros de parâmetros.
+- [x] CI principal para o HEAD da PR #85: run `41930851921` concluído com sucesso, incluindo Prisma, typecheck, build, testes e Guardian.
+- [x] Affiliate CI para o HEAD da PR #85: run `41930839988` concluído com sucesso; segunda execução duplicada `41930851806` também concluiu com sucesso.
+- [ ] Confirmar os workflows pós-merge da main e prosseguir com auditoria de rotas, autenticação e estados dos módulos restantes.
 - [ ] Sincronizar a cópia local com a main sem descartar alterações locais.
