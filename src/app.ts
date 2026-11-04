@@ -43,6 +43,8 @@ import produtosRoutes from './modules/afiliados-ia/routes/produtos.routes';
 import { handleAffiliateWebhook } from './modules/afiliados-ia/controllers/webhook.controller';
 import contentGeneratorRoutes from './modules/afiliados-ia/routes/contentGenerator.routes';
 import blogFactoryRoutes from './modules/blogFactory/blogFactory.routes';
+import socialMediaFactoryRoutes from './modules/social-media-factory/social-media-factory.routes';
+import { socialOAuthCallbackRouter } from './modules/social-media-factory/social-media-factory.oauth';
 import { startBlogFactoryScheduler } from './modules/blogFactory/blogFactory.scheduler';
 
 const app = express();
@@ -69,7 +71,7 @@ app.use((req, res, next) => {
 
 // ForÃƒÆ’Ã‚Â§a UTF-8 nas pÃƒÆ’Ã‚Â¡ginas HTML para evitar mojibake em ambientes Windows/proxies.
 app.use((req, res, next) => {
-  const htmlRoutes = ['/affiliates', '/affiliates/admin', '/affiliates/intelligence', '/editorial', '/sales', '/dashboard', '/dashboard/', '/rb-factory', '/rb-factory-benchmark', '/rb-factory-maintenance', '/rb-factory-commercial', '/mercadolivre', '/mercadolivre/dropshipping'];
+  const htmlRoutes = ['/affiliates', '/affiliates/admin', '/affiliates/intelligence', '/editorial', '/sales', '/dashboard', '/dashboard/', '/rb-factory', '/rb-factory-benchmark', '/rb-factory-maintenance', '/rb-factory-commercial', '/mercadolivre', '/mercadolivre/dropshipping', '/social-media-factory'];
   if (htmlRoutes.includes(req.path) || req.path.endsWith('.html')) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
   }
@@ -79,6 +81,7 @@ app.use((req, res, next) => {
 app.use(express.static('public', { index: false }));
 app.get('/login', (_req, res) => res.sendFile('login.html', { root: 'public' }));
 app.get('/manual', (_req: any, res: any) => res.sendFile('manual.html', { root: 'public' }));
+app.get('/social-media-factory', (_req, res) => res.sendFile('social-media-factory.html', { root: 'public' }));
 
 app.get('/', (_req, res) => res.redirect(302, '/rb-factory'));
 app.get('/rb-factory', (_req, res) => { res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate'); res.setHeader('Pragma', 'no-cache'); res.setHeader('Expires', '0'); return res.sendFile('site-factory.html', { root: 'public' }); });
@@ -144,6 +147,8 @@ app.use('/api/content-factory', contentFactoryRoutes);
 // ==========================================
 app.use('/api/afiliados/conteudo', contentGeneratorRoutes);
 app.use('/api/blog-factory', blogFactoryRoutes);
+app.use('/api/social-media-factory/oauth', socialOAuthCallbackRouter);
+app.use('/api/social-media-factory', socialMediaFactoryRoutes);
 
 // Start the periodic Blog Factory cycle only when explicitly enabled.
 if (String(process.env.BLOG_FACTORY_AUTORUN_ENABLED || '').toLowerCase() === 'true') {
