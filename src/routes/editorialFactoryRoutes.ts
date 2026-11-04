@@ -1,7 +1,9 @@
 import { Router } from 'express';
+import { adminAuthorization } from '../middlewares/security';
 import * as c from '../controllers/editorialFactoryController';
 const router=Router();
 router.get('/health',(_req,res)=>res.json({success:true,module:'editorial-factory',status:'ONLINE'}));
+router.use(adminAuthorization);
 router.post('/research',c.research);
 router.get('/opportunities',c.opportunities);
 router.post('/projects',c.createProject);

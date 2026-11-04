@@ -1,7 +1,9 @@
 import { Router } from 'express';
+import { adminAuthorization } from '../middlewares/security';
 import { salesOrchestrationController } from '../controllers/salesOrchestrationController';
 
 const router=Router();
+router.use(adminAuthorization);
 router.get('/analytics',salesOrchestrationController.analytics);
 router.get('/offers',salesOrchestrationController.offers);
 router.post('/offers',salesOrchestrationController.createOffer);
