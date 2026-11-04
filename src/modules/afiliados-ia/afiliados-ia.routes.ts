@@ -1,4 +1,6 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
+import { rateLimit, timingSafeSecret } from '../../middlewares/security';
+import { generateTikTokAffiliatePackage } from './services/tiktokAffiliateContent.service';
 import {
   executarHunter,
   listarProdutos,
@@ -29,3 +31,35 @@ afiliadosIaRoutes.post('/divulgar/telegram', divulgarNoTelegram);
 afiliadosIaRoutes.post('/webhook/hotmart', receberWebhookHotmart);
 afiliadosIaRoutes.get('/oportunidades', relatorioOportunidades);
 afiliadosIaRoutes.get('/dashboard', obterDashboard);
+
+ 
+// Generates a reviewable TikTok affiliate draft; it never publishes externally.
+function tiktokAffiliateAdminGuard(req: Request, res: Response, next: NextFunction) {
+  const affiliateKeyValid = timingSafeSecret(process.env.AFFILIATE_ADMIN_KEY, req.header('x-affiliate-admin-key'));
+  const saleIaKeyValid = timingSafeSecret(process.env.SALE_IA_ADMIN_KEY, req.header('x-sale-ia-admin-key'));
+  if (!affiliateKeyValid && !saleIaKeyValid) {
+    return res.status(401).json({ success: false, error: 'AFFILIATE_ADMIN_UNAUTHORIZED' });
+  }
+  return next();
+}
+
+afiliadosIaRoutes.post(
+  '/tiktok/roteiro',
+  rateLimit({ name: 'tiktok-affiliate-admin', windowMs: 5 * 60 * 1000, limit: 20 }),
+  tiktokAffiliateAdminGuard,
+  (req, res) => {
+    try {
+      const generated = generateTikTokAffiliatePackage(req.body || {});
+      return res.status(200).json({ success: true, content: generated });
+    } catch (error) {
+      const code = error instanceof Error ? error.message : 'TIKTOK_CONTENT_GENERATION_FAILED';
+      const knownErrors = new Set([
+        'TIKTOK_PRODUCT_NAME_REQUIRED',
+        'TIKTOK_AFFILIATE_URL_REQUIRED',
+        'TIKTOK_DURATION_INVALID',
+        'TIKTOK_AFFILIATE_URL_INVALID'
+      ]);
+      return res.status(knownErrors.has(code) ? 400 : 500).json({ success: false, error: code });
+    }
+  }
+);
