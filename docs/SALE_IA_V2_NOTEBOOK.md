@@ -575,3 +575,8 @@ A branch `feat/blog-factory-ia` foi atualizada para remover a dependência impl�
 
 ### Regra de integração
 **Não mesclar as PRs #73–#75 enquanto não houver validação reproduzível.** Para Blog Factory, revisar primeiro a PR #72 e seus riscos; a PR #74 depende da branch da #72. Não executar `git reset --hard`, `git clean` ou `prisma migrate reset`. Não marcar itens como concluídos sem evidência do comando/teste executado.
+
+### Validação CI — correção de tipagem compartilhada (04/11/2026)
+- A execução do CI da PR #74 identificou dois casts inválidos de `set-cookie` em `tests/authRoutes.test.ts` (o tipo real pode ser `string`, `string[]` ou ausente).
+- A normalização segura foi aplicada na branch `feat/blog-factory-ia` e validada nos dois workflows do commit `9d1accdaa4ea1b2474e9a8293f61e050456ff9aa`.
+- Este commit documental atualiza a PR #74 para executar novamente contra a base atualizada. A aprovação desta PR depende dos novos checks executados sobre a revisão combinada.
