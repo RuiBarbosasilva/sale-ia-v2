@@ -78,6 +78,20 @@ describe("Dashboard Routes", () => {
     expect(res.body.error).toBe("ADMIN_UNAUTHORIZED");
   });
 
+  it("valida a chave administrativa no endpoint usado pelo dashboard central", async () => {
+    const res = await request(app).get("/dashboard/auth/check").set(auth);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ success: true, authenticated: true });
+  });
+
+  it("recusa chave administrativa inválida no endpoint de validação", async () => {
+    const res = await request(app)
+      .get("/dashboard/auth/check")
+      .set("x-sale-ia-admin-key", "chave-incorreta");
+    expect(res.status).toBe(401);
+    expect(res.body.error).toBe("ADMIN_UNAUTHORIZED");
+  });
+
   it("retorna overview do Mercado Livre com autenticação", async () => {
     (fetchMLMetrics as jest.Mock).mockResolvedValue({
       account: {

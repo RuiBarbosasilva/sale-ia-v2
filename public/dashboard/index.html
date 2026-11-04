@@ -27,34 +27,39 @@ main{margin-left:252px;width:calc(100% - 252px);padding:28px 34px 60px}.top{disp
 <aside class="sidebar">
   <div class="brand"><span class="mark">S</span><span>SALE-IA<small>central inteligente</small></span></div>
   <div class="nav-title">Central</div>
+  <div class="nav-title">RB Factory · Módulos</div>
   <nav class="nav">
-    <a class="active" href="/dashboard"><span class="ico">⌂</span>Visão geral</a>
-    <a href="/rb-factory"><span class="ico">✦</span>RB Factory Sites</a>
-    <a href="/sales"><span class="ico">↗</span>Sales Agent</a>
-    <a href="/editorial"><span class="ico">◫</span>Editorial Factory</a>
-    <a href="/affiliates/intelligence"><span class="ico">◎</span>Afiliados & IA</a>
-    <a href="/dashboard/mercadolivre"><span class="ico">▣</span>Mercado Livre</a>
+    <a class="active" href="/dashboard"><span class="ico">⌂</span>RB-factory-central</a>
+    <a href="/rb-factory"><span class="ico">✦</span>RB-factory-sites</a>
+    <a href="/rb-factory-commercial"><span class="ico">▤</span>RB-factory-comercial</a>
+    <a href="/sales"><span class="ico">↗</span>RB-factory-sales-agent</a>
+    <a href="/editorial"><span class="ico">◫</span>RB-factory-editorial</a>
+    <a href="/affiliates/intelligence"><span class="ico">◎</span>RB-factory-afiliados-ia</a>
+    <a href="/dropshipping-lab.html"><span class="ico">▣</span>RB-factory-mercado-livre</a>
+    <a href="/rb-factory-benchmark"><span class="ico">▦</span>RB-factory-benchmark</a>
+    <a href="/rb-factory-template-library.html"><span class="ico">▧</span>RB-factory-biblioteca</a>
+    <a href="/rb-factory-maintenance"><span class="ico">⚙</span>RB-factory-manutencao</a>
   </nav>
-  <div class="nav-title">Gestão</div>
+  <div class="nav-title">RB Factory · Operações</div>
   <nav class="nav">
-    <a href="/api/hunter/opportunities" target="_blank"><span class="ico">⌁</span>Hunter</a>
-    <a href="/api/opportunity-sales/plans" target="_blank"><span class="ico">◇</span>Planos de oportunidade</a>
+    <a href="/dashboard#hunter"><span class="ico">⌁</span>RB-factory-hunter</a>
+    <a href="/dashboard#plans"><span class="ico">◇</span>RB-factory-planos</a>
   </nav>
-  <div class="side-bottom"><div class="status"><b><span class="dot"></span>Sistema operacional</b><p>Módulos trabalham de forma independente e supervisionada.</p></div></div>
+  <div class="side-bottom"><div class="status"><b id="systemStatusText"><span class="dot"></span>Verificando módulos</b><p>Módulos trabalham de forma independente e supervisionada.</p></div></div>
 </aside>
 <main>
-  <div class="top"><div class="crumb">SALE-IA / <b>Central</b></div><div class="top-actions"><button id="adminKeyBtn" class="btn">🔐 Chave</button><button id="refreshBtn" class="btn">↻ Atualizar</button><a class="btn dark" href="/rb-factory">Abrir RB Factory</a></div></div>
+  <div class="top"><div class="crumb">SALE-IA / <b>Central</b></div><div class="top-actions"><button id="adminKeyBtn" class="btn">🔐 Chave</button><button id="refreshBtn" class="btn">↻ Atualizar</button><a class="btn dark" href="/rb-factory">Abrir RB-factory-sites</a></div></div>
   <section class="hero"><div><h1>Bom dia. Vamos vender.</h1><p>Uma central limpa para acompanhar oportunidades, vendas, afiliados, sites e inteligência comercial em um só lugar.</p></div><div class="date" id="date"></div></section>
   <section class="grid">
-    <div class="card"><div class="metric-label">Completude do ecossistema</div><div class="metric" id="projectCompleteness">—%</div><div class="metric-note">implementação planejada do SALE-IA-V2</div></div><div class="card"><div class="metric-label">Saúde operacional</div><div class="metric" id="overallScore">—%</div><div class="metric-note">módulos e serviços consultados</div></div>
+    <div class="card"><div class="metric-label">Verificações funcionais aprovadas</div><div class="metric" id="projectCompleteness">—%</div><div class="metric-note">verificações funcionais concluídas com sucesso</div></div><div class="card"><div class="metric-label">Saúde operacional</div><div class="metric" id="overallScore">—%</div><div class="metric-note">módulos e serviços consultados</div></div>
     <div class="card"><div class="metric-label">Receita Mercado Livre</div><div class="metric" id="revenue">—</div><div class="metric-note">dados da conta conectada</div></div>
     <div class="card"><div class="metric-label">Pedidos</div><div class="metric" id="orders">—</div><div class="metric-note">total sincronizado</div></div>
     <div class="card"><div class="metric-label">Produtos</div><div class="metric" id="items">—</div><div class="metric-note" id="sync">itens na operação</div></div>
   </section>
   <section class="panel readiness-panel">
-    <div class="panel-head"><h2>Completude do ecossistema</h2><span id="completionLabel">implementação por módulo</span></div>
+    <div class="panel-head"><h2>Verificações funcionais aprovadas</h2><span id="completionLabel">verificações funcionais por módulo</span></div>
     <div id="completionReadiness" class="readiness"></div>
-    <div class="definition">Índice separado da saúde operacional. A saúde responde se os serviços estão funcionando; a completude mede quanto do ecossistema planejado já foi implementado.</div>
+    <div class="definition">Índice calculado pelas verificações funcionais executadas; não representa percentual de código implementado.</div>
   </section>
   <section class="panel readiness-panel">
     <div class="panel-head"><h2>Saúde dos módulos</h2><span>atualização automática</span></div>
@@ -66,15 +71,19 @@ main{margin-left:252px;width:calc(100% - 252px);padding:28px 34px 60px}.top{disp
       <div class="panel">
         <div class="panel-head"><h2>Ecossistema SALE-IA</h2><span>módulos ativos</span></div>
         <div class="modules">
-          <a class="module" href="/rb-factory"><div class="module-icon">✦</div><div><h3>RB Factory Sites</h3><p>Prospecção, auditoria, modelos e geração de demos comerciais.</p><span class="tag live">ativo</span></div></a>
-          <a class="module" href="/affiliates/intelligence"><div class="module-icon">◎</div><div><h3>Affiliate Intelligence</h3><p>Pesquisa, análise e preparação de oportunidades de afiliados.</p><span class="tag ai">IA</span></div></a>
-          <a class="module" href="/editorial"><div class="module-icon">◫</div><div><h3>Editorial Factory</h3><p>Pesquisa, projetos editoriais, qualidade e planos de publicação.</p><span class="tag ai">IA</span></div></a>
-          <a class="module" href="/sales"><div class="module-icon">↗</div><div><h3>Senior Sales Agent</h3><p>Conversas, intenção, objeções, follow-ups e próxima ação.</p><span class="tag ai">IA</span></div></a>
-          <a class="module" href="/dashboard/mercadolivre"><div class="module-icon">▣</div><div><h3>Mercado Livre</h3><p>Pedidos, produtos, métricas e operação do marketplace.</p><span class="tag live">ativo</span></div></a>
-          <a class="module" href="/api/hunter/opportunities" target="_blank"><div class="module-icon">⌁</div><div><h3>Hunter</h3><p>Sinais, evidências e oportunidades para validação supervisionada.</p><span class="tag">pesquisa</span></div></a>
+          <a class="module" href="/rb-factory"><div class="module-icon">✦</div><div><h3>RB-factory-sites</h3><p>Prospecção, auditoria, modelos, demos e propostas.</p><span class="tag live">interface disponível</span></div></a>
+          <a class="module" href="/rb-factory-commercial"><div class="module-icon">▤</div><div><h3>RB-factory-comercial</h3><p>Gestão comercial e operações de vendas.</p><span class="tag live">interface disponível</span></div></a>
+          <a class="module" href="/sales"><div class="module-icon">↗</div><div><h3>RB-factory-sales-agent</h3><p>Conversas, intenção, objeções e follow-ups.</p><span class="tag ai">IA</span></div></a>
+          <a class="module" href="/editorial"><div class="module-icon">◫</div><div><h3>RB-factory-editorial</h3><p>Pesquisa, projetos editoriais, qualidade e publicação.</p><span class="tag ai">IA</span></div></a>
+          <a class="module" href="/affiliates/intelligence"><div class="module-icon">◎</div><div><h3>RB-factory-afiliados-ia</h3><p>Redes, produtos, oportunidades e inteligência de afiliados.</p><span class="tag ai">IA</span></div></a>
+          <a class="module" href="/dropshipping-lab.html"><div class="module-icon">▣</div><div><h3>RB-factory-mercado-livre</h3><p>Operação marketplace e laboratório de dropshipping.</p><span class="tag live">interface disponível</span></div></a>
+          <a class="module" href="/rb-factory-benchmark"><div class="module-icon">▦</div><div><h3>RB-factory-benchmark</h3><p>Biblioteca de demonstrações e referências de modelos.</p><span class="tag">biblioteca</span></div></a>
+          <a class="module" href="/rb-factory-template-library.html"><div class="module-icon">▧</div><div><h3>RB-factory-biblioteca</h3><p>Consulta e gestão da biblioteca de modelos.</p><span class="tag">biblioteca</span></div></a>
+          <a class="module" href="/rb-factory-maintenance"><div class="module-icon">⚙</div><div><h3>RB-factory-manutencao</h3><p>Manutenção e acompanhamento de sites gerados.</p><span class="tag">operação</span></div></a>
+          <a class="module" href="/dashboard#hunter"><div class="module-icon">⌁</div><div><h3>RB-factory-hunter</h3><p>Acompanhe oportunidades e fornecedores na central operacional.</p><span class="tag">operações</span></div></a>
         </div>
         <div class="quick">
-          <a href="/rb-factory-benchmark"><strong>Ver 100 demos</strong><span>Biblioteca RB Factory</span></a>
+          <a href="/rb-factory-benchmark"><strong>Ver 100 demos</strong><span>Biblioteca RB-factory</span></a>
           <a href="/affiliates/intelligence"><strong>Pesquisar afiliados</strong><span>Inteligência comercial</span></a>
           <a href="/sales"><strong>Abrir Sales Agent</strong><span>Operação de vendas</span></a>
         </div>
@@ -88,10 +97,10 @@ main{margin-left:252px;width:calc(100% - 252px);padding:28px 34px 60px}.top{disp
       <div class="panel-head"><h2>Operação em tempo real</h2><span id="opsState">sincronizando</span></div>
       <div class="activity">
         <div class="activity-row"><span class="bullet"></span><div><b>Afiliados</b><p id="opsAffiliate">carregando redes, produtos e oportunidades.</p></div></div>
-        <div class="activity-row"><span class="bullet"></span><div><b>Hunter</b><p id="opsHunter">carregando oportunidades e fornecedores.</p></div></div>
+        <div id="hunter" class="activity-row"><span class="bullet"></span><div><b>Hunter</b><p id="opsHunter">carregando oportunidades e fornecedores.</p></div></div>
         <div class="activity-row"><span class="bullet"></span><div><b>Sales Engine</b><p id="opsSales">carregando leads, ações e follow-ups.</p></div></div>
         <div class="activity-row"><span class="bullet"></span><div><b>Editorial Factory</b><p id="opsEditorial">carregando projetos.</p></div></div>
-        <div class="activity-row"><span class="bullet"></span><div><b>Planos de oportunidade</b><p id="opsPlans">carregando planos supervisionados.</p></div></div>
+        <div id="plans" class="activity-row"><span class="bullet"></span><div><b>Planos de oportunidade</b><p id="opsPlans">carregando planos supervisionados.</p></div></div>
       </div>
       <div class="panel-head" style="margin-top:22px"><h2>Atividade do sistema</h2><span>estado atual</span></div>
       <div class="activity">
@@ -109,8 +118,9 @@ main{margin-left:252px;width:calc(100% - 252px);padding:28px 34px 60px}.top{disp
 <script>
 const $=id=>document.getElementById(id);
 function adminKey(){return sessionStorage.getItem('saleIaAdminKey')||''}
-function setAdminKey(){const current=adminKey();const key=prompt('Chave administrativa do SALE-IA:',current);if(key!==null){if(key.trim())sessionStorage.setItem('saleIaAdminKey',key.trim());else sessionStorage.removeItem('saleIaAdminKey');refresh()}}
-async function adminFetch(url,options={},retry=true){const headers=new Headers(options.headers||{});let key=adminKey();if(key)headers.set('x-sale-ia-admin-key',key);let r=await fetch(url,{...options,headers});if(r.status===401&&retry){const entered=prompt('Acesso administrativo. Informe a chave do SALE-IA:');if(entered&&entered.trim()){sessionStorage.setItem('saleIaAdminKey',entered.trim());return adminFetch(url,options,false)}throw new Error('ADMIN_UNAUTHORIZED')}return r}
+async function validateAdminKey(value){const response=await fetch('/dashboard/auth/check',{headers:{'x-sale-ia-admin-key':value},cache:'no-store'});return response.ok}
+async function setAdminKey(){const current=adminKey();const entered=prompt('Informe a chave administrativa configurada no SALE_IA_ADMIN_KEY:',current);if(entered===null)return;const value=entered.trim();if(!value){sessionStorage.removeItem('saleIaAdminKey');refresh();return}try{const valid=await validateAdminKey(value);if(!valid){sessionStorage.removeItem('saleIaAdminKey');alert('Chave recusada pelo servidor. Confira SALE_IA_ADMIN_KEY (ou AFFILIATE_ADMIN_KEY, se usar o fallback) no arquivo .env e reinicie o servidor.');return}sessionStorage.setItem('saleIaAdminKey',value);await refresh()}catch(error){alert('Não foi possível validar a chave no servidor. Confira se a API está ativa e tente novamente.')}} 
+async function adminFetch(url,options={},retry=true){const headers=new Headers(options.headers||{});const key=adminKey();if(key)headers.set('x-sale-ia-admin-key',key);const response=await fetch(url,{...options,headers,cache:'no-store'});if(response.status===401&&retry){sessionStorage.removeItem('saleIaAdminKey');const entered=prompt('Chave administrativa recusada. Informe a chave configurada no SALE_IA_ADMIN_KEY:');if(entered===null||!entered.trim())throw new Error('ADMIN_UNAUTHORIZED');const value=entered.trim();const valid=await validateAdminKey(value);if(!valid){alert('Chave recusada pelo servidor. Confira SALE_IA_ADMIN_KEY (ou AFFILIATE_ADMIN_KEY, se usar o fallback) no .env.');throw new Error('ADMIN_UNAUTHORIZED')}sessionStorage.setItem('saleIaAdminKey',value);return adminFetch(url,options,false)}return response}
 function money(v){return typeof v==='number'?v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}):'—'}
 async function refresh(){
   $('date').textContent=new Date().toLocaleString('pt-BR',{dateStyle:'full',timeStyle:'short'});
@@ -118,15 +128,15 @@ async function refresh(){
     const r=await adminFetch('/dashboard/overview');const d=await r.json();
     if(d.success&&d.data){$('revenue').textContent=money(d.data.totalRevenue);$('orders').textContent=d.data.totalOrders??'0';$('items').textContent=d.data.totalItems??'0';$('sync').textContent=d.data.lastSync?'última sincronização: '+new Date(d.data.lastSync).toLocaleString('pt-BR'):'conta conectada';}
     else $('sync').textContent='Mercado Livre ainda sem métricas';
-  }catch(e){$('system').textContent='ONLINE';$('sync').textContent='API de métricas indisponível no momento'}
+  }catch(e){$('sync').textContent='API de métricas indisponível no momento'}
   try{
     const r=await adminFetch('/dashboard/operations');const d=await r.json();
     if(d.success&&d.data){
       const completion=d.data.projectCompleteness||{};
       $('projectCompleteness').textContent=(completion.score??0)+'%';
-      $('completionLabel').textContent=completion.label||'implementação por módulo';
+      $('completionLabel').textContent=completion.label||'verificações funcionais por módulo';
       const completionModules=completion.modules||[];
-      $('completionReadiness').innerHTML=completionModules.map(m=>{const score=Math.max(0,Math.min(100,Number(m.score)||0));const cls=score===100?'':score>0?'partial':'zero';return '<div class="readiness-item"><div class="readiness-top"><span class="readiness-name">'+m.name+'</span><span class="readiness-score">'+score+'%</span></div><div class="readiness-bar"><div class="readiness-fill '+cls+'" style="width:'+score+'%"></div></div><div class="readiness-status">peso '+m.weight+'%</div></div>';}).join('');
+      $('completionReadiness').innerHTML=completionModules.map(m=>{const score=Math.max(0,Math.min(100,Number(m.score)||0));const cls=score===100?'':score>0?'partial':'zero';return '<div class="readiness-item"><div class="readiness-top"><span class="readiness-name">'+m.name+'</span><span class="readiness-score">'+score+'%</span></div><div class="readiness-bar"><div class="readiness-fill '+cls+'" style="width:'+score+'%"></div></div><div class="readiness-status">'+(m.status||'SEM STATUS')+'</div></div>';}).join('');
       $('overallScore').textContent=(d.data.overallScore??0)+'%';
       const modules=d.data.modules||[];
       $('readiness').innerHTML=modules.map(m=>{
@@ -144,11 +154,13 @@ async function refresh(){
       $('opsEditorial').textContent=(d.data.editorial?.projects||0)+' projetos editoriais.';
       $('opsPlans').textContent=(d.data.opportunityPlans||0)+' planos de oportunidade.';
       $('opsState').textContent='atualizado agora';
+      $('systemStatusText').innerHTML='<span class="dot"></span>'+(Number(d.data.overallScore)===100?'Módulos consultados OK':'Atenção: verificar módulos');
     }
   }catch(e){
     $('overallScore').textContent='—%';
     $('readiness').innerHTML='<div style="font-size:11px;color:#b42318">Não foi possível consultar a saúde dos módulos.</div>';
     $('opsState').textContent='indisponível';
+    $('systemStatusText').innerHTML='<span class="dot"></span>Saúde indisponível';
   }
   try{
     const r=await adminFetch('/api/rb-factory-sales/pipeline');const d=await r.json();
