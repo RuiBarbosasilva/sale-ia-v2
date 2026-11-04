@@ -625,3 +625,23 @@ A branch `feat/blog-factory-ia` foi atualizada para remover a dependência impl�
 - [ ] Validação CI da PR #81: no head `8b65cccbe41b700d433a01b65766dab3cb9c1ca3`, instalação, encoding, Prisma validate/generate/migrate deploy e typecheck já passaram; build, testes e Guardian ainda estavam em execução na última consulta. Não mesclar antes de todos concluírem com sucesso.
 - [ ] Após validação e merge da #81, encerrar a PR #70 como substituída e sincronizar notebook/branch local.
 - **Limite de produção:** a publicação real nas redes continua dependente de credenciais OAuth, permissões aprovadas, callback HTTPS, tokens e contas autorizadas. O scheduler permanece opt-in/desativado por padrão; nenhuma credencial real foi adicionada.
+
+
+---
+
+## Fechamento da integração Social Media — 04/11/2026
+
+- [x] PR #81 mesclada por squash na `main`: `fcbb5a2ba49d62df049e3c5b0a3f0a686fe97302`.
+- [x] CI da PR #81 concluída com sucesso no head `3739e14f63925c8e59c8a698a0e40f8723fec3f1`:
+  - `sale-ia-v2-ci`: run `41924908202`, sucesso.
+  - `Affiliate Module CI`: run `41924908224`, sucesso.
+  - Em ambos: encoding, Prisma validate/generate/migrate deploy, typecheck, build, testes e Guardian aprovados.
+  - Testes: 27 suites aprovadas, 121 testes aprovados, 0 falhas.
+- [x] PR #70 encerrada como substituída pela #81; branch antiga preservada.
+- [x] PR #74 encerrada como obsoleta; branch antiga preservada.
+- [x] Conferido no HEAD da `main`: seis modelos Social no Prisma, rotas API/OAuth registradas, painel servido em `/social-media-factory` e card `RB-Factory-Social-Media` no dashboard central.
+- [ ] CI pós-merge da `main` no commit `fcbb5a2ba49d62df049e3c5b0a3f0a686fe97302` ainda estava em execução na última consulta: `sale-ia-v2-ci` run `41925128301`; `Affiliate Module CI` run `41925128374`. Confirmar conclusão.
+- **Pendência de produção externa:** cadastrar credenciais de Meta, TikTok, Google e Pinterest; configurar callback HTTPS e chave AES-256; autorizar contas e validar uma publicação real por rede antes de ativar `SOCIAL_MEDIA_FACTORY_ENABLED=true`. Nenhuma publicação automática foi ativada nesta integração.
+
+### Próxima ação técnica
+Depois de confirmar os dois workflows pós-merge, continuar a auditoria dos módulos existentes no HEAD atual, começando pelos smoke tests do Dashboard Central, Blog Factory, RB Factory Sites, Afiliados e Dropshipping. Preservar o estado de cada módulo e não reexecutar verificações já aprovadas sem mudança de código.
