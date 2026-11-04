@@ -10,7 +10,28 @@ function authorized(req: Request, res: Response): boolean {
 }
 function fail(res: Response, error: unknown) {
   const message = error instanceof Error ? error.message : 'INTERNAL_ERROR';
-  const status = message.endsWith('_NOT_FOUND') ? 404 : message.startsWith('QUALITY_GATE_') || message.startsWith('PUBLISHING_DISABLED') || message.startsWith('PUBLISHED_') || message.startsWith('ARTICLE_ALREADY') || message.startsWith('HUMAN_APPROVAL') || message.startsWith('TOPIC_ALREADY') || message.startsWith('TOPIC_GENERATION_IN_PROGRESS') || message.startsWith('ARTICLE_PUBLISH_IN_PROGRESS') || message === 'WORDPRESS_SLUG_ALREADY_USED' || message === 'NO_VALID_FIELDS' ? 409 : message.startsWith('AI_PROVIDER_') || message.startsWith('WORDPRESS_NOT_CONFIGURED') || message.startsWith('WORDPRESS_HTTP_') || message === 'BLOG_FACTORY_FEEDS_NOT_CONFIGURED' ? 503 : 500;
+  let status = 500;
+  if (message.endsWith('_NOT_FOUND')) status = 404;
+  else if (
+    message.startsWith('QUALITY_GATE_') ||
+    message.startsWith('PUBLISHING_DISABLED') ||
+    message.startsWith('PUBLISHED_') ||
+    message.startsWith('ARTICLE_ALREADY') ||
+    message.startsWith('HUMAN_APPROVAL') ||
+    message.startsWith('TOPIC_ALREADY') ||
+    message.startsWith('TOPIC_GENERATION_IN_PROGRESS') ||
+    message.startsWith('ARTICLE_PUBLISH_IN_PROGRESS') ||
+    message === 'WORDPRESS_SLUG_ALREADY_USED' ||
+    message === 'NO_VALID_FIELDS'
+  ) status = 409;
+  else if (
+    message.startsWith('AI_PROVIDER_') ||
+    message.startsWith('WORDPRESS_NOT_CONFIGURED') ||
+    message.startsWith('WORDPRESS_HTTP_') ||
+    message.startsWith('WORDPRESS_LOOKUP_HTTP_') ||
+    message === 'WORDPRESS_INVALID_URL' ||
+    message === 'BLOG_FACTORY_FEEDS_NOT_CONFIGURED'
+  ) status = 503;
   return res.status(status).json({ success: false, error: message });
 }
 export async function health(_req: Request, res: Response) {
