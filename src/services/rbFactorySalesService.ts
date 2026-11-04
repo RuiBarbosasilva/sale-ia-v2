@@ -109,23 +109,25 @@ export const rbFactorySalesService={
     const proposal=await prisma.websiteProposal.findFirst({where:{prospectId},orderBy:{id:'desc'}});
     if(!proposal) throw new Error('WEBSITE_PROPOSAL_NOT_FOUND');
     if(!['READY','SENT'].includes(proposal.status)) throw new Error('WEBSITE_PROPOSAL_NOT_READY');
-    if(proposal.status==='SENT') {
-      const salesAgent=await rbFactorySalesAgentService.ensureConversation(prospectId,'WHATSAPP');
-      const followUp=await rbFactorySalesAgentService.prepareProposalApproach(prospectId,'WHATSAPP');
-      return {...proposal,salesAgent:{conversationId:salesAgent.conversation.id,reused:salesAgent.reused,proposalApproach:followUp.message},idempotent:true};
-    }
-    const updated=await prisma.websiteProposal.update({
-      where:{id:proposal.id},
-      data:{status:'SENT',sentAt:new Date()}
-    });
-    await prisma.websiteProspect.update({where:{id:prospectId},data:{status:'PROPOSAL_SENT',lastContactAt:new Date()}});
-    await (prisma as any).$executeRawUnsafe(
-      `UPDATE "RbFactorySalesPipeline" SET stage='CONTACTED',nextAction='FOLLOW_UP_PROPOSAL',proposalId=?,updatedAt=CURRENT_TIMESTAMP WHERE prospectId=?`,
-      updated.id,prospectId
-    );
+
+    // Preparing a message is not proof of delivery. Keep the proposal READY
+    // until a real provider/manual-send confirmation is recorded.
     const salesAgent=await rbFactorySalesAgentService.ensureConversation(prospectId,'WHATSAPP');
-    const followUp=await rbFactorySalesAgentService.prepareProposalApproach(prospectId,'WHATSAPP');
-    return {...updated,salesAgent:{conversationId:salesAgent.conversation.id,reused:salesAgent.reused,proposalApproach:followUp.message}};
+    const proposalApproach=await rbFactorySalesAgentService.prepareProposalApproach(prospectId,'WHATSAPP');
+
+    return {
+      ...proposal,
+      salesAgent:{
+        conversationId:salesAgent.conversation.id,
+        reused:salesAgent.reused,
+        proposalApproach:proposalApproach.message
+      },
+      delivery:{
+        status:proposal.status === 'SENT' ? 'LEGACY_UNVERIFIED' : 'NOT_SENT',
+        sentAt:proposal.sentAt || null,
+        requiresManualConfirmation:true
+      }
+    };
   },
 
   async convertToLead(prospectId:string){
