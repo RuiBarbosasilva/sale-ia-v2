@@ -575,3 +575,35 @@ A branch `feat/blog-factory-ia` foi atualizada para remover a dependência impl�
 
 ### Regra de integração
 **Não mesclar as PRs #73–#75 enquanto não houver validação reproduzível.** Para Blog Factory, revisar primeiro a PR #72 e seus riscos; a PR #74 depende da branch da #72. Não executar `git reset --hard`, `git clean` ou `prisma migrate reset`. Não marcar itens como concluídos sem evidência do comando/teste executado.
+
+
+---
+
+## Continuidade operacional — 04/11/2026
+
+### Integrações e validações confirmadas nesta sessão
+
+- [x] PR #73 integrada à `main`: autenticação administrativa e registro dos módulos RB Factory no Dashboard Central.
+- [x] PR #75 integrada à `main`: coleta oficial de tendências do Mercado Livre, histórico persistido e comparação de movimentos de ranking.
+- [x] PR #77 integrada à `main`: inicialização opt-in do scheduler do Blog Factory e serialização de ciclos manuais/agendados.
+- [x] PR #78 integrada à `main`: proteção das métricas do RB Factory Sites e quality gate de demos.
+- [x] PR #79 integrada à `main`: planejador autenticado de conteúdo para TikTok Afiliados.
+- [x] PR #80 integrada à `main` por squash em `57305374e51cef75a9d6a1df42e2cabbc87aad8e`: revisão editorial do Blog Factory, edição de rascunhos, distinção entre aprovação editorial e envio ao WordPress como rascunho.
+- [x] Os dois workflows da PR #80 terminaram com sucesso: `sale-ia-v2-ci` (run `41921511429`) e `Affiliate Module CI` (run `41921511395`). Ambos executaram Prisma validate/generate/migrate, typecheck, build, testes e Guardian.
+- [x] Os workflows no commit anterior à PR #80 (`b37bd38c4aae9839a56eb6c7757f786dcf15c370`) também passaram integralmente: `41921282151` e `41921282000`.
+- [ ] Após o merge #80, os novos workflows da `main` foram iniciados (runs `41923995949` e `41923995793`); confirmar conclusão antes de registrar o estado final do commit de merge.
+
+### PRs antigas ainda abertas — não integrar em bloco
+
+- **PR #74 — Blog Factory runtime antigo:** continua aberta e o GitHub reporta conflito/não mergeável. A branch tem 108 commits à frente e 20 atrás da `main`; seus arquivos se sobrepõem ao Blog Factory já integrado pelas PRs #72 e #77. Não fazer merge integral nem restaurar alterações antigas de dashboard, autenticação, schema ou `dump.rdb`. Revisar somente eventual correção funcional que ainda não exista na `main`; caso não haja diferença necessária, encerrar como obsoleta após confirmar equivalência.
+- **PR #70 — Social Media Factory IA:** continua aberta e não mergeável; branch divergente com 79 commits à frente e 20 atrás da `main`. O diff mistura o módulo Social Media com alterações antigas de Dropshipping, schema Prisma, rotas e documentação. A `main` não contém `src/modules/social-media-factory/` nem as migrations `social_media_factory_ia`; portanto a funcionalidade Social Media ainda não está integrada. Não mesclar a PR inteira. Portar apenas o módulo Social Media para uma branch nova baseada na `main`, integrar modelos/migrations e rotas de forma aditiva, preservando as versões atuais de Dropshipping e RB Factory; depois executar CI completo.
+- A PR #80 foi validada e integrada; não repetir seus testes isoladamente. A validação pós-merge é feita pelos runs da `main` acima.
+
+### Próxima sequência de execução
+
+1. Confirmar sucesso dos workflows pós-merge #80 na `main`.
+2. Portar seletivamente Social Media Factory IA da PR #70 para branch nova baseada no HEAD atual, sem copiar alterações antigas de Dropshipping ou substituir arquivos compartilhados por versões obsoletas.
+3. Executar Prisma validate/generate/migrate deploy, encoding, typecheck, build, testes e Guardian na nova branch; corrigir falhas antes de abrir/mesclar PR.
+4. Reavaliar a PR #74 por diferenças funcionais restantes; não mesclar código já incorporado.
+
+**Regra preservada:** não executar `prisma migrate reset`, `git reset --hard` ou `git clean`; não sobrescrever módulos que já estão funcionando; não marcar validação como concluída sem resultado observável.
