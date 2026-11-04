@@ -189,3 +189,7 @@ Painel em `/social-media-factory` para seis canais: Instagram, Facebook, TikTok,
 - `SOCIAL_MEDIA_DRY_RUN=true` registra simulações como `DRY_RUN`, nunca como publicação real.
 
 O painel central apresenta o módulo como **RB-Factory-Social-Media**. A publicação real requer credenciais e autorização válidas em cada plataforma; o código não concede permissões nem aprovação de aplicativos.
+
+
+### Segurança de pagamentos
+`POST /api/payments/webhook` exige `x-payment-webhook-secret`, validado em tempo constante contra `PAYMENT_WEBHOOK_SECRET`. O endpoint de simulação `/api/checkout/pix/:orderId/simulate-payment` exige chave administrativa e fica desativado em produção.

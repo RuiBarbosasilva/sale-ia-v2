@@ -92,12 +92,15 @@ import request from 'supertest';
 import app from '../src/app';
 
 describe('Payment Webhook HTTP Integration (Checkpoint 09.11)', () => {
+  const previousPaymentWebhookSecret = process.env.PAYMENT_WEBHOOK_SECRET;
+  const paymentWebhookSecret = 'payment-webhook-integration-test-secret';
   let testLeadId: string;
   let testOrderId: string;
   const testTransactionId = 'webhook_tx_' + Date.now().toString();
   const testAmount = 150.00;
 
   beforeAll(async () => {
+    process.env.PAYMENT_WEBHOOK_SECRET = paymentWebhookSecret;
     // Criar dados de teste únicos
     const lead = await prisma.lead.create({ 
       data: { phone: '55119' + Date.now().toString().substring(5), name: 'Webhook Test Lead' } 
@@ -116,11 +119,14 @@ describe('Payment Webhook HTTP Integration (Checkpoint 09.11)', () => {
     await prisma.payment.deleteMany({ where: { orderId: testOrderId } });
     await prisma.order.deleteMany({ where: { id: testOrderId } });
     await prisma.lead.deleteMany({ where: { id: testLeadId } });
+    if (previousPaymentWebhookSecret === undefined) delete process.env.PAYMENT_WEBHOOK_SECRET;
+    else process.env.PAYMENT_WEBHOOK_SECRET = previousPaymentWebhookSecret;
   });
 
   it('TESTE 1: Webhook válido deve retornar 200 e criar Payment + Sale', async () => {
     const res = await request(app)
       .post('/api/payments/webhook')
+      .set('x-payment-webhook-secret', paymentWebhookSecret)
       .send({ orderId: testOrderId, transactionId: testTransactionId, amount: testAmount, provider: 'MANUAL' })
       .expect(200);
 
