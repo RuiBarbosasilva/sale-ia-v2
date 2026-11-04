@@ -52,7 +52,8 @@ describe('Admin authentication routes', () => {
     const response = await request(app).post('/api/verify-key').send({ key: 'a-long-test-secret' });
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
-    const cookie = (response.headers['set-cookie'] as string[]).find(value => value.startsWith('adminKey='));
+    const setCookie = response.headers['set-cookie'];
+    const cookie = (Array.isArray(setCookie) ? setCookie : setCookie ? [setCookie] : []).find(value => value.startsWith('adminKey='));
     expect(cookie).toBeDefined();
     expect(cookie).toMatch(/HttpOnly/i);
     expect(cookie).toMatch(/SameSite=Lax/i);
@@ -63,7 +64,8 @@ describe('Admin authentication routes', () => {
   it('accepts the signed HttpOnly session cookie on protected routes', async () => {
     process.env.SALE_IA_ADMIN_KEY = 'a-long-test-secret';
     const login = await request(app).post('/api/verify-key').send({ key: 'a-long-test-secret' });
-    const cookie = (login.headers['set-cookie'] as string[]).find(value => value.startsWith('adminKey='));
+    const setCookie = login.headers['set-cookie'];
+    const cookie = (Array.isArray(setCookie) ? setCookie : setCookie ? [setCookie] : []).find(value => value.startsWith('adminKey='));
     expect(cookie).toBeDefined();
     const cookiePair = cookie!.split(';')[0];
     const response = await request(protectedApp).get('/api/protected').set('Cookie', cookiePair);
