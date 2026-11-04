@@ -1,10 +1,12 @@
 import { Router } from 'express';
+import { adminAuthorization } from '../../middlewares/security';
 import {
   analisarNichoAmazon, listarTendenciasAmazon, gerarLivroPDF, gerarLivroCompleto,
   gerarImagemComGemini, prepararUploadAmazon, gerarCalendarioSocial, listarLivrosGerados
 } from './factory-ebook.controller';
 
 export const factoryEbookRoutes = Router();
+factoryEbookRoutes.use(adminAuthorization);
 factoryEbookRoutes.get('/amazon/nicho/:nicho', analisarNichoAmazon);
 factoryEbookRoutes.get('/amazon/tendencias', listarTendenciasAmazon);
 factoryEbookRoutes.post('/livro/gerar', gerarLivroPDF);
