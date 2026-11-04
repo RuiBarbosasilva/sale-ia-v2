@@ -42,6 +42,7 @@ router.get('/status', async (_req, res) => {
     prisma.socialPost.count({ where: { status: 'SCHEDULED' } }),
     prisma.socialPost.count({ where: { status: 'PUBLISHED' } }),
     prisma.socialPost.count({ where: { status: { in: ['FAILED', 'INTEGRATION_REQUIRED'] } } }),
+    prisma.socialPost.count({ where: { status: 'DELIVERY_UNKNOWN' } }),
     prisma.socialAutomationRun.count({ where: { status: 'COMPLETED' } }),
   ]);
   res.json({
