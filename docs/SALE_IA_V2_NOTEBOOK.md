@@ -705,11 +705,28 @@ Depois de confirmar os dois workflows pós-merge, continuar a auditoria dos mód
 - [x] PR #88 integrada: webhook Hotmart exige `x-affiliate-webhook-key` com comparação em tempo constante; rotas operacionais de Afiliados IA, produtos, geração de conteúdo e Factory Ebook protegidas; commit `8bba2990ed6582590b3e8c6ac4da240d826c953f`.
 - [x] PR #89 integrada: credenciais, Pinterest, criação de anúncios ML, geração de conteúdo, importação de afiliados, inteligência de afiliados e APIs de gestão de sites exigem chave administrativa; a prévia HTML compartilhável permanece pública; commit `b2b330e734069f42a60a8c303583bb4f620c3157`.
 - [x] CI principal e Affiliate CI da PR #89 aprovados (runs `41933969879` e `41933969895`).
-- [ ] CI pós-merge da main para PR #89 em execução (runs `41934226290` e `41934226447`).
+- [x] CI pós-merge da main para PR #89 concluído com sucesso (runs `41934226290` e `41934226447`).
 
 ### Proteção de vendas, pesquisa e confirmação de pagamentos — em andamento
 
-- [ ] PR #90: proteger Editorial Factory, Senior Sales, Sales Orchestration, Opportunity Sales, Affiliate Strategy, Hunter e endpoints de dados/vendas Hotmart. CI do HEAD atualizado `fcca1ff562acd643abf66349941b757bb3a5fa78` em execução (runs `41934288640` e `41934288658`).
+- [x] PR #90 integrada por squash: commit `14ef5e0d49493d6f1aae8ff153f75a74b520fa6d`. Editorial Factory, Senior Sales, Sales Orchestration, Opportunity Sales, Affiliate Strategy, Hunter e dados/vendas Hotmart protegidos; health checks leves mantidos públicos. CI do HEAD atualizado passou (runs `41934298441` e `41934298443`).
 - [ ] PR #91: proteger webhook genérico de pagamentos com `PAYMENT_WEBHOOK_SECRET`; exigir autenticação para simulação PIX e desativá-la em produção. CI em execução (runs `41934186217` e `41934186228`).
 - [ ] Auditar endpoints remanescentes de campanhas, automação, e-mail, dados financeiros, checkout e agendamento antes de liberar como concluídos.
+- [ ] Sincronizar a cópia local com a main sem descartar alterações locais.
+
+
+### Correção de acesso às APIs comerciais e de pesquisa — 04/11/2026
+
+- [x] PR #89 integrada: credenciais, Pinterest, ML Seller, Content Factory, Affiliate Intelligence e RB Factory Sites protegidos; prévia HTML compartilhável preservada.
+- [x] PR #90 integrada: rotas de Editorial Factory, Senior Sales, Sales Orchestration, Opportunity Sales, Affiliate Strategy, Hunter e consulta Hotmart protegidas.
+- [x] CI principal e Affiliate CI pós-merge da PR #89 concluídos com sucesso (runs `41934330267` e `41934330206`).
+- [x] CI da PR #90 no HEAD rebaseado concluído com sucesso (runs `41934298441` e `41934298443`).
+- [ ] Confirmar CI pós-merge da PR #90 na main.
+
+### Proteção da confirmação de pagamentos — em validação
+
+- [ ] PR #91: webhook genérico de pagamento exige `x-payment-webhook-secret` comparado em tempo constante com `PAYMENT_WEBHOOK_SECRET`; simulação PIX exige chave administrativa e é desativada em produção.
+- [x] Testes de segurança novos aprovados no primeiro ciclo; testes HTTP antigos atualizados para autenticar chamadas legítimas do webhook.
+- [ ] CI do HEAD atualizado `b384cf7c8083de29b74c678076cff41244278805` em execução (runs `41934552853` e `41934552994`).
+- [ ] Continuar auditoria dos endpoints restantes de automação, campanhas, e-mail, finanças, agendamento e importação.
 - [ ] Sincronizar a cópia local com a main sem descartar alterações locais.
