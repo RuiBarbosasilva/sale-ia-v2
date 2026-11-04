@@ -645,3 +645,12 @@ A branch `feat/blog-factory-ia` foi atualizada para remover a dependência impl�
 
 ### Próxima ação técnica
 Depois de confirmar os dois workflows pós-merge, continuar a auditoria dos módulos existentes no HEAD atual, começando pelos smoke tests do Dashboard Central, Blog Factory, RB Factory Sites, Afiliados e Dropshipping. Preservar o estado de cada módulo e não reexecutar verificações já aprovadas sem mudança de código.
+
+
+## Auditoria RB Factory Sites — rodada adicional 04/11/2026
+
+- [x] PR #82 integrada: controller de autonomia agora aguarda os métodos async; CI principal e Affiliate CI verdes.
+- [x] PR #83 integrada no commit `bd4aaa3940b38f96b154a43cd6813c1eecf656e5`: corrigido falso status de proposta enviada. A função preparava texto/conversa, mas marcava proposta como SENT e prospect como PROPOSAL_SENT sem chamar provedor. Agora mantém READY e retorna `delivery.status=NOT_SENT`; registros SENT antigos são sinalizados como `LEGACY_UNVERIFIED`. CI principal e Affiliate CI passaram, incluindo testes e Guardian.
+- [ ] PR #84 em validação: a consulta da fila diária omitia `WebsiteProspect.contactedAt`, `nextFollowUpAt` e `status`, confundindo status do pipeline com status do prospect. Também agendar follow-up alterava `lastContactAt` sem contato real. Correção e testes entregues; aguardar ambos os workflows.
+- [ ] Continuar revisão de integridade dos estados de proposta e pipeline, sem marcar como enviado/publicado/contatado sem confirmação real.
+- [ ] Verificar integração de entrega real WhatsApp/e-mail: a geração de mensagens existe, mas não foi comprovado envio externo ativo. Manter ação manual até existir provedor autenticado e confirmação.
