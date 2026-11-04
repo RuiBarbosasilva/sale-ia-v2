@@ -22,7 +22,7 @@ describe('RB-Factory-Social-Media routes', () => {
   it('rejects protected API requests without the administrative key', async () => {
     const response = await request(app).get('/api/social-media-factory/status');
     expect(response.status).toBe(401);
-    expect(response.body.error).toBe('Chave administrativa inválida.');
+    expect(response.body.error).toBe('Acesso não autorizado.');
   });
 
   it('rejects an incorrect administrative key before accessing data', async () => {
@@ -30,6 +30,6 @@ describe('RB-Factory-Social-Media routes', () => {
       .get('/api/social-media-factory/status')
       .set('x-sale-ia-admin-key', 'incorrect-secret');
     expect(response.status).toBe(401);
-    expect(response.body.error).toBe('Chave administrativa inválida.');
+    expect(response.body.error).toBe('Acesso não autorizado.');
   });
 });
