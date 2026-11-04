@@ -37,17 +37,18 @@ function safeJson(value: unknown) {
 }
 
 router.get('/status', async (_req, res) => {
-  const [workspaces, posts, scheduled, published, failed, completedAutomationRuns] = await Promise.all([
+  const [workspaces, posts, scheduled, published, failed, deliveryUnknown, completedAutomationRuns] = await Promise.all([
     prisma.socialWorkspace.count(), prisma.socialPost.count(),
     prisma.socialPost.count({ where: { status: 'SCHEDULED' } }),
     prisma.socialPost.count({ where: { status: 'PUBLISHED' } }),
     prisma.socialPost.count({ where: { status: { in: ['FAILED', 'INTEGRATION_REQUIRED'] } } }),
+    prisma.socialPost.count({ where: { status: 'DELIVERY_UNKNOWN' } }),
     prisma.socialAutomationRun.count({ where: { status: 'COMPLETED' } }),
   ]);
   res.json({
     module: 'Social Media Factory IA', status: 'READY_FOR_CONFIGURATION',
     platforms: PLATFORMS.map(platform => ({ platform, publishing: 'REQUIRES_OAUTH_AND_PROVIDER_ADAPTER' })),
-    metrics: { workspaces, posts, scheduled, published, failed, completedAutomationRuns },
+    metrics: { workspaces, posts, scheduled, published, failed, deliveryUnknown, completedAutomationRuns },
     aiConfigured: Boolean(process.env.OPENAI_API_KEY),
     oauth: socialOAuthConfigurationStatus(),
     schedulerEnabled: String(process.env.SOCIAL_MEDIA_FACTORY_ENABLED).toLowerCase() === 'true',
