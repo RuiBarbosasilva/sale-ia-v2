@@ -78,7 +78,9 @@ describe("Dashboard Routes", () => {
     const res = await request(app).get("/legacy-dashboard/api/metricas");
     expect(res.status).toBe(401);
     expect(res.body.error).toBe("ADMIN_UNAUTHORIZED");
-  });\n\n  it("bloqueia acesso administrativo sem chave", async () => {
+  });
+
+  it("bloqueia acesso administrativo sem chave", async () => {
     const res = await request(app).get("/dashboard/overview");
     expect(res.status).toBe(401);
     expect(res.body.error).toBe("ADMIN_UNAUTHORIZED");
