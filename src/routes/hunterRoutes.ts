@@ -1,6 +1,8 @@
 import { Router } from 'express';
+import { adminAuthorization } from '../middlewares/security';
 import { hunterController } from '../controllers/hunterController';
 const router=Router();
+router.use(adminAuthorization);
 router.post('/research', hunterController.research);
 router.get('/dashboard',hunterController.dashboard);
 router.get('/opportunities',hunterController.opportunities);
