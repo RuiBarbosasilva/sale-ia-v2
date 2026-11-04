@@ -697,3 +697,19 @@ Depois de confirmar os dois workflows pós-merge, continuar a auditoria dos mód
 - [x] CI principal e Affiliate CI da PR #87 aprovados no HEAD corrigido (runs `41931704593` e `41931704632`).
 - [ ] CI pós-merge da main em execução: principal run `41932902804`; Affiliate CI run `41932902858`.
 - [ ] Sincronizar a cópia local com a main sem descartar alterações locais.
+
+
+### Proteção de rotas administrativas e webhook Hotmart — 04/11/2026
+
+- [x] PR #87 integrada: rota legada de métricas do dashboard protegida; commit `b7fda3bcebc4fb279fe5d08b6ea2aa425cf2a05c`.
+- [x] PR #88 integrada: webhook Hotmart exige `x-affiliate-webhook-key` com comparação em tempo constante; rotas operacionais de Afiliados IA, produtos, geração de conteúdo e Factory Ebook protegidas; commit `8bba2990ed6582590b3e8c6ac4da240d826c953f`.
+- [x] PR #89 integrada: credenciais, Pinterest, criação de anúncios ML, geração de conteúdo, importação de afiliados, inteligência de afiliados e APIs de gestão de sites exigem chave administrativa; a prévia HTML compartilhável permanece pública; commit `b2b330e734069f42a60a8c303583bb4f620c3157`.
+- [x] CI principal e Affiliate CI da PR #89 aprovados (runs `41933969879` e `41933969895`).
+- [ ] CI pós-merge da main para PR #89 em execução (runs `41934226290` e `41934226447`).
+
+### Proteção de vendas, pesquisa e confirmação de pagamentos — em andamento
+
+- [ ] PR #90: proteger Editorial Factory, Senior Sales, Sales Orchestration, Opportunity Sales, Affiliate Strategy, Hunter e endpoints de dados/vendas Hotmart. CI do HEAD atualizado `fcca1ff562acd643abf66349941b757bb3a5fa78` em execução (runs `41934288640` e `41934288658`).
+- [ ] PR #91: proteger webhook genérico de pagamentos com `PAYMENT_WEBHOOK_SECRET`; exigir autenticação para simulação PIX e desativá-la em produção. CI em execução (runs `41934186217` e `41934186228`).
+- [ ] Auditar endpoints remanescentes de campanhas, automação, e-mail, dados financeiros, checkout e agendamento antes de liberar como concluídos.
+- [ ] Sincronizar a cópia local com a main sem descartar alterações locais.
