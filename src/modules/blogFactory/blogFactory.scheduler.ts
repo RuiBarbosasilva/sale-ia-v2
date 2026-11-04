@@ -27,6 +27,10 @@ export class BlogFactoryScheduler {
 export const blogFactoryScheduler = new BlogFactoryScheduler();
 
 export function startBlogFactoryScheduler() {
+  if (String(process.env.BLOG_FACTORY_AUTORUN_ENABLED || '').toLowerCase() !== 'true') {
+    console.log('[BlogFactory] Scheduler desativado; defina BLOG_FACTORY_AUTORUN_ENABLED=true para ativar.');
+    return;
+  }
   if (timer) return;
   const configured = Number(process.env.BLOG_FACTORY_INTERVAL_MS || 6 * 60 * 60 * 1000);
   const interval = Number.isFinite(configured) ? Math.min(Math.max(configured, 60_000), 7 * 24 * 60 * 60 * 1000) : 6 * 60 * 60 * 1000;
