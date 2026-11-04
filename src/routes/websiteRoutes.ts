@@ -7,16 +7,15 @@ import multer from 'multer';
 const router = Router();
 const templateUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024, files: 1 } });
 
+// Client-shareable rendered preview remains public; all management APIs below require admin auth.
+router.get('/studio/demos/:id/html', websiteStudioController.getHtml);
+
+router.use(adminAuthorization);
+
 router.post('/analyze', (req, res) => websiteController.analyze(req, res));
 router.post('/generate', (req, res) => websiteController.generate(req, res));
 router.get('/demos', (req, res) => websiteController.listDemos(req, res));
 router.get('/demo/:id', (req, res) => websiteController.getDemo(req, res));
-
-
-router.get('/studio/demos/:id/html', websiteStudioController.getHtml);
-
-// All Studio/API operations are admin-protected; the HTML preview above remains public for client sharing.
-router.use(adminAuthorization);
 
 // ==========================================
 // SITE FACTORY STUDIO (Briefing -> Geracao -> Preview -> Export)

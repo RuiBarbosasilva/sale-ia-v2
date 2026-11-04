@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { affiliateIntelligenceController as c } from '../controllers/affiliateIntelligenceController';
+import { adminAuthorization } from '../middlewares/security';
 const router=Router();
+router.use(adminAuthorization);
 router.get('/health',c.dashboard);
 router.post('/bootstrap',c.bootstrap);
 router.get('/dashboard',c.dashboard);
