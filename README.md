@@ -86,6 +86,8 @@ O modulo de afiliados foi estruturado como uma base de monetizacao independente 
 
 Protegido por `x-affiliate-webhook-key`. Use `externalOrderId` para idempotencia: uma mesma venda externa nao deve gerar duas comissoes.
 
+O endpoint legado `POST /api/afiliados/webhook/hotmart` também exige `x-affiliate-webhook-key`, validado em tempo constante contra `AFFILIATE_WEBHOOK_KEY`. Configure o mesmo segredo no emissor do webhook; eventos sem chave válida são rejeitados antes de alterar vendas, comissões ou métricas.
+
 ### Ledger financeiro
 
 O fluxo de saque agora usa `AffiliatePayoutItem` para vincular cada saque às vendas que compoem o valor.
