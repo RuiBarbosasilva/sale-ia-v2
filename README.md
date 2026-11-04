@@ -170,3 +170,20 @@ Depois reinicie o servidor. No laboratório, crie consultas em **Agendar pesquis
 - `GET /api/mercadolivre/dropshipping/dashboard/summary` — resume candidatos, fornecedores, margens, alertas e última pesquisa.
 
 A pesquisa automática atual cobre o catálogo do Mercado Livre. A integração de fornecedores externos e Shopee ainda exige adapters específicos; o sistema não compra nem publica anúncios automaticamente. Campos de vendas ausentes permanecem desconhecidos e scores não garantem demanda ou lucro.
+
+
+## RB-Factory-Social-Media
+
+Painel em `/social-media-factory` para seis canais: Instagram, Facebook, TikTok, YouTube, Google Business Profile e Pinterest. Inclui projetos multiempresa, OAuth, tokens criptografados, calendário, rascunhos, logs e publicação por adaptadores oficiais.
+
+### Ativação segura
+
+- Configure `SALE_IA_ADMIN_KEY`, `SOCIAL_MEDIA_TOKEN_ENCRYPTION_KEY` (32 bytes em hexadecimal/Base64) e as credenciais OAuth de cada provedor.
+- Configure `SOCIAL_MEDIA_OAUTH_REDIRECT_URI` como URL HTTPS pública exata cadastrada nos apps.
+- Configure `PUBLIC_BASE_URL` HTTPS para mídia pública; habilite geração de imagens/vídeos somente quando os recursos e dependências estiverem instalados.
+- Instale dependências opcionais de vídeo com `python -m pip install -r tools/requirements-social-media.txt` e disponibilize FFmpeg.
+- Mantenha `SOCIAL_MEDIA_FACTORY_ENABLED=false` até concluir OAuth, permissões, escopos e testes de publicação com contas autorizadas. A ativação do scheduler é opt-in.
+- TikTok exige consentimento explícito por publicação; posts são mantidos como rascunhos até ação individual. A publicação de mídia e a visibilidade dependem das políticas e auditorias dos provedores.
+- `SOCIAL_MEDIA_DRY_RUN=true` registra simulações como `DRY_RUN`, nunca como publicação real.
+
+O painel central apresenta o módulo como **RB-Factory-Social-Media**. A publicação real requer credenciais e autorização válidas em cada plataforma; o código não concede permissões nem aprovação de aplicativos.
