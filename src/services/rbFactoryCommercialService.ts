@@ -15,7 +15,7 @@ export const rbFactoryCommercialService={
     const prospects=await prisma.websiteProspect.findMany({where,orderBy:[{score:'desc'},{updatedAt:'desc'}],take:500});
     const prospectIds=prospects.map(p=>p.id);
     const pipelines=prospectIds.length ? await (prisma as any).$queryRawUnsafe(
-      `SELECT p.*, w.companyName,w.segment,w.city,w.state,w.phone,w.email,w.currentWebsite,w.websiteStatus,w.score AS prospectScore
+      `SELECT p.*, w.companyName,w.segment,w.city,w.state,w.phone,w.email,w.currentWebsite,w.websiteStatus,w.score AS prospectScore,w.contactedAt,w.nextFollowUpAt,w.status AS prospectStatus
        FROM "RbFactorySalesPipeline" p JOIN "WebsiteProspect" w ON w.id=p.prospectId
        WHERE w.id IN (${prospectIds.map(()=>'?').join(',')})
        ORDER BY p.priority DESC,p.updatedAt DESC`,...prospectIds) : [];
@@ -56,12 +56,12 @@ export const rbFactoryCommercialService={
       const stale=p.updatedAt && (now-new Date(p.updatedAt).getTime())>=7*86400000;
       const contacted=Boolean(p.contactedAt);
       const stage=String(p.stage||'');
-      const status=String(p.status||'');
+      const prospectStatus=String(p.prospectStatus||'');
       let bucket:string|null=null;
       if(due) bucket='FOLLOW_UP_DUE';
-      else if(stage==='WON' || stage==='ACCEPTED' || status==='WON') bucket='WON_READY';
+      else if(stage==='WON' || stage==='ACCEPTED' || prospectStatus==='WON' || prospectStatus==='ACCEPTED') bucket='WON_READY';
       else if(stage==='NEGOTIATION' && stale) bucket='NEGOTIATION_STALLED';
-      else if(stage==='PROPOSAL_READY' || stage==='PROPOSAL_SENT' || status==='PROPOSAL_SENT') bucket='PROPOSAL_WAITING';
+      else if(stage==='PROPOSAL_READY' || stage==='PROPOSAL_SENT' || prospectStatus==='PROPOSAL_SENT') bucket='PROPOSAL_WAITING';
       else if(stage==='DEMO_READY') bucket='DEMO_TO_SEND';
       else if(stage==='AUDITED' || p.nextAction==='GENERATE_DEMO') bucket='DEMO_TO_GENERATE';
       else if(!contacted && ['DISCOVERED','AUDITED'].includes(stage)) bucket='NEW_CONTACT';
@@ -87,7 +87,7 @@ export const rbFactoryCommercialService={
 
   async scheduleFollowUp(prospectId:string,days=3,note?:string){
     const when=new Date(Date.now()+Math.max(1,Math.min(90,days))*86400000);
-    const p=await prisma.websiteProspect.update({where:{id:prospectId},data:{nextFollowUpAt:when,lastContactAt:new Date(),notes:note||undefined}});
+    const p=await prisma.websiteProspect.update({where:{id:prospectId},data:{nextFollowUpAt:when,notes:note||undefined}});
     return p;
   }
 };
