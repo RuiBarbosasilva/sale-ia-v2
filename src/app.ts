@@ -42,6 +42,7 @@ import produtosRoutes from './modules/afiliados-ia/routes/produtos.routes';
 import { handleAffiliateWebhook } from './modules/afiliados-ia/controllers/webhook.controller';
 import contentGeneratorRoutes from './modules/afiliados-ia/routes/contentGenerator.routes';
 import blogFactoryRoutes from './modules/blogFactory/blogFactory.routes';
+import { startBlogFactoryScheduler } from './modules/blogFactory/blogFactory.scheduler';
 
 const app = express();
 
@@ -141,6 +142,11 @@ app.use('/api/content-factory', contentFactoryRoutes);
 // ==========================================
 app.use('/api/afiliados/conteudo', contentGeneratorRoutes);
 app.use('/api/blog-factory', blogFactoryRoutes);
+
+// Start the periodic Blog Factory cycle only when explicitly enabled.
+if (String(process.env.BLOG_FACTORY_AUTORUN_ENABLED || '').toLowerCase() === 'true') {
+  startBlogFactoryScheduler();
+}
 
 // ==========================================
 // MIDDLEWARE DE ERRO (DEVE SER O ÃƒÆ’Ã…Â¡LTIMO)
