@@ -5,6 +5,7 @@ import { mercadoLivreWebhookWorker } from './modules/mercadoLivre/workers/mercad
 import { startDropshippingResearchScheduler } from './modules/mercadoLivre/services/dropshippingResearchScheduler';
 import app from './app';
 import { startBlogFactoryScheduler } from './modules/blogFactory/blogFactory.scheduler';
+import { startSocialMediaFactoryScheduler } from './modules/social-media-factory/social-media-factory.scheduler';
 
 const PORT = process.env.PORT || 3000;
 
@@ -16,6 +17,10 @@ app.use('/dashboard', dashboardRoutes);
 if (process.env.NODE_ENV !== 'test') {
   server = app.listen(PORT, async () => {
     console.log(`[SERVER] Rodando na porta ${PORT}`);
+    if (String(process.env.SOCIAL_MEDIA_FACTORY_ENABLED || '').toLowerCase() === 'true') {
+      startSocialMediaFactoryScheduler();
+      console.log('[SOCIAL MEDIA FACTORY] Agendador ativado.');
+    }
     if (String(process.env.BLOG_FACTORY_AUTORUN_ENABLED || '').toLowerCase() === 'true') {
       startBlogFactoryScheduler();
       console.log('[BLOG FACTORY] Agendador ativado.');
