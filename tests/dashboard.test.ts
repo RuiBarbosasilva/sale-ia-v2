@@ -1,6 +1,7 @@
 import request from "supertest";
 import express from "express";
 import dashboardRoutes from "../src/routes/dashboardRoutes";
+import { dashboardRoutes as legacyDashboardRoutes } from "../src/modules/dashboard/dashboard.routes";
 
 process.env.SALE_IA_ADMIN_KEY = "test-admin-key-123456";
 
@@ -62,6 +63,7 @@ import { fetchMLMetrics } from "../src/modules/mercadoLivre/controllers/metricsC
 const app = express();
 app.use(express.json());
 app.use("/dashboard", dashboardRoutes);
+app.use("/legacy-dashboard", legacyDashboardRoutes);
 
 const auth = {
   "x-sale-ia-admin-key": "test-admin-key-123456",
@@ -70,6 +72,12 @@ const auth = {
 describe("Dashboard Routes", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  it("protege métricas legadas de afiliados contra acesso sem autenticação", async () => {
+    const res = await request(app).get("/legacy-dashboard/api/metricas");
+    expect(res.status).toBe(401);
+    expect(res.body.error).toBe("ADMIN_UNAUTHORIZED");
   });
 
   it("bloqueia acesso administrativo sem chave", async () => {
