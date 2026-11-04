@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { rateLimit, timingSafeSecret } from '../../middlewares/security';
+import { adminAuthorization, rateLimit, timingSafeSecret } from '../../middlewares/security';
 import { generateTikTokAffiliatePackage } from './services/tiktokAffiliateContent.service';
 import {
   executarHunter,
@@ -17,6 +17,19 @@ import { debugCriativo } from './debug-criativo.controller';
 
 export const afiliadosIaRoutes = Router();
 
+// O webhook é público para a Hotmart, mas exige segredo próprio em cada chamada.
+function hotmartWebhookGuard(req: Request, res: Response, next: NextFunction) {
+  if (!timingSafeSecret(process.env.AFFILIATE_WEBHOOK_KEY, req.header('x-affiliate-webhook-key'))) {
+    return res.status(401).json({ success: false, error: 'AFFILIATE_WEBHOOK_UNAUTHORIZED' });
+  }
+  return next();
+}
+
+afiliadosIaRoutes.post('/webhook/hotmart', hotmartWebhookGuard, receberWebhookHotmart);
+
+// Todas as rotas operacionais e administrativas exigem a chave SALE-IA.
+afiliadosIaRoutes.use(adminAuthorization);
+
 // Rota de debug
 afiliadosIaRoutes.get('/debug/criativo', debugCriativo);
 
@@ -28,7 +41,7 @@ afiliadosIaRoutes.post('/copies/gerar', gerarCopies);
 afiliadosIaRoutes.post('/criativo/gerar', gerarCriativo);
 afiliadosIaRoutes.post('/vendedor/fluxo', gerarFluxoVendedor);
 afiliadosIaRoutes.post('/divulgar/telegram', divulgarNoTelegram);
-afiliadosIaRoutes.post('/webhook/hotmart', receberWebhookHotmart);
+
 afiliadosIaRoutes.get('/oportunidades', relatorioOportunidades);
 afiliadosIaRoutes.get('/dashboard', obterDashboard);
 
