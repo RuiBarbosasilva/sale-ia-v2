@@ -1,7 +1,15 @@
 import { Router, Request, Response } from "express";
 import { paymentService } from "../services/paymentService";
+import { timingSafeSecret } from "../middlewares/security";
 
 const router = Router();
+
+function paymentWebhookGuard(req: Request, res: Response, next: import("express").NextFunction) {
+  if (!timingSafeSecret(process.env.PAYMENT_WEBHOOK_SECRET, req.header("x-payment-webhook-secret"))) {
+    return res.status(401).json({ success: false, error: "PAYMENT_WEBHOOK_UNAUTHORIZED" });
+  }
+  return next();
+}
 
 /**
  * Webhook genérico de confirmação de pagamento.
@@ -9,7 +17,7 @@ const router = Router();
  * O formato é propositalmente simples para permitir
  * integração posterior com o gateway escolhido.
  */
-router.post("/webhook", async (req: Request, res: Response) => {
+router.post("/webhook", paymentWebhookGuard, async (req: Request, res: Response) => {
   try {
 
     const body = req.body || {};

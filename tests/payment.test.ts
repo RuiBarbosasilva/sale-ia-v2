@@ -92,12 +92,15 @@ import request from 'supertest';
 import app from '../src/app';
 
 describe('Payment Webhook HTTP Integration (Checkpoint 09.11)', () => {
+  const previousPaymentWebhookSecret = process.env.PAYMENT_WEBHOOK_SECRET;
+  const paymentWebhookSecret = 'payment-webhook-integration-test-secret';
   let testLeadId: string;
   let testOrderId: string;
   const testTransactionId = 'webhook_tx_' + Date.now().toString();
   const testAmount = 150.00;
 
   beforeAll(async () => {
+    process.env.PAYMENT_WEBHOOK_SECRET = paymentWebhookSecret;
     // Criar dados de teste únicos
     const lead = await prisma.lead.create({ 
       data: { phone: '55119' + Date.now().toString().substring(5), name: 'Webhook Test Lead' } 
@@ -116,11 +119,14 @@ describe('Payment Webhook HTTP Integration (Checkpoint 09.11)', () => {
     await prisma.payment.deleteMany({ where: { orderId: testOrderId } });
     await prisma.order.deleteMany({ where: { id: testOrderId } });
     await prisma.lead.deleteMany({ where: { id: testLeadId } });
+    if (previousPaymentWebhookSecret === undefined) delete process.env.PAYMENT_WEBHOOK_SECRET;
+    else process.env.PAYMENT_WEBHOOK_SECRET = previousPaymentWebhookSecret;
   });
 
   it('TESTE 1: Webhook válido deve retornar 200 e criar Payment + Sale', async () => {
     const res = await request(app)
       .post('/api/payments/webhook')
+      .set('x-payment-webhook-secret', paymentWebhookSecret)
       .send({ orderId: testOrderId, transactionId: testTransactionId, amount: testAmount, provider: 'MANUAL' })
       .expect(200);
 
@@ -149,6 +155,7 @@ describe('Payment Webhook HTTP Integration (Checkpoint 09.11)', () => {
 
     const res = await request(app)
       .post('/api/payments/webhook')
+      .set('x-payment-webhook-secret', paymentWebhookSecret)
       .send({ orderId: testOrderId, transactionId: testTransactionId, amount: testAmount })
       .expect(200);
 
@@ -164,6 +171,7 @@ describe('Payment Webhook HTTP Integration (Checkpoint 09.11)', () => {
   it('TESTE 3: Order inexistente deve retornar 400', async () => {
     const res = await request(app)
       .post('/api/payments/webhook')
+      .set('x-payment-webhook-secret', paymentWebhookSecret)
       .send({ orderId: 'order-inexistente-123', transactionId: 'tx_novo_1', amount: 100 })
       .expect(400);
 
@@ -174,6 +182,7 @@ describe('Payment Webhook HTTP Integration (Checkpoint 09.11)', () => {
   it('TESTE 4: Valor incorreto (amount divergente) deve retornar 400', async () => {
     const res = await request(app)
       .post('/api/payments/webhook')
+      .set('x-payment-webhook-secret', paymentWebhookSecret)
       .send({ orderId: testOrderId, transactionId: 'tx_novo_2', amount: 999.99 }) // Valor diferente de 150.00
       .expect(400);
 
@@ -184,6 +193,7 @@ describe('Payment Webhook HTTP Integration (Checkpoint 09.11)', () => {
   it('TESTE 5: transactionId ausente deve retornar 400', async () => {
     const res = await request(app)
       .post('/api/payments/webhook')
+      .set('x-payment-webhook-secret', paymentWebhookSecret)
       .send({ orderId: testOrderId, amount: testAmount })
       .expect(400);
 
@@ -194,6 +204,7 @@ describe('Payment Webhook HTTP Integration (Checkpoint 09.11)', () => {
   it('TESTE 6: orderId ausente deve retornar 400', async () => {
     const res = await request(app)
       .post('/api/payments/webhook')
+      .set('x-payment-webhook-secret', paymentWebhookSecret)
       .send({ transactionId: 'tx_novo_3', amount: testAmount })
       .expect(400);
 
@@ -204,6 +215,7 @@ describe('Payment Webhook HTTP Integration (Checkpoint 09.11)', () => {
   it('TESTE 7: amount inválido (0 ou negativo) deve retornar 400', async () => {
     const res = await request(app)
       .post('/api/payments/webhook')
+      .set('x-payment-webhook-secret', paymentWebhookSecret)
       .send({ orderId: testOrderId, transactionId: 'tx_novo_4', amount: 0 })
       .expect(400);
 
@@ -215,6 +227,7 @@ describe('Payment Webhook HTTP Integration (Checkpoint 09.11)', () => {
     const newTxId = 'tx_manual_' + Date.now().toString();
     const res = await request(app)
       .post('/api/payments/webhook')
+      .set('x-payment-webhook-secret', paymentWebhookSecret)
       .send({ orderId: testOrderId, transactionId: newTxId, amount: testAmount }) // sem provider
       .expect(200);
 
