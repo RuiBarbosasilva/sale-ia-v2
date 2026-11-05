@@ -1,7 +1,21 @@
 import { Router, Request, Response } from 'express';
 import { whatsappAutomationService } from '../services/whatsappAutomationService';
+import { timingSafeSecret } from '../middlewares/security';
 
 const router = Router();
+
+function whatsappWebhookGuard(req: Request, res: Response, next: import('express').NextFunction) {
+  const expected = process.env.WHATSAPP_WEBHOOK_SECRET;
+  const provided = req.header('x-whatsapp-webhook-secret');
+
+  if (!expected && process.env.NODE_ENV === 'production') {
+    return res.status(503).json({ success: false, error: 'WHATSAPP_WEBHOOK_SECRET_NOT_CONFIGURED' });
+  }
+  if (expected && !timingSafeSecret(expected, provided)) {
+    return res.status(401).json({ success: false, error: 'WHATSAPP_WEBHOOK_UNAUTHORIZED' });
+  }
+  return next();
+}
 
 // Handler extraído para evitar erro de tipo no Express
 const handleWebhook = async (req: Request, res: Response) => {
@@ -34,7 +48,7 @@ const handleWebhook = async (req: Request, res: Response) => {
 };
 
 // Registrar o mesmo handler em duas rotas para compatibilidade
-router.post('/', handleWebhook);
-router.post('/whatsapp', handleWebhook);
+router.post('/', whatsappWebhookGuard, handleWebhook);
+router.post('/whatsapp', whatsappWebhookGuard, handleWebhook);
 
 export default router;
