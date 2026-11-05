@@ -1,7 +1,9 @@
+import { adminAuthorization } from '../middlewares/security';
 ﻿import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 
 const router = Router();
+router.use(adminAuthorization);
 const prisma = new PrismaClient();
 
 router.post('/campaigns', async (req: Request, res: Response) => {

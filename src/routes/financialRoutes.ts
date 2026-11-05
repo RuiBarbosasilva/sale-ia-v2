@@ -1,7 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 
+import { adminAuthorization } from '../middlewares/security';
 const router = Router();
+router.use(adminAuthorization);
 const prisma = new PrismaClient();
 
 // Dashboard financeiro por segmento (baseado em estoque e margem)

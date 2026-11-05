@@ -2,7 +2,9 @@ import { Router, Request, Response } from 'express';
 import { emailService } from '../services/emailService';
 import { PrismaClient } from '@prisma/client';
 
+import { adminAuthorization } from '../middlewares/security';
 const router = Router();
+router.use(adminAuthorization);
 const prisma = new PrismaClient();
 
 // Enviar email de catálogo

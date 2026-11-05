@@ -2,7 +2,9 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { outreachService } from '../services/outreachService';
 
+import { adminAuthorization } from '../middlewares/security';
 const router = Router();
+router.use(adminAuthorization);
 const prisma = new PrismaClient();
 
 router.post('/send', async (req: Request, res: Response) => {
