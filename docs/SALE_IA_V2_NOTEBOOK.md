@@ -775,3 +775,29 @@ Inspecionar as rotas restantes de produtos, fornecedores, criativos, templates, 
 - `POST /api/chat` é uma entrada pública que cria/processa leads e mensagens; avaliar rate limit e validação de payload sem impedir o atendimento legítimo.
 - `/api/checkout/generate-pix` monta um payload PIX e QR local sem confirmação de gateway; não considerar isso uma cobrança integrada nem marcar pedido como pago.
 - Rotas de cotação/preço ainda precisam de revisão de exposição de margem, desconto e acesso a cotações por ID.
+
+### Resultado da PR #93 — 05/11/2026
+- [x] Integrada na `main` pelo commit `7ee8cd65b597d35c5396deaca3d05d6dfc95892e`.
+- [x] CI do commit rebased `92f1ad0f63768a689297835c175cb72d814c3992`: `41940030500` (sale-ia-v2-ci) e `41940030477` (Affiliate Module CI), ambas com sucesso.
+- [x] Protegidos CRM/leads, fornecedores, geração de criativos e operações de escrita do catálogo.
+- [x] Mantidas leituras públicas dos catálogos de produtos, templates e categorias; mutações exigem chave administrativa.
+
+### PR #94 — geração PIX correta no checkout
+- PR: https://github.com/RuiBarbosasilva/sale-ia-v2/pull/94
+- Branch: `fix/generate-valid-checkout-pix`.
+- Commit atual rebased: `5e70aa5f1ab6786c7e21ef68878762f2b3f10183`.
+- [x] Eliminado o payload PIX placeholder montado manualmente.
+- [x] Checkout passa a usar o gerador PIX existente e exige `PIX_KEY`; sem chave, não cria pedido.
+- [x] QR gerado localmente como data URL; TXID limitado a 25 caracteres.
+- [x] Resposta informa explicitamente que PIX estático não comprova recebimento; confirmação depende de webhook/gateway autenticado.
+- [x] Documentadas `PIX_KEY`, `PIX_NAME` e `PIX_CITY`.
+- [ ] CI do commit rebased em execução; não integrar até os dois workflows passarem.
+
+### PR #95 — privacidade na consulta pública de cotação
+- PR: https://github.com/RuiBarbosasilva/sale-ia-v2/pull/95
+- Branch: `fix/sanitize-public-quote-details`.
+- Commit atual rebased: `d44fa50385d9c11f4c17bbe6a93e2c4e79d52130`.
+- [x] Consulta pública por ID deixa de retornar custo interno, telefone, e-mail e IDs internos de lead/produto.
+- [x] Mantidos apenas os campos necessários para a visualização comercial da cotação.
+- [x] Teste de regressão verifica a ausência dos campos privados.
+- [ ] CI em execução; não integrar antes da aprovação dos dois workflows.
