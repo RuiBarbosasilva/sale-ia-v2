@@ -801,3 +801,15 @@ Inspecionar as rotas restantes de produtos, fornecedores, criativos, templates, 
 - [x] Mantidos apenas os campos necessários para a visualização comercial da cotação.
 - [x] Teste de regressão verifica a ausência dos campos privados.
 - [ ] CI em execução; não integrar antes da aprovação dos dois workflows.
+
+### Resultado da PR #96 — autenticação do webhook WhatsApp
+- [x] Integrada na `main` pelo commit `33918fd2878df1624eaeae5d1dc9e4ff6e763437`.
+- [x] Em produção, os endpoints `/api/webhook` e `/api/webhook/whatsapp` falham fechado se `WHATSAPP_WEBHOOK_SECRET` não estiver configurado.
+- [x] Quando configurado, exigem `x-whatsapp-webhook-secret` correto, comparado em tempo constante.
+- [x] CI da PR: execução `41940696766` (sale-ia-v2-ci) e `41940696768` (Affiliate Module CI), ambas concluídas com sucesso.
+- [ ] Configurar `WHATSAPP_WEBHOOK_SECRET` no ambiente de produção e o mesmo header no emissor Evolution API/proxy confiável antes de reativar recebimento externo em produção.
+
+### Rebase após PR #96
+- PR #94: novo commit `40e970dfb9df655720523689fa45cbe1e2445d78`; CI em execução.
+- PR #95: novo commit `4e6e84dd82e043bd2a8c5a7ad4b4f1d3cf8daa0b`; CI em execução.
+- Não integrar PRs #94/#95 até ambos os workflows passarem nos commits rebased.
