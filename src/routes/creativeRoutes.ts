@@ -1,7 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { creativeGeneratorService } from '../services/creativeGeneratorService';
 
+import { adminAuthorization } from '../middlewares/security';
 const router = Router();
+router.use(adminAuthorization);
 
 // Gerar criativo unico
 router.post('/generate', async (req: Request, res: Response) => {

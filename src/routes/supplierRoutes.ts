@@ -2,7 +2,9 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { marginAnalysisService } from '../services/marginAnalysisService';
 
+import { adminAuthorization } from '../middlewares/security';
 const router = Router();
+router.use(adminAuthorization);
 const prisma = new PrismaClient();
 
 // Listar fornecedores

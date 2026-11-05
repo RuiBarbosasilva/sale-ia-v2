@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { productService } from '../services/productService';
+import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
 
@@ -22,7 +23,7 @@ router.get('/niches', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const product = await productService.create(req.body);
     return res.json({ success: true, product });
@@ -31,7 +32,7 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const product = await productService.update(req.params.id, req.body);
     return res.json({ success: true, product });
@@ -40,7 +41,7 @@ router.put('/:id', async (req: Request, res: Response) => {
   }
 });
 
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', adminAuthorization, async (req: Request, res: Response) => {
   try {
     await productService.delete(req.params.id);
     return res.json({ success: true });
