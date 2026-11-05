@@ -730,3 +730,26 @@ Depois de confirmar os dois workflows pós-merge, continuar a auditoria dos mód
 - [ ] CI do HEAD atualizado `b384cf7c8083de29b74c678076cff41244278805` em execução (runs `41934552853` e `41934552994`).
 - [ ] Continuar auditoria dos endpoints restantes de automação, campanhas, e-mail, finanças, agendamento e importação.
 - [ ] Sincronizar a cópia local com a main sem descartar alterações locais.
+
+## Continuidade da auditoria de segurança — 04/11/2026
+
+### PR #91 — confirmação de pagamentos protegida
+- [x] Integrada na branch `main` pelo commit `5cd3222665be40754ba5f50932112e2ca1db256e`.
+- [x] Webhook de pagamento exige `x-payment-webhook-secret`, validado contra `PAYMENT_WEBHOOK_SECRET` em tempo constante.
+- [x] Simulação PIX exige autenticação administrativa e retorna 404 em produção.
+- [x] Corrigidas as sete chamadas antigas de teste que não enviavam o segredo.
+- [x] CI da branch após a correção: execução `41935168691` (sale-ia-v2-ci) e `41935168825` (Affiliate Module CI), ambas concluídas com sucesso.
+- [x] CI pós-merge na main: `41938529570` e `41938529577`, ambas concluídas com sucesso.
+
+### PR #92 — proteção das operações e integridade do agendador
+- Branch: `fix/protect-operations-and-truthful-scheduler`.
+- PR: https://github.com/RuiBarbosasilva/sale-ia-v2/pull/92
+- Commit atual: `2929eb8220bfcf6dcf8bc237cf10fc6623188487`.
+- [x] Protegidas com `adminAuthorization` as rotas de automação, campanhas, e-mail, outreach, financeiro, agendamento, follow-up, importação, segmentação e vendas de sites.
+- [x] Criados dez testes de regressão para acessos sem autenticação.
+- [x] Corrigido falso positivo do scheduler: sem integração real com plataforma, o job agora opera em `DRY_RUN`, informa `published: 0` e não altera o status nem `publishedAt` dos posts.
+- [ ] CI da PR #92 (sale-ia-v2-ci e Affiliate Module CI) em execução; não integrar antes de ambos passarem.
+- [ ] Revisar compatibilidade do painel com o retorno `mode: DRY_RUN` antes de ativar qualquer publicação real.
+
+### Próxima auditoria
+Inspecionar as rotas restantes de produtos, fornecedores, criativos, templates, categorias, leads e checkout para separar corretamente operações administrativas de endpoints públicos necessários. Não aplicar autenticação global em `/api`. Preservar webhooks e entrada pública de leads com validação própria e controles antiabuso.
