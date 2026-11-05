@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../modules/mercadoLivre/lib/prisma';
+import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
 
@@ -16,7 +17,7 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const { name, description, icon } = req.body;
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -29,7 +30,7 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const category = await prisma.websiteCategory.update({
       where: { id: req.params.id },
@@ -41,7 +42,7 @@ router.put('/:id', async (req: Request, res: Response) => {
   }
 });
 
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', adminAuthorization, async (req: Request, res: Response) => {
   try {
     await prisma.websiteCategory.update({
       where: { id: req.params.id },

@@ -1,7 +1,9 @@
+import { adminAuthorization } from '../middlewares/security';
 ﻿import { Router, Request, Response } from "express";
 import { resetLeadHumanMode, getLeads } from "../services/leadService";
 
 const router = Router();
+router.use(adminAuthorization);
 // Listar leads (CRM)
 router.get('/', async (req: Request, res: Response) => {
   try {

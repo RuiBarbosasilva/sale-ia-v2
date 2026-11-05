@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { productSegmentService } from '../services/productSegmentService';
+import { adminAuthorization } from '../middlewares/security';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -16,7 +17,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // Criar segmento
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const { name, description, color, icon } = req.body;
     if (!name) return res.status(400).json({ error: 'Nome e obrigatorio' });
@@ -53,7 +54,7 @@ router.get('/:segmentId/products', async (req: Request, res: Response) => {
 
 
 // Deletar segmento (soft delete - desativa)
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', adminAuthorization, async (req: Request, res: Response) => {
   try {
     await prisma.productSegment.update({
       where: { id: req.params.id },
@@ -66,7 +67,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
 });
 
 // Editar segmento
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', adminAuthorization, async (req: Request, res: Response) => {
   try {
     const { name, description, color, icon } = req.body;
     const updated = await prisma.productSegment.update({

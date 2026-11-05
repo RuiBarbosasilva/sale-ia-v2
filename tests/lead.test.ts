@@ -27,7 +27,17 @@ jest.mock("@prisma/client", () => {
 });
 
 describe("Lead Routes & Service", () => {
+  const previousAdminKey = process.env.SALE_IA_ADMIN_KEY;
   let prisma: any;
+
+  beforeAll(() => {
+    process.env.SALE_IA_ADMIN_KEY = "lead-routes-test-admin-secret";
+  });
+
+  afterAll(() => {
+    if (previousAdminKey === undefined) delete process.env.SALE_IA_ADMIN_KEY;
+    else process.env.SALE_IA_ADMIN_KEY = previousAdminKey;
+  });
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -43,8 +53,8 @@ describe("Lead Routes & Service", () => {
 
       prisma.lead.findMany.mockResolvedValue(mockLeads);
 
-      const res = await request(app).get("/leads");
-      expect([200, 404, 500]).toContain(res.status);
+      const res = await request(app).get("/leads").set("x-sale-ia-admin-key", "lead-routes-test-admin-secret");
+      expect(res.status).toBe(200);
     });
   });
 
@@ -54,8 +64,8 @@ describe("Lead Routes & Service", () => {
       prisma.lead.findUnique.mockResolvedValue(mockLead);
       prisma.lead.findFirst.mockResolvedValue(mockLead);
 
-      const res = await request(app).get("/leads/5535999999999");
-      expect([200, 404, 500]).toContain(res.status);
+      const res = await request(app).get("/leads/5535999999999").set("x-sale-ia-admin-key", "lead-routes-test-admin-secret");
+      expect(res.status).toBe(404);
     });
   });
 
