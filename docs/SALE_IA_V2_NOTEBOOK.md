@@ -753,3 +753,25 @@ Depois de confirmar os dois workflows pós-merge, continuar a auditoria dos mód
 
 ### Próxima auditoria
 Inspecionar as rotas restantes de produtos, fornecedores, criativos, templates, categorias, leads e checkout para separar corretamente operações administrativas de endpoints públicos necessários. Não aplicar autenticação global em `/api`. Preservar webhooks e entrada pública de leads com validação própria e controles antiabuso.
+
+### Resultado da PR #92 — 05/11/2026
+- [x] Integrada na `main` pelo commit `0790839519e73c8c42c1f104871c53537660a8e5`.
+- [x] Branch rebased sobre a atualização mais recente da main antes da integração.
+- [x] CI no commit validado `3cf245d91713782d7ea0fe38a68551d048e480f6`: `41939158443` (sale-ia-v2-ci) e `41939158507` (Affiliate Module CI), ambas com sucesso.
+- [x] O job do scheduler não declara publicação real sem integração; modo `DRY_RUN`, sem atualizar status e `publishedAt`.
+
+### PR #93 — proteção de CRM e gestão de catálogo
+- PR: https://github.com/RuiBarbosasilva/sale-ia-v2/pull/93
+- Branch: `fix/protect-catalog-management-routes`.
+- Commit atual rebased: `119f2bbe4970738c8956cc933c7436a09987e507`.
+- [x] Protegidos dados do CRM/leads, fornecedores e geração de criativos.
+- [x] Protegidas mutações de produtos, templates, categorias e segmentos; leitura pública do catálogo foi preservada.
+- [x] Atualizados testes antigos de leads para autenticar o acesso administrativo e refletir a rota realmente existente.
+- [ ] CI do commit rebased `119f2bbe...` em execução; aguardar ambos os workflows antes de integrar.
+- [ ] Validar também comportamento do painel com as rotas de leitura protegidas do CRM e fornecedores.
+
+### Riscos identificados para próxima etapa
+- `POST /api/webhook` e `POST /api/webhook/whatsapp` ainda processam mensagens recebidas sem validar segredo/autenticidade do emissor. A correção depende de configurar um segredo/header no emissor Evolution API ou em proxy confiável; não bloquear o webhook sem preservar essa integração.
+- `POST /api/chat` é uma entrada pública que cria/processa leads e mensagens; avaliar rate limit e validação de payload sem impedir o atendimento legítimo.
+- `/api/checkout/generate-pix` monta um payload PIX e QR local sem confirmação de gateway; não considerar isso uma cobrança integrada nem marcar pedido como pago.
+- Rotas de cotação/preço ainda precisam de revisão de exposição de margem, desconto e acesso a cotações por ID.
