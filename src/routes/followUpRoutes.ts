@@ -2,7 +2,9 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { followUpService, responseDetectionService } from '../services/followUpService';
 
+import { adminAuthorization } from '../middlewares/security';
 const router = Router();
+router.use(adminAuthorization);
 const prisma = new PrismaClient();
 
 // Executar o Job de Follow-up (Simula o agendador diário)

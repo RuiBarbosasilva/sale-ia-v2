@@ -3,7 +3,9 @@ import multer from 'multer';
 import * as fs from 'fs';
 import { importLeadsFromCSV } from '../services/importService';
 
+import { adminAuthorization } from '../middlewares/security';
 const router = Router();
+router.use(adminAuthorization);
 
 const uploadDir = 'uploads';
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);

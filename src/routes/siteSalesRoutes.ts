@@ -4,7 +4,9 @@ import { siteProspectingService } from '../services/siteProspectingService';
 import { siteAuditService } from '../services/siteAuditService';
 import { siteGeneratorService } from '../services/siteGeneratorService';
 
+import { adminAuthorization } from '../middlewares/security';
 const router = Router();
+router.use(adminAuthorization);
 const prisma = new PrismaClient();
 
 router.post('/prospect', async (req: Request, res: Response) => {
