@@ -193,3 +193,6 @@ O painel central apresenta o módulo como **RB-Factory-Social-Media**. A publica
 
 ### Segurança de pagamentos
 `POST /api/payments/webhook` exige `x-payment-webhook-secret`, validado em tempo constante contra `PAYMENT_WEBHOOK_SECRET`. O endpoint de simulação `/api/checkout/pix/:orderId/simulate-payment` exige chave administrativa e fica desativado em produção.
+
+### Webhook de mensagens WhatsApp
+Em produção, `POST /api/webhook` e `POST /api/webhook/whatsapp` exigem o cabeçalho `x-whatsapp-webhook-secret`, validado em tempo constante contra `WHATSAPP_WEBHOOK_SECRET`. Sem segredo configurado, o endpoint falha fechado com HTTP 503; com segredo ausente/incorreto, retorna HTTP 401. Configure o mesmo segredo no emissor Evolution API ou em um proxy confiável que encaminhe o webhook. Em desenvolvimento, a rota permanece compatível quando a variável não está definida.
