@@ -69,6 +69,21 @@ describe('Pricing API - Fluxo E2E de Cota��o e Negocia��o', () => {
     });
   });
 
+  describe('GET /api/:id', () => {
+    it('returns customer quote details without internal costs or lead contact data', async () => {
+      const response = await request(app).get(`/api/${createdQuoteId}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('id', createdQuoteId);
+      expect(response.body.product).toHaveProperty('name');
+      expect(response.body.product).not.toHaveProperty('costPrice');
+      expect(response.body.lead).not.toHaveProperty('phone');
+      expect(response.body.lead).not.toHaveProperty('email');
+      expect(response.body).not.toHaveProperty('leadId');
+      expect(response.body).not.toHaveProperty('productId');
+    });
+  });
+
   describe('POST /api/negotiate', () => {
     it('deve aprovar negocia��o dentro da margem permitida (20% desconto)', async () => {
       const response = await request(app)

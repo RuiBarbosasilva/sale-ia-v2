@@ -204,11 +204,31 @@ export async function calculateQuote(
 }
 
 export async function getQuoteById(quoteId: string) {
+  // Este endpoint pode ser consumido pelo cliente com o ID da cotação.
+  // Retornar somente dados comerciais necessários; nunca expor custo interno ou contato do lead.
   const quote = await prisma.quote.findUnique({
     where: { id: quoteId },
-    include: {
-      product: true,
-      lead: true
+    select: {
+      id: true,
+      quantity: true,
+      unitPrice: true,
+      totalValue: true,
+      discount: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      product: {
+        select: {
+          name: true,
+          description: true,
+          sku: true
+        }
+      },
+      lead: {
+        select: {
+          name: true
+        }
+      }
     }
   });
 
