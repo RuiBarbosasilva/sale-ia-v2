@@ -1,14 +1,28 @@
 ﻿import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { adminAuthorization } from '../middlewares/security';
+import { generatePixPayload, generatePixImageBase64 } from '../services/pixService';
 
 const router = Router();
 const prisma = new PrismaClient();
 
 router.post('/generate-pix', async (req: Request, res: Response) => {
   try {
-    const { totalValue } = req.body;
-    if (!totalValue || totalValue <= 0) return res.status(400).json({ error: 'Valor invalido' });
+    const totalValue = Number(req.body?.totalValue);
+    if (!Number.isFinite(totalValue) || totalValue <= 0) {
+      return res.status(400).json({ error: 'Valor invalido' });
+    }
+
+    const pixKey = String(process.env.PIX_KEY || '').trim();
+    if (!pixKey) {
+      return res.status(503).json({
+        error: 'PIX_NOT_CONFIGURED',
+        message: 'Configure PIX_KEY antes de gerar cobranças PIX.'
+      });
+    }
+
+    const merchantName = process.env.PIX_NAME || 'SALE IA';
+    const merchantCity = process.env.PIX_CITY || 'POCOS DE CALDAS';
 
     const lead = await prisma.lead.create({
       data: {
@@ -19,28 +33,41 @@ router.post('/generate-pix', async (req: Request, res: Response) => {
     });
 
     const order = await prisma.order.create({
-      data: { 
-        leadId: lead.id, 
-        totalValue: totalValue, 
-        status: 'PENDING' 
+      data: {
+        leadId: lead.id,
+        totalValue,
+        status: 'PENDING'
       }
     });
 
-    const pixCode = '00020126580014BR.GOV.BCB.PIX0136' + order.id + '-sale-ia-v25204000053039865802BR5913SALE-IA-V26009SAO PAULO62070503***6304' + (Math.floor(Math.random() * 9000) + 1000);
-    const qrCodeUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' + encodeURIComponent(pixCode);
-    const expiresAt = new Date(); 
-    expiresAt.setMinutes(expiresAt.getMinutes() + 30);
+    // O identificador PIX deve respeitar o limite de 25 caracteres do campo TXID.
+    const txId = order.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 25).toUpperCase();
+    const pixCode = generatePixPayload({
+      key: pixKey,
+      name: merchantName,
+      city: merchantCity,
+      amount: totalValue,
+      txId
+    });
+    const qrCodeUrl = await generatePixImageBase64(pixCode);
 
-    const pix = await prisma.pixPayment.create({ 
-      data: { 
-        orderId: order.id, 
-        pixCode, 
-        qrCodeUrl, 
-        expiresAt 
-      } 
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+    const pix = await prisma.pixPayment.create({
+      data: {
+        orderId: order.id,
+        pixCode,
+        qrCodeUrl,
+        expiresAt
+      }
     });
 
-    return res.json({ success: true, order, pix });
+    return res.json({
+      success: true,
+      paymentMode: 'STATIC_PIX',
+      confirmation: 'A confirmação automática depende de um gateway/webhook autenticado. O QR gerado não confirma o recebimento por si só.',
+      order,
+      pix
+    });
   } catch (error: any) {
     console.error('[BACKEND ERROR]', error);
     return res.status(500).json({ error: error.message });
