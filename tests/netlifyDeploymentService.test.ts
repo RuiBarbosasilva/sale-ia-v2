@@ -105,6 +105,29 @@ describe('netlifyDeploymentService asset security', () => {
     );
   });
 
+
+  it.each([
+    ['IPv4 documentation network', '192.0.2.10'],
+    ['IPv4 TEST-NET-2 network', '198.51.100.20'],
+    ['IPv4 TEST-NET-3 network', '203.0.113.7'],
+    ['IPv6 unique-local network', 'fd12::1'],
+    ['IPv6 documentation network', '2001:db8::1'],
+  ])('rejects %s returned by DNS', async (_label, address) => {
+    mockLookup.mockResolvedValue([{ address, family: address.includes(':') ? 6 : 4 }]);
+
+    await netlifyDeploymentService.deployStaticSite({
+      projectId: 'reserved-range-test',
+      companyName: 'Empresa',
+      html: '<html><img src="https://cdn.example.com/photo.png"></html>',
+      assets: [{ sourceUrl: 'https://cdn.example.com/photo.png' }],
+    });
+
+    expect(mockAxios.get).not.toHaveBeenCalledWith(
+      'https://cdn.example.com/photo.png',
+      expect.anything(),
+    );
+  });
+
   it('does not package a response whose content type is not an image', async () => {
     mockAxios.get.mockImplementation(async (url: string) => {
       if (url === 'https://api.netlify.com/api/v1/sites') return { data: [] };
