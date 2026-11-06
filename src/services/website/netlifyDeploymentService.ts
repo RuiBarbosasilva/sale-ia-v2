@@ -127,6 +127,26 @@ async function waitForReady(deployId: string, maxAttempts = 20): Promise<Netlify
   throw new Error('NETLIFY_DEPLOY_TIMEOUT:' + (last.state || 'unknown'));
 }
 
+async function verifyPublicUrl(url: string, maxAttempts = 10): Promise<void> {
+  let lastStatus = 0;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const response = await axios.get(url, {
+        timeout: 12000,
+        maxRedirects: 5,
+        validateStatus: status => status >= 200 && status < 400,
+        headers: { 'User-Agent': 'Sale-IA-RB-Factory/1.0' },
+      });
+      if (response.status >= 200 && response.status < 400) return;
+      lastStatus = response.status;
+    } catch (error: any) {
+      lastStatus = Number(error?.response?.status || 0);
+    }
+    await new Promise(resolve => setTimeout(resolve, 2000));
+  }
+  throw new Error('NETLIFY_PUBLIC_URL_VERIFICATION_FAILED:' + (lastStatus || 'unreachable'));
+}
+
 export const netlifyDeploymentService = {
   isConfigured(): boolean {
     return Boolean(token());
@@ -177,6 +197,8 @@ export const netlifyDeploymentService = {
       site.custom_domain || ready.ssl_url || ready.deploy_url || site.ssl_url || site.url
     );
     if (!publicUrl) throw new Error('NETLIFY_PUBLIC_URL_MISSING');
+    const verificationUrl = normalizeUrl(ready.deploy_url || ready.ssl_url || publicUrl) || publicUrl;
+    await verifyPublicUrl(verificationUrl);
 
     return {
       siteId: site.id,
