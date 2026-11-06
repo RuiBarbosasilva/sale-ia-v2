@@ -194,7 +194,10 @@ describe('RB Factory Sites production flow', () => {
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ id: 'project-retry', status: 'PLANNING', publicUrl: null, hostingProvider: 'NETLIFY', hostingSiteId: 'site-retry' });
     mockDb.websiteProject.create.mockResolvedValue({ id: 'project-retry', status: 'PLANNING', publicUrl: null });
-    mockDb.websiteProject.update.mockResolvedValue({ id: 'project-retry', status: 'PLANNING', publicUrl: null });
+    mockDb.websiteProject.update.mockResolvedValue({
+      id: 'project-retry', status: 'PLANNING', publicUrl: null,
+      hostingProvider: 'NETLIFY', hostingSiteId: 'site-retry',
+    });
     (netlifyDeploymentService.isConfigured as jest.Mock).mockReturnValue(true);
     (netlifyDeploymentService.deployStaticSite as jest.Mock)
       .mockRejectedValueOnce(new Error('NETLIFY_DEPLOY_TIMEOUT:building'));
