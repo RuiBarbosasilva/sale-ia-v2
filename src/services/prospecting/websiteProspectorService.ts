@@ -7,21 +7,6 @@ import { websiteAuditService } from '../website/websiteAuditService';
 import { BusinessSearchRequest, WebsiteOpportunityStatus } from '../../types/prospecting.types';
 
 export class WebsiteProspectorService {
-  private async handoffQualifiedProspectToSeller(prospectId:string){
-    try{
-      const { rbFactorySalesService } = await import('../rbFactorySalesService');
-      const { rbFactorySalesAgentService } = await import('../rbFactorySalesAgentService');
-      await rbFactorySalesService.createFromProspect(prospectId);
-      const conversation=await rbFactorySalesAgentService.ensureConversation(prospectId,'WHATSAPP');
-      const approach=await rbFactorySalesAgentService.prepareInitialApproach(prospectId,'WHATSAPP');
-      return {prospectId,conversationId:conversation.conversation.id,conversationReused:conversation.reused,approachReused:Boolean(approach?.reused),handoffStatus:'READY_FOR_APPROVAL'};
-    }catch(error:any){
-      console.error('[RB FACTORY] Seller handoff failed:',error?.message||error);
-      return {prospectId,handoffStatus:'FAILED',error:String(error?.message||error)};
-    }
-  }
-
-
   private isCommercialOpportunity(status: WebsiteOpportunityStatus): boolean {
     return [
       'NO_WEBSITE',
@@ -60,8 +45,6 @@ export class WebsiteProspectorService {
       let updatedCount = 0;
       let duplicateCount = 0;
       let auditedCount = 0;
-      let sellerHandoffs = 0;
-      let sellerHandoffFailures = 0;
       
       for (const business of result.businesses) {
         const enrichedBusiness = await this.enrichBusinessWithDetails(business);
@@ -121,7 +104,6 @@ export class WebsiteProspectorService {
             'WEBSITE_NEEDS_IMPROVEMENT',
           ].includes(websiteStatus.opportunityStatus)) {
             qualifiedCount++;
-            if (business.phone) { const handoff=await this.handoffQualifiedProspectToSeller(existing.id); if(handoff.handoffStatus==='READY_FOR_APPROVAL') sellerHandoffs++; else sellerHandoffFailures++; }
           }
           continue;
         }
@@ -177,7 +159,6 @@ export class WebsiteProspectorService {
           'WEBSITE_NEEDS_IMPROVEMENT',
         ].includes(websiteStatus.opportunityStatus)) {
           qualifiedCount++;
-          if (business.phone) { const handoff=await this.handoffQualifiedProspectToSeller(prospect.id); if(handoff.handoffStatus==='READY_FOR_APPROVAL') sellerHandoffs++; else sellerHandoffFailures++; }
         }
       }
 
@@ -202,8 +183,6 @@ export class WebsiteProspectorService {
         nichesSearched: 1,
         failedNiches: [],
         failedNichesCount: 0,
-        sellerHandoffs,
-        sellerHandoffFailures
       };
     } catch (error: any) {
       await prisma.websiteProspectingSearch.update({
