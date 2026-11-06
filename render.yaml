@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: sale-ia-v2-rb-factory-sites
+    runtime: node
+    plan: starter
+    region: ohio
+    branch: main
+    buildCommand: npm ci --no-audit --no-fund && npm run build
+    preDeployCommand: npx prisma migrate deploy
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    disk:
+      name: sale-ia-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: file:/var/data/saleia.db
+      - key: GOOGLE_PLACES_ENABLED
+        value: "true"
+      - key: GOOGLE_PLACES_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: NETLIFY_AUTH_TOKEN
+        sync: false
+      - key: SALE_IA_ADMIN_KEY
+        sync: false
+      - key: RB_FACTORY_AUTONOMY_ENABLED
+        value: "false"

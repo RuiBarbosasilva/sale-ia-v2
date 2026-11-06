@@ -129,6 +129,20 @@ export const rbFactorySitesPipelineController = {
         data: { status: 'APPROVED', demoStatus: 'APPROVED' },
       });
 
+      // Repeated approval must not create duplicate proposals or leads after publication.
+      const existingProject = await prisma.websiteProject.findFirst({
+        where: { prospectId: demo.prospectId },
+      });
+      if (existingProject?.status === 'PUBLISHED' && existingProject.publicUrl) {
+        return res.json({
+          success: true,
+          status: 'PUBLISHED',
+          project: existingProject,
+          publicUrl: existingProject.publicUrl,
+          reusedPublication: true,
+        });
+      }
+
       const proposal = await proposalGeneratorService.generateProposal(demo.prospectId);
 
       const contactFilters: Array<{ phone?: string; email?: string }> = [];
@@ -154,9 +168,6 @@ export const rbFactorySitesPipelineController = {
         data: { linkedLeadId: lead.id },
       });
 
-      const existingProject = await prisma.websiteProject.findFirst({
-        where: { prospectId: demo.prospectId },
-      });
       const project = existingProject
         ? await prisma.websiteProject.update({
             where: { id: existingProject.id },

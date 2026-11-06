@@ -34,6 +34,7 @@ import { websiteOpportunityScoringService } from '../src/services/prospecting/we
 import { websiteDemoFactoryService } from '../src/services/prospecting/websiteDemoFactoryService';
 import { proposalGeneratorService } from '../src/services/proposalGeneratorService';
 import { netlifyDeploymentService } from '../src/services/website/netlifyDeploymentService';
+import { websiteService } from '../src/services/website/websiteService';
 
 function response() {
   const res: any = { status: jest.fn(), json: jest.fn() };
@@ -122,4 +123,110 @@ describe('RB Factory Sites production flow', () => {
     expect(proposalGeneratorService.generateProposal).not.toHaveBeenCalled();
     expect(netlifyDeploymentService.deployStaticSite).not.toHaveBeenCalled();
   });
+
+  it('publishes a quality-approved demo and persists the verified public URL', async () => {
+    mockDb.websiteDemo.findUnique.mockResolvedValue({
+      id: 'demo-publish', prospectId: 'prospect-publish', status: 'READY', version: 2,
+      sourceCode: '<html><body>Site</body></html>',
+      previewData: JSON.stringify({ qualityReview: { overallScore: 9, criticalIssues: [] }, assets: [] }),
+      prospect: { id: 'prospect-publish', companyName: 'Empresa Publicada', phone: null, email: null, websiteOpportunityScore: 90 },
+    });
+    (proposalGeneratorService.generateProposal as jest.Mock).mockResolvedValue({ id: 'proposal-publish' });
+    mockDb.lead.findFirst.mockResolvedValue({ id: 'lead-existing' });
+    mockDb.websiteProject.findFirst.mockResolvedValue(null);
+    mockDb.websiteProject.create.mockResolvedValue({ id: 'project-publish', status: 'PLANNING', publicUrl: null });
+    (netlifyDeploymentService.isConfigured as jest.Mock).mockReturnValue(true);
+    (netlifyDeploymentService.deployStaticSite as jest.Mock).mockResolvedValue({
+      siteId: 'site-1', deployId: 'deploy-1', state: 'ready', publicUrl: 'https://empresa.netlify.app',
+    });
+    (websiteService.markProjectPublished as jest.Mock).mockResolvedValue({
+      id: 'project-publish', status: 'PUBLISHED', publicUrl: 'https://empresa.netlify.app',
+    });
+
+    const res = response();
+    await rbFactorySitesPipelineController.approveAndPublish({ params: { demoId: 'demo-publish' } } as any, res);
+
+    expect(netlifyDeploymentService.deployStaticSite).toHaveBeenCalledWith(expect.objectContaining({
+      projectId: 'project-publish', companyName: 'Empresa Publicada',
+    }));
+    expect(websiteService.markProjectPublished).toHaveBeenCalledWith('project-publish', expect.objectContaining({
+      hostingProvider: 'NETLIFY', publicUrl: 'https://empresa.netlify.app',
+    }));
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true, status: 'PUBLISHED', publicUrl: 'https://empresa.netlify.app',
+    }));
+  });
+
+  it('reuses an existing publication without generating duplicate proposal or lead', async () => {
+    mockDb.websiteDemo.findUnique.mockResolvedValue({
+      id: 'demo-already-live', prospectId: 'prospect-already-live', status: 'APPROVED', version: 1,
+      previewData: JSON.stringify({ qualityReview: { overallScore: 9, criticalIssues: [] } }),
+      prospect: { id: 'prospect-already-live', companyName: 'Empresa no Ar' },
+    });
+    mockDb.websiteProject.findFirst.mockResolvedValue({
+      id: 'project-live', status: 'PUBLISHED', publicUrl: 'https://empresa-live.netlify.app',
+    });
+
+    const res = response();
+    await rbFactorySitesPipelineController.approveAndPublish({ params: { demoId: 'demo-already-live' } } as any, res);
+
+    expect(proposalGeneratorService.generateProposal).not.toHaveBeenCalled();
+    expect(mockDb.lead.create).not.toHaveBeenCalled();
+    expect(netlifyDeploymentService.deployStaticSite).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true, status: 'PUBLISHED', reusedPublication: true,
+      publicUrl: 'https://empresa-live.netlify.app',
+    }));
+  });
+
+
+  it('reuses the existing planning project when a Netlify deployment fails and is retried', async () => {
+    const demo = {
+      id: 'demo-retry', prospectId: 'prospect-retry', status: 'APPROVED', version: 3,
+      sourceCode: '<html><body>Retry site</body></html>',
+      previewData: JSON.stringify({ qualityReview: { overallScore: 8.9, criticalIssues: [] }, assets: [] }),
+      prospect: { id: 'prospect-retry', companyName: 'Empresa Retry', phone: null, email: null, websiteOpportunityScore: 88 },
+    };
+    mockDb.websiteDemo.findUnique.mockResolvedValue(demo);
+    (proposalGeneratorService.generateProposal as jest.Mock).mockResolvedValue({ id: 'proposal-retry' });
+    mockDb.lead.findFirst.mockResolvedValue({ id: 'lead-retry' });
+    mockDb.websiteProject.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: 'project-retry', status: 'PLANNING', publicUrl: null, hostingProvider: 'NETLIFY', hostingSiteId: 'site-retry' });
+    mockDb.websiteProject.create.mockResolvedValue({ id: 'project-retry', status: 'PLANNING', publicUrl: null });
+    mockDb.websiteProject.update.mockResolvedValue({
+      id: 'project-retry', status: 'PLANNING', publicUrl: null,
+      hostingProvider: 'NETLIFY', hostingSiteId: 'site-retry',
+    });
+    (netlifyDeploymentService.isConfigured as jest.Mock).mockReturnValue(true);
+    (netlifyDeploymentService.deployStaticSite as jest.Mock)
+      .mockRejectedValueOnce(new Error('NETLIFY_DEPLOY_TIMEOUT:building'));
+
+    const firstResponse = response();
+    await rbFactorySitesPipelineController.approveAndPublish({ params: { demoId: 'demo-retry' } } as any, firstResponse);
+    expect(firstResponse.status).toHaveBeenCalledWith(500);
+    expect(mockDb.websiteProject.create).toHaveBeenCalledTimes(1);
+
+    (netlifyDeploymentService.deployStaticSite as jest.Mock).mockResolvedValueOnce({
+      siteId: 'site-retry', deployId: 'deploy-retry', state: 'ready', publicUrl: 'https://retry.netlify.app',
+    });
+    (websiteService.markProjectPublished as jest.Mock).mockResolvedValue({
+      id: 'project-retry', status: 'PUBLISHED', publicUrl: 'https://retry.netlify.app',
+    });
+
+    const secondResponse = response();
+    await rbFactorySitesPipelineController.approveAndPublish({ params: { demoId: 'demo-retry' } } as any, secondResponse);
+
+    expect(mockDb.websiteProject.create).toHaveBeenCalledTimes(1);
+    expect(mockDb.websiteProject.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'project-retry' },
+    }));
+    expect(netlifyDeploymentService.deployStaticSite).toHaveBeenLastCalledWith(expect.objectContaining({
+      projectId: 'project-retry', existingSiteId: 'site-retry',
+    }));
+    expect(secondResponse.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true, status: 'PUBLISHED', publicUrl: 'https://retry.netlify.app',
+    }));
+  });
+
 });
