@@ -1,3 +1,4 @@
+import rbFactorySitesPipelineRoutes from './rbFactorySitesPipelineRoutes';
 import siteFactoryDashboardRoutes from './siteFactoryDashboardRoutes';
 import templateRoutes from './templateRoutes';
 import categoryRoutes from './categoryRoutes';
@@ -75,6 +76,8 @@ router.use('/prospecting', prospectingRoutes);
 router.use('/site-sales', siteSalesRoutes);
 
 router.use('/websites', websiteRoutes);
+
+router.use('/rb-factory-sites', rbFactorySitesPipelineRoutes);
 
 router.use('/categories', categoryRoutes);
 
