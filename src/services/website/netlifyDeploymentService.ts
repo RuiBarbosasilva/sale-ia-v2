@@ -264,7 +264,7 @@ async function localizeAssets(html: string, assets: any[]): Promise<{ html: stri
   for (let index = 0; index < assets.length && files.length < 40; index++) {
     const asset = assets[index] || {};
     const sourceUrl = String(asset.sourceUrl || asset.url || asset.imageUrl || '').trim();
-    if (!/^https?:\/\//i.test(sourceUrl) || seen.has(sourceUrl)) continue;
+    if (seen.has(sourceUrl) || !(await isSafePublicAssetUrl(sourceUrl))) continue;
     seen.add(sourceUrl);
 
     try {
