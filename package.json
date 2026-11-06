@@ -8,7 +8,7 @@
                     "start":  "node dist/src/server.js",
                     "dev":  "ts-node-dev --respawn --transpile-only src/server.ts",
                     "test":  "jest --coverage --runInBand",
-                    "test:rb-factory-sites":  "jest tests/rbFactorySitesPipeline.test.ts --runInBand",
+                    "test:rb-factory-sites":  "jest tests/rbFactorySitesPipeline.test.ts tests/proposalGeneratorService.test.ts tests/netlifyDeploymentService.test.ts --runInBand",
                     "test:silent":  "jest --coverage --runInBand --silent",
                     "test:automation":  "jest tests/automation.test.ts --runInBand",
                     "system:audit":  "tsx tools/run-system-audit.ts",
