@@ -154,19 +154,24 @@ export const rbFactorySitesPipelineController = {
         data: { linkedLeadId: lead.id },
       });
 
-      const project = await prisma.websiteProject.upsert({
+      const existingProject = await prisma.websiteProject.findFirst({
         where: { prospectId: demo.prospectId },
-        create: {
-          prospectId: demo.prospectId,
-          status: 'PLANNING',
-          currentVersion: demo.version,
-        },
-        update: {
-          currentVersion: demo.version,
-          status: 'PLANNING',
-        },
-        include: { prospect: true },
       });
+      const project = existingProject
+        ? await prisma.websiteProject.update({
+            where: { id: existingProject.id },
+            data: {
+              currentVersion: demo.version,
+              status: existingProject.status === 'PUBLISHED' ? 'PUBLISHED' : 'PLANNING',
+            },
+          })
+        : await prisma.websiteProject.create({
+            data: {
+              prospectId: demo.prospectId,
+              status: 'PLANNING',
+              currentVersion: demo.version,
+            },
+          });
 
       if (project.status === 'PUBLISHED' && project.publicUrl) {
         return res.json({
@@ -194,7 +199,7 @@ export const rbFactorySitesPipelineController = {
 
       const deployment = await netlifyDeploymentService.deployStaticSite({
         projectId: project.id,
-        companyName: project.prospect.companyName,
+        companyName: demo.prospect.companyName,
         html: demo.sourceCode || '',
         assets: Array.isArray(previewData.assets) ? previewData.assets : [],
         existingSiteId: project.hostingProvider === 'NETLIFY' ? project.hostingSiteId : null,
