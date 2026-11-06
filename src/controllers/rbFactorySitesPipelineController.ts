@@ -168,6 +168,18 @@ export const rbFactorySitesPipelineController = {
         include: { prospect: true },
       });
 
+      if (project.status === 'PUBLISHED' && project.publicUrl) {
+        return res.json({
+          success: true,
+          status: 'PUBLISHED',
+          proposalId: proposal.id,
+          leadId: lead.id,
+          project,
+          publicUrl: project.publicUrl,
+          reusedPublication: true,
+        });
+      }
+
       if (!netlifyDeploymentService.isConfigured()) {
         return res.status(503).json({
           success: false,
