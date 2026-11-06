@@ -217,23 +217,43 @@ export const netlifyDeploymentService = {
 function isPrivateAddress(address: string): boolean {
   const version = isIP(address);
   if (version === 4) {
-    const parts = address.split('.').map(Number);
-    const [a, b] = parts;
+    const [a, b, c] = address.split('.').map(Number);
     return a === 0 || a === 10 || a === 127 || a >= 224 ||
       (a === 100 && b >= 64 && b <= 127) ||
       (a === 169 && b === 254) ||
       (a === 172 && b >= 16 && b <= 31) ||
-      (a === 192 && b === 168) ||
-      (a === 192 && b === 0) ||
-      (a === 198 && (b === 18 || b === 19));
+      (a === 192 && (b === 0 || b === 168 && c >= 0)) ||
+      (a === 192 && b === 0 && c === 2) ||
+      (a === 192 && b === 88 && c === 99) ||
+      (a === 198 && (b === 18 || b === 19 || b === 51 && c === 100)) ||
+      (a === 203 && b === 0 && c === 113);
   }
   if (version === 6) {
-    const normalized = address.toLowerCase();
-    return normalized === '::' || normalized === '::1' ||
-      normalized.startsWith('fc') || normalized.startsWith('fd') ||
-      normalized.startsWith('fe8') || normalized.startsWith('fe9') ||
-      normalized.startsWith('fea') || normalized.startsWith('feb') ||
-      normalized.startsWith('::ffff:') && isPrivateAddress(normalized.slice(7));
+    const normalized = address.toLowerCase().replace(/^\\[|\\]$/g, '');
+    if (normalized.startsWith('::ffff:')) {
+      const mapped = normalized.slice(7);
+      if (isIP(mapped) === 4) return isPrivateAddress(mapped);
+      const groups = mapped.split(':');
+      const last = Number.parseInt(groups[groups.length - 1], 16);
+      const secondLast = Number.parseInt(groups[groups.length - 2] || '0', 16);
+      return isPrivateAddress([secondLast >> 8, secondLast & 255, last >> 8, last & 255].join('.'));
+    }
+    // Accept only globally-routable unicast space (2000::/3).
+    const expanded = normalized.includes('::')
+      ? (() => {
+          const halves = normalized.split('::');
+          const left = halves[0] ? halves[0].split(':') : [];
+          const right = halves[1] ? halves[1].split(':') : [];
+          return [...left, ...Array(8 - left.length - right.length).fill('0'), ...right];
+        })()
+      : normalized.split(':');
+    if (expanded.length !== 8) return true;
+    const first = Number.parseInt(expanded[0], 16);
+    const second = Number.parseInt(expanded[1], 16);
+    const globallyRoutable = (first & 0xe000) === 0x2000;
+    const documentation = first === 0x2001 && second === 0x0db8;
+    const benchmarking = first === 0x2001 && second === 0x0002;
+    return !globallyRoutable || documentation || benchmarking;
   }
   return true;
 }
