@@ -127,47 +127,95 @@
     if (!button || !output) return;
 
     button.disabled = true;
-    button.textContent = 'Pesquisando…';
+    button.textContent = 'Prospectando e gerando demo…';
     output.className = 'prospect-result show';
-    output.textContent = 'Consultando a base de prospecção…';
+    output.textContent = 'Pesquisando empresas, identificando negócios sem site, pontuando oportunidades e gerando a primeira demo…';
 
     try {
       const payload = {
         city: $('pfCity').value.trim(),
         state: $('pfState').value.trim().toUpperCase(),
-        niche: $('pfNiche').value.trim(),
-        subniche: $('pfSubniche').value.trim() || undefined,
+        segment: $('pfNiche').value.trim(),
         maxResults: Number($('pfMax').value)
       };
 
-      const response = await apiFetch(API + '/websites/prospecting/search', {
+      const response = await apiFetch(API + '/rb-factory-sites/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || ('HTTP ' + response.status));
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || ('HTTP ' + response.status));
+      if (data.status === 'NO_NO_WEBSITE_PROSPECT') {
+        output.className = 'prospect-result show';
+        output.textContent = 'Pesquisa concluída. Nenhuma empresa sem site foi identificada nesta busca.';
+      } else if (data.status === 'QUALITY_REVIEW_REQUIRED') {
+        output.className = 'prospect-result show err';
+        output.innerHTML = '<b>Demo retida pelo controle de qualidade.</b><br>Empresa: ' +
+          escapeHtml(data.prospect.companyName) + '<br>Score: ' + escapeHtml(data.demo.qualityScore) +
+          '/10<br>Problemas: ' + escapeHtml((data.demo.criticalIssues || []).join(' · ') || 'Revisão necessária');
+      } else {
+        output.className = 'prospect-result show ok';
+        output.innerHTML = '<b>Demo pronta para sua aprovação.</b><br>Empresa: ' +
+          escapeHtml(data.prospect.companyName) + '<br>Oportunidade: ' +
+          escapeHtml(data.prospect.opportunityScore) + '/100 · Qualidade: ' +
+          escapeHtml(data.demo.qualityScore) + '/10<br><a target="_blank" rel="noopener" href="' +
+          escapeHtml(data.demo.previewUrl) + '">Abrir demonstração</a><br><br>' +
+          '<button class="btn primary" type="button" data-rb-action="approve-publish" data-id="' +
+          escapeHtml(data.demo.id) + '">Aprovar e publicar no Netlify</button>';
       }
 
-      output.className = 'prospect-result show ok';
-      output.innerHTML =
-        '<b>Pesquisa concluída.</b><br>' +
-        'Encontrados: ' + escapeHtml(data.totalFound || 0) +
-        ' · Qualificados: ' + escapeHtml(data.totalQualified || 0) +
-        ' · Criados: ' + escapeHtml(data.totalCreated || 0) +
-        ' · Auditados: ' + escapeHtml(data.totalAudited || 0);
-
-      toast('Prospecção concluída');
+      toast(data.status === 'PENDING_OWNER_APPROVAL' ? 'Demo aguardando sua aprovação' : 'Pipeline concluído');
       await refreshAll();
     } catch (error) {
       output.className = 'prospect-result show err';
       output.textContent = 'Não foi possível concluir: ' + error.message;
-      toast('Falha na prospecção');
+      toast('Falha no pipeline RB Factory');
     } finally {
       button.disabled = false;
-      button.textContent = 'Pesquisar agora';
+      button.textContent = 'Executar pipeline';
+    }
+  }
+
+  async function approveAndPublishDemo(demoId) {
+    const output = $('prospectResult');
+    if (output) {
+      output.className = 'prospect-result show';
+      output.textContent = 'Aprovando a demo, gerando a proposta, registrando lead/projeto e publicando no Netlify…';
+    }
+    try {
+      const response = await apiFetch(API + '/rb-factory-sites/demos/' + encodeURIComponent(demoId) + '/approve-publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        if (data.error === 'NETLIFY_NOT_CONFIGURED' && output) {
+          output.className = 'prospect-result show err';
+          output.innerHTML = 'Aprovação, proposta, lead e projeto foram registrados. Configure NETLIFY_AUTH_TOKEN no servidor e tente novamente.<br><br>' +
+            '<button class="btn primary" type="button" data-rb-action="approve-publish" data-id="' +
+            escapeHtml(demoId) + '">Tentar publicação novamente</button>';
+          return;
+        }
+        throw new Error(data.error || ('HTTP ' + response.status));
+      }
+      if (output) {
+        output.className = 'prospect-result show ok';
+        output.innerHTML = '<b>Site publicado e verificado no ar.</b><br><a target="_blank" rel="noopener" href="' +
+          escapeHtml(data.publicUrl) + '">' + escapeHtml(data.publicUrl) + '</a><br>Proposta: ' +
+          escapeHtml(data.proposalId) + ' · Lead: ' + escapeHtml(data.leadId) +
+          ' · Projeto: ' + escapeHtml(data.project.id);
+      }
+      toast('Site publicado no Netlify');
+      await refreshAll();
+    } catch (error) {
+      if (output) {
+        output.className = 'prospect-result show err';
+        output.textContent = 'Publicação não concluída: ' + error.message;
+      }
+      toast('Falha ao publicar no Netlify');
     }
   }
 
@@ -397,6 +445,7 @@
     const action = target.getAttribute('data-rb-action');
     const id = target.getAttribute('data-id');
     if (action === 'process-prospect' && id) processProspect(id);
+    if (action === 'approve-publish' && id) approveAndPublishDemo(id);
   });
 
   document.addEventListener('keydown', (event) => {
