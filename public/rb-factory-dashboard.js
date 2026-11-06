@@ -194,7 +194,9 @@
       if (!response.ok || !data.success) {
         if (data.error === 'NETLIFY_NOT_CONFIGURED' && output) {
           output.className = 'prospect-result show err';
-          output.textContent = 'Aprovação, proposta, lead e projeto foram registrados. Falta configurar NETLIFY_AUTH_TOKEN no servidor e repetir a publicação.';
+          output.innerHTML = 'Aprovação, proposta, lead e projeto foram registrados. Configure NETLIFY_AUTH_TOKEN no servidor e tente novamente.<br><br>' +
+            '<button class="btn primary" type="button" data-rb-action="approve-publish" data-id="' +
+            escapeHtml(demoId) + '">Tentar publicação novamente</button>';
           return;
         }
         throw new Error(data.error || ('HTTP ' + response.status));
