@@ -813,3 +813,70 @@ Inspecionar as rotas restantes de produtos, fornecedores, criativos, templates, 
 - PR #94: novo commit `40e970dfb9df655720523689fa45cbe1e2445d78`; CI em execução.
 - PR #95: novo commit `4e6e84dd82e043bd2a8c5a7ad4b4f1d3cf8daa0b`; CI em execução.
 - Não integrar PRs #94/#95 até ambos os workflows passarem nos commits rebased.
+
+
+## Atualização operacional — RB Factory Sites e estado do repositório (2026-11-09)
+
+### Estado remoto confirmado em `main`
+- HEAD consultado: `83c5b3e41efb7b442877bc4714216c472bc351ef` — commit **RB Factory Sites: hardening e deploy de produção** (2026-11-06 21:40 UTC).
+- Commit anterior do fluxo ponta a ponta: `dd5cb0fc3992a5cc77dbf437d7f0a072ed91fdaf` — merge da PR #97, com pipeline cidade + segmento, geração da demo, aprovação, proposta, persistência e publicação Netlify.
+- PR #97: https://github.com/RuiBarbosasilva/sale-ia-v2/pull/97. O commit de merge está presente no histórico consultado de `main`.
+- PR #47 permanece registrada como a base do ciclo comercial RB Factory Sites; não presumir estado de merge apenas pela descrição histórica. A implementação atual do pipeline e os commits posteriores estão na `main`.
+
+### Fluxo implementado no código remoto
+1. Endpoint recebe `city` e `segment`; valida ambos e usa estado padrão MG.
+2. Pesquisa empresas com o provider Google Places já registrado no serviço de prospecção.
+3. Filtra registros com `websiteOpportunityStatus = NO_WEBSITE`.
+4. Calcula score das oportunidades e seleciona a maior pontuação.
+5. Gera demo usando o serviço existente, com IA habilitada por padrão quando configurada.
+6. Aprovação de qualidade exige recomendação `approve`, score mínimo 7.5 e nenhuma questão crítica; caso contrário permanece em revisão.
+7. O fluxo aguarda ação explícita de aprovação do proprietário antes de gerar proposta e continuar.
+8. Cria/reutiliza lead e WebsiteProject, evitando duplicação em novas tentativas.
+9. Publica pelo Netlify, aguarda deploy `ready` e verifica a URL pública por resposta HTTP 2xx/3xx.
+10. Só marca projeto como publicado e retorna link após confirmação da URL pública; repetição após publicação reutiliza o projeto/link existente.
+
+### Endpoints/contratos observados
+- Início do pipeline: recebe `POST` com `city`, `segment`, `state` opcional e `maxResults` opcional. Campos obrigatórios: cidade e segmento.
+- Aprovação/publicação: recebe o identificador da demo em rota dedicada; a aprovação revalida estado, score e questões críticas.
+- Preview HTML é retornado como `/api/websites/studio/demos/:demoId/html`.
+- O serviço de deploy exige `NETLIFY_AUTH_TOKEN`, usa a API oficial Netlify, reutiliza site existente, espera deploy pronto e valida a URL pública.
+- O controller não finge publicação quando Netlify não está configurado: retorna erro HTTP 503 e preserva IDs/progresso do projeto para correção e retry.
+
+### Hardening confirmado no commit 83c5b3e
+- Proteção contra SSRF no download de assets: somente HTTPS, DNS validado contra endereços privados/reservados, sem redirects no download, e validação de Content-Type image/*.
+- Repetição de aprovação não cria proposta/lead duplicados quando o projeto já está publicado; retorna URL existente.
+- Reuso de WebsiteProject/site Netlify em retry após falha.
+- Correção do fallback de segmento/categoria ao gerar demo.
+- Comando focado ampliado para executar pipeline, geração de proposta e deploy Netlify:
+  `npm run test:rb-factory-sites`.
+- Adicionado blueprint `render.yaml` para serviço web Render, região Ohio, plano Starter, disco persistente em `/var/data`, build `npm ci && npm run build`, migrations `prisma migrate deploy`, start `npm start`, health `/api/health` e variáveis de ambiente necessárias.
+- `RB_FACTORY_AUTONOMY_ENABLED=false` por padrão; a autonomia permanece desligada no blueprint.
+
+### Configuração de produção exigida
+Configurar no serviço de produção, sem inserir segredos no Git:
+- `GOOGLE_PLACES_ENABLED=true`
+- `GOOGLE_PLACES_API_KEY`
+- `GEMINI_API_KEY` e/ou `OPENAI_API_KEY` para geração com IA conforme provider implementado
+- `NETLIFY_AUTH_TOKEN`
+- `SALE_IA_ADMIN_KEY`
+- `DATABASE_URL=file:/var/data/saleia.db` no blueprint Render
+- `NODE_ENV=production`
+
+O blueprint existe no repositório, mas isso **não comprova que o serviço Render foi criado, que os secrets foram configurados, que houve deploy, nem que um site real foi publicado**. Não marcar produção concluída sem testar a URL do serviço e publicar uma demo real de ponta a ponta.
+
+### Evidências de teste — o que está e não está comprovado
+- [x] Código e rotas do pipeline consultados em `main`.
+- [x] Teste focado presente em `tests/rbFactorySitesPipeline.test.ts`.
+- [x] Testes de proposta e deploy Netlify presentes e incluídos no script npm.
+- [x] Testes descritos cobrem cidade/segmento, score, gate de qualidade, aprovação, lead/projeto, publicação verificada, retry e idempotência.
+- [ ] Não há nesta consulta evidência de execução bem-sucedida do comando no ambiente Windows do usuário.
+- [ ] Não há confirmação de secrets configurados no Render.
+- [ ] Não há confirmação de serviço Render online/healthy.
+- [ ] Não há confirmação de token Netlify real nem publicação pública de um site de cliente nesta sessão.
+- [ ] Não há confirmação de uma execução real Google Places + IA + aprovação + proposta + banco + Netlify.
+
+### Próxima execução local — Windows PowerShell
+Executar o bloco PowerShell entregue em conversa em 2026-11-09. O bloco cria backup do notebook local, busca somente `origin/main`, atualiza somente `docs/SALE_IA_V2_NOTEBOOK.md` e executa as verificações do RB Factory Sites. Não faz `reset`, `clean`, `stash`, `pull`, não altera arquivos de outros módulos e não envia segredos.
+
+### Regra de status
+O RB Factory Sites está com o fluxo ponta a ponta implementado e hardening registrado na `main`; o estado de produção real continua **pendente de configuração e prova operacional**. Só declarar concluído quando uma empresa real for prospectada, a demo passar pelo gate, Rui aprovar, a proposta/projeto forem persistidos e o link Netlify abrir publicamente.
