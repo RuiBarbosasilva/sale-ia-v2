@@ -880,3 +880,32 @@ Executar o bloco PowerShell entregue em conversa em 2026-11-09. O bloco cria bac
 
 ### Regra de status
 O RB Factory Sites está com o fluxo ponta a ponta implementado e hardening registrado na `main`; o estado de produção real continua **pendente de configuração e prova operacional**. Só declarar concluído quando uma empresa real for prospectada, a demo passar pelo gate, Rui aprovar, a proposta/projeto forem persistidos e o link Netlify abrir publicamente.
+
+## Execução direta — atualização do notebook e fechamento de produção (2026-11-09)
+
+### Atualização confirmada nesta execução
+- [x] Notebook atualizado diretamente em `main` no GitHub, sem depender do Git local do Windows.
+- [x] Estado do RB Factory Sites revisado contra os arquivos atuais de `main`: `package.json`, `render.yaml`, teste de pipeline e rotas registradas em `src/app.ts`.
+- [x] Confirmado script de validação focada: `npm run test:rb-factory-sites`.
+- [x] Confirmado build de produção: `npm run build`; typecheck: `npm run typecheck`; verificação UTF-8: `npm run check:encoding`.
+- [x] Confirmado blueprint Render com serviço `sale-ia-v2-rb-factory-sites`, branch `main`, disco persistente `/var/data`, health check `/api/health`, migrações no pre-deploy e deploy automático.
+- [x] Mantida a autonomia desligada por padrão (`RB_FACTORY_AUTONOMY_ENABLED=false`), exigindo aprovação explícita do proprietário para avançar o ciclo comercial.
+- [x] Preservado o escopo e os módulos existentes; nenhuma alteração foi feita em Afiliados, Dropshipping, Social Media, Blog Factory, TikTok ou Bar XV nesta atualização.
+
+### Próxima sequência técnica obrigatória — sem declarar sucesso antecipado
+1. Executar CI completo no HEAD de `main`: instalação limpa, Prisma generate/validate, migrações, encoding, typecheck, build, testes focados RB Factory Sites, suíte geral e Guardian.
+2. Corrigir cada falha encontrada em commit específico e repetir os checks afetados até ficarem verdes.
+3. Conectar o repositório ao Render e criar/confirmar o serviço do blueprint `render.yaml`.
+4. Configurar no Render, pelo painel de secrets, sem gravar valores no Git: `GOOGLE_PLACES_API_KEY`, `GEMINI_API_KEY` ou `OPENAI_API_KEY`, `NETLIFY_AUTH_TOKEN` e `SALE_IA_ADMIN_KEY`. Confirmar também `GOOGLE_PLACES_ENABLED=true`, `DATABASE_URL=file:/var/data/saleia.db` e `NODE_ENV=production`.
+5. Fazer deploy e confirmar `GET /api/health` com HTTP 200.
+6. Executar um ciclo real com cidade e segmento; verificar empresa sem website, score, demo, QC, aprovação humana, proposta, persistência no banco e publicação Netlify.
+7. Abrir o link público retornado e confirmar HTTP 2xx/3xx e renderização real do site. Só então marcar RB Factory Sites como produção concluída.
+
+### Bloqueios externos ainda não resolvidos por este commit
+- A integração Render não está conectada nesta sessão; a existência do blueprint no GitHub não cria automaticamente um serviço nem injeta credenciais.
+- As chaves Google Places, provedor de IA, Netlify e chave administrativa são segredos privados e não estão disponíveis no repositório. Não inventar valores nem gravá-los no código.
+- O GitHub CLI no computador ainda estava autenticado como `ruibarbosa0902-maker`, sem acesso confirmado ao repositório privado `RuiBarbosasilva/sale-ia-v2`. Isso impede a sincronização local, mas não impede commits feitos pelo conector GitHub.
+- Nenhuma execução de CI nem publicação real foi confirmada nesta atualização. A existência dos testes e scripts não equivale à aprovação deles.
+
+### Regra operacional
+Continuar executando alterações verificáveis diretamente no GitHub. Não pedir que o usuário repita informações já registradas, não substituir arquivos inteiros sem necessidade, não descartar alterações locais e não marcar produção como concluída antes de abrir o site publicado. O objetivo permanece entregar o RB Factory Sites de ponta a ponta, não apenas documentar a implementação.
