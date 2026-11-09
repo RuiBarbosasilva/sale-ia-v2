@@ -909,3 +909,16 @@ O RB Factory Sites está com o fluxo ponta a ponta implementado e hardening regi
 
 ### Regra operacional
 Continuar executando alterações verificáveis diretamente no GitHub. Não pedir que o usuário repita informações já registradas, não substituir arquivos inteiros sem necessidade, não descartar alterações locais e não marcar produção como concluída antes de abrir o site publicado. O objetivo permanece entregar o RB Factory Sites de ponta a ponta, não apenas documentar a implementação.
+
+### CI confirmado após consulta adicional (2026-11-09)
+- [x] PR #97 — commit `23e093042b0ea5e93c49df86008e186110ee0f1b`: `sale-ia-v2-ci` run `42294353185` concluído com sucesso.
+- [x] PR #97 — mesmo commit: `Affiliate Module CI` run `42294353163` concluído com sucesso.
+- [x] PR #94 — commit `00705e14f005eba1ed194def2cde43ec4ff7100b`: `Affiliate Module CI` run `42107578651` e `sale-ia-v2-ci` run `42107578667`, ambos concluídos com sucesso.
+- [ ] PR #94 continua aberta e a API reportou `mergeable=false`; não integrar sem resolver/confirmar o estado de merge.
+- [ ] O wrapper de consulta disponível retorna apenas execuções associadas a pull requests; ausência de resultado para commits diretos de `main` não deve ser interpretada como falha nem como prova de execução.
+- [ ] Ainda não há evidência de serviço Render online nem de publicação Netlify real nesta sessão.
+
+### Conexões de produção iniciadas
+- [x] Iniciada autenticação da conta Render para permitir inspecionar/criar o serviço e acompanhar deploy.
+- [x] Iniciada autenticação Netlify para inspecionar a conta/sites e validar publicação.
+- [ ] Aguardar conclusão OAuth/API das duas conexões; só executar operações após status ACTIVE.
