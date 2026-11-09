@@ -1,0 +1,31 @@
+services:
+  sale-ia:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sale-ia-v2:oracle
+    container_name: sale-ia-v2
+    restart: unless-stopped
+    init: true
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DATABASE_URL: file:/var/lib/sale-ia/saleia.db
+      RB_FACTORY_AUTONOMY_ENABLED: "false"
+    ports:
+      - "3000:3000"
+    volumes:
+      - sale_ia_data:/var/lib/sale-ia
+      - sale_ia_generated_images:/app/storage/generated-images
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  sale_ia_data:
+  sale_ia_generated_images:
