@@ -196,3 +196,8 @@ O painel central apresenta o módulo como **RB-Factory-Social-Media**. A publica
 
 ### Webhook de mensagens WhatsApp
 Em produção, `POST /api/webhook` e `POST /api/webhook/whatsapp` exigem o cabeçalho `x-whatsapp-webhook-secret`, validado em tempo constante contra `WHATSAPP_WEBHOOK_SECRET`. Sem segredo configurado, o endpoint falha fechado com HTTP 503; com segredo ausente/incorreto, retorna HTTP 401. Configure o mesmo segredo no emissor Evolution API ou em um proxy confiável que encaminhe o webhook. Em desenvolvimento, a rota permanece compatível quando a variável não está definida.
+
+
+## Criar e configurar APIs externas
+
+Consulte o guia completo em [`docs/GUIA_CRIACAO_APIS_E_AUTORIZACOES.md`](docs/GUIA_CRIACAO_APIS_E_AUTORIZACOES.md). Ele explica onde criar cada chave, como registrar callbacks OAuth, quais permissões solicitar, onde preencher cada variável do `.env` e quais integrações ainda dependem de alteração no código ou aprovação do provedor. Use `.env.example` como modelo; nunca versione o `.env` real.
