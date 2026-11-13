@@ -36,7 +36,7 @@ describe('Checkout PIX generation', () => {
     process.env.PIX_NAME = 'SALE IA';
     process.env.PIX_CITY = 'POCOS DE CALDAS';
     prisma.lead.create.mockResolvedValue({ id: 'lead-123' });
-    prisma.order.create.mockResolvedValue({ id: 'order-123456789012345678901234567890', leadId: 'lead-123', totalValue: 89.9, status: 'PENDING' });
+    prisma.order.create.mockResolvedValue({ id: 'order-12346789012345678901234567890', leadId: 'lead-123', totalValue: 89.9, status: 'PENDING' });
     prisma.pixPayment.create.mockImplementation(async ({ data }: any) => ({ id: 'pix-1', ...data }));
     prisma.$transaction.mockImplementation(async (callback: (tx: any) => Promise<unknown>) => callback(prisma));
   });
