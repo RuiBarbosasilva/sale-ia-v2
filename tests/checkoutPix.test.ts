@@ -70,7 +70,7 @@ describe('Checkout PIX generation', () => {
       name: 'SALE IA',
       city: 'POCOS DE CALDAS',
       amount: 89.9,
-      txId: '56789012345678901234567890'
+      txId: '6789012345678901234567890'
     }));
     expect(generatePixImageBase64).toHaveBeenCalledWith('000201PIX-PAYLOAD-TEST');
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
