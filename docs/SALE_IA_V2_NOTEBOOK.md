@@ -964,3 +964,34 @@ Usar **Render Free para o backend Node.js + Neon Free para PostgreSQL**, ambos c
 - Neon — limites do plano Free: https://neon.com/docs/introduction/pro-plan
 - Northflank — preço Sandbox e divergência sobre cartão: https://northflank.com/pricing e https://northflank.com/docs/v1/application/billing/pricing-on-northflank
 - Koyeb — exigência de cartão: https://www.koyeb.com/docs/faqs/pricing
+
+
+## Atualização de arquitetura — hospedagem no notebook + Cloudflare Tunnel (2026-11-13)
+
+Esta decisão substitui, para a primeira implantação, a recomendação anterior de Render Free + Neon. O usuário confirmou que o notebook fica ligado 24 horas por dia e já instalou cloudflared 2026.11.0. A primeira implantação preserva o SQLite existente e evita migração de banco e cartão de crédito.
+
+### Implementação versionada nesta branch
+- [x] Criado scripts/start-rb-factory-tunnel.ps1: valida .env, Node/npm, cloudflared, token de Named Tunnel, dependências e build; inicia o backend; espera GET /api/health HTTP 200; inicia o túnel; grava logs em logs/; encerra os processos filhos ao sair normalmente.
+- [x] src/server.ts agora aceita HOST; o script define HOST=127.0.0.1, restringindo o backend à interface local enquanto o túnel encaminha o tráfego.
+- [x] O script não cria nem sobrescreve .env, não imprime o token, não executa migrações automáticas e não altera o banco.
+- [ ] Build/typecheck e testes do branch ainda precisam ser executados no CI; os arquivos foram commitados, mas isso não equivale a teste aprovado.
+
+### Configuração Cloudflare necessária antes de expor o serviço
+1. Criar/usar uma conta Cloudflare e adicionar um domínio controlado pelo usuário, com DNS gerenciado pela Cloudflare.
+2. Em Zero Trust > Networks > Tunnels, criar um Named Tunnel e obter o token de execução.
+3. Configurar uma Public Hostname (ex.: subdomínio dedicado) apontando para http://127.0.0.1:3000.
+4. Criar uma aplicação Cloudflare Access para esse hostname e uma política Allow limitada ao e-mail/identidade do proprietário. Não publicar o painel administrativo sem Access.
+5. No PowerShell, definir o token apenas na sessão atual: $env:CLOUDFLARE_TUNNEL_TOKEN = 'TOKEN_GERADO_NO_CLOUDFLARE'. Não salvar o token no GitHub, em arquivos versionados ou em mensagens.
+6. Executar powershell -ExecutionPolicy Bypass -File .\scripts\start-rb-factory-tunnel.ps1. Manter a janela e o notebook ligados; conferir os logs em logs\.
+
+Não usar Quick Tunnel / trycloudflare como produção: ele gera URL temporária e não substitui a proteção de acesso. A rota pública está deliberadamente condicionada a Named Tunnel + Cloudflare Access. Mesmo com o notebook ligado 24h, quedas de energia, internet, Windows Update ou suspensão interrompem o serviço; configurar energia para nunca suspender e backup periódico do SQLite antes de uso comercial.
+
+### Estado honesto
+- [x] Notebook 24h confirmado pelo usuário.
+- [x] cloudflared instalado localmente (versão informada pelo usuário: 2026.11.0).
+- [x] Script e suporte a HOST commitados nesta branch.
+- [ ] PR/CI aprovados.
+- [ ] Conta/domínio Cloudflare, Named Tunnel, Public Hostname e Access configurados pelo proprietário.
+- [ ] Token definido localmente e backend iniciado com HTTP 200.
+- [ ] Acesso HTTPS externo validado com Access.
+- [ ] Fluxo completo RB Factory Sites executado e demo publicada via Netlify; ainda não declarar produção concluída.
