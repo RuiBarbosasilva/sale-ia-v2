@@ -922,3 +922,45 @@ Continuar executando alterações verificáveis diretamente no GitHub. Não pedi
 - [x] Iniciada autenticação da conta Render para permitir inspecionar/criar o serviço e acompanhar deploy.
 - [x] Iniciada autenticação Netlify para inspecionar a conta/sites e validar publicação.
 - [ ] Aguardar conclusão OAuth/API das duas conexões; só executar operações após status ACTIVE.
+
+## Plano de produção sem cartão — pesquisa e decisão técnica (2026-11-13)
+
+### Resultado da pesquisa de hospedagem
+- [x] **Render Free** aceita Web Services Node.js sem cartão segundo a documentação oficial de primeiro deploy; permite conectar GitHub, variáveis de ambiente, HTTPS e deploy automático. Limitações: serviço suspende após 15 minutos sem tráfego e pode levar cerca de 1 minuto para reativar. Fontes: https://render.com/docs/your-first-deploy e https://render.com/docs/free.
+- [x] **Render Free não oferece disco persistente**. O sistema de arquivos é efêmero; SQLite local pode ser perdido em restart, redeploy ou spin-down. Portanto, não é seguro colocar o banco atual `file:/var/data/saleia.db` em Render Free e chamar isso de produção. Fonte: https://render.com/docs/free.
+- [x] **Neon Free** oferece PostgreSQL gerenciado, sem cartão segundo a documentação/material oficial de onboarding da Neon; limites publicados incluem 100 CU-hours/mês por projeto, 1 GB de armazenamento e scale-to-zero após 5 minutos. Fontes: https://neon.com/blog/postgres-17 e https://neon.com/docs/introduction/pro-plan (confirmar os limites vigentes no painel ao criar a conta).
+- [x] **Northflank** anuncia sandbox gratuito sem cartão na página de preços, mas a documentação de billing informa que todos os usuários precisam adicionar método de pagamento para criar recursos. Descartado como caminho garantido para este caso. Fontes: https://northflank.com/pricing e https://northflank.com/docs/v1/application/billing/pricing-on-northflank.
+- [x] **Koyeb** foi descartado: exige cartão para verificação e aplica pré-autorização; instância gratuita também não oferece volumes persistentes. Fonte: https://www.koyeb.com/docs/faqs/pricing.
+- [x] **Vercel/Netlify não substituem diretamente o servidor Express persistente** deste repositório; Netlify permanece como provedor de publicação dos sites de clientes, não como hospedagem do backend completo.
+
+### Decisão técnica recomendada
+Usar **Render Free para o backend Node.js + Neon Free para PostgreSQL**, ambos conectados ao GitHub, sem cartão. Essa combinação remove a dependência de disco local efêmero e evita o plano Render Starter que exige cobrança/cartão. O Render Free dorme em inatividade e não deve ser tratado como SLA comercial; é a rota gratuita mais rápida para disponibilizar o serviço e validar o fluxo real.
+
+### Trabalho técnico obrigatório antes de produção
+- [ ] Alterar Prisma datasource de SQLite para PostgreSQL de forma controlada.
+- [ ] Gerar e revisar uma migração PostgreSQL inicial compatível com o schema atual e com os 40 arquivos de migração SQLite existentes; não apagar nem reaproveitar SQL SQLite como se fosse PostgreSQL.
+- [ ] Validar tipos/defaults/índices/relacionamentos e consultas que dependem de comportamento específico do SQLite.
+- [ ] Ajustar CI para validar o provider e executar migrações PostgreSQL em banco de teste.
+- [ ] Atualizar `render.yaml` para plano Free, remover o disco pago e usar `DATABASE_URL` PostgreSQL do Neon via secret (não versionar URL/credenciais).
+- [ ] Criar projeto Neon e serviço Render no painel; conectar GitHub e inserir secrets. Essas operações de conta exigem autenticação/ação do proprietário e não podem ser simuladas por commit.
+- [ ] Configurar `GOOGLE_PLACES_ENABLED=true`, `GOOGLE_PLACES_API_KEY`, `GEMINI_API_KEY` (ou `OPENAI_API_KEY`), `NETLIFY_AUTH_TOKEN`, `SALE_IA_ADMIN_KEY` e `DATABASE_URL` no Render.
+- [ ] Manter `RB_FACTORY_AUTONOMY_ENABLED=false` até concluir teste real supervisionado; depois ativar somente se o ciclo completo estiver estável.
+- [ ] Confirmar `GET /api/health` HTTP 200, executar prospecção real, gerar demo, validar QC, aprovar manualmente, gerar proposta, persistir lead/projeto e publicar no Netlify; abrir o link público.
+ 
+### Estado verdadeiro em 2026-11-13
+- [x] Blueprint existente `render.yaml` usa `plan: starter` e disco persistente de 1 GB; portanto, **não é uma configuração gratuita sem cartão**.
+- [x] A documentação oficial confirma que Render Free existe sem cartão, mas não pode preservar o SQLite local. Não trocar para Free mantendo SQLite como banco de produção.
+- [x] Caminho gratuito identificado: Render Free + Neon PostgreSQL, condicionado à migração técnica de SQLite para PostgreSQL e criação das contas/serviços.
+- [ ] Nenhum serviço Render foi criado/verificado nesta execução.
+- [ ] Nenhum banco Neon foi criado/verificado nesta execução.
+- [ ] Nenhum segredo externo foi inserido.
+- [ ] Nenhum deploy público do backend nem ciclo real do RB Factory Sites foi validado nesta execução.
+- [ ] Produção continua pendente; não declarar o sistema online até o link público e o fluxo completo serem testados.
+
+### Fontes oficiais consultadas
+- Render — deploy gratuito e sem pagamento: https://render.com/docs/your-first-deploy
+- Render — limitações de Free e filesystem efêmero: https://render.com/docs/free
+- Neon — onboarding sem cartão: https://neon.com/blog/postgres-17
+- Neon — limites do plano Free: https://neon.com/docs/introduction/pro-plan
+- Northflank — preço Sandbox e divergência sobre cartão: https://northflank.com/pricing e https://northflank.com/docs/v1/application/billing/pricing-on-northflank
+- Koyeb — exigência de cartão: https://www.koyeb.com/docs/faqs/pricing
