@@ -55,8 +55,8 @@ if (-not $SkipBuild) {
   if ($LASTEXITCODE -ne 0) { throw "Build falhou. O servidor não será iniciado." }
 }
 
-$npm = (Get-Command npm.cmd -ErrorAction Stop).Source
-$server = Start-Process -FilePath $npm -ArgumentList @("start") -WorkingDirectory $Root -PassThru -WindowStyle Hidden -RedirectStandardOutput $ServerOut -RedirectStandardError $ServerErr
+$node = (Get-Command node.exe -ErrorAction Stop).Source
+$server = Start-Process -FilePath $node -ArgumentList @("dist/src/server.js") -WorkingDirectory $Root -PassThru -WindowStyle Hidden -RedirectStandardOutput $ServerOut -RedirectStandardError $ServerErr
 
 $ready = $false
 for ($i = 0; $i -lt 30; $i++) {
