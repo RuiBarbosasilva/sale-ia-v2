@@ -8,6 +8,7 @@ import { startBlogFactoryScheduler } from './modules/blogFactory/blogFactory.sch
 import { startSocialMediaFactoryScheduler } from './modules/social-media-factory/social-media-factory.scheduler';
 
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || '0.0.0.0';
 
 let server;
 
@@ -15,7 +16,7 @@ let server;
 app.use('/dashboard', dashboardRoutes);
 
 if (process.env.NODE_ENV !== 'test') {
-  server = app.listen(PORT, async () => {
+  server = app.listen(Number(PORT), HOST, async () => {
     console.log(`[SERVER] Rodando na porta ${PORT}`);
     if (String(process.env.SOCIAL_MEDIA_FACTORY_ENABLED || '').toLowerCase() === 'true') {
       startSocialMediaFactoryScheduler();
