@@ -93,3 +93,6 @@ public/generated-images/
 # OS
 # Redis persistence data must remain local, not versioned
 dump.rdb
+
+# Runtime logs and local tunnel state
+logs/rb-factory-tunnel/
