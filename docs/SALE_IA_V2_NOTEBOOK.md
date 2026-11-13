@@ -964,3 +964,63 @@ Usar **Render Free para o backend Node.js + Neon Free para PostgreSQL**, ambos c
 - Neon — limites do plano Free: https://neon.com/docs/introduction/pro-plan
 - Northflank — preço Sandbox e divergência sobre cartão: https://northflank.com/pricing e https://northflank.com/docs/v1/application/billing/pricing-on-northflank
 - Koyeb — exigência de cartão: https://www.koyeb.com/docs/faqs/pricing
+
+---
+
+## PRIORIDADE ATUAL — RB FACTORY SITES: ACESSO PÚBLICO SEM CARTÃO (13/11/2026)
+
+### Decisão operacional
+Como o notebook permanece ligado 24 horas por dia, a primeira rota de produção rápida é manter o backend Node.js e o banco SQLite no próprio notebook Windows e publicar o acesso HTTPS por Cloudflare Tunnel. Isso evita migrar o banco e evita contratar Render/VM neste primeiro passo. O notebook precisa permanecer ligado, conectado à internet e sem suspensão/hibernação; se ele ou a internet cair, o backend fica indisponível.
+
+### Arquitetura
+- Backend: processo Node.js local, porta 3000.
+- Banco: SQLite no disco local, usando o DATABASE_URL já configurado no .env; se ausente, o script usa file:./prisma/dev.db apenas para aquela execução.
+- Acesso externo: Cloudflare Quick Tunnel para http://127.0.0.1:3000.
+- Sites-demo dos clientes: continuam sendo publicados pelo serviço Netlify/API já existente; Cloudflare Tunnel expõe apenas o backend do Sale-IA.
+- Quick Tunnel gera URL trycloudflare.com temporária, que pode mudar quando o túnel reiniciar. Para URL estável, será necessário configurar um Named Tunnel e um domínio/DNS no Cloudflare.
+- Não é uma hospedagem redundante nem alta disponibilidade. É a rota mais rápida sem cartão, com dependência do notebook e da conexão local.
+
+### Arquivos adicionados
+- scripts/start-rb-factory-tunnel.ps1: verifica .env e cloudflared, compila o projeto, inicia o backend, valida /api/health, abre o túnel e registra URL/PIDs/logs.
+- scripts/stop-rb-factory-tunnel.ps1: encerra os processos registrados.
+- .gitignore: ignora logs/rb-factory-tunnel/ para não versionar logs nem estado local.
+
+### Pré-requisitos no notebook
+1. Node.js/npm instalados e dependências instaladas via npm ci.
+2. .env local com SALE_IA_ADMIN_KEY forte, credenciais válidas de Google Places, provedor de IA e NETLIFY_AUTH_TOKEN, conforme os recursos que serão usados.
+3. DATABASE_URL apontando para o banco SQLite correto que já contém os dados. Antes de iniciar, conferir o valor e fazer cópia de segurança do arquivo .db; não apontar para um banco novo vazio por engano.
+4. Instalar cloudflared pelo instalador oficial do Cloudflare e confirmar cloudflared --version.
+5. Configurar Windows para nunca suspender/hibernar enquanto conectado à energia; manter a rede ativa.
+6. Proteger o notebook e o arquivo .env; nunca enviar segredos ao GitHub.
+
+### Primeiro início
+No PowerShell, na pasta C:\\sale-ia-v2:
+powershell -ExecutionPolicy Bypass -File .\\scripts\\start-rb-factory-tunnel.ps1
+
+Para encerrar:
+powershell -ExecutionPolicy Bypass -File .\\scripts\\stop-rb-factory-tunnel.ps1
+
+Logs locais: logs\\rb-factory-tunnel\\.
+
+### Segurança e limites antes de considerar produção validada
+- O túnel publica a API do aplicativo; validar autenticação/autorização em todas as rotas administrativas antes de deixar o endereço público. SALE_IA_ADMIN_KEY não substitui autorização por rota.
+- Não ativar RB_FACTORY_AUTONOMY_ENABLED até validar o fluxo e as permissões; o padrão deve permanecer false.
+- Não expor arquivos SQLite, .env, logs ou painéis administrativos sem autenticação.
+- Fazer backup periódico do SQLite e testar restauração.
+- Não compartilhar a URL temporária como endereço permanente; ela muda ao reiniciar o Quick Tunnel.
+- O script não cria credenciais, não altera DNS, não instala cloudflared, não faz deploy dos sites-demo e não prova o fluxo comercial completo.
+
+### Estado real em 13/11/2026
+- [x] Notebook informado pelo usuário como ligado 24h/dia.
+- [x] Caminho sem cartão escolhido para o primeiro acesso público.
+- [x] Scripts de inicialização/parada adicionados à branch feat/rb-factory-notebook-tunnel-production.
+- [x] Logs locais adicionados ao .gitignore.
+- [ ] Revisar segurança de todas as rotas RB Factory expostas pelo app.
+- [ ] Confirmar o .env e o DATABASE_URL reais no notebook.
+- [ ] Instalar/validar cloudflared no notebook.
+- [ ] Executar o script e obter URL HTTPS real.
+- [ ] Testar o fluxo de prospecção, score, geração, aprovação, proposta, publicação Netlify e persistência no banco.
+- [ ] Confirmar link de demo publicado abrindo externamente.
+- [ ] Abrir PR, passar CI e integrar a branch após revisão.
+
+Critério de conclusão: só marcar RB Factory Sites como produção quando o link público de um site-demo publicado pelo fluxo real abrir externamente e o lead/projeto estiver registrado no banco. O túnel ativo sozinho não conclui a missão.
